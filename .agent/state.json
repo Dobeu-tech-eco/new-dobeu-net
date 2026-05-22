@@ -1,0 +1,29 @@
+{
+  "session": "2026-05-21",
+  "project": "dobeu.net v3",
+  "working_dir": "C:\\Users\\jswil\\repos\\new-dobeu-net",
+  "phase": "1-complete-pending-install-and-deploy",
+  "platform": "cowork",
+  "git": {
+    "repo": "to-be-created: dobeutech/new-dobeu-net",
+    "branch": "main",
+    "first_commit": "not-yet"
+  },
+  "build_status": "not-run-yet",
+  "test_status": "not-run-yet",
+  "decisions": {
+    "stack": "Next.js 15 App Router + TypeScript + Tailwind + shadcn/ui + Framer Motion",
+    "backend": "Supabase (auth + Postgres + storage + RLS)",
+    "booking": "Apollo Meetings (NEXT_PUBLIC_APOLLO_MEETINGS_URL); fallback to lead-form until verified",
+    "auth": "Supabase email magic-link",
+    "admin_emails": ["jeremyw@dobeu.net"],
+    "themes": "next-themes Light/Dark/System",
+    "hosting": "Vercel preview → DNS cutover for dobeu.net",
+    "repo_strategy": "new repo dobeutech/new-dobeu-net (clean history)"
+  },
+  "handoff_notes": [
+    "Phase 1 (foundation) complete: all configs, design system tokens, lib (Supabase/Apollo/analytics), root layout, theme system, UI primitives, full landing page (Hero/Services/HowItWorks/Proof/Founder/FAQ/FinalCTA/StickyMobileCTA), auth (login/callback), portal skeleton (dashboard/projects/projects[id]/files/invoices/messages/settings), admin skeleton (overview), /api/lead route with Apollo+Supabase+Resend fan-out, sitemap/robots/og/llms.txt, privacy/terms pages, Vercel config, README + DEPLOYMENT.md + tracking-plan.md.",
+    "Next session: run `pnpm install`, copy .env.example to .env.local, fill in real values, verify Apollo Meetings embeddability via Apollo MCP, push to GitHub, deploy to Vercel preview, then Phase 4 verification walkthrough.",
+    "TODO that requires Jeremy: (1) Verify Apollo Meetings embed availability on Jeremy's plan via Apollo MCP. If not embeddable, wire Google Calendar OAuth on jswilliamstu@gmail.com per BRAINSTORM §14. (2) Confirm Supabase project provisioning. (3) GitHub repo creation (dobeutech/new-dobeu-net). (4) Vercel project + env vars."
+  ]
+}

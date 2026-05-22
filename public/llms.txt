@@ -1,0 +1,31 @@
+# Dobeu Tech Solutions — llms.txt
+
+> One-person digital services practice. AI agent development, full-stack web apps, brand & design systems, and growth engineering for founders.
+
+## About
+- Founder: Jeremy Williams (jeremyw@dobeu.net)
+- Based in NYC, building since 2019
+- Website: https://dobeu.net
+- LinkedIn: https://www.linkedin.com/in/jeremy-williams
+
+## Services
+- **AI agents & automation** — Claude, Composio, MCP integrations, agentic workflows
+- **Full-stack web apps** — Next.js, Supabase, Vercel, modern TypeScript stack
+- **Brand & design systems** — Figma + Code Connect + multi-target design tokens
+- **Marketing & growth engineering** — programmatic SEO, GA4/PostHog/Mixpanel, lifecycle automation
+
+## Engagement model
+- 30-minute discovery call (free, no pitch)
+- Fixed-scope, fixed-price proposal within 48 hours
+- Ship in 2–6 weeks with daily updates and a private client portal
+- Typical engagement size: $5k–$30k
+
+## Contact
+- Book a call: https://dobeu.net/#book
+- Email: jeremyw@dobeu.net
+- Portal (existing clients): https://dobeu.net/portal
+
+## Why hire one person
+- You talk to the person doing the work
+- Decisions in hours not weeks
+- Modern stack from day one

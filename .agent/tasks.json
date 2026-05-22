@@ -1,0 +1,130 @@
+{
+  "project": "dobeu.net v3",
+  "session": "2026-05-21",
+  "features": [
+    {
+      "id": "F1",
+      "category": "foundation",
+      "description": "Scaffold Next.js 15 + design tokens + theme + Supabase clients + middleware + UI primitives",
+      "status": "completed",
+      "passes": false,
+      "passes_note": "Code written; not yet verified by build/test run — requires pnpm install + pnpm dev",
+      "priority": "P0",
+      "dependencies": []
+    },
+    {
+      "id": "F2",
+      "category": "landing",
+      "description": "Marketing landing page with Hero, Services, How, Proof, Founder, FAQ, FinalCTA, StickyMobileCTA, SiteNav, SiteFooter, Lightbox",
+      "status": "completed",
+      "passes": false,
+      "passes_note": "Code written; not yet visually verified",
+      "priority": "P0",
+      "dependencies": ["F1"]
+    },
+    {
+      "id": "F3",
+      "category": "backend",
+      "description": "Supabase schema with RLS for profiles/projects/project_files/invoices/messages/leads/bookings/page_events + storage bucket + handle_new_user trigger",
+      "status": "completed",
+      "passes": false,
+      "passes_note": "Migration written; not yet applied to a live Supabase project",
+      "priority": "P0",
+      "dependencies": ["F1"]
+    },
+    {
+      "id": "F4",
+      "category": "api",
+      "description": "/api/lead route — Supabase insert + Apollo upsert + Resend dual emails + IP rate-limit",
+      "status": "completed",
+      "passes": false,
+      "passes_note": "Code written; not yet tested end-to-end with real keys",
+      "priority": "P0",
+      "dependencies": ["F1", "F3"]
+    },
+    {
+      "id": "F5",
+      "category": "auth",
+      "description": "Magic-link login page + callback route + middleware gating for /portal and /admin",
+      "status": "completed",
+      "passes": false,
+      "passes_note": "Code written; not yet tested with a real Supabase project",
+      "priority": "P0",
+      "dependencies": ["F1", "F3"]
+    },
+    {
+      "id": "F6",
+      "category": "portal",
+      "description": "Client portal — dashboard, projects list, project detail [id], files, invoices, messages, settings",
+      "status": "completed",
+      "passes": false,
+      "priority": "P1",
+      "dependencies": ["F5"]
+    },
+    {
+      "id": "F7",
+      "category": "admin",
+      "description": "Admin panel scaffold — overview with KPI tiles + recent leads/bookings tables. Sub-pages (users, leads, bookings) are stubbed at PLAN.md Phase 2C and not built in this session.",
+      "status": "completed",
+      "passes": false,
+      "priority": "P1",
+      "dependencies": ["F5"]
+    },
+    {
+      "id": "F8",
+      "category": "analytics",
+      "description": "PostHog + Mixpanel + GA4 + GTM unified fan-out with consent banner",
+      "status": "completed",
+      "passes": false,
+      "priority": "P0",
+      "dependencies": ["F1"]
+    },
+    {
+      "id": "F9",
+      "category": "seo",
+      "description": "sitemap.ts + robots.ts + opengraph-image.tsx + llms.txt + JSON-LD on landing/FAQ + privacy/terms pages",
+      "status": "completed",
+      "passes": false,
+      "priority": "P1",
+      "dependencies": ["F1"]
+    },
+    {
+      "id": "F10",
+      "category": "booking",
+      "description": "Verify Apollo Meetings embed availability via Apollo MCP. If yes: set NEXT_PUBLIC_APOLLO_MEETINGS_URL. If no: build custom availability picker on Supabase + Google Calendar OAuth.",
+      "status": "pending",
+      "passes": false,
+      "passes_note": "BLOCKED on Jeremy verifying Apollo plan capabilities. Lightbox booking tab falls back to LeadForm in the meantime.",
+      "priority": "P0",
+      "dependencies": ["F1"]
+    },
+    {
+      "id": "F11",
+      "category": "deploy",
+      "description": "pnpm install locally, push to GitHub (dobeutech/new-dobeu-net), connect Vercel, set env vars, deploy to *.vercel.app preview",
+      "status": "pending",
+      "passes": false,
+      "passes_note": "Documented in docs/DEPLOYMENT.md. Requires Jeremy to execute the actual GitHub/Vercel/Supabase provisioning.",
+      "priority": "P0",
+      "dependencies": ["F1", "F3"]
+    },
+    {
+      "id": "F12",
+      "category": "verification",
+      "description": "Phase 4 verification — Lighthouse, browser walkthrough across themes + viewports, axe accessibility, real end-to-end lead+booking+invoice flow",
+      "status": "pending",
+      "passes": false,
+      "priority": "P0",
+      "dependencies": ["F11"]
+    },
+    {
+      "id": "F13",
+      "category": "cutover",
+      "description": "DNS cutover from digital-wharf-dynamics → new Vercel project; decommission old site after 7-day soak; email existing users",
+      "status": "pending",
+      "passes": false,
+      "priority": "P0",
+      "dependencies": ["F12"]
+    }
+  ]
+}
