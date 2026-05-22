@@ -28,29 +28,19 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
     onProfilePageViewed: () => track("calendly_profile_viewed"),
     onEventTypeViewed: () => track("calendly_event_type_viewed"),
     onDateAndTimeSelected: () => track("calendly_date_selected"),
-    onEventScheduled: async (e) => {
-      const invitee = e.data.payload.invitee;
+    onEventScheduled: (e) => {
       track("booking_scheduled", {
         source: "calendly",
-        event_uri: e.data.payload.event.uri
+        event_uri: e.data.payload.event.uri,
+        invitee_uri: e.data.payload.invitee.uri
       });
-      // Mirror to /api/lead so Apollo + Supabase + Resend confirmation all fire
-      try {
-        await fetch("/api/lead", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: invitee?.email,
-            name: invitee?.name,
-            source: "book",
-            utm: collectUtm(),
-            referrer: document.referrer
-          })
-        });
-      } catch {
-        /* non-fatal — Calendly already captured the booking */
-      }
-      // Close the lightbox after a beat so the confirmation screen flashes briefly
+      // NOTE: Calendly's client-side scheduled-event payload only exposes the
+      // invitee/event *URIs*, not the invitee email or name. Mirroring the booking
+      // into Supabase + Apollo + Resend therefore can't happen here — it needs a
+      // server-side Calendly webhook (or an authenticated Calendly API call that
+      // resolves invitee_uri) to enrich + upsert the contact. Tracked as a follow-up;
+      // the booking itself is already captured by Calendly and our analytics event.
+      // Close the lightbox after a beat so the confirmation screen flashes briefly.
       setTimeout(onClose, 1500);
     }
   });
@@ -106,15 +96,4 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
       </p>
     </div>
   );
-}
-
-function collectUtm(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const out: Record<string, string> = {};
-  const sp = new URLSearchParams(window.location.search);
-  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"]) {
-    const v = sp.get(k);
-    if (v) out[k] = v;
-  }
-  return out;
 }
