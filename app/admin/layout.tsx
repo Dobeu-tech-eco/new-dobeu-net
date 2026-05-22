@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+// All /admin/* pages read Supabase via service role + cookies; never pre-render.
+export const dynamic = "force-dynamic";
+
 import {
   LayoutDashboard,
   Users,

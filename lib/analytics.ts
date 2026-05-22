@@ -33,11 +33,15 @@ export function initAnalytics(consent: boolean): void {
   }
 
   // ---- Mixpanel ----
+  // Autocapture + session replay enabled per Jeremy's product analytics setup.
+  // Token: dobeu.net workspace (project token, safe in NEXT_PUBLIC_).
   if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) {
     mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN, {
       debug: process.env.NODE_ENV === "development",
       track_pageview: true,
-      persistence: "localStorage"
+      persistence: "localStorage",
+      autocapture: true,
+      record_sessions_percent: 100
     });
   }
 

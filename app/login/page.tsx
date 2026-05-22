@@ -3,6 +3,10 @@ import { Suspense } from "react";
 import { LoginForm } from "./LoginForm";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 
+// LoginForm uses useSearchParams under Suspense — keep this page dynamic.
+export const dynamic = "force-dynamic";
+
+
 export const metadata: Metadata = {
   title: "Log in",
   description: "Sign in to your Dobeu Tech Solutions client portal."

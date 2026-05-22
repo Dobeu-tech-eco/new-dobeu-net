@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+// All /portal/* pages depend on the authed user, so never pre-render.
+export const dynamic = "force-dynamic";
+
 import { LayoutDashboard, FolderKanban, FileText, Receipt, MessagesSquare, Settings, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
