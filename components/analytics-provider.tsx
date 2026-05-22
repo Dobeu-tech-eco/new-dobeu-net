@@ -4,6 +4,8 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
 import { initAnalytics, pageView } from "@/lib/analytics";
+import { initDatadog } from "@/lib/datadog";
+import { initIntercom } from "@/lib/intercom";
 
 const CONSENT_KEY = "dobeu-analytics-consent";
 
@@ -28,9 +30,13 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     else if (stored === "denied") setConsent(false);
   }, []);
 
-  // Init analytics once consent is granted
+  // Init analytics once consent is granted (PostHog/Mixpanel + Datadog RUM+Logs)
   React.useEffect(() => {
-    if (consent === true) initAnalytics(true);
+    if (consent === true) {
+      initAnalytics(true);
+      initDatadog();
+      initIntercom();
+    }
   }, [consent]);
 
   // Fire pageview on navigation

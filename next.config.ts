@@ -3,12 +3,12 @@ import type { NextConfig } from "next";
 const ContentSecurityPolicy = [
   "default-src 'self'",
   // Allow PostHog, Mixpanel, GA4, GTM, Apollo pixel, Stripe, Typeform
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://app.posthog.com https://cdn.mxpnl.com https://*.googletagmanager.com https://www.google-analytics.com https://js.stripe.com https://embed.typeform.com https://*.apollo.io https://assets.calendly.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.posthog.com https://app.posthog.com https://api.mixpanel.com https://api-js.mixpanel.com https://*.mixpanel.com https://*.google-analytics.com https://*.analytics.google.com https://api.stripe.com https://api.apollo.io https://*.typeform.com https://api.calendly.com https://calendly.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://app.posthog.com https://cdn.mxpnl.com https://*.googletagmanager.com https://www.google-analytics.com https://js.stripe.com https://embed.typeform.com https://*.apollo.io https://assets.calendly.com https://www.datadoghq-browser-agent.com https://va.vercel-scripts.com https://widget.intercom.io https://js.intercomcdn.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.posthog.com https://app.posthog.com https://api.mixpanel.com https://api-js.mixpanel.com https://*.mixpanel.com https://*.google-analytics.com https://*.analytics.google.com https://api.stripe.com https://api.apollo.io https://*.typeform.com https://api.calendly.com https://calendly.com https://browser-intake-datadoghq.com https://*.browser-intake-datadoghq.com https://browser-intake-us5-datadoghq.com https://*.browser-intake-us5-datadoghq.com https://vitals.vercel-insights.com https://vercel.live https://api-iam.intercom.io https://api-iam.eu.intercom.io https://nexus-websocket-a.intercom.io wss://nexus-websocket-a.intercom.io https://uploads.intercomcdn.com",
   "img-src 'self' data: blob: https:",
-  "font-src 'self' https://fonts.gstatic.com data:",
+  "font-src 'self' https://fonts.gstatic.com data: https://js.intercomcdn.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://embed.typeform.com https://assets.calendly.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://embed.typeform.com https://*.apollo.io https://calendly.com https://*.calendly.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://embed.typeform.com https://*.apollo.io https://calendly.com https://*.calendly.com https://*.intercom.io https://*.intercom.com https://*.intercomcdn.com",
   "media-src 'self'",
   "worker-src 'self' blob:",
   "object-src 'none'",

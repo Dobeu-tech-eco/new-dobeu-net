@@ -19,7 +19,12 @@
     "verify": "pnpm type-check && pnpm lint && pnpm test:ci && pnpm build"
   },
   "dependencies": {
+    "@datadog/browser-logs": "^5.36.0",
+    "@datadog/browser-rum": "^5.36.0",
     "@hookform/resolvers": "^3.10.0",
+    "@intercom/messenger-js-sdk": "^0.0.18",
+    "@vercel/analytics": "^1.4.1",
+    "@vercel/speed-insights": "^1.1.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-avatar": "^1.1.3",
     "@radix-ui/react-dialog": "^1.1.6",

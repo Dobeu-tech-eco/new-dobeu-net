@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito, Quicksand } from "next/font/google";
 import { Toaster } from "sonner";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import "./globals.css";
@@ -83,6 +85,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main" className="skip-link">Skip to main content</a>
         <ThemeProvider>
           <AnalyticsProvider>{children}</AnalyticsProvider>
+          <VercelAnalytics />
+          <SpeedInsights />
           <Toaster position="bottom-right" theme="system" richColors closeButton />
         </ThemeProvider>
         {/* JSON-LD Organization schema */}
