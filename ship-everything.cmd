@@ -1,71 +1,69 @@
 @echo off
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
-echo === Shipping everything: env vars + commits + redeploy ===
+echo === Shipping everything: env vars + domains + commits + redeploy ===
 echo.
 
-REM ---------- Step 1: Add env vars via Vercel CLI ----------
-echo.
-echo --- Adding NEXT_PUBLIC_SUPABASE_URL ---
-echo https://qdwvcrmdqweojverdmmz.supabase.co | call npx --yes vercel@latest env add NEXT_PUBLIC_SUPABASE_URL production preview development --force
+REM ---------- Step 0: Relink the project (in case .vercel was deleted) ----------
+echo --- Relinking project to dobeutechnology/new-dobeu-net ---
+call npx --yes vercel@latest link --project new-dobeu-net --scope dobeutechnology --yes
 
-echo.
-echo --- Adding NEXT_PUBLIC_SUPABASE_ANON_KEY ---
-echo eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkd3Zjcm1kcXdlb2p2ZXJkbW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MzM3MTUsImV4cCI6MjA5MTAwOTcxNX0.dm1jVqqyQ44j3-Ckr2-NQ7ZsA_6wRUCnaE1Gl0Rr2g4 | call npx --yes vercel@latest env add NEXT_PUBLIC_SUPABASE_ANON_KEY production preview development --force
+goto :start
 
-echo.
-echo --- Adding NEXT_PUBLIC_MIXPANEL_TOKEN ---
-echo f5596f8dbfc32267e58b767dd1ede3ea | call npx --yes vercel@latest env add NEXT_PUBLIC_MIXPANEL_TOKEN production preview development --force
+REM Adds one env var to all three Vercel environments via echo|set /p (no trailing newline)
+:add_env
+  set NAME=%~1
+  set VALUE=%~2
+  echo.
+  echo --- %NAME% (production) ---
+  echo|set /p=%VALUE%| call npx --yes vercel@latest env add %NAME% production --force
+  echo --- %NAME% (preview) ---
+  echo|set /p=%VALUE%| call npx --yes vercel@latest env add %NAME% preview --force
+  echo --- %NAME% (development) ---
+  echo|set /p=%VALUE%| call npx --yes vercel@latest env add %NAME% development --force
+  goto :eof
 
-echo.
-echo --- Adding NEXT_PUBLIC_POSTHOG_HOST ---
-echo https://us.i.posthog.com | call npx --yes vercel@latest env add NEXT_PUBLIC_POSTHOG_HOST production preview development --force
+:start
 
-echo.
-echo --- Adding RESEND_FROM_EMAIL ---
-echo hello@dobeu.net | call npx --yes vercel@latest env add RESEND_FROM_EMAIL production preview development --force
+REM ---------- Step 1: Add env vars ----------
+call :add_env NEXT_PUBLIC_SUPABASE_URL https://qdwvcrmdqweojverdmmz.supabase.co
+call :add_env NEXT_PUBLIC_SUPABASE_ANON_KEY eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkd3Zjcm1kcXdlb2p2ZXJkbW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MzM3MTUsImV4cCI6MjA5MTAwOTcxNX0.dm1jVqqyQ44j3-Ckr2-NQ7ZsA_6wRUCnaE1Gl0Rr2g4
+call :add_env NEXT_PUBLIC_MIXPANEL_TOKEN f5596f8dbfc32267e58b767dd1ede3ea
+call :add_env NEXT_PUBLIC_POSTHOG_HOST https://us.i.posthog.com
+call :add_env RESEND_FROM_EMAIL hello@dobeu.net
+call :add_env RESEND_REPLY_TO jeremyw@dobeu.net
 
-echo.
-echo --- Adding RESEND_REPLY_TO ---
-echo jeremyw@dobeu.net | call npx --yes vercel@latest env add RESEND_REPLY_TO production preview development --force
-
-REM ---------- Step 1.5: Attach dobeu.net + www.dobeu.net domains ----------
+REM ---------- Step 2: Attach dobeu.net + www.dobeu.net ----------
 echo.
 echo --- Adding dobeu.net to the project ---
-call npx --yes vercel@latest domains add dobeu.net new-dobeu-net --scope dobeutechnology --yes 2>&1 | findstr /v "node_modules"
-echo.
+call npx --yes vercel@latest domains add dobeu.net new-dobeu-net --scope dobeutechnology --yes
 echo --- Adding www.dobeu.net to the project ---
-call npx --yes vercel@latest domains add www.dobeu.net new-dobeu-net --scope dobeutechnology --yes 2>&1 | findstr /v "node_modules"
+call npx --yes vercel@latest domains add www.dobeu.net new-dobeu-net --scope dobeutechnology --yes
 
-REM ---------- Step 2: Commit + push everything pending ----------
+REM ---------- Step 3: Commit + push everything pending ----------
 echo.
-echo === Committing and pushing all local changes ===
+echo === Committing and pushing all pending local changes ===
 if exist ".git\index.lock" del /f /q ".git\index.lock"
 if exist ".git\HEAD.lock" del /f /q ".git\HEAD.lock"
 
 git add -A
-git commit -m "feat(observability+launch): Datadog RUM+Logs, Vercel Analytics+Speed Insights, Intercom Messenger, verification report" -m "- lib/datadog.ts: client RUM + browser-logs (consent-gated)" -m "- lib/intercom.ts: Messenger boot via @intercom/messenger-js-sdk" -m "- @vercel/analytics + @vercel/speed-insights mounted in app/layout.tsx" -m "- next.config.ts CSP extended for Datadog/Intercom/Vercel insights" -m "- docs/verification/2026-05-22-live-deploy.md: full Playwright walk + PSI scores"
+git commit -m "feat(observability+launch): Datadog RUM+Logs + Vercel Analytics+Speed Insights + Intercom + verification report" -m "All client-side observability behind the same cookie-consent gate as PostHog/Mixpanel. CSP extended. Live verification matrix captured."
 
 git push
 if errorlevel 1 (
-    echo Push failed. See error above.
-    pause
-    exit /b 1
+    git pull --rebase 2>nul
+    git push
 )
 
 echo.
 echo === DONE ===
-echo Vercel will auto-redeploy in ^~60s with all env vars set.
-echo Watch: https://vercel.com/dobeutechnology/new-dobeu-net
+echo Vercel will auto-redeploy in ~60s with all env vars set.
+echo Watch: https://vercel.com/dobeutechnology/new-dobeu-net/deployments
 echo.
-echo Still required (manual one-step):
-echo   1. Get SUPABASE_SERVICE_ROLE_KEY from
-echo      https://supabase.com/dashboard/project/qdwvcrmdqweojverdmmz/settings/api
-echo      and add it to Vercel env vars as SUPABASE_SERVICE_ROLE_KEY (sensitive).
+echo One manual step left:
+echo   Grab SUPABASE_SERVICE_ROLE_KEY from:
+echo   https://supabase.com/dashboard/project/qdwvcrmdqweojverdmmz/settings/api
+echo   Reveal service_role, paste into Vercel as SUPABASE_SERVICE_ROLE_KEY (Sensitive).
 echo.
-echo   2. Connect dobeu.net domain in Vercel:
-echo      https://vercel.com/dobeutechnology/new-dobeu-net/settings/domains
-echo      Add `dobeu.net` and `www.dobeu.net`, then update Cloudflare DNS.
-echo.
-git log --oneline -6
+git log --oneline -5
 pause
