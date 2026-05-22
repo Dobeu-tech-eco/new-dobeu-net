@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 import { upsertApolloContact } from "@/lib/apollo";
+import { cioIdentify, cioTrack, isCustomerIoConfigured } from "@/lib/customerio";
 
 const LeadSchema = z.object({
   email: z.string().email(),
@@ -95,6 +96,31 @@ export async function POST(request: Request) {
     } catch {
       /* non-fatal */
     }
+  }
+
+  // 3.5 Customer.io: identify + fire "lead_captured" event (kicks off welcome sequence)
+  if (isCustomerIoConfigured()) {
+    const cioAttrs = {
+      name: name ?? undefined,
+      company: company ?? undefined,
+      first_seen_source: source,
+      utm_source: utm.utm_source,
+      utm_medium: utm.utm_medium,
+      utm_campaign: utm.utm_campaign,
+      referrer: referrer ?? undefined,
+      apollo_contact_id: apolloContactId,
+      supabase_lead_id: supabaseLeadId
+    };
+    const [idRes, trackRes] = await Promise.all([
+      cioIdentify({ email, attributes: cioAttrs }),
+      cioTrack({
+        email,
+        name: "lead_captured",
+        data: { source, has_message: !!message, ...utm }
+      })
+    ]);
+    if (!idRes.ok) console.warn("[/api/lead] Customer.io identify:", idRes.error);
+    if (!trackRes.ok) console.warn("[/api/lead] Customer.io track:", trackRes.error);
   }
 
   // 4. Send confirmation email via Resend + notify admin
