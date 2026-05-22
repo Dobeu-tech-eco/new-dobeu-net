@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito, Quicksand } from "next/font/google";
-import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
@@ -83,9 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <a href="#main" className="skip-link">Skip to main content</a>
         <ThemeProvider>
-          <Suspense fallback={null}>
-            <AnalyticsProvider>{children}</AnalyticsProvider>
-          </Suspense>
+          <AnalyticsProvider>{children}</AnalyticsProvider>
           <Toaster position="bottom-right" theme="system" richColors closeButton />
         </ThemeProvider>
         {/* JSON-LD Organization schema */}

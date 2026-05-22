@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Script from "next/script";
 import { initAnalytics, pageView } from "@/lib/analytics";
 
@@ -10,10 +10,14 @@ const CONSENT_KEY = "dobeu-analytics-consent";
 /**
  * AnalyticsProvider — gates PostHog/Mixpanel on user consent and
  * loads GA4 + GTM via <Script>. Fires pageview on every route change.
+ *
+ * NOTE: We read query string from window.location directly (not useSearchParams)
+ * to avoid forcing the whole app into a Suspense boundary in Next 15.5+ which
+ * has known streaming issues in dev. See:
+ * https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
  */
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [consent, setConsent] = React.useState<boolean | null>(null);
 
   // Hydrate consent from localStorage on mount
@@ -32,9 +36,10 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   // Fire pageview on navigation
   React.useEffect(() => {
     if (consent !== true) return;
-    const url = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+    const search = typeof window !== "undefined" ? window.location.search : "";
+    const url = pathname + search;
     pageView(url);
-  }, [pathname, searchParams, consent]);
+  }, [pathname, consent]);
 
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
   const ga4Id = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;

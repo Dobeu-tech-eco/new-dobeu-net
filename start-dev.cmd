@@ -1,20 +1,20 @@
 @echo off
-REM Double-click to start the dev server. No execution policy issues.
+REM Boots the Next.js dev server. node_modules already populated from previous install.
 cd /d "%~dp0"
 echo === dobeu.net v3 dev launcher ===
 echo.
 echo Project: %CD%
 echo.
-echo === pnpm install ===
-call pnpm install
-if errorlevel 1 (
-    echo.
-    echo pnpm install failed. Press any key to close.
-    pause >nul
-    exit /b 1
-)
+
+REM Run native postinstall scripts that pnpm needs (idempotent — fast if done)
+REM Use --no-frozen-lockfile so it tolerates the workspace.yaml change
+call pnpm rebuild sharp esbuild core-js protobufjs unrs-resolver 2>nul
+
 echo.
-echo === Booting pnpm dev — open http://localhost:3000 ===
+echo === Booting pnpm dev ===
+echo Open http://localhost:3000 once "Ready" appears.
+echo Press Ctrl+C to stop.
+echo.
 call pnpm dev
 echo.
 echo Dev server exited. Press any key to close.

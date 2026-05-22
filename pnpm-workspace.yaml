@@ -1,6 +1,10 @@
+# pnpm 11+ workspace config.
+# `allowBuilds` is pnpm's per-package opt-in for postinstall scripts.
 allowBuilds:
-  core-js: set this to true or false
-  esbuild: set this to true or false
-  protobufjs: set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+  "@vercel/speed-insights": true
+  core-js: true
+  esbuild: true
+  protobufjs: true
+  sharp: true
+  supabase: true
+  unrs-resolver: true
