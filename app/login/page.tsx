@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Link from "next/link";
 import { LoginForm } from "./LoginForm";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 
@@ -28,9 +29,9 @@ export default function LoginPage() {
         </Suspense>
         <p className="mt-6 text-xs text-center text-muted-foreground">
           No password needed. New here?{" "}
-          <a href="/#work" className="underline hover:text-foreground">
+          <Link href="/#work" className="underline hover:text-foreground">
             See what I do →
-          </a>
+          </Link>
         </p>
       </div>
     </main>

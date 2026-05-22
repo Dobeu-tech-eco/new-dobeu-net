@@ -1,14 +1,88 @@
 import type { NextConfig } from "next";
 
+// Build CSP from arrays so each line stays short enough for git diff to
+// recognize the file as text (git treats lines >~700 chars as binary).
+const csp = {
+  default: ["'self'"],
+  script: [
+    "'self'",
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    "https://*.posthog.com",
+    "https://app.posthog.com",
+    "https://cdn.mxpnl.com",
+    "https://*.googletagmanager.com",
+    "https://www.google-analytics.com",
+    "https://js.stripe.com",
+    "https://embed.typeform.com",
+    "https://*.apollo.io",
+    "https://assets.calendly.com",
+    "https://www.datadoghq-browser-agent.com",
+    "https://va.vercel-scripts.com",
+    "https://widget.intercom.io",
+    "https://js.intercomcdn.com"
+  ],
+  connect: [
+    "'self'",
+    "https://*.supabase.co",
+    "wss://*.supabase.co",
+    "https://*.posthog.com",
+    "https://app.posthog.com",
+    "https://api.mixpanel.com",
+    "https://api-js.mixpanel.com",
+    "https://*.mixpanel.com",
+    "https://*.google-analytics.com",
+    "https://*.analytics.google.com",
+    "https://api.stripe.com",
+    "https://api.apollo.io",
+    "https://*.typeform.com",
+    "https://api.calendly.com",
+    "https://calendly.com",
+    "https://browser-intake-datadoghq.com",
+    "https://*.browser-intake-datadoghq.com",
+    "https://browser-intake-us5-datadoghq.com",
+    "https://*.browser-intake-us5-datadoghq.com",
+    "https://vitals.vercel-insights.com",
+    "https://vercel.live",
+    "https://api-iam.intercom.io",
+    "https://api-iam.eu.intercom.io",
+    "https://nexus-websocket-a.intercom.io",
+    "wss://nexus-websocket-a.intercom.io",
+    "https://uploads.intercomcdn.com"
+  ],
+  img: ["'self'", "data:", "blob:", "https:"],
+  font: ["'self'", "https://fonts.gstatic.com", "data:", "https://js.intercomcdn.com"],
+  style: [
+    "'self'",
+    "'unsafe-inline'",
+    "https://fonts.googleapis.com",
+    "https://embed.typeform.com",
+    "https://assets.calendly.com"
+  ],
+  // frame-src: typeform's embed iframe is hosted on form.typeform.com (not
+  // embed.typeform.com — that's just the SDK loader). Wildcard covers both.
+  frame: [
+    "'self'",
+    "https://js.stripe.com",
+    "https://hooks.stripe.com",
+    "https://*.typeform.com",
+    "https://*.apollo.io",
+    "https://calendly.com",
+    "https://*.calendly.com",
+    "https://*.intercom.io",
+    "https://*.intercom.com",
+    "https://*.intercomcdn.com"
+  ]
+};
+
 const ContentSecurityPolicy = [
-  "default-src 'self'",
-  // Allow PostHog, Mixpanel, GA4, GTM, Apollo pixel, Stripe, Typeform
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://app.posthog.com https://cdn.mxpnl.com https://*.googletagmanager.com https://www.google-analytics.com https://js.stripe.com https://embed.typeform.com https://*.apollo.io https://assets.calendly.com https://www.datadoghq-browser-agent.com https://va.vercel-scripts.com https://widget.intercom.io https://js.intercomcdn.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.posthog.com https://app.posthog.com https://api.mixpanel.com https://api-js.mixpanel.com https://*.mixpanel.com https://*.google-analytics.com https://*.analytics.google.com https://api.stripe.com https://api.apollo.io https://*.typeform.com https://api.calendly.com https://calendly.com https://browser-intake-datadoghq.com https://*.browser-intake-datadoghq.com https://browser-intake-us5-datadoghq.com https://*.browser-intake-us5-datadoghq.com https://vitals.vercel-insights.com https://vercel.live https://api-iam.intercom.io https://api-iam.eu.intercom.io https://nexus-websocket-a.intercom.io wss://nexus-websocket-a.intercom.io https://uploads.intercomcdn.com",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' https://fonts.gstatic.com data: https://js.intercomcdn.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://embed.typeform.com https://assets.calendly.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://embed.typeform.com https://*.apollo.io https://calendly.com https://*.calendly.com https://*.intercom.io https://*.intercom.com https://*.intercomcdn.com",
+  `default-src ${csp.default.join(" ")}`,
+  `script-src ${csp.script.join(" ")}`,
+  `connect-src ${csp.connect.join(" ")}`,
+  `img-src ${csp.img.join(" ")}`,
+  `font-src ${csp.font.join(" ")}`,
+  `style-src ${csp.style.join(" ")}`,
+  `frame-src ${csp.frame.join(" ")}`,
   "media-src 'self'",
   "worker-src 'self' blob:",
   "object-src 'none'",
@@ -31,14 +105,14 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Phase-1 launch: skip blocking build on TS / lint so we can ship the
-  // marketing landing + portal scaffolding. Re-enable both before adding
-  // commerce / sensitive write paths.
+  // Build is a real verifier again: type-check + lint both pass, so failures
+  // here should block the build rather than ship silently. (Was temporarily
+  // disabled during Phase-1 launch.)
   typescript: {
-    ignoreBuildErrors: true
+    ignoreBuildErrors: false
   },
   eslint: {
-    ignoreDuringBuilds: true
+    ignoreDuringBuilds: false
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "motion", "@radix-ui/react-dialog", "@radix-ui/react-tabs"]
@@ -59,9 +133,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [
-      { source: "/home", destination: "/", permanent: true }
-    ];
+    return [{ source: "/home", destination: "/", permanent: true }];
   }
 };
 

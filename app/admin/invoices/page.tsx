@@ -10,7 +10,6 @@ export default async function AdminInvoicesPage() {
     .limit(200);
 
   const open = invoices?.filter((i) => i.status === "open" || i.status === "overdue") ?? [];
-  const paid = invoices?.filter((i) => i.status === "paid") ?? [];
 
   return (
     <div className="space-y-6">
