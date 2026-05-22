@@ -50,7 +50,9 @@ const h = vi.hoisted(() => {
     if (resendConfig.mode === "reject") throw new Error("resend down");
     return { id: "email_1" };
   });
-  const ResendCtor = vi.fn(function () { return { emails: { send: emailsSend } }; });
+  const ResendCtor = vi.fn(function () {
+    return { emails: { send: emailsSend } };
+  });
 
   return {
     supaConfig,
@@ -170,8 +172,7 @@ describe("processLead — happy path", () => {
   it("maps the insert payload (email/name/source/utm split + raw_payload.ip_hash)", async () => {
     // Capture insert args via a spy on the chain
     let insertArg: Record<string, unknown> | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (createAdminClient as any).mockImplementationOnce(() => ({
+    createAdminClient.mockImplementationOnce(() => ({
       from: vi.fn(() => ({
         insert: vi.fn((arg: Record<string, unknown>) => {
           insertArg = arg;
