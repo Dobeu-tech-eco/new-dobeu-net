@@ -133,7 +133,7 @@ export async function POST(request: Request) {
       await resend.emails.send({
         from: `Dobeu Tech Solutions <${fromEmail}>`,
         to: email,
-        reply_to: process.env.RESEND_REPLY_TO ?? "jeremyw@dobeu.net",
+        replyTo: process.env.RESEND_REPLY_TO ?? "jeremyw@dobeu.net",
         subject: "Got it — I'll be in touch shortly",
         html: confirmEmailHtml({ name: name ?? "there", source })
       });

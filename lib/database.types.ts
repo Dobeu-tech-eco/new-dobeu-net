@@ -4,6 +4,12 @@
  *
  * This is a hand-written stub covering the v1 schema so the codebase
  * is type-safe before the live Supabase project is provisioned.
+ *
+ * NOTE: each table includes `Relationships: []` because @supabase/postgrest-js
+ * requires the `Relationships` key on every table to satisfy its GenericTable
+ * constraint. Without it the schema generic collapses and every `.from().select()`
+ * row resolves to `never`. Regenerate via `pnpm db:types` once the live schema
+ * exists — that also captures real foreign-key relationships and nullability drift.
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
@@ -24,6 +30,7 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & { id: string };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
+        Relationships: [];
       };
       projects: {
         Row: {
@@ -44,6 +51,7 @@ export interface Database {
           title: string;
         };
         Update: Partial<Database["public"]["Tables"]["projects"]["Row"]>;
+        Relationships: [];
       };
       project_files: {
         Row: {
@@ -64,6 +72,7 @@ export interface Database {
           uploaded_by: string;
         };
         Update: Partial<Database["public"]["Tables"]["project_files"]["Row"]>;
+        Relationships: [];
       };
       invoices: {
         Row: {
@@ -83,6 +92,7 @@ export interface Database {
           amount_cents: number;
         };
         Update: Partial<Database["public"]["Tables"]["invoices"]["Row"]>;
+        Relationships: [];
       };
       messages: {
         Row: {
@@ -101,6 +111,7 @@ export interface Database {
           body: string;
         };
         Update: Partial<Database["public"]["Tables"]["messages"]["Row"]>;
+        Relationships: [];
       };
       leads: {
         Row: {
@@ -122,6 +133,7 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["leads"]["Row"]> & { email: string };
         Update: Partial<Database["public"]["Tables"]["leads"]["Row"]>;
+        Relationships: [];
       };
       bookings: {
         Row: {
@@ -143,6 +155,7 @@ export interface Database {
           scheduled_at: string;
         };
         Update: Partial<Database["public"]["Tables"]["bookings"]["Row"]>;
+        Relationships: [];
       };
       page_events: {
         Row: {
@@ -159,6 +172,7 @@ export interface Database {
           event_name: string;
         };
         Update: Partial<Database["public"]["Tables"]["page_events"]["Row"]>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
