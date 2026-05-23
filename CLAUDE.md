@@ -31,11 +31,11 @@ pnpm supabase db push          # apply migrations in supabase/migrations/
 pnpm db:types                  # regenerate lib/database.types.ts from local schema
 ```
 
-> The `test`/`test:e2e` scripts exist but there are currently **no test files or vitest/playwright config** committed. Add config (`vitest.config.ts`, `playwright.config.ts`) before relying on them.
+> `vitest.config.ts` and `playwright.config.ts` are committed. Unit tests live alongside source (`lib/*.test.ts`). E2E tests live in `e2e/`. Run `pnpm test:ci` for unit tests and `pnpm test:e2e` for Playwright smoke tests.
 
-## Build gotcha (temporary, Phase-1 launch)
+## Build verification
 
-`next.config.ts` sets `typescript.ignoreBuildErrors: true` and `eslint.ignoreDuringBuilds: true` so the marketing landing + portal scaffolding can ship. **A green `pnpm build` does NOT mean the code typechecks or lints** -- always run `pnpm type-check` and `pnpm lint` separately. Per the config comment, both should be re-enabled before adding commerce / sensitive write paths.
+`next.config.ts` sets `typescript.ignoreBuildErrors: false` and `eslint.ignoreDuringBuilds: false` -- **the build is a real verifier now**. A green `pnpm build` means the code typechecks and lints. For a full pre-merge check, run `pnpm verify` (type-check + lint + test:ci + build).
 
 ## Architecture
 

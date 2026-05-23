@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 import { upsertApolloContact } from "@/lib/apollo";
 import { cioIdentify, cioTrack, isCustomerIoConfigured } from "@/lib/customerio";
-
-const LeadSchema = z.object({
-  email: z.string().email(),
-  name: z.string().optional().nullable(),
-  company: z.string().optional().nullable(),
-  message: z.string().max(2000).optional().nullable(),
-  source: z.enum(["book", "form", "email", "typeform", "other"]).default("other"),
-  utm: z.record(z.string()).default({}),
-  referrer: z.string().optional().nullable()
-});
+import { LeadSchema } from "@/lib/lead-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
