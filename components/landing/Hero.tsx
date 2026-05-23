@@ -4,9 +4,17 @@ import { motion } from "motion/react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
+import { track } from "@/lib/analytics";
 
 export function Hero() {
   const { open } = useLightbox();
+
+  // Wraps the lightbox `open` with a GTM-compatible cta_click push.
+  // GTM trigger #12 listens for this; DLV - cta_label / cta_location feed it.
+  function trackAndOpen(target: "book" | "form" | "email", label: string) {
+    track("cta_click", { cta_label: label, cta_location: "hero", target });
+    open(target);
+  }
 
   return (
     <section
@@ -59,13 +67,17 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.25 }}
           className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
         >
-          <Button size="xl" onClick={() => open("book")} className="w-full sm:w-auto">
+          <Button
+            size="xl"
+            onClick={() => trackAndOpen("book", "Book a call")}
+            className="w-full sm:w-auto"
+          >
             Book a call <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
           <Button
             size="xl"
             variant="outline"
-            onClick={() => open("form")}
+            onClick={() => trackAndOpen("form", "Tell me about your project")}
             className="w-full sm:w-auto"
           >
             Tell me about your project

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>Dobeu.net GTM Container Live Test</title>
+<meta name="robots" content="noindex">
+<script>
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-M97GN5T7');
+</script>
+<style>
+body{font-family:system-ui,sans-serif;padding:2rem;max-width:780px;margin:auto;background:#FAFAFC;color:#1A1A2E}
+h1{color:#6B5CE7}
+button{display:inline-block;margin:.4rem .4rem .4rem 0;padding:.65rem 1.1rem;background:#FACC15;color:#1A1A2E;border:0;border-radius:8px;cursor:pointer;font-weight:600}
+pre{background:#1A1A2E;color:#FAFAFC;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.8rem;max-height:520px;white-space:pre-wrap}
+a.outbound{color:#6B5CE7}a.internal{color:#888}
+section{margin:1.5rem 0}
+.tag{font-size:.7rem;padding:.15rem .4rem;background:#EEE;border-radius:4px;margin-left:.3rem}
+</style></head>
+<body>
+<h1>Dobeu.net GTM Container — Live Test</h1>
+<p>Container <code>GTM-M97GN5T7</code> · workspace 3 · published version 3 · 2026-05-23</p>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M97GN5T7" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<section>
+<h2>Trigger test buttons</h2>
+<button id="btn-lead" onclick="fireLeadSubmitted()">Fire lead_submitted</button>
+<button id="btn-cta" onclick="fireCtaClick()">Fire cta_click (hero)</button>
+<button id="btn-booking" onclick="fireBookingStarted()">Fire booking_started</button>
+<button id="btn-identify" onclick="fireIdentify()">Fire identify</button>
+<a class="outbound" id="lnk-out" href="https://github.com/anthropics" target="_blank">Outbound github.com link<span class="tag">trigger 15</span></a>
+<a class="internal" id="lnk-in" href="https://dobeu.net/about">Internal dobeu.net link<span class="tag">should NOT fire</span></a>
+</section>
+<section><h2>dataLayer state</h2><pre id="dl">(reading…)</pre></section>
+<script>
+function fireLeadSubmitted(){window.dataLayer.push({event:'lead_submitted',source:'form',has_message:true,lead_email:'test@dobeu.net',lead_name:'Test User'});render();}
+function fireCtaClick(){window.dataLayer.push({event:'cta_click',cta_label:'Book a call',cta_location:'hero',target:'book'});render();}
+function fireBookingStarted(){window.dataLayer.push({event:'booking_started',source:'calendly',booking_uri:'https://calendly.com/jeremyw-dobeu-r_el'});render();}
+function fireIdentify(){window.dataLayer.push({event:'identify',user_id:'test-user-001'});render();}
+function render(){document.getElementById('dl').textContent=JSON.stringify(window.dataLayer,null,2);}
+setInterval(render,800);render();
+</script></body></html>

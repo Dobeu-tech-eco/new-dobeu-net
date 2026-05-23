@@ -48,7 +48,17 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? `Request failed (${res.status})`);
       }
+      // Keep `lead_captured` for backwards-compat with PostHog/Mixpanel funnels.
       track("lead_captured", { source, has_message: !!payload.message });
+      // `lead_submitted` is what the GTM container listens for (trigger #11);
+      // `lead_email` + `lead_name` populate the matching DLV variables that
+      // feed the GA4 generate_lead event tag (currently paused with placeholder ID).
+      track("lead_submitted", {
+        source,
+        has_message: !!payload.message,
+        lead_email: payload.email,
+        lead_name: payload.name ?? ""
+      });
       setSubmitted(true);
       toast.success("Got it. I'll reply within 24 hours.");
       onSuccess?.();
