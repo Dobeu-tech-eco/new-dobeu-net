@@ -53,10 +53,24 @@ export async function POST(request: Request) {
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 5;
+const MAX_BUCKETS = 10000;
 const ipBuckets = new Map<string, { count: number; resetAt: number }>();
 
 async function isRateLimited(ip: string): Promise<boolean> {
   const now = Date.now();
+
+  // Prevent memory exhaustion DoS from spoofed IPs
+  if (ipBuckets.size > MAX_BUCKETS) {
+    for (const [key, value] of ipBuckets.entries()) {
+      if (value.resetAt < now) {
+        ipBuckets.delete(key);
+      }
+    }
+    if (ipBuckets.size > MAX_BUCKETS) {
+      ipBuckets.clear();
+    }
+  }
+
   const b = ipBuckets.get(ip);
   if (!b || b.resetAt < now) {
     ipBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
