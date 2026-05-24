@@ -5,6 +5,20 @@ backed by `dobeutech/digital-wharf-dynamics`).
 
 ---
 
+## Phase 0 — Enable Claude GitHub automation
+
+1. Install the Claude GitHub App for the `Dobeu-tech-eco` organization (or this repository only).
+2. Add the repository (or organization) Actions secret:
+   - `CLAUDE_CODE_OAUTH_TOKEN`
+3. Claude workflows are configured in:
+   - `.github/workflows/claude.yml`
+   - `.github/workflows/claude-code-review.yml`
+4. Open a PR to test:
+   - mention `@claude` in a PR comment, or
+   - rely on `Claude Code Review` running on PR `opened/synchronize/ready_for_review/reopened`.
+
+---
+
 ## Phase 1 — Push to GitHub
 
 ```bash
