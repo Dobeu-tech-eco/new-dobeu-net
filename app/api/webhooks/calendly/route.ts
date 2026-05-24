@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processLead } from "@/lib/leads";
+import { createAdminClient } from "@/lib/supabase/server";
 import {
   isCalendlyWebhookConfigured,
   verifyCalendlySignature,
@@ -62,6 +63,24 @@ export async function POST(request: Request) {
     utm: utmFromTracking(p.tracking),
     referrer: p.scheduled_event?.uri ?? null
   });
+
+  // Keep the bookings table in sync so admin booking views are populated.
+  if (p.scheduled_event?.start_time) {
+    try {
+      const supabase = createAdminClient();
+      await supabase.from("bookings").insert({
+        lead_id: leadId,
+        email: p.email,
+        name: p.name ?? null,
+        scheduled_at: p.scheduled_event.start_time,
+        meeting_url: p.scheduled_event.uri ?? null,
+        notes: p.scheduled_event.name ?? null,
+        status: "scheduled"
+      });
+    } catch (error) {
+      console.warn("[/api/webhooks/calendly] booking mirror insert failed", error);
+    }
+  }
 
   return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
 }

@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito, Quicksand } from "next/font/google";
 import { Toaster } from "sonner";
-import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import "./globals.css";
@@ -78,31 +76,13 @@ export const viewport: Viewport = {
   maximumScale: 5
 };
 
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${nunito.variable} ${quicksand.variable}`}>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
-        {/* GTM noscript fallback — required by GTM install snippet so non-JS
-            visitors and crawlers still hit the container. The async <script>
-            loader lives in components/analytics-provider.tsx. */}
-        {GTM_ID && (
-          <noscript>
-            <iframe
-              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
-              height="0"
-              width="0"
-              style={{ display: "none", visibility: "hidden" }}
-              title="Google Tag Manager"
-            />
-          </noscript>
-        )}
         <a href="#main" className="skip-link">Skip to main content</a>
         <ThemeProvider>
           <AnalyticsProvider>{children}</AnalyticsProvider>
-          <VercelAnalytics />
-          <SpeedInsights />
           <Toaster position="bottom-right" theme="system" richColors closeButton />
         </ThemeProvider>
         {/* JSON-LD Organization schema */}

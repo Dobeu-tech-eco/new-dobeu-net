@@ -172,7 +172,8 @@ describe("processLead — happy path", () => {
   it("maps the insert payload (email/name/source/utm split + raw_payload.ip_hash)", async () => {
     // Capture insert args via a spy on the chain
     let insertArg: Record<string, unknown> | undefined;
-    createAdminClient.mockImplementationOnce(() => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (createAdminClient as any).mockImplementationOnce(() => ({
       from: vi.fn(() => ({
         insert: vi.fn((arg: Record<string, unknown>) => {
           insertArg = arg;

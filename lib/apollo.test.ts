@@ -52,7 +52,10 @@ describe("upsertApolloContact", () => {
   });
 
   it("posts to the contacts endpoint with the right method/headers/body and returns the contact id", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ contact: { id: "c_123" } }));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ contacts: [] }))
+      .mockResolvedValueOnce(jsonResponse({ people: [] }))
+      .mockResolvedValueOnce(jsonResponse({ contact: { id: "c_123" } }));
 
     const result = await upsertApolloContact(input);
 
@@ -60,8 +63,8 @@ describe("upsertApolloContact", () => {
     expect(result.contact_id).toBe("c_123");
     expect(result.raw).toEqual({ contact: { id: "c_123" } });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, opts] = fetchMock.mock.calls[0];
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const [url, opts] = fetchMock.mock.calls[2];
     expect(url).toBe("https://api.apollo.io/api/v1/contacts");
     expect(opts.method).toBe("POST");
     expect(opts.headers["Content-Type"]).toBe("application/json");
@@ -81,16 +84,22 @@ describe("upsertApolloContact", () => {
   });
 
   it("omits phone_numbers when no phone is supplied", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ contact: { id: "c_1" } }));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ contacts: [] }))
+      .mockResolvedValueOnce(jsonResponse({ people: [] }))
+      .mockResolvedValueOnce(jsonResponse({ contact: { id: "c_1" } }));
     await upsertApolloContact({ email: "a@b.com", first_name: "A" });
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const body = JSON.parse(fetchMock.mock.calls[2][1].body);
     expect(body.phone_numbers).toBeUndefined();
   });
 
   it("defaults first/last name to empty strings when no name is given", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ contact: { id: "c_1" } }));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ contacts: [] }))
+      .mockResolvedValueOnce(jsonResponse({ people: [] }))
+      .mockResolvedValueOnce(jsonResponse({ contact: { id: "c_1" } }));
     await upsertApolloContact({ email: "a@b.com" });
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const body = JSON.parse(fetchMock.mock.calls[2][1].body);
     expect(body.first_name).toBe("");
     expect(body.last_name).toBe("");
   });

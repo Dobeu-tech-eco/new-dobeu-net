@@ -13,6 +13,7 @@ import mixpanel from "mixpanel-browser";
 type EventProps = Record<string, string | number | boolean | null | undefined>;
 
 let initialized = false;
+let consentGranted = false;
 
 export function initAnalytics(consent: boolean): void {
   if (typeof window === "undefined" || initialized) return;
@@ -48,10 +49,16 @@ export function initAnalytics(consent: boolean): void {
   // ---- GA4 (via gtag) and GTM are loaded via <Script> in app/layout.tsx ----
 
   initialized = true;
+  consentGranted = true;
+}
+
+export function setAnalyticsConsent(consent: boolean): void {
+  consentGranted = consent;
+  if (consent) initAnalytics(true);
 }
 
 export function identify(userId: string, traits: EventProps = {}): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !consentGranted) return;
   try {
     if (process.env.NEXT_PUBLIC_POSTHOG_KEY) posthog.identify(userId, traits);
     if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) {
@@ -68,7 +75,7 @@ export function identify(userId: string, traits: EventProps = {}): void {
 }
 
 export function track(eventName: string, props: EventProps = {}): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !consentGranted) return;
   try {
     if (process.env.NEXT_PUBLIC_POSTHOG_KEY) posthog.capture(eventName, props);
     if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) mixpanel.track(eventName, props);
@@ -86,7 +93,7 @@ export function pageView(path: string): void {
 }
 
 function pushToDataLayer(payload: Record<string, unknown>): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !consentGranted) return;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push(payload);
 }

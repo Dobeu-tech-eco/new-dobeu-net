@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { z } from "zod";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { processLead } from "@/lib/leads";
 
 const LeadSchema = z.object({
@@ -16,8 +19,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  // Lightweight rate-limit by IP (5/min). In production, prefer Upstash Ratelimit.
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  const ip = getClientIp(request);
   if (await isRateLimited(ip)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -54,8 +56,21 @@ export async function POST(request: Request) {
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 5;
 const ipBuckets = new Map<string, { count: number; resetAt: number }>();
+const upstashReady =
+  Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
+const upstashRatelimit = upstashReady
+  ? new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(RATE_LIMIT_MAX, "1 m"),
+      prefix: "api:lead"
+    })
+  : null;
 
 async function isRateLimited(ip: string): Promise<boolean> {
+  if (upstashRatelimit) {
+    const { success } = await upstashRatelimit.limit(ip);
+    return !success;
+  }
   const now = Date.now();
   const b = ipBuckets.get(ip);
   if (!b || b.resetAt < now) {
@@ -68,8 +83,14 @@ async function isRateLimited(ip: string): Promise<boolean> {
 }
 
 function hashIp(ip: string): string {
-  // Light hash — not crypto, just to avoid storing raw IPs
-  let h = 0;
-  for (let i = 0; i < ip.length; i++) h = ((h << 5) - h + ip.charCodeAt(i)) | 0;
-  return `ip_${Math.abs(h).toString(36)}`;
+  // Store a one-way digest so raw IPs are never persisted.
+  const digest = createHash("sha256").update(ip).digest("hex").slice(0, 16);
+  return `ip_${digest}`;
+}
+
+function getClientIp(request: Request): string {
+  const firstForwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (firstForwarded) return firstForwarded;
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  return realIp || "unknown";
 }

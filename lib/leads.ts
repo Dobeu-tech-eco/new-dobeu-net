@@ -30,6 +30,8 @@ export interface ProcessLeadResult {
   apolloContactId?: string;
 }
 
+const LEAD_TABLES = ["leads", "dobeu_net_leads", "contact_submissions"] as const;
+
 export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadResult> {
   const { email, source } = input;
   const name = input.name ?? null;
@@ -40,27 +42,33 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
 
   // 1. Write to Supabase leads table (admin client bypasses RLS)
   let leadId: string | null = null;
+  let leadTableUsed: (typeof LEAD_TABLES)[number] | null = null;
   try {
     const supa = createAdminClient();
-    const { data, error } = await supa
-      .from("leads")
-      .insert({
-        email,
-        name,
-        company,
-        source,
-        utm_source: utm.utm_source ?? null,
-        utm_medium: utm.utm_medium ?? null,
-        utm_campaign: utm.utm_campaign ?? null,
-        utm_term: utm.utm_term ?? null,
-        utm_content: utm.utm_content ?? null,
-        referrer,
-        raw_payload: { message, ip_hash: input.ipHash ?? null, ...utm }
-      })
-      .select("id")
-      .single();
-    if (error) throw error;
-    leadId = data?.id ?? null;
+    for (const table of LEAD_TABLES) {
+      const { data, error } = await supa
+        .from(table as "leads")
+        .insert({
+          email,
+          name,
+          company,
+          source,
+          utm_source: utm.utm_source ?? null,
+          utm_medium: utm.utm_medium ?? null,
+          utm_campaign: utm.utm_campaign ?? null,
+          utm_term: utm.utm_term ?? null,
+          utm_content: utm.utm_content ?? null,
+          referrer,
+          raw_payload: { message, ip_hash: input.ipHash ?? null, ...utm }
+        })
+        .select("id")
+        .single();
+      if (!error) {
+        leadId = data?.id ?? null;
+        leadTableUsed = table;
+        break;
+      }
+    }
   } catch (e) {
     console.error("[processLead] Supabase insert failed", e);
     // Don't fail the flow if Supabase is down — Apollo + email still try.
@@ -86,10 +94,10 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
   }
 
   // 3. Backfill Supabase lead with Apollo contact id (best-effort)
-  if (leadId && apolloContactId) {
+  if (leadId && apolloContactId && leadTableUsed) {
     try {
       const supa = createAdminClient();
-      await supa.from("leads").update({ apollo_contact_id: apolloContactId }).eq("id", leadId);
+      await supa.from(leadTableUsed as "leads").update({ apollo_contact_id: apolloContactId }).eq("id", leadId);
     } catch {
       /* non-fatal */
     }

@@ -5,7 +5,14 @@ import { Bot, Code2, Palette, LineChart, MessageCircleQuestion } from "lucide-re
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { cn } from "@/lib/utils";
 
-const SERVICES = [
+interface ServiceItem {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  tag?: string;
+}
+
+const SERVICES: ServiceItem[] = [
   {
     icon: Bot,
     title: "AI agents & automation",
