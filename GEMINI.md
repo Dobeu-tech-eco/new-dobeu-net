@@ -1,13 +1,13 @@
-# AGENTS.md
+# GEMINI.md
 
-Guidance for Codex (and any other `AGENTS.md`-reading agent) in this repository.
+Guidance for Gemini CLI in this repository.
 
 **Canonical instructions live in [`CLAUDE.md`](./CLAUDE.md).** Read that file first and treat it as the single source of truth for architecture, commands, security notes, and workflow status.
 
-This file is intentionally a thin pointer because some tools discover instructions by filename. Do not duplicate architectural guidance here.
+This file exists because Gemini resolves `GEMINI.md` by name. Keep it as a thin pointer only.
 
 Sibling pointer files:
-- `GEMINI.md`
+- `AGENTS.md`
 - `.github/copilot-instructions.md`
 
 If guidance changes, update `CLAUDE.md` and keep this file minimal.
