@@ -7,7 +7,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 const REASONS = [
   "You talk to the person doing the work — no account managers between you and the build.",
   "Decisions get made in hours, not weeks. No agency layers, no rebrand committees.",
-  "Modern stack from day one. Nothing you&apos;ll have to rewrite in 18 months."
+  "Modern stack from day one. Nothing you'll have to rewrite in 18 months."
 ];
 
 export function Founder() {
@@ -51,10 +51,9 @@ export function Founder() {
                     className="mt-2 h-1.5 w-1.5 rounded-full bg-accent shrink-0"
                     aria-hidden="true"
                   />
-                  <span
-                    className="text-sm md:text-base leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: r }}
-                  />
+                  <span className="text-sm md:text-base leading-relaxed">
+                    {r}
+                  </span>
                 </li>
               ))}
             </ul>
