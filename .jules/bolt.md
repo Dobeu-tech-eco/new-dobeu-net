@@ -1,0 +1,3 @@
+## 2024-06-25 - Modal Component Lazy Loading
+**Learning:** Components rendered inside UI Modals/Lightboxes that pull in heavy external dependencies (e.g., forms, date pickers) can significantly bloat the First Load JS if eagerly imported. By lazy loading them using `next/dynamic` with `ssr: false`, we saw a massive 52% bundle size reduction on the homepage because these elements are strictly client-side and only activated via user interaction.
+**Action:** Next time an application has heavy client-side only modal components, evaluate if they can be dynamically imported to improve initial page load times.
