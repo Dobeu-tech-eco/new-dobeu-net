@@ -4,12 +4,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const FAQS = [
   {
-    q: "What&apos;s the typical engagement size?",
+    q: "What's the typical engagement size?",
     a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. I send a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing."
   },
   {
     q: "How fast can you start?",
-    a: "Usually within a week of the discovery call. If I&apos;m fully booked I&apos;ll say so on the call and recommend someone good — never string you along."
+    a: "Usually within a week of the discovery call. If I'm fully booked I'll say so on the call and recommend someone good — never string you along."
   },
   {
     q: "Do you do retainers?",
@@ -29,10 +29,10 @@ const FAQS = [
   },
   {
     q: "Will I be able to maintain what you build?",
-    a: "That&apos;s the goal. Every deliverable comes with documentation, a Loom walkthrough, and a 2-week support window after handoff. Modern stack means your future hires already know it."
+    a: "That's the goal. Every deliverable comes with documentation, a Loom walkthrough, and a 2-week support window after handoff. Modern stack means your future hires already know it."
   },
   {
-    q: "Why &quot;dobeu&quot;?",
+    q: 'Why "dobeu"?',
     a: "A small Slovenian island where I spent a summer figuring out what I wanted to build. The two overlapping circles in the mark are two ideas merging — with an amber crescent at the intersection where the work happens."
   }
 ];
@@ -61,10 +61,10 @@ export function FAQ() {
           {FAQS.map((f, i) => (
             <AccordionItem key={i} value={`item-${i}`}>
               <AccordionTrigger>
-                <span dangerouslySetInnerHTML={{ __html: f.q }} />
+                <span>{f.q}</span>
               </AccordionTrigger>
               <AccordionContent>
-                <span dangerouslySetInnerHTML={{ __html: f.a }} />
+                <span>{f.a}</span>
               </AccordionContent>
             </AccordionItem>
           ))}

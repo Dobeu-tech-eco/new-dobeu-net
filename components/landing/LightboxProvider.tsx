@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { LeadForm } from "@/components/landing/LeadForm";
-import { BookingTab } from "@/components/landing/BookingTab";
-import { TypeformTab } from "@/components/landing/TypeformTab";
+
+const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm), { ssr: false });
+const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab), { ssr: false });
+const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab), { ssr: false });
 
 type Tab = "book" | "form" | "email";
 
