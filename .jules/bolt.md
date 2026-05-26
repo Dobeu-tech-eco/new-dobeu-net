@@ -1,0 +1,3 @@
+## 2024-05-26 - Lazy Loading Embeds
+**Learning:** Third-party embed libraries (like `react-calendly` and `@typeform/embed-react`) often bring significant payload and aren't critical for initial page rendering. When placed inside a conditionally-opened lightbox, these components unnecessarily inflate the marketing page's first-load JS size (e.g., adding ~20kB).
+**Action:** Use `next/dynamic` to dynamically import components wrapping heavy embeds that are not visible immediately on page load. This moves them out of the initial bundle, making the core page render faster without sacrificing the functionality when a user opens the lightbox.
