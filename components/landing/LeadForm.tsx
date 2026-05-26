@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -116,7 +117,16 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       )}
 
       <Button type="submit" size="lg" className="w-full" disabled={submitting}>
-        {submitting ? "Sending…" : compact ? "Get in touch" : "Send it"}
+        {submitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            Sending…
+          </>
+        ) : compact ? (
+          "Get in touch"
+        ) : (
+          "Send it"
+        )}
       </Button>
       <p className="text-xs text-muted-foreground text-center">
         Your email is used to reply only. No newsletter unless you opt in.
