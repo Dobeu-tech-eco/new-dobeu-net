@@ -33,8 +33,13 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
+  // ⚡ Bolt Optimization: Memoize the context value
+  // Expected impact: Prevents unnecessary re-renders of all useLightbox() consumers
+  // (e.g., Hero, Services, SiteNav, FinalCTA) when LightboxProvider's state changes.
+  const ctxValue = React.useMemo(() => ({ open, close }), [open, close]);
+
   return (
-    <Ctx.Provider value={{ open, close }}>
+    <Ctx.Provider value={ctxValue}>
       {children}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
