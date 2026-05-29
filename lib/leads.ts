@@ -9,7 +9,11 @@
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 import { upsertApolloContact } from "@/lib/apollo";
-import { cioIdentify, cioTrack, isCustomerIoConfigured } from "@/lib/customerio";
+import {
+  cioIdentify,
+  cioTrack,
+  isCustomerIoConfigured,
+} from "@/lib/customerio";
 
 export type LeadSource = "book" | "form" | "email" | "typeform" | "other";
 
@@ -30,7 +34,9 @@ export interface ProcessLeadResult {
   apolloContactId?: string;
 }
 
-export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadResult> {
+export async function processLead(
+  input: ProcessLeadInput,
+): Promise<ProcessLeadResult> {
   const { email, source } = input;
   const name = input.name ?? null;
   const company = input.company ?? null;
@@ -55,7 +61,7 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
         utm_term: utm.utm_term ?? null,
         utm_content: utm.utm_content ?? null,
         referrer,
-        raw_payload: { message, ip_hash: input.ipHash ?? null, ...utm }
+        raw_payload: { message, ip_hash: input.ipHash ?? null, ...utm },
       })
       .select("id")
       .single();
@@ -76,7 +82,10 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
         first_name: split[0],
         last_name: split.length > 1 ? split.slice(1).join(" ") : undefined,
         organization_name: company ?? undefined,
-        label_names: [`dobeu.net-${source}`, ...(utm.utm_source ? [`utm_source-${utm.utm_source}`] : [])]
+        label_names: [
+          `dobeu.net-${source}`,
+          ...(utm.utm_source ? [`utm_source-${utm.utm_source}`] : []),
+        ],
       });
       if (result.ok) apolloContactId = result.contact_id;
       else console.warn("[processLead] Apollo upsert failed:", result.error);
@@ -89,7 +98,10 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
   if (leadId && apolloContactId) {
     try {
       const supa = createAdminClient();
-      await supa.from("leads").update({ apollo_contact_id: apolloContactId }).eq("id", leadId);
+      await supa
+        .from("leads")
+        .update({ apollo_contact_id: apolloContactId })
+        .eq("id", leadId);
     } catch {
       /* non-fatal */
     }
@@ -106,14 +118,20 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
       utm_campaign: utm.utm_campaign,
       referrer: referrer ?? undefined,
       apollo_contact_id: apolloContactId,
-      supabase_lead_id: leadId
+      supabase_lead_id: leadId,
     };
     const [idRes, trackRes] = await Promise.all([
       cioIdentify({ email, attributes: cioAttrs }),
-      cioTrack({ email, name: "lead_captured", data: { source, has_message: !!message, ...utm } })
+      cioTrack({
+        email,
+        name: "lead_captured",
+        data: { source, has_message: !!message, ...utm },
+      }),
     ]);
-    if (!idRes.ok) console.warn("[processLead] Customer.io identify:", idRes.error);
-    if (!trackRes.ok) console.warn("[processLead] Customer.io track:", trackRes.error);
+    if (!idRes.ok)
+      console.warn("[processLead] Customer.io identify:", idRes.error);
+    if (!trackRes.ok)
+      console.warn("[processLead] Customer.io track:", trackRes.error);
   }
 
   // 4. Send confirmation email via Resend + notify admin
@@ -128,14 +146,22 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
         to: email,
         replyTo,
         subject: "Got it — I'll be in touch shortly",
-        html: confirmEmailHtml({ name: name ?? "there", source })
+        html: confirmEmailHtml({ name: name ?? "there", source }),
       });
 
       await resend.emails.send({
         from: `dobeu.net <${fromEmail}>`,
         to: replyTo,
         subject: `New lead: ${name ?? email} (${source})`,
-        html: notifyEmailHtml({ email, name, company, message, source, utm, referrer })
+        html: notifyEmailHtml({
+          email,
+          name,
+          company,
+          message,
+          source,
+          utm,
+          referrer,
+        }),
       });
     }
   } catch (e) {
@@ -160,15 +186,24 @@ function confirmEmailHtml(args: { name: string; source: string }): string {
 
 function notifyEmailHtml(args: Record<string, unknown>): string {
   const rows = Object.entries(args)
-    .filter(([, v]) => v && (typeof v !== "object" || Object.keys(v as object).length > 0))
+    .filter(
+      ([, v]) =>
+        v && (typeof v !== "object" || Object.keys(v as object).length > 0),
+    )
     .map(
       ([k, v]) =>
-        `<tr><td style="padding:6px 12px;font-weight:600;color:#666;">${escapeHtml(k)}</td><td style="padding:6px 12px;">${escapeHtml(JSON.stringify(v))}</td></tr>`
+        `<tr><td style="padding:6px 12px;font-weight:600;color:#666;">${escapeHtml(k)}</td><td style="padding:6px 12px;">${escapeHtml(JSON.stringify(v))}</td></tr>`,
     )
     .join("");
   return `<div style="font-family:-apple-system,sans-serif;"><h2>New lead from dobeu.net</h2><table style="border-collapse:collapse;">${rows}</table></div>`;
 }
 
 export function escapeHtml(s: unknown): string {
-  return String(s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m]!);
+  return String(s).replace(
+    /[&<>"']/g,
+    (m) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        m
+      ]!,
+  );
 }

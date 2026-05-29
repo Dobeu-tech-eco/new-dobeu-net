@@ -40,11 +40,13 @@ pnpm db:types                  # regenerate lib/database.types.ts from local sch
 ## Architecture
 
 ### Three-surface app, one Next.js project
+
 - **`app/` (root)** -- public marketing landing, composed from `components/landing/*` (Hero, Services, FAQ, LeadForm, lightbox-based booking/Typeform tabs).
 - **`app/portal/*`** -- authenticated client area (projects, files, invoices, messages, settings). Requires a logged-in Supabase user.
 - **`app/admin/*`** -- admin-only dashboards. Gated in `app/admin/layout.tsx` by `isAdminEmail(user.email)` (from `lib/utils.ts`, backed by the `ADMIN_EMAILS` env var) **in addition to** Postgres RLS.
 
 ### Supabase access pattern (three clients -- pick deliberately)
+
 - `lib/supabase/client.ts` -- browser client.
 - `lib/supabase/server.ts` -> `createClient()` -- request-cookie-bound client for Server Components / Route Handlers / Server Actions; respects RLS as the logged-in user.
 - `lib/supabase/server.ts` -> `createAdminClient()` -- **service-role, bypasses RLS, server-only**. Use only for admin ops and webhooks (e.g. the lead API). Throws if `SUPABASE_SERVICE_ROLE_KEY` is missing.
@@ -53,26 +55,33 @@ pnpm db:types                  # regenerate lib/database.types.ts from local sch
 All `/admin/*` and `/api/lead` use `export const dynamic = "force-dynamic"` because they read per-request auth/cookies and must never be statically pre-rendered.
 
 ### Database & RLS
+
 Single migration `supabase/migrations/20260521000000_initial_schema.sql` defines: `profiles`, `projects`, `project_files`, `invoices`, `messages`, `leads`, `bookings`, `page_events`. **RLS is enabled on every table** -- users see only their own rows, admins (`profiles.is_admin`) see all. A `handle_new_user` trigger auto-creates a `profiles` row on signup. `lib/database.types.ts` is generated, not hand-edited -- regenerate with `pnpm db:types`.
 
 ### Lead pipeline (`lib/leads.ts` -> `processLead()`)
+
 The fan-out lives in `lib/leads.ts` so every lead entry point shares one code path. Each step is best-effort / non-fatal so one failure never drops the lead: (1) insert into Supabase `leads` via admin client -> (2) upsert Apollo contact (`lib/apollo.ts`) -> (3) write Apollo id back -> (4) Customer.io identify + `lead_captured` event (`lib/customerio.ts`) -> (5) Resend confirmation to lead + notification to admin.
 
 Entry points that call `processLead()`:
+
 - **`app/api/lead/route.ts`** -- public `POST` (the landing-page form). Zod-validated, in-memory per-IP rate limit (5/min) -- replace with Upstash for real production.
 - **`app/api/webhooks/calendly/route.ts`** -- Calendly `invitee.created` webhook. Verifies the `Calendly-Webhook-Signature` HMAC (`lib/calendly.ts`) before trusting the payload; gated on `CALENDLY_WEBHOOK_SIGNING_KEY` (returns 503 / never accepts unsigned calls when unset). This is where a booking actually becomes a lead -- the client-side Calendly embed only exposes URIs, not email/name.
 
 ### Client-side analytics fan-out (`lib/analytics.ts`)
+
 `"use client"` module. One `track()`/`identify()` call dispatches to PostHog + Mixpanel + GA4 (gtag) + GTM dataLayer. **Consent-gated**: `initAnalytics(consent)` no-ops until the user consents (cookie-consent banner). Each provider is independently feature-flagged by the presence of its `NEXT_PUBLIC_*` env key. (The README references a `lib/analytics-server.ts` for sensitive server events -- not yet present.) Datadog RUM/Logs (`lib/datadog.ts`) and Intercom (`lib/intercom.ts`) wire in via `components/analytics-provider.tsx` / `app/layout.tsx`.
 
 ### Security headers / CSP
+
 `next.config.ts` builds a strict Content-Security-Policy plus HSTS, X-Frame-Options, etc., applied to all routes. **When adding any third-party script, embed, or API host, add its domains to the relevant CSP array** (`script`, `connect`, `frame`, `font`, `style`) or it will be blocked at runtime. CSP arrays are intentionally split line-per-entry so git keeps treating the file as text.
 
 ## Conventions
+
 - Path alias `@/*` -> repo root (e.g. `@/lib/supabase/server`).
 - shadcn/ui primitives live in `components/ui/`; brand mark in `components/brand/`.
 - Theming via `next-themes`, `attribute="class"`, three modes (Light/Dark/System); Dobeu Design System v2 tokens in `app/globals.css` and `tailwind.config.ts`.
 - Env: copy `.env.example` -> `.env.local`. `NEXT_PUBLIC_*` keys are client-exposed; everything else (`SUPABASE_SERVICE_ROLE_KEY`, `APOLLO_API_KEY`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, etc.) is server-only.
 
 ## Deployment
+
 Vercel (`vercel.json`, `docs/DEPLOYMENT.md`). The root contains many `*.cmd` helper scripts for committing/pushing/deploying from Windows -- these are ad-hoc operator scripts, not part of the app.

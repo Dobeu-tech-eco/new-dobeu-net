@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { isCustomerIoConfigured, cioIdentify, cioTrack } from "@/lib/customerio";
+import {
+  isCustomerIoConfigured,
+  cioIdentify,
+  cioTrack,
+} from "@/lib/customerio";
 
 function okResponse(): Response {
   return {
     ok: true,
     status: 200,
     text: async () => "",
-    json: async () => ({})
+    json: async () => ({}),
   } as unknown as Response;
 }
 
@@ -15,7 +19,7 @@ function errorResponse(status: number, text: string): Response {
     ok: false,
     status,
     text: async () => text,
-    json: async () => ({})
+    json: async () => ({}),
   } as unknown as Response;
 }
 
@@ -23,7 +27,8 @@ const fetchMock = vi.fn();
 
 const SITE_ID = "site-abc";
 const API_KEY = "key-xyz";
-const EXPECTED_AUTH = "Basic " + Buffer.from(`${SITE_ID}:${API_KEY}`).toString("base64");
+const EXPECTED_AUTH =
+  "Basic " + Buffer.from(`${SITE_ID}:${API_KEY}`).toString("base64");
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
@@ -67,14 +72,14 @@ describe("cioIdentify", () => {
 
     const result = await cioIdentify({
       email: "jane+test@example.com",
-      attributes: { plan: "pro", count: 3 }
+      attributes: { plan: "pro", count: 3 },
     });
 
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, opts] = fetchMock.mock.calls[0];
     expect(url).toBe(
-      `https://track.customer.io/api/v1/customers/${encodeURIComponent("jane+test@example.com")}`
+      `https://track.customer.io/api/v1/customers/${encodeURIComponent("jane+test@example.com")}`,
     );
     expect(opts.method).toBe("PUT");
     expect(opts.headers.Authorization).toBe(EXPECTED_AUTH);
@@ -116,14 +121,14 @@ describe("cioTrack", () => {
     const result = await cioTrack({
       email: "jane@example.com",
       name: "lead_captured",
-      data: { source: "homepage" }
+      data: { source: "homepage" },
     });
 
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, opts] = fetchMock.mock.calls[0];
     expect(url).toBe(
-      `https://track.customer.io/api/v1/customers/${encodeURIComponent("jane@example.com")}/events`
+      `https://track.customer.io/api/v1/customers/${encodeURIComponent("jane@example.com")}/events`,
     );
     expect(opts.method).toBe("POST");
     expect(opts.headers.Authorization).toBe(EXPECTED_AUTH);

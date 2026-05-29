@@ -35,11 +35,14 @@ function apolloKey(): string {
  * Upsert (search-then-create-or-update) an Apollo contact.
  * Returns the Apollo contact id so it can be stored on the Supabase lead row.
  */
-export async function upsertApolloContact(input: ApolloContactInput): Promise<ApolloApiResult> {
+export async function upsertApolloContact(
+  input: ApolloContactInput,
+): Promise<ApolloApiResult> {
   try {
-    const splitName = (input.first_name || input.last_name)
-      ? { first_name: input.first_name, last_name: input.last_name }
-      : splitDisplayName(undefined);
+    const splitName =
+      input.first_name || input.last_name
+        ? { first_name: input.first_name, last_name: input.last_name }
+        : splitDisplayName(undefined);
 
     const body = {
       first_name: splitName.first_name ?? "",
@@ -48,7 +51,7 @@ export async function upsertApolloContact(input: ApolloContactInput): Promise<Ap
       organization_name: input.organization_name,
       title: input.title,
       phone_numbers: input.phone ? [{ raw_number: input.phone }] : undefined,
-      label_names: input.label_names
+      label_names: input.label_names,
     };
 
     const res = await fetch(`${APOLLO_BASE}/contacts`, {
@@ -56,20 +59,26 @@ export async function upsertApolloContact(input: ApolloContactInput): Promise<Ap
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
-        "X-Api-Key": apolloKey()
+        "X-Api-Key": apolloKey(),
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
       const text = await res.text();
-      return { ok: false, error: `Apollo upsert failed: ${res.status} ${text}` };
+      return {
+        ok: false,
+        error: `Apollo upsert failed: ${res.status} ${text}`,
+      };
     }
 
     const data = (await res.json()) as { contact?: { id?: string } };
     return { ok: true, contact_id: data.contact?.id, raw: data };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
@@ -79,31 +88,40 @@ export async function upsertApolloContact(input: ApolloContactInput): Promise<Ap
 export async function logApolloActivity(
   contactId: string,
   note: string,
-  activityType = "note"
+  activityType = "note",
 ): Promise<ApolloApiResult> {
   try {
     const res = await fetch(`${APOLLO_BASE}/notes`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Api-Key": apolloKey()
+        "X-Api-Key": apolloKey(),
       },
       body: JSON.stringify({
         contact_id: contactId,
-        note: { content: note, type: activityType }
-      })
+        note: { content: note, type: activityType },
+      }),
     });
     if (!res.ok) {
       const text = await res.text();
-      return { ok: false, error: `Apollo activity failed: ${res.status} ${text}` };
+      return {
+        ok: false,
+        error: `Apollo activity failed: ${res.status} ${text}`,
+      };
     }
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
-function splitDisplayName(name?: string): { first_name?: string; last_name?: string } {
+function splitDisplayName(name?: string): {
+  first_name?: string;
+  last_name?: string;
+} {
   if (!name) return {};
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return { first_name: parts[0] };

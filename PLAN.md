@@ -26,8 +26,9 @@ Phase 0 → Phase 1 → ┌── Phase 2A (landing) ─────┐
 
 Deliverable: this plan + `BRAINSTORM.md`, read and approved.
 
-Decisions still needing Jeremy input *before* code:
-1. **Repo:** new `dobeutech/new-dobeu-net` repo *(default)*, or force-rewrite `dobeutech/digital-wharf-dynamics`? See Open Question #1 in brainstorm.
+Decisions still needing Jeremy input _before_ code:
+
+1. **Repo:** new `dobeutech/new-dobeu-net` repo _(default)_, or force-rewrite `dobeutech/digital-wharf-dynamics`? See Open Question #1 in brainstorm.
 2. **Apollo Meetings:** I'll verify embed availability against your plan via the Apollo MCP during Phase 1 — no decision needed from you, but if it falls back to custom, the custom flow needs Google Calendar OAuth (your Google account). OK to wire that up?
 3. **ADMIN_EMAILS:** confirm `jswilliamstu@gmail.com` is the only admin in v1.
 
@@ -54,9 +55,11 @@ Set up the skeleton so parallel work can begin in Phase 2.
 Subagent A, B, C work concurrently against the foundation laid in Phase 1. Each gets a worktree branch so they can't step on each other.
 
 ### Phase 2A — Marketing landing
+
 **Subagent:** frontend-developer
 **Worktree:** `feature/landing`
 **Tasks:**
+
 - Hero with bold typography + dual CTA + trust strip
 - "What I do" — 4 service tiles + "something else" tile
 - "How it works" — 3-step process with mark animation
@@ -71,9 +74,11 @@ Subagent A, B, C work concurrently against the foundation laid in Phase 1. Each 
 - Light + Dark + System theme parity
 
 ### Phase 2B — Auth + Client portal
+
 **Subagent:** fullstack-developer
 **Worktree:** `feature/portal`
 **Tasks:**
+
 - Supabase Auth middleware (`@supabase/ssr`)
 - `/login` page with magic-link form
 - `/auth/callback` handler
@@ -88,9 +93,11 @@ Subagent A, B, C work concurrently against the foundation laid in Phase 1. Each 
 - RLS verified by tests: cross-tenant read returns empty
 
 ### Phase 2C — Admin panel + integrations backend
+
 **Subagent:** backend-architect + frontend-developer
 **Worktree:** `feature/admin`
 **Tasks:**
+
 - `<AdminRoute>` HOC gated by `ADMIN_EMAILS` env list
 - `/admin/dashboard` with KPI tiles + recent activity feed
 - `/admin/users` + `/admin/users/[id]` with edit + project create
@@ -175,6 +182,7 @@ Once Jeremy signs off in Phase 4.
 ## Phase 6 — Post-launch (optional, scheduled)
 
 Things to schedule via `mcp__scheduled-tasks__create_scheduled_task` once live:
+
 - Daily 8am ET: PostHog → Slack summary of yesterday's leads + bookings + paid invoices.
 - Weekly Mon 9am ET: A/B test status check + Lighthouse audit + uptime report.
 - Monthly first-of-month: Stripe invoice aging report.
@@ -183,14 +191,14 @@ Things to schedule via `mcp__scheduled-tasks__create_scheduled_task` once live:
 
 ## Risks & mitigations
 
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| Apollo Meetings not embeddable | Med | Med | Phase 1 verifies; custom Supabase availability picker as fallback (same data model). |
-| Existing Auth0 users locked out at cutover | Med | Med | Email blast with magic link 24h before DNS swap; preserve old site for 7-day soak. |
-| Lighthouse perf score below 90 on mobile | Med | Low | Bundle analyzer in Phase 4; lazy-load PostHog + heavy embeds; `next/image` everywhere. |
-| Vercel CSP blocks PostHog/Mixpanel | Low | Low | CSP allowlist drafted in Phase 3, tested with `report-only` mode first. |
-| Stripe webhook misconfig → invoices stuck | Low | High | Webhook signature verification + retry-safe handlers + manual reconciliation endpoint. |
-| Subagent scope creep | Med | Med | Each subagent gets a tight brief + worktree; reviews happen at PR boundaries. |
+| Risk                                       | Likelihood | Impact | Mitigation                                                                             |
+| ------------------------------------------ | ---------- | ------ | -------------------------------------------------------------------------------------- |
+| Apollo Meetings not embeddable             | Med        | Med    | Phase 1 verifies; custom Supabase availability picker as fallback (same data model).   |
+| Existing Auth0 users locked out at cutover | Med        | Med    | Email blast with magic link 24h before DNS swap; preserve old site for 7-day soak.     |
+| Lighthouse perf score below 90 on mobile   | Med        | Low    | Bundle analyzer in Phase 4; lazy-load PostHog + heavy embeds; `next/image` everywhere. |
+| Vercel CSP blocks PostHog/Mixpanel         | Low        | Low    | CSP allowlist drafted in Phase 3, tested with `report-only` mode first.                |
+| Stripe webhook misconfig → invoices stuck  | Low        | High   | Webhook signature verification + retry-safe handlers + manual reconciliation endpoint. |
+| Subagent scope creep                       | Med        | Med    | Each subagent gets a tight brief + worktree; reviews happen at PR boundaries.          |
 
 ---
 

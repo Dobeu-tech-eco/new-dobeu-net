@@ -14,7 +14,13 @@ export function DobeuMark({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="dobeu-mark-indigo" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id="dobeu-mark-indigo"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="hsl(var(--dobeu-indigo-500))" />
           <stop offset="100%" stopColor="hsl(var(--dobeu-indigo-700))" />
         </linearGradient>
@@ -25,11 +31,28 @@ export function DobeuMark({ className }: { className?: string }) {
         </mask>
       </defs>
       {/* Left circle (deep indigo) */}
-      <circle cx="24" cy="32" r="18" fill="url(#dobeu-mark-indigo)" opacity="0.95" />
+      <circle
+        cx="24"
+        cy="32"
+        r="18"
+        fill="url(#dobeu-mark-indigo)"
+        opacity="0.95"
+      />
       {/* Right circle (primary indigo) */}
-      <circle cx="40" cy="32" r="18" fill="hsl(var(--dobeu-indigo-500))" opacity="0.85" />
+      <circle
+        cx="40"
+        cy="32"
+        r="18"
+        fill="hsl(var(--dobeu-indigo-500))"
+        opacity="0.85"
+      />
       {/* Amber crescent — visible where left circle is but right circle isn't */}
-      <rect width="64" height="64" fill="hsl(var(--dobeu-amber-500))" mask="url(#dobeu-mark-crescent)" />
+      <rect
+        width="64"
+        height="64"
+        fill="hsl(var(--dobeu-amber-500))"
+        mask="url(#dobeu-mark-crescent)"
+      />
     </svg>
   );
 }

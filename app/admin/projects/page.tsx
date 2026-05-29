@@ -12,8 +12,12 @@ export default async function AdminProjectsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Projects</h1>
-        <p className="text-muted-foreground mt-1">All client projects across all users.</p>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Projects
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          All client projects across all users.
+        </p>
       </header>
 
       {!projects || projects.length === 0 ? (
@@ -36,10 +40,14 @@ export default async function AdminProjectsPage() {
               {projects.map((p) => (
                 <tr key={p.id}>
                   <td className="p-3 font-medium">{p.title}</td>
-                  <td className="p-3 uppercase tracking-wider text-xs">{p.status}</td>
+                  <td className="p-3 uppercase tracking-wider text-xs">
+                    {p.status}
+                  </td>
                   <td className="p-3">{formatCurrency(p.total_cents)}</td>
                   <td className="p-3 text-xs text-muted-foreground">
-                    {p.started_at ? new Date(p.started_at).toLocaleDateString() : "—"}
+                    {p.started_at
+                      ? new Date(p.started_at).toLocaleDateString()
+                      : "—"}
                   </td>
                   <td className="p-3 text-right">
                     <Link

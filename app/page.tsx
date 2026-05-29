@@ -13,7 +13,7 @@ import { LightboxProvider } from "@/components/landing/LightboxProvider";
 
 export const metadata: Metadata = {
   title: "Ship the agent. Ship the app. Ship the brand.",
-  alternates: { canonical: "/" }
+  alternates: { canonical: "/" },
 };
 
 export default function HomePage() {

@@ -97,6 +97,7 @@ Before touching DNS, walk every flow on the `*.vercel.app` preview:
 1. Pause auto-deploys on the old `digital-wharf-dynamics` Vercel project (or whichever host serves it now).
 2. Keep the old Netlify/Vercel site running for **7 days** in case rollback is needed.
 3. Email existing client users a heads-up:
+
    ```
    Subject: We've rebuilt dobeu.net — re-verify with this magic link
 
@@ -107,6 +108,7 @@ Before touching DNS, walk every flow on the `*.vercel.app` preview:
 
    — Jeremy
    ```
+
 4. After 7-day soak: archive the old repo, downgrade or delete the old hosting project.
 
 ---
@@ -124,11 +126,11 @@ If anything goes wrong post-cutover:
 
 ## Webhooks to update on cutover
 
-| Service | New URL |
-|---|---|
-| Stripe | `https://dobeu.net/api/webhooks/stripe` |
-| Apollo | `https://dobeu.net/api/webhooks/apollo` |
-| Resend | `https://dobeu.net/api/webhooks/resend` |
+| Service     | New URL                                     |
+| ----------- | ------------------------------------------- |
+| Stripe      | `https://dobeu.net/api/webhooks/stripe`     |
+| Apollo      | `https://dobeu.net/api/webhooks/apollo`     |
+| Resend      | `https://dobeu.net/api/webhooks/resend`     |
 | Customer.io | `https://dobeu.net/api/webhooks/customerio` |
 
 Each webhook secret should be rotated on cutover and stored in Vercel env vars.

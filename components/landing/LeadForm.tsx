@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +30,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       message: String(fd.get("message") ?? "").trim() || null,
       source,
       utm: collectUtmFromUrl(),
-      referrer: typeof document !== "undefined" ? document.referrer : ""
+      referrer: typeof document !== "undefined" ? document.referrer : "",
     };
 
     if (!payload.email || !payload.email.includes("@")) {
@@ -42,7 +43,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -54,7 +55,9 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       onSuccess?.();
     } catch (err) {
       track("lead_capture_failed", { source });
-      toast.error(err instanceof Error ? err.message : "Something went wrong. Try again?");
+      toast.error(
+        err instanceof Error ? err.message : "Something went wrong. Try again?",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -63,7 +66,9 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
   if (submitted) {
     return (
       <div className="py-8 text-center">
-        <p className="text-lg font-semibold">Thanks — you&apos;re on the list.</p>
+        <p className="text-lg font-semibold">
+          Thanks — you&apos;re on the list.
+        </p>
         <p className="text-sm text-muted-foreground mt-2">
           I personally read every message. Expect a reply within 24 hours.
         </p>
@@ -90,7 +95,12 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor={`name-${source}`}>Name</Label>
-              <Input id={`name-${source}`} name="name" autoComplete="name" placeholder="Your name" />
+              <Input
+                id={`name-${source}`}
+                name="name"
+                autoComplete="name"
+                placeholder="Your name"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor={`company-${source}`}>Company</Label>
@@ -104,7 +114,9 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor={`message-${source}`}>What&apos;s on your mind?</Label>
+            <Label htmlFor={`message-${source}`}>
+              What&apos;s on your mind?
+            </Label>
             <Textarea
               id={`message-${source}`}
               name="message"
@@ -116,7 +128,16 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       )}
 
       <Button type="submit" size="lg" className="w-full" disabled={submitting}>
-        {submitting ? "Sending…" : compact ? "Get in touch" : "Send it"}
+        {submitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Sending…
+          </>
+        ) : compact ? (
+          "Get in touch"
+        ) : (
+          "Send it"
+        )}
       </Button>
       <p className="text-xs text-muted-foreground text-center">
         Your email is used to reply only. No newsletter unless you opt in.
@@ -136,7 +157,7 @@ function collectUtmFromUrl(): Record<string, string> {
     "utm_term",
     "utm_content",
     "gclid",
-    "fbclid"
+    "fbclid",
   ]) {
     const v = sp.get(key);
     if (v) out[key] = v;
