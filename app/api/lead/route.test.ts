@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the lead fan-out so tests stay pure (no Supabase/Apollo/etc).
 vi.mock("@/lib/leads", () => ({
-  processLead: vi.fn().mockResolvedValue({ leadId: "lead_1", apolloContactId: "apollo_1" })
+  processLead: vi
+    .fn()
+    .mockResolvedValue({ leadId: "lead_1", apolloContactId: "apollo_1" }),
 }));
 
 import { POST } from "@/app/api/lead/route";
@@ -16,8 +18,8 @@ function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string): Request {
     body: rawBody ?? JSON.stringify(body),
     headers: {
       "content-type": "application/json",
-      "x-forwarded-for": ip
-    }
+      "x-forwarded-for": ip,
+    },
   });
 }
 
@@ -27,12 +29,14 @@ beforeEach(() => {
 
 describe("POST /api/lead", () => {
   it("accepts a valid body and returns lead + apollo ids", async () => {
-    const res = await POST(makeRequest({ email: "a@b.com", source: "form" }, "10.0.0.1"));
+    const res = await POST(
+      makeRequest({ email: "a@b.com", source: "form" }, "10.0.0.1"),
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       ok: true,
       lead_id: "lead_1",
-      apollo_contact_id: "apollo_1"
+      apollo_contact_id: "apollo_1",
     });
 
     expect(mockedProcessLead).toHaveBeenCalledTimes(1);
@@ -45,7 +49,9 @@ describe("POST /api/lead", () => {
   it("defaults source to 'other' when omitted", async () => {
     const res = await POST(makeRequest({ email: "c@d.com" }, "10.0.0.2"));
     expect(res.status).toBe(200);
-    expect(mockedProcessLead.mock.calls[0][0]).toMatchObject({ source: "other" });
+    expect(mockedProcessLead.mock.calls[0][0]).toMatchObject({
+      source: "other",
+    });
   });
 
   it("returns 400 for invalid JSON", async () => {

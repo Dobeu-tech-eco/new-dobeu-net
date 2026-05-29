@@ -49,8 +49,11 @@ function readEnv(): DDConfig | null {
     clientToken,
     site: process.env.NEXT_PUBLIC_DATADOG_SITE || "datadoghq.com",
     service: process.env.NEXT_PUBLIC_DATADOG_SERVICE || "dobeu-net",
-    env: process.env.NEXT_PUBLIC_DATADOG_ENV || process.env.NODE_ENV || "development",
-    version: process.env.NEXT_PUBLIC_DATADOG_VERSION || undefined
+    env:
+      process.env.NEXT_PUBLIC_DATADOG_ENV ||
+      process.env.NODE_ENV ||
+      "development",
+    version: process.env.NEXT_PUBLIC_DATADOG_VERSION || undefined,
   };
 }
 
@@ -84,7 +87,7 @@ export function initDatadog(): void {
     // Don't surface third-party errors in our dashboards
     allowedTracingUrls: [(url) => url.startsWith(window.location.origin)],
     // Hide RUM noise from browser extensions
-    silentMultipleInit: true
+    silentMultipleInit: true,
   });
 
   // Logs — structured client-side logs that ship to Datadog
@@ -97,7 +100,7 @@ export function initDatadog(): void {
     forwardErrorsToLogs: true,
     forwardConsoleLogs: ["error", "warn"],
     sessionSampleRate: 100,
-    silentMultipleInit: true
+    silentMultipleInit: true,
   });
 
   initialized = true;
@@ -106,7 +109,11 @@ export function initDatadog(): void {
 /**
  * Attach the current user (e.g., post-login) so events are user-correlated.
  */
-export function ddIdentify(user: { id: string; email?: string; name?: string }): void {
+export function ddIdentify(user: {
+  id: string;
+  email?: string;
+  name?: string;
+}): void {
   if (!initialized) return;
   datadogRum.setUser({ id: user.id, email: user.email, name: user.name });
   datadogLogs.setUser({ id: user.id, email: user.email, name: user.name });
@@ -116,7 +123,10 @@ export function ddIdentify(user: { id: string; email?: string; name?: string }):
  * Manual custom action / event. Use for high-signal events the UI wouldn't
  * autocapture (e.g., "booking_scheduled" after Calendly returns success).
  */
-export function ddAction(name: string, context: Record<string, unknown> = {}): void {
+export function ddAction(
+  name: string,
+  context: Record<string, unknown> = {},
+): void {
   if (!initialized) return;
   datadogRum.addAction(name, context);
 }
@@ -124,7 +134,10 @@ export function ddAction(name: string, context: Record<string, unknown> = {}): v
 /**
  * Manual error. Use in catch blocks where you want to attach extra metadata.
  */
-export function ddError(error: unknown, context: Record<string, unknown> = {}): void {
+export function ddError(
+  error: unknown,
+  context: Record<string, unknown> = {},
+): void {
   if (!initialized) return;
   const err = error instanceof Error ? error : new Error(String(error));
   datadogRum.addError(err, context);

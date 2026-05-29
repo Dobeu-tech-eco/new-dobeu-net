@@ -23,12 +23,13 @@ export function initAnalytics(consent: boolean): void {
   // ---- PostHog ----
   if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
+      api_host:
+        process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
       capture_pageview: true,
       capture_pageleave: true,
       autocapture: false,
       person_profiles: "identified_only",
-      session_recording: { recordCrossOriginIframes: false }
+      session_recording: { recordCrossOriginIframes: false },
     });
   }
 
@@ -41,7 +42,7 @@ export function initAnalytics(consent: boolean): void {
       track_pageview: true,
       persistence: "localStorage",
       autocapture: true,
-      record_sessions_percent: 100
+      record_sessions_percent: 100,
     });
   }
 
@@ -71,7 +72,8 @@ export function track(eventName: string, props: EventProps = {}): void {
   if (typeof window === "undefined") return;
   try {
     if (process.env.NEXT_PUBLIC_POSTHOG_KEY) posthog.capture(eventName, props);
-    if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) mixpanel.track(eventName, props);
+    if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN)
+      mixpanel.track(eventName, props);
     if (typeof window.gtag === "function") {
       window.gtag("event", eventName, props);
     }

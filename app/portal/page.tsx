@@ -5,7 +5,7 @@ import Link from "next/link";
 export default async function PortalDashboard() {
   const supabase = await createClient();
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
 
   // Fetch dashboard data — RLS auto-scopes to this user
@@ -21,7 +21,7 @@ export default async function PortalDashboard() {
       .select("id,thread_id,body,created_at,read_at")
       .eq("to_user_id", user!.id)
       .is("read_at", null)
-      .limit(5)
+      .limit(5),
   ]);
 
   const projects = projectsRes.data ?? [];
@@ -32,9 +32,15 @@ export default async function PortalDashboard() {
     <div className="space-y-8">
       <header>
         <h1 className="font-display text-3xl font-bold tracking-tight">
-          Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}.
+          Welcome back
+          {user?.user_metadata?.full_name
+            ? `, ${user.user_metadata.full_name}`
+            : ""}
+          .
         </h1>
-        <p className="text-muted-foreground mt-1">Here&apos;s what&apos;s open.</p>
+        <p className="text-muted-foreground mt-1">
+          Here&apos;s what&apos;s open.
+        </p>
       </header>
 
       <div className="grid sm:grid-cols-3 gap-4">
@@ -59,7 +65,9 @@ export default async function PortalDashboard() {
       </div>
 
       <section>
-        <h2 className="font-display text-xl font-semibold mb-3">Recent projects</h2>
+        <h2 className="font-display text-xl font-semibold mb-3">
+          Recent projects
+        </h2>
         {projects.length === 0 ? (
           <EmptyState
             title="No projects yet"
@@ -68,7 +76,10 @@ export default async function PortalDashboard() {
         ) : (
           <ul className="rounded-lg border border-border divide-y divide-border">
             {projects.map((p) => (
-              <li key={p.id} className="p-4 flex items-center justify-between hover:bg-muted/40">
+              <li
+                key={p.id}
+                className="p-4 flex items-center justify-between hover:bg-muted/40"
+              >
                 <div>
                   <p className="font-medium">{p.title}</p>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground mt-0.5">
@@ -94,7 +105,7 @@ function DashboardTile({
   href,
   icon,
   value,
-  label
+  label,
 }: {
   href: string;
   icon: React.ReactNode;
@@ -119,7 +130,9 @@ function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="rounded-xl border border-dashed border-border p-8 text-center">
       <p className="font-semibold">{title}</p>
-      <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">{body}</p>
+      <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+        {body}
+      </p>
     </div>
   );
 }

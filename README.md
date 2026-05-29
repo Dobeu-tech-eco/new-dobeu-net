@@ -38,21 +38,21 @@ pnpm dev                       # → http://localhost:3000
 
 Required environment variables (see `.env.example` for the full list):
 
-| Variable | Required for | Notes |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Everything | From Supabase project settings |
-| `SUPABASE_SERVICE_ROLE_KEY` | Lead API, webhooks | **Server only** — never expose |
-| `ADMIN_EMAILS` | `/admin` gating | Comma-separated. v1 default: `jeremyw@dobeu.net` |
-| `APOLLO_API_KEY` | Lead capture, contact upsert | Server only |
-| `NEXT_PUBLIC_APOLLO_MEETINGS_URL` | Booking lightbox | Apollo Meetings hosted URL. Leave blank for fallback flow |
-| `NEXT_PUBLIC_TYPEFORM_FORM_ID` | "Tell me more" tab | Embed id of the qualified intake form |
-| `NEXT_PUBLIC_POSTHOG_KEY` / `_HOST` | Product analytics | https://us.i.posthog.com (default) |
-| `NEXT_PUBLIC_MIXPANEL_TOKEN` | Funnel analytics | |
-| `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | Acquisition | `G-XXXXXXX` |
-| `NEXT_PUBLIC_GTM_ID` | Tag orchestration | `GTM-XXXXXX` |
-| `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Invoices | |
-| `STRIPE_WEBHOOK_SECRET` | `/api/webhooks/stripe` | |
-| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `RESEND_REPLY_TO` | Transactional email | |
+| Variable                                                     | Required for                 | Notes                                                     |
+| ------------------------------------------------------------ | ---------------------------- | --------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Everything                   | From Supabase project settings                            |
+| `SUPABASE_SERVICE_ROLE_KEY`                                  | Lead API, webhooks           | **Server only** — never expose                            |
+| `ADMIN_EMAILS`                                               | `/admin` gating              | Comma-separated. v1 default: `jeremyw@dobeu.net`          |
+| `APOLLO_API_KEY`                                             | Lead capture, contact upsert | Server only                                               |
+| `NEXT_PUBLIC_APOLLO_MEETINGS_URL`                            | Booking lightbox             | Apollo Meetings hosted URL. Leave blank for fallback flow |
+| `NEXT_PUBLIC_TYPEFORM_FORM_ID`                               | "Tell me more" tab           | Embed id of the qualified intake form                     |
+| `NEXT_PUBLIC_POSTHOG_KEY` / `_HOST`                          | Product analytics            | https://us.i.posthog.com (default)                        |
+| `NEXT_PUBLIC_MIXPANEL_TOKEN`                                 | Funnel analytics             |                                                           |
+| `NEXT_PUBLIC_GA4_MEASUREMENT_ID`                             | Acquisition                  | `G-XXXXXXX`                                               |
+| `NEXT_PUBLIC_GTM_ID`                                         | Tag orchestration            | `GTM-XXXXXX`                                              |
+| `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`   | Invoices                     |                                                           |
+| `STRIPE_WEBHOOK_SECRET`                                      | `/api/webhooks/stripe`       |                                                           |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `RESEND_REPLY_TO`   | Transactional email          |                                                           |
 
 ---
 
@@ -107,24 +107,24 @@ new-dobeu-net/
 
 ## Routes
 
-| Route | Auth | Description |
-|---|---|---|
-| `/` | public | Marketing landing with hero, services, lightbox CTA, FAQ |
-| `/login` | public | Magic-link auth via Supabase |
-| `/auth/callback` | public | OAuth callback handler |
-| `/portal` | required | Client dashboard |
-| `/portal/projects` | required | Project list |
-| `/portal/projects/[id]` | required | Project detail + files + invoices |
-| `/portal/files` | required | Flat file browser with signed-URL downloads |
-| `/portal/invoices` | required | Invoice list + Stripe pay links |
-| `/portal/messages` | required | Thread with admin |
-| `/portal/settings` | required | Profile |
-| `/admin` | admin only | Overview: leads, bookings, MRR, users |
-| `/admin/leads` | admin only | Apollo-enriched lead table (TODO) |
-| `/admin/bookings` | admin only | Upcoming + past bookings (TODO) |
-| `/admin/users` | admin only | User list, edit, send invoice (TODO) |
-| `/api/lead` | public POST | Lead capture: Supabase + Apollo + Resend fan-out |
-| `/api/webhooks/stripe` | Stripe sig | Invoice status sync (TODO) |
+| Route                   | Auth        | Description                                              |
+| ----------------------- | ----------- | -------------------------------------------------------- |
+| `/`                     | public      | Marketing landing with hero, services, lightbox CTA, FAQ |
+| `/login`                | public      | Magic-link auth via Supabase                             |
+| `/auth/callback`        | public      | OAuth callback handler                                   |
+| `/portal`               | required    | Client dashboard                                         |
+| `/portal/projects`      | required    | Project list                                             |
+| `/portal/projects/[id]` | required    | Project detail + files + invoices                        |
+| `/portal/files`         | required    | Flat file browser with signed-URL downloads              |
+| `/portal/invoices`      | required    | Invoice list + Stripe pay links                          |
+| `/portal/messages`      | required    | Thread with admin                                        |
+| `/portal/settings`      | required    | Profile                                                  |
+| `/admin`                | admin only  | Overview: leads, bookings, MRR, users                    |
+| `/admin/leads`          | admin only  | Apollo-enriched lead table (TODO)                        |
+| `/admin/bookings`       | admin only  | Upcoming + past bookings (TODO)                          |
+| `/admin/users`          | admin only  | User list, edit, send invoice (TODO)                     |
+| `/api/lead`             | public POST | Lead capture: Supabase + Apollo + Resend fan-out         |
+| `/api/webhooks/stripe`  | Stripe sig  | Invoice status sync (TODO)                               |
 
 Routes marked `(TODO)` are scaffolded in `PLAN.md` Phase 2C but need their data layer wired
 before they render real data.

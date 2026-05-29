@@ -6,7 +6,7 @@ const STATS = [
   { label: "Properties built", value: "17" },
   { label: "On-time delivery", value: "100%" },
   { label: "Years shipping", value: "7+" },
-  { label: "Avg. project length", value: "3 wks" }
+  { label: "Avg. project length", value: "3 wks" },
 ];
 
 const QUOTES = [
@@ -14,14 +14,14 @@ const QUOTES = [
     quote:
       "He shipped our internal agent in a week — what our last vendor couldn&apos;t do in three months. The portal, the docs, the handoff: all of it just worked.",
     author: "Operations Lead",
-    org: "Logistics SaaS, NYC"
+    org: "Logistics SaaS, NYC",
   },
   {
     quote:
       "Got a Figma library, working Next.js components, and a Tailwind config that all reference the same tokens. Designers and engineers stopped arguing.",
     author: "Founder",
-    org: "Early-stage fintech"
-  }
+    org: "Early-stage fintech",
+  },
 ];
 
 export function Proof() {

@@ -4,15 +4,21 @@ export default async function AdminLeadsPage() {
   const supabase = createAdminClient();
   const { data: leads } = await supabase
     .from("leads")
-    .select("id,email,name,company,source,utm_source,utm_campaign,referrer,first_seen,apollo_contact_id")
+    .select(
+      "id,email,name,company,source,utm_source,utm_campaign,referrer,first_seen,apollo_contact_id",
+    )
     .order("first_seen", { ascending: false })
     .limit(100);
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Leads</h1>
-        <p className="text-muted-foreground mt-1">Every form submission to dobeu.net.</p>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Leads
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Every form submission to dobeu.net.
+        </p>
       </header>
 
       {!leads || leads.length === 0 ? (
@@ -41,12 +47,18 @@ export default async function AdminLeadsPage() {
                     <p className="font-medium">{l.name ?? l.email}</p>
                     <p className="text-xs text-muted-foreground">{l.email}</p>
                     {l.company && (
-                      <p className="text-xs text-muted-foreground">{l.company}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {l.company}
+                      </p>
                     )}
                   </td>
-                  <td className="p-3 uppercase tracking-wider text-xs">{l.source}</td>
+                  <td className="p-3 uppercase tracking-wider text-xs">
+                    {l.source}
+                  </td>
                   <td className="p-3 text-xs text-muted-foreground">
-                    {l.utm_source ? `${l.utm_source} / ${l.utm_campaign ?? "—"}` : "—"}
+                    {l.utm_source
+                      ? `${l.utm_source} / ${l.utm_campaign ?? "—"}`
+                      : "—"}
                   </td>
                   <td className="p-3 text-xs">
                     {l.apollo_contact_id ? (

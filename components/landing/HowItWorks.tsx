@@ -7,23 +7,27 @@ const STEPS = [
   {
     icon: CalendarCheck,
     label: "30-min discovery",
-    body: "We talk through what you&apos;re trying to ship, what&apos;s in the way, and whether I&apos;m the right person. No pitch, no slide deck."
+    body: "We talk through what you&apos;re trying to ship, what&apos;s in the way, and whether I&apos;m the right person. No pitch, no slide deck.",
   },
   {
     icon: FileText,
     label: "Scoped proposal",
-    body: "Within 48 hours, you get a one-pager: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine."
+    body: "Within 48 hours, you get a one-pager: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine.",
   },
   {
     icon: Rocket,
     label: "Ship in 2–6 weeks",
-    body: "Daily Loom updates, your private portal for files + invoices, async-first communication. Most projects ship in a single sprint."
-  }
+    body: "Daily Loom updates, your private portal for files + invoices, async-first communication. Most projects ship in a single sprint.",
+  },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how" aria-labelledby="how-heading" className="py-20 md:py-28 bg-secondary/40">
+    <section
+      id="how"
+      aria-labelledby="how-heading"
+      className="py-20 md:py-28 bg-secondary/40"
+    >
       <div className="container max-w-5xl">
         <div className="text-center mb-12 md:mb-16">
           <h2
@@ -51,9 +55,14 @@ export function HowItWorks() {
                 <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-primary text-primary-foreground font-bold">
                   {i + 1}
                 </span>
-                <step.icon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                <step.icon
+                  className="h-5 w-5 text-muted-foreground"
+                  aria-hidden="true"
+                />
               </div>
-              <h3 className="font-display text-xl font-semibold mb-2">{step.label}</h3>
+              <h3 className="font-display text-xl font-semibold mb-2">
+                {step.label}
+              </h3>
               <p
                 className="text-sm md:text-base text-muted-foreground leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: step.body }}

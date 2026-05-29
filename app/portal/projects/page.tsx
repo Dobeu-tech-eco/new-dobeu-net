@@ -11,8 +11,12 @@ export default async function ProjectsListPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Projects</h1>
-        <p className="text-muted-foreground mt-1">All your work in one place.</p>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Projects
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          All your work in one place.
+        </p>
       </header>
 
       {!projects || projects.length === 0 ? (
@@ -25,13 +29,21 @@ export default async function ProjectsListPage() {
       ) : (
         <ul className="rounded-lg border border-border divide-y divide-border">
           {projects.map((p) => (
-            <li key={p.id} className="p-4 flex items-start justify-between gap-4">
+            <li
+              key={p.id}
+              className="p-4 flex items-start justify-between gap-4"
+            >
               <div>
-                <Link href={`/portal/projects/${p.id}`} className="font-semibold hover:text-primary">
+                <Link
+                  href={`/portal/projects/${p.id}`}
+                  className="font-semibold hover:text-primary"
+                >
                   {p.title}
                 </Link>
                 {p.description && (
-                  <p className="text-sm text-muted-foreground mt-1 max-w-xl">{p.description}</p>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-xl">
+                    {p.description}
+                  </p>
                 )}
                 <p className="text-xs uppercase tracking-wider text-muted-foreground mt-2">
                   {p.status}

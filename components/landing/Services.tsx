@@ -1,7 +1,13 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Bot, Code2, Palette, LineChart, MessageCircleQuestion } from "lucide-react";
+import {
+  Bot,
+  Code2,
+  Palette,
+  LineChart,
+  MessageCircleQuestion,
+} from "lucide-react";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { cn } from "@/lib/utils";
 
@@ -11,31 +17,37 @@ const SERVICES = [
     title: "AI agents & automation",
     description:
       "Claude + Composio + MCP integrations. Workflows that take work off your plate — from triage to fulfillment.",
-    tag: "Most asked for"
+    tag: "Most asked for",
   },
   {
     icon: Code2,
     title: "Full-stack web apps",
-    description: "Next.js, Supabase, Vercel. MVPs, internal tools, client portals. Production-grade from day one."
+    description:
+      "Next.js, Supabase, Vercel. MVPs, internal tools, client portals. Production-grade from day one.",
   },
   {
     icon: Palette,
     title: "Brand & design systems",
     description:
-      "Figma libraries with Code Connect. Design tokens that round-trip through Tailwind, Framer, and Webflow."
+      "Figma libraries with Code Connect. Design tokens that round-trip through Tailwind, Framer, and Webflow.",
   },
   {
     icon: LineChart,
     title: "Marketing & growth engineering",
-    description: "Programmatic SEO, GA4/PostHog/Mixpanel attribution, lifecycle automation, paid-ads infra."
-  }
+    description:
+      "Programmatic SEO, GA4/PostHog/Mixpanel attribution, lifecycle automation, paid-ads infra.",
+  },
 ];
 
 export function Services() {
   const { open } = useLightbox();
 
   return (
-    <section id="work" aria-labelledby="work-heading" className="py-20 md:py-28">
+    <section
+      id="work"
+      aria-labelledby="work-heading"
+      className="py-20 md:py-28"
+    >
       <div className="container max-w-6xl">
         <div className="text-center mb-12 md:mb-16">
           <h2
@@ -45,8 +57,8 @@ export function Services() {
             Four things, done well.
           </h2>
           <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-            Most engagements are a mix of these. Pick what you need — I&apos;ll tell you honestly if
-            it&apos;s a fit.
+            Most engagements are a mix of these. Pick what you need — I&apos;ll
+            tell you honestly if it&apos;s a fit.
           </p>
         </div>
 
@@ -67,12 +79,14 @@ export function Services() {
               )}
               <div
                 className={cn(
-                  "inline-flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary mb-4 group-hover:scale-105 transition-transform"
+                  "inline-flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary mb-4 group-hover:scale-105 transition-transform",
                 )}
               >
                 <s.icon className="h-6 w-6" />
               </div>
-              <h3 className="font-display text-xl md:text-2xl font-semibold mb-2">{s.title}</h3>
+              <h3 className="font-display text-xl md:text-2xl font-semibold mb-2">
+                {s.title}
+              </h3>
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                 {s.description}
               </p>
@@ -97,8 +111,8 @@ export function Services() {
                   Something else?
                 </h3>
                 <p className="text-sm md:text-base text-muted-foreground">
-                  Got a project that doesn&apos;t fit a category? Tell me about it — I&apos;ve probably
-                  shipped something close.{" "}
+                  Got a project that doesn&apos;t fit a category? Tell me about
+                  it — I&apos;ve probably shipped something close.{" "}
                   <span className="text-accent font-medium underline-offset-4 group-hover:underline">
                     Start the conversation →
                   </span>

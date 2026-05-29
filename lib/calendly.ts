@@ -14,13 +14,15 @@ export function isCalendlyWebhookConfigured(): boolean {
 }
 
 /** Parse a `t=...,v1=...` Calendly signature header into its parts. */
-export function parseCalendlySignature(header: string | null): { t: string; v1: string } | null {
+export function parseCalendlySignature(
+  header: string | null,
+): { t: string; v1: string } | null {
   if (!header) return null;
   const parts = Object.fromEntries(
     header.split(",").map((kv) => {
       const i = kv.indexOf("=");
       return [kv.slice(0, i).trim(), kv.slice(i + 1).trim()];
-    })
+    }),
   );
   if (!parts.t || !parts.v1) return null;
   return { t: parts.t, v1: parts.v1 };
@@ -38,12 +40,14 @@ export function verifyCalendlySignature(
   rawBody: string,
   header: string | null,
   signingKey: string,
-  toleranceSec = 300
+  toleranceSec = 300,
 ): boolean {
   const parsed = parseCalendlySignature(header);
   if (!parsed) return false;
 
-  const expected = createHmac("sha256", signingKey).update(`${parsed.t}.${rawBody}`).digest("hex");
+  const expected = createHmac("sha256", signingKey)
+    .update(`${parsed.t}.${rawBody}`)
+    .digest("hex");
 
   // Constant-time compare; bail if lengths differ (timingSafeEqual throws otherwise).
   const a = Buffer.from(expected, "utf8");
@@ -66,6 +70,8 @@ export interface CalendlyInviteeCreatedPayload {
     uri?: string;
     name?: string;
     start_time?: string;
+    end_time?: string;
+    location?: { type?: string; location?: string; join_url?: string };
   };
   tracking?: {
     utm_source?: string | null;
@@ -82,10 +88,18 @@ export interface CalendlyWebhookEvent {
 }
 
 /** Map Calendly's `tracking` block to our flat utm record, dropping nulls. */
-export function utmFromTracking(tracking?: CalendlyInviteeCreatedPayload["tracking"]): Record<string, string> {
+export function utmFromTracking(
+  tracking?: CalendlyInviteeCreatedPayload["tracking"],
+): Record<string, string> {
   const out: Record<string, string> = {};
   if (!tracking) return out;
-  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const) {
+  for (const k of [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+  ] as const) {
     const v = tracking[k];
     if (v) out[k] = v;
   }

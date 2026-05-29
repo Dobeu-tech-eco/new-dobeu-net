@@ -1,9 +1,16 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { cn, isAdminEmail, formatCurrency, captureAcquisition } from "@/lib/utils";
+import {
+  cn,
+  isAdminEmail,
+  formatCurrency,
+  captureAcquisition,
+} from "@/lib/utils";
 
 describe("cn", () => {
   it("merges conditional classes and drops falsy values", () => {
-    expect(cn("text-sm", false && "hidden", "font-bold")).toBe("text-sm font-bold");
+    expect(cn("text-sm", false && "hidden", "font-bold")).toBe(
+      "text-sm font-bold",
+    );
   });
   it("dedupes conflicting tailwind utilities (last wins)", () => {
     expect(cn("px-2", "px-4")).toBe("px-4");
@@ -46,7 +53,7 @@ describe("captureAcquisition", () => {
     expect(captureAcquisition(sp, "https://ref.example")).toEqual({
       utm_source: "google",
       utm_medium: "cpc",
-      referrer: "https://ref.example"
+      referrer: "https://ref.example",
     });
   });
 

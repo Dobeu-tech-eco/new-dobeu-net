@@ -15,8 +15,14 @@ export function Hero() {
       className="relative overflow-hidden pt-12 md:pt-20 pb-16 md:pb-24"
     >
       {/* Mesh gradient backdrop */}
-      <div className="absolute inset-0 -z-10 bg-dobeu-mesh" aria-hidden="true" />
-      <div className="absolute inset-x-0 top-0 -z-10 h-[480px] bg-dobeu-hero" aria-hidden="true" />
+      <div
+        className="absolute inset-0 -z-10 bg-dobeu-mesh"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-x-0 top-0 -z-10 h-[480px] bg-dobeu-hero"
+        aria-hidden="true"
+      />
 
       <div className="container max-w-5xl text-center">
         <motion.div
@@ -39,8 +45,7 @@ export function Hero() {
           Ship the agent.
           <br className="hidden sm:inline" />{" "}
           <span className="gradient-text">Ship the app.</span>
-          <br className="hidden sm:inline" />{" "}
-          Ship the brand.
+          <br className="hidden sm:inline" /> Ship the brand.
         </motion.h1>
 
         <motion.p
@@ -49,8 +54,8 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.15 }}
           className="mt-6 mx-auto max-w-2xl text-base md:text-lg text-muted-foreground leading-relaxed"
         >
-          One operator. Modern stack. Production-grade work for founders who need it shipped,
-          not pitched. From idea to live in 2–6 weeks.
+          One operator. Modern stack. Production-grade work for founders who
+          need it shipped, not pitched. From idea to live in 2–6 weeks.
         </motion.p>
 
         <motion.div
@@ -59,7 +64,11 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.25 }}
           className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
         >
-          <Button size="xl" onClick={() => open("book")} className="w-full sm:w-auto">
+          <Button
+            size="xl"
+            onClick={() => open("book")}
+            className="w-full sm:w-auto"
+          >
             Book a call <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
           <Button

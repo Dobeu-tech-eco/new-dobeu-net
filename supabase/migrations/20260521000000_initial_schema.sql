@@ -131,6 +131,7 @@ create table public.invoices (
   status invoice_status not null default 'open',
   stripe_invoice_id text,
   stripe_payment_intent text,
+  hosted_invoice_url text,
   due_date date,
   paid_at timestamptz,
   created_at timestamptz not null default now()
