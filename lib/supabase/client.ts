@@ -15,11 +15,17 @@ export function createClient() {
   if (!url || !anon) {
     // Return a stub that throws on use rather than at construction time,
     // so SSR doesn't crash on first render before envs are filled in.
-    return createBrowserClient<Database>("https://placeholder.supabase.co", "placeholder-anon-key");
+    return createBrowserClient<Database>(
+      "https://placeholder.supabase.co",
+      "placeholder-anon-key",
+    );
   }
   return createBrowserClient<Database>(url, anon);
 }
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
 }

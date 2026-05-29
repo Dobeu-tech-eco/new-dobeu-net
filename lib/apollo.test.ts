@@ -6,7 +6,7 @@ function jsonResponse(data: unknown, ok = true, status = 200): Response {
     ok,
     status,
     json: async () => data,
-    text: async () => JSON.stringify(data)
+    text: async () => JSON.stringify(data),
   } as unknown as Response;
 }
 
@@ -15,7 +15,7 @@ function errorResponse(status: number, text: string): Response {
     ok: false,
     status,
     json: async () => ({}),
-    text: async () => text
+    text: async () => text,
   } as unknown as Response;
 }
 
@@ -40,7 +40,7 @@ describe("upsertApolloContact", () => {
     organization_name: "Acme",
     title: "CEO",
     phone: "+15551234567",
-    label_names: ["lead", "spring"]
+    label_names: ["lead", "spring"],
   };
 
   it("returns ok:false when APOLLO_API_KEY is missing (not configured)", async () => {
@@ -76,7 +76,7 @@ describe("upsertApolloContact", () => {
       organization_name: "Acme",
       title: "CEO",
       phone_numbers: [{ raw_number: "+15551234567" }],
-      label_names: ["lead", "spring"]
+      label_names: ["lead", "spring"],
     });
   });
 
@@ -142,7 +142,7 @@ describe("logApolloActivity", () => {
     const body = JSON.parse(opts.body);
     expect(body).toEqual({
       contact_id: "c_1",
-      note: { content: "booked discovery call", type: "note" }
+      note: { content: "booked discovery call", type: "note" },
     });
   });
 

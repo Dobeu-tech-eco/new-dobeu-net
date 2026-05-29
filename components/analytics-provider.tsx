@@ -93,8 +93,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             Cookies and analytics
           </h3>
           <p id="consent-desc" className="text-xs text-muted-foreground mb-3">
-            We use PostHog, Mixpanel, and Google Analytics to understand how visitors use
-            this site so we can improve it. Nothing is sold; you can opt out anytime.
+            We use PostHog, Mixpanel, and Google Analytics to understand how
+            visitors use this site so we can improve it. Nothing is sold; you
+            can opt out anytime.
           </p>
           <div className="flex gap-2">
             <button

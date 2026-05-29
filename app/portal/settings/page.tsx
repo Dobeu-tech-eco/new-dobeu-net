@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function SettingsPage() {
   const supabase = await createClient();
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
@@ -15,7 +15,9 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6 max-w-xl">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Settings
+        </h1>
       </header>
 
       <section className="rounded-xl border border-border bg-card p-6 space-y-3">
@@ -24,7 +26,14 @@ export default async function SettingsPage() {
           <Row label="Email" value={user?.email ?? "—"} />
           <Row label="Name" value={profile?.full_name ?? "—"} />
           <Row label="Company" value={profile?.company ?? "—"} />
-          <Row label="Last sign-in" value={user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : "—"} />
+          <Row
+            label="Last sign-in"
+            value={
+              user?.last_sign_in_at
+                ? new Date(user.last_sign_in_at).toLocaleString()
+                : "—"
+            }
+          />
         </dl>
         <p className="text-xs text-muted-foreground pt-2">
           Editing profile fields is coming in v2. For now, email{" "}

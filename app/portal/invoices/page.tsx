@@ -6,14 +6,20 @@ export default async function InvoicesPage() {
   const supabase = await createClient();
   const { data: invoices } = await supabase
     .from("invoices")
-    .select("id,project_id,amount_cents,currency,status,due_date,paid_at,stripe_invoice_id")
+    .select(
+      "id,project_id,amount_cents,currency,status,due_date,paid_at,stripe_invoice_id",
+    )
     .order("created_at", { ascending: false });
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Invoices</h1>
-        <p className="text-muted-foreground mt-1">Pay open invoices via Stripe.</p>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Invoices
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Pay open invoices via Stripe.
+        </p>
       </header>
 
       {!invoices || invoices.length === 0 ? (
@@ -35,7 +41,9 @@ export default async function InvoicesPage() {
             <tbody className="divide-y divide-border">
               {invoices.map((inv) => (
                 <tr key={inv.id}>
-                  <td className="p-3 font-mono text-xs">{inv.id.slice(0, 8)}…</td>
+                  <td className="p-3 font-mono text-xs">
+                    {inv.id.slice(0, 8)}…
+                  </td>
                   <td className="p-3 font-semibold">
                     {formatCurrency(inv.amount_cents, inv.currency)}
                   </td>
@@ -53,7 +61,9 @@ export default async function InvoicesPage() {
                     </span>
                   </td>
                   <td className="p-3 text-muted-foreground">
-                    {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}
+                    {inv.due_date
+                      ? new Date(inv.due_date).toLocaleDateString()
+                      : "—"}
                   </td>
                   <td className="p-3 text-right">
                     {inv.status === "open" || inv.status === "overdue" ? (
@@ -67,7 +77,9 @@ export default async function InvoicesPage() {
                         </a>
                       </Button>
                     ) : (
-                      <span className="text-muted-foreground text-xs">Paid</span>
+                      <span className="text-muted-foreground text-xs">
+                        Paid
+                      </span>
                     )}
                   </td>
                 </tr>

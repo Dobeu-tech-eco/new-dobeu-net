@@ -2,10 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 // Mock the Supabase SSR factory so no real client/network is created. We just
 // capture the (url, anon) arguments to assert the env-fallback branching.
-const createBrowserClientMock = vi.fn((url: string, anon: string) => ({ url, anon }));
+const createBrowserClientMock = vi.fn((url: string, anon: string) => ({
+  url,
+  anon,
+}));
 
 vi.mock("@supabase/ssr", () => ({
-  createBrowserClient: createBrowserClientMock
+  createBrowserClient: createBrowserClientMock,
 }));
 
 const URL_KEY = "NEXT_PUBLIC_SUPABASE_URL";
@@ -62,7 +65,7 @@ describe("createClient", () => {
     createClient();
     expect(createBrowserClientMock).toHaveBeenCalledWith(
       "https://placeholder.supabase.co",
-      "placeholder-anon-key"
+      "placeholder-anon-key",
     );
   });
 
@@ -73,7 +76,7 @@ describe("createClient", () => {
     createClient();
     expect(createBrowserClientMock).toHaveBeenCalledWith(
       "https://proj.supabase.co",
-      "anon-key"
+      "anon-key",
     );
   });
 
@@ -83,7 +86,7 @@ describe("createClient", () => {
     createClient();
     expect(createBrowserClientMock).toHaveBeenCalledWith(
       "https://placeholder.supabase.co",
-      "placeholder-anon-key"
+      "placeholder-anon-key",
     );
   });
 
@@ -92,6 +95,9 @@ describe("createClient", () => {
     process.env[ANON_KEY] = "anon-key";
     const { createClient } = await freshImport();
     const client = createClient();
-    expect(client).toEqual({ url: "https://proj.supabase.co", anon: "anon-key" });
+    expect(client).toEqual({
+      url: "https://proj.supabase.co",
+      anon: "anon-key",
+    });
   });
 });

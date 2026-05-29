@@ -12,7 +12,13 @@
  * exists — that also captures real foreign-key relationships and nullability drift.
  */
 
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 export interface Database {
   public: {
@@ -28,7 +34,9 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & { id: string };
+        Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & {
+          id: string;
+        };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
         Relationships: [];
       };
@@ -65,7 +73,9 @@ export interface Database {
           uploaded_at: string;
           retention_until: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["project_files"]["Row"]> & {
+        Insert: Partial<
+          Database["public"]["Tables"]["project_files"]["Row"]
+        > & {
           project_id: string;
           storage_path: string;
           filename: string;
@@ -131,7 +141,9 @@ export interface Database {
           last_seen: string;
           raw_payload: Json;
         };
-        Insert: Partial<Database["public"]["Tables"]["leads"]["Row"]> & { email: string };
+        Insert: Partial<Database["public"]["Tables"]["leads"]["Row"]> & {
+          email: string;
+        };
         Update: Partial<Database["public"]["Tables"]["leads"]["Row"]>;
         Relationships: [];
       };

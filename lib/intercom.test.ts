@@ -9,7 +9,7 @@ const shutdownMock = vi.fn();
 vi.mock("@intercom/messenger-js-sdk", () => ({
   default: bootMock,
   update: updateMock,
-  shutdown: shutdownMock
+  shutdown: shutdownMock,
 }));
 
 const APP_ID = "NEXT_PUBLIC_INTERCOM_APP_ID";
@@ -80,7 +80,11 @@ describe("identifyIntercom", () => {
     identifyIntercom({ user_id: "u1", email: "a@b.com", name: "Tester" });
     expect(bootMock).toHaveBeenCalledTimes(1);
     expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ user_id: "u1", email: "a@b.com", name: "Tester" })
+      expect.objectContaining({
+        user_id: "u1",
+        email: "a@b.com",
+        name: "Tester",
+      }),
     );
   });
 
@@ -89,7 +93,7 @@ describe("identifyIntercom", () => {
     const { identifyIntercom } = await freshImport();
     identifyIntercom({ user_id: "u1", company: "Acme" });
     expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ company: { id: "Acme", name: "Acme" } })
+      expect.objectContaining({ company: { id: "Acme", name: "Acme" } }),
     );
   });
 
@@ -106,7 +110,7 @@ describe("identifyIntercom", () => {
     const { identifyIntercom } = await freshImport();
     identifyIntercom({ user_id: "u1", user_hash: "hmac-xyz" });
     expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ user_hash: "hmac-xyz" })
+      expect.objectContaining({ user_hash: "hmac-xyz" }),
     );
   });
 

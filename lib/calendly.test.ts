@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { createHmac } from "node:crypto";
-import { verifyCalendlySignature, parseCalendlySignature, utmFromTracking } from "@/lib/calendly";
+import {
+  verifyCalendlySignature,
+  parseCalendlySignature,
+  utmFromTracking,
+} from "@/lib/calendly";
 
 const KEY = "test-signing-key";
 
@@ -11,7 +15,10 @@ function sign(body: string, t: number, key = KEY): string {
 
 describe("parseCalendlySignature", () => {
   it("parses t and v1 from the header", () => {
-    expect(parseCalendlySignature("t=123,v1=abc")).toEqual({ t: "123", v1: "abc" });
+    expect(parseCalendlySignature("t=123,v1=abc")).toEqual({
+      t: "123",
+      v1: "abc",
+    });
   });
   it("returns null for missing parts or null input", () => {
     expect(parseCalendlySignature(null)).toBeNull();
@@ -20,7 +27,10 @@ describe("parseCalendlySignature", () => {
 });
 
 describe("verifyCalendlySignature", () => {
-  const body = JSON.stringify({ event: "invitee.created", payload: { email: "a@b.com" } });
+  const body = JSON.stringify({
+    event: "invitee.created",
+    payload: { email: "a@b.com" },
+  });
 
   it("accepts a correctly signed, fresh payload", () => {
     const t = Math.floor(Date.now() / 1000);
@@ -35,7 +45,9 @@ describe("verifyCalendlySignature", () => {
 
   it("rejects a signature made with the wrong key", () => {
     const t = Math.floor(Date.now() / 1000);
-    expect(verifyCalendlySignature(body, sign(body, t, "other-key"), KEY)).toBe(false);
+    expect(verifyCalendlySignature(body, sign(body, t, "other-key"), KEY)).toBe(
+      false,
+    );
   });
 
   it("rejects a stale timestamp (replay guard)", () => {
@@ -52,7 +64,11 @@ describe("verifyCalendlySignature", () => {
 describe("utmFromTracking", () => {
   it("maps present utm fields and drops nulls/undefined", () => {
     expect(
-      utmFromTracking({ utm_source: "google", utm_medium: null, utm_campaign: "spring" })
+      utmFromTracking({
+        utm_source: "google",
+        utm_medium: null,
+        utm_campaign: "spring",
+      }),
     ).toEqual({ utm_source: "google", utm_campaign: "spring" });
   });
   it("returns empty object when tracking is absent", () => {

@@ -11,7 +11,7 @@ import {
   Receipt,
   Inbox,
   CalendarCheck,
-  BarChart3
+  BarChart3,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/utils";
@@ -26,13 +26,17 @@ const NAV = [
   { href: "/admin/invoices", label: "Invoices", icon: Receipt },
   { href: "/admin/leads", label: "Leads", icon: Inbox },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 }
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await createClient();
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
 
   if (!user || !isAdminEmail(user.email)) {
@@ -46,12 +50,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin" className="flex items-center gap-2">
             <DobeuMark className="h-8 w-8" />
             <span className="font-display text-lg font-bold lowercase">
-              dobeu <span className="text-accent text-xs uppercase tracking-wider">admin</span>
+              dobeu{" "}
+              <span className="text-accent text-xs uppercase tracking-wider">
+                admin
+              </span>
             </span>
           </Link>
           <ThemeToggle />
         </div>
-        <nav aria-label="Admin" className="px-2 pb-2 md:pb-6 flex md:block gap-1 overflow-x-auto">
+        <nav
+          aria-label="Admin"
+          className="px-2 pb-2 md:pb-6 flex md:block gap-1 overflow-x-auto"
+        >
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -66,7 +76,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             href="/portal"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
           >
-            <LayoutDashboard className="h-4 w-4" /> <span className="hidden sm:inline">Portal view</span>
+            <LayoutDashboard className="h-4 w-4" />{" "}
+            <span className="hidden sm:inline">Portal view</span>
           </Link>
           <LogoutButton />
         </nav>
