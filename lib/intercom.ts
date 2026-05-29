@@ -14,7 +14,10 @@
  * once we expose INTERCOM_IDENTITY_VERIFICATION_SECRET server-side.
  */
 
-import Intercom, { update as intercomUpdate, shutdown as intercomShutdown } from "@intercom/messenger-js-sdk";
+import Intercom, {
+  update as intercomUpdate,
+  shutdown as intercomShutdown,
+} from "@intercom/messenger-js-sdk";
 
 let booted = false;
 
@@ -44,8 +47,10 @@ export function identifyIntercom(user: {
     user_id: user.user_id,
     email: user.email,
     name: user.name,
-    company: user.company ? { id: user.company, name: user.company } : undefined,
-    user_hash: user.user_hash
+    company: user.company
+      ? { id: user.company, name: user.company }
+      : undefined,
+    user_hash: user.user_hash,
   });
 }
 

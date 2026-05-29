@@ -11,7 +11,9 @@ export default async function MessagesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Messages</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Messages
+        </h1>
         <p className="text-muted-foreground mt-1">
           Async messages to and from Jeremy. Replies usually within 24 hours.
         </p>
@@ -27,7 +29,10 @@ export default async function MessagesPage() {
       ) : (
         <ul className="space-y-2">
           {messages.map((m) => (
-            <li key={m.id} className="rounded-lg border border-border bg-card p-4">
+            <li
+              key={m.id}
+              className="rounded-lg border border-border bg-card p-4"
+            >
               <p className="text-xs text-muted-foreground mb-1">
                 {new Date(m.created_at).toLocaleString()}
                 {!m.read_at && " · unread"}

@@ -20,13 +20,13 @@ Copy `.env.example` → `.env.local`. All third-party integrations (Supabase, St
 
 ### Key commands (see CLAUDE.md for full list)
 
-| Task | Command |
-|------|---------|
-| Type-check | `pnpm type-check` |
-| Lint | `pnpm lint` |
-| Build | `pnpm build` |
-| Dev server | `pnpm dev` |
-| Full verify | `pnpm verify` |
+| Task        | Command           |
+| ----------- | ----------------- |
+| Type-check  | `pnpm type-check` |
+| Lint        | `pnpm lint`       |
+| Build       | `pnpm build`      |
+| Dev server  | `pnpm dev`        |
+| Full verify | `pnpm verify`     |
 
 ### Testing
 

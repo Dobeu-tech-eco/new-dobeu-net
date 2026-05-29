@@ -1,12 +1,16 @@
 export default function AdminAnalyticsPage() {
-  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.posthog.com";
+  const posthogHost =
+    process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.posthog.com";
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Analytics</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Analytics
+        </h1>
         <p className="text-muted-foreground mt-1">
-          Live dashboards. Drill in via the linked tools — embeds will land in v2.
+          Live dashboards. Drill in via the linked tools — embeds will land in
+          v2.
         </p>
       </header>
 
@@ -36,7 +40,15 @@ export default function AdminAnalyticsPage() {
   );
 }
 
-function Tile({ label, desc, href }: { label: string; desc: string; href: string }) {
+function Tile({
+  label,
+  desc,
+  href,
+}: {
+  label: string;
+  desc: string;
+  href: string;
+}) {
   return (
     <a
       href={href}

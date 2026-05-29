@@ -29,29 +29,38 @@ function authHeader(): string {
 }
 
 export function isCustomerIoConfigured(): boolean {
-  return Boolean(process.env.CUSTOMERIO_SITE_ID && process.env.CUSTOMERIO_API_KEY);
+  return Boolean(
+    process.env.CUSTOMERIO_SITE_ID && process.env.CUSTOMERIO_API_KEY,
+  );
 }
 
 /**
  * Identify a customer in Customer.io. Uses the email as the customer id.
  */
-export async function cioIdentify(input: CioIdentifyInput): Promise<{ ok: boolean; error?: string }> {
+export async function cioIdentify(
+  input: CioIdentifyInput,
+): Promise<{ ok: boolean; error?: string }> {
   try {
-    if (!isCustomerIoConfigured()) return { ok: false, error: "not_configured" };
+    if (!isCustomerIoConfigured())
+      return { ok: false, error: "not_configured" };
     const id = encodeURIComponent(input.email);
     const res = await fetch(`${CIO_BASE}/customers/${id}`, {
       method: "PUT",
       headers: {
         Authorization: authHeader(),
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         email: input.email,
         ...(input.attributes ?? {}),
-        last_identified_at: Math.floor(Date.now() / 1000)
-      })
+        last_identified_at: Math.floor(Date.now() / 1000),
+      }),
     });
-    if (!res.ok) return { ok: false, error: `Customer.io identify ${res.status}: ${await res.text()}` };
+    if (!res.ok)
+      return {
+        ok: false,
+        error: `Customer.io identify ${res.status}: ${await res.text()}`,
+      };
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
@@ -62,23 +71,30 @@ export async function cioIdentify(input: CioIdentifyInput): Promise<{ ok: boolea
  * Fire a Customer.io event on a customer. Goes through the customer.io workflow engine,
  * which can trigger campaigns / drips off this event.
  */
-export async function cioTrack(input: CioEventInput): Promise<{ ok: boolean; error?: string }> {
+export async function cioTrack(
+  input: CioEventInput,
+): Promise<{ ok: boolean; error?: string }> {
   try {
-    if (!isCustomerIoConfigured()) return { ok: false, error: "not_configured" };
+    if (!isCustomerIoConfigured())
+      return { ok: false, error: "not_configured" };
     const id = encodeURIComponent(input.email);
     const res = await fetch(`${CIO_BASE}/customers/${id}/events`, {
       method: "POST",
       headers: {
         Authorization: authHeader(),
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         name: input.name,
         data: input.data ?? {},
-        timestamp: Math.floor(Date.now() / 1000)
-      })
+        timestamp: Math.floor(Date.now() / 1000),
+      }),
     });
-    if (!res.ok) return { ok: false, error: `Customer.io track ${res.status}: ${await res.text()}` };
+    if (!res.ok)
+      return {
+        ok: false,
+        error: `Customer.io track ${res.status}: ${await res.text()}`,
+      };
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };

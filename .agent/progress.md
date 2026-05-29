@@ -3,6 +3,7 @@
 ## 2026-05-21 — Phase 1 complete
 
 ### Done
+
 - BRAINSTORM.md and PLAN.md drafted and approved by Jeremy
 - Repo scaffolded with Next.js 15 App Router, TypeScript, Tailwind, pnpm
 - Design System v2 tokens wired into globals.css and tailwind.config.ts (Indigo+Amber + Ink+Paper, Nunito + Quicksand fonts via next/font)
@@ -45,6 +46,7 @@
 - **Env var change** — `NEXT_PUBLIC_APOLLO_MEETINGS_URL` retired; `NEXT_PUBLIC_CALENDLY_URL` added (default `https://calendly.com/jeremyw-dobeu-r_el`).
 
 ### Pending — requires Jeremy
+
 1. Apply the install fix per `docs/FIX-INSTALL.md` and confirm `pnpm dev` boots
 2. Copy `.env.example` → `.env.local`, set `NEXT_PUBLIC_CALENDLY_URL` (default value already in the file)
 3. Optional: log into Calendly and create/rename the "30-minute discovery call" event type, then update `NEXT_PUBLIC_CALENDLY_URL` to point at that specific event type slug (e.g., `/30min`)
@@ -55,6 +57,7 @@
 8. DNS cutover from old digital-wharf-dynamics to new project (per DEPLOYMENT.md)
 
 ### Next session resume protocol
+
 1. Read .agent/state.json + this file
 2. `cd new-dobeu-net && pnpm install`
 3. `pnpm dev` — verify it boots

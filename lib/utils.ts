@@ -12,7 +12,10 @@ export function cn(...inputs: ClassValue[]): string {
  * Type-safe env reader. Throws at boot if a required server-side env is missing.
  * Pass `required: false` for optional vars.
  */
-export function env(key: string, opts: { required?: boolean } = { required: true }): string {
+export function env(
+  key: string,
+  opts: { required?: boolean } = { required: true },
+): string {
   const value = process.env[key];
   if ((!value || value.length === 0) && opts.required !== false) {
     if (typeof window === "undefined") {
@@ -42,16 +45,27 @@ export function formatCurrency(cents: number, currency = "USD"): string {
     style: "currency",
     currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   }).format(cents / 100);
 }
 
 /**
  * Extract UTM params and referrer from a URL — used by lead capture.
  */
-export function captureAcquisition(searchParams: URLSearchParams, referrer = ""): Record<string, string> {
+export function captureAcquisition(
+  searchParams: URLSearchParams,
+  referrer = "",
+): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"]) {
+  for (const key of [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "gclid",
+    "fbclid",
+  ]) {
     const v = searchParams.get(key);
     if (v) out[key] = v;
   }
@@ -62,4 +76,5 @@ export function captureAcquisition(searchParams: URLSearchParams, referrer = "")
 /**
  * Sleep helper for retry loops.
  */
-export const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+export const sleep = (ms: number): Promise<void> =>
+  new Promise((r) => setTimeout(r, ms));

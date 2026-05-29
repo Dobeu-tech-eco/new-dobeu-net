@@ -8,9 +8,11 @@ const LeadSchema = z.object({
   name: z.string().optional().nullable(),
   company: z.string().optional().nullable(),
   message: z.string().max(2000).optional().nullable(),
-  source: z.enum(["book", "form", "email", "typeform", "other"]).default("other"),
+  source: z
+    .enum(["book", "form", "email", "typeform", "other"])
+    .default("other"),
   utm: z.record(z.string()).default({}),
-  referrer: z.string().optional().nullable()
+  referrer: z.string().optional().nullable(),
 });
 
 export const runtime = "nodejs";
@@ -32,7 +34,10 @@ export async function POST(request: Request) {
 
   const parsed = LeadSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid input", details: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const { email, name, company, message, source, utm, referrer } = parsed.data;
@@ -44,8 +49,12 @@ export async function POST(request: Request) {
     source,
     utm,
     referrer,
-    ipHash: hashIp(ip)
+    ipHash: hashIp(ip),
   });
 
-  return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
+  return NextResponse.json({
+    ok: true,
+    lead_id: leadId,
+    apollo_contact_id: apolloContactId,
+  });
 }

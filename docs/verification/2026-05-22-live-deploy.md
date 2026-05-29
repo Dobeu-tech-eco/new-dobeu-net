@@ -9,13 +9,13 @@
 
 ## 1. Viewport × Theme matrix (4 screenshots captured)
 
-| File | Viewport | Theme | Bg color | Notes |
-|---|---|---|---|---|
-| `verify-01-desktop-light.png` | 1280×800 | Light | `#FCFCFD` | Cookie banner dismissed; full-page captured |
-| `verify-02-desktop-dark.png` | 1280×800 | Dark | `#1A1A2E` (Dobeu ink-900) | Full-page |
-| `verify-03-mobile-dark.png` | 375×812 (iPhone) | Dark | `#1A1A2E` | Full-page, sticky bottom CTA visible |
-| `verify-04-mobile-light.png` | 375×812 (iPhone) | Light | `#FCFCFD` | Full-page |
-| `verify-05-lightbox-calendly.png` | 1280×800 | Dark | — | Lightbox open with Calendly iframe |
+| File                              | Viewport         | Theme | Bg color                  | Notes                                       |
+| --------------------------------- | ---------------- | ----- | ------------------------- | ------------------------------------------- |
+| `verify-01-desktop-light.png`     | 1280×800         | Light | `#FCFCFD`                 | Cookie banner dismissed; full-page captured |
+| `verify-02-desktop-dark.png`      | 1280×800         | Dark  | `#1A1A2E` (Dobeu ink-900) | Full-page                                   |
+| `verify-03-mobile-dark.png`       | 375×812 (iPhone) | Dark  | `#1A1A2E`                 | Full-page, sticky bottom CTA visible        |
+| `verify-04-mobile-light.png`      | 375×812 (iPhone) | Light | `#FCFCFD`                 | Full-page                                   |
+| `verify-05-lightbox-calendly.png` | 1280×800         | Dark  | —                         | Lightbox open with Calendly iframe          |
 
 All four files saved by Playwright to `.playwright-mcp/` and copied to `docs/verification/`.
 
@@ -24,6 +24,7 @@ All four files saved by Playwright to `.playwright-mcp/` and copied to `docs/ver
 ## 2. Functional verification
 
 ### Sticky nav + theme toggle
+
 - ✅ `header.sticky` element present
 - ✅ `button[aria-label="Toggle theme"]` rendered (Light / Dark / System dropdown)
 - ✅ Logo + dobeu wordmark visible
@@ -32,6 +33,7 @@ All four files saved by Playwright to `.playwright-mcp/` and copied to `docs/ver
 - ✅ "Book a call" CTA in nav (1 of 3 instances on the page)
 
 ### Hero section
+
 - ✅ H1: "Ship the agent. Ship the app. Ship the brand."
 - ✅ Sub-headline: "One operator. Modern stack. Production-grade work for founders…"
 - ✅ Two CTAs: "Book a call" (primary, opens lightbox) + "Tell me about your project" (opens Typeform tab)
@@ -40,27 +42,33 @@ All four files saved by Playwright to `.playwright-mcp/` and copied to `docs/ver
 - ✅ "Most asked for" pill on the AI agents tile
 
 ### Services ("Four things, done well.")
+
 - ✅ 4 service articles render: AI agents & automation, Full-stack web apps, Brand & design systems, Marketing & growth engineering
 - ✅ "Something else?" tile with "Start the conversation →" CTA
 
 ### How it works
+
 - ✅ 3 numbered steps: 30-min discovery, Scoped proposal, Ship in 2–6 weeks
 
 ### Proof
+
 - ✅ Section heading "Proof" present
 - ✅ Stat strip + 2 testimonial blockquotes rendered
 
 ### Founder
+
 - ✅ Heading: "Why one person, not an agency?"
 - ✅ Dobeu mark in glowing card
 
 ### FAQ (with JSON-LD)
+
 - ✅ 9 FAQ accordion triggers (`[id^="radix-"][aria-expanded]`)
 - ✅ All 8 questions present (typical engagement size, how fast, retainers, code location, NDAs, equity, maintainability, "Why dobeu?")
 - ✅ Clicking the first FAQ trigger expands it (`aria-expanded` flips to `true`)
 - ✅ `script[type="application/ld+json"]` includes **FAQPage** + **Organization** schemas
 
 ### Final CTA + Footer
+
 - ✅ "Let's build the thing." final card with mesh gradient
 - ✅ Footer renders with Site / Account / Contact nav columns
 - ✅ 2 LinkedIn outbound links
@@ -68,6 +76,7 @@ All four files saved by Playwright to `.playwright-mcp/` and copied to `docs/ver
 - ✅ Privacy / Terms / Status links
 
 ### Lightbox + Calendly (the headline test)
+
 - ✅ Clicking any "Book a call" opens dialog with title "Let's talk about your project"
 - ✅ 3 tabs render: **Book a call**, **Tell me more**, **Just email**
 - ✅ Calendly iframe loads with Dobeu palette parameters:
@@ -80,11 +89,13 @@ All four files saved by Playwright to `.playwright-mcp/` and copied to `docs/ver
 - ✅ Escape key closes the dialog cleanly
 
 ### Auxiliary pages
+
 - ✅ `/privacy` — title "Privacy · Dobeu Tech Solutions", H1 "Privacy", content > 500 chars
 - ✅ `/terms` — title "Terms · Dobeu Tech Solutions", H1 "Terms of Use", content > 500 chars
 - ✅ `/login` — title "Log in · Dobeu Tech Solutions", H1 "Welcome back", email input + magic-link send button
 
 ### Routes still requiring Supabase env (post-launch verification)
+
 - ⏳ `/portal` — gated by middleware; will redirect to `/login` until Supabase service-role key is set
 - ⏳ `/admin` — gated by ADMIN_EMAILS + Supabase service-role
 
@@ -110,21 +121,21 @@ PageSpeed Insights API ran a Lighthouse audit against the live URL. Results belo
 
 ### Mobile (form_factor=mobile)
 
-| Category | Score | Target | Status |
-|---|---|---|---|
-| Performance | **72** | ≥90 | ⚠️ Below target |
-| Accessibility | **100** | ≥95 | ✅ Perfect |
-| Best Practices | **92** | ≥90 | ✅ Pass |
-| SEO | **100** | ≥95 | ✅ Perfect |
+| Category       | Score   | Target | Status          |
+| -------------- | ------- | ------ | --------------- |
+| Performance    | **72**  | ≥90    | ⚠️ Below target |
+| Accessibility  | **100** | ≥95    | ✅ Perfect      |
+| Best Practices | **92**  | ≥90    | ✅ Pass         |
+| SEO            | **100** | ≥95    | ✅ Perfect      |
 
 ### Desktop (form_factor=desktop)
 
-| Category | Score | Status |
-|---|---|---|
-| Performance | **72** (PSI cached the same result; manual re-run recommended) | — |
-| Accessibility | **100** | ✅ |
-| Best Practices | **92** | ✅ |
-| SEO | **100** | ✅ |
+| Category       | Score                                                          | Status |
+| -------------- | -------------------------------------------------------------- | ------ |
+| Performance    | **72** (PSI cached the same result; manual re-run recommended) | —      |
+| Accessibility  | **100**                                                        | ✅     |
+| Best Practices | **92**                                                         | ✅     |
+| SEO            | **100**                                                        | ✅     |
 
 ### Performance optimization opportunities (Phase 2 hardening)
 
@@ -150,6 +161,7 @@ To rerun Lighthouse manually:
 4. Click "Analyze page load"
 
 Expected targets per the engineering standards:
+
 - Performance ≥ 90
 - Accessibility ≥ 95
 - Best Practices ≥ 90

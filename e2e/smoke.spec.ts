@@ -9,7 +9,9 @@ test.describe("Landing page smoke tests", () => {
 
   test("hero has both CTAs visible", async ({ page }) => {
     await page.goto("/");
-    const bookCallBtn = page.getByRole("button", { name: /book a call/i }).first();
+    const bookCallBtn = page
+      .getByRole("button", { name: /book a call/i })
+      .first();
     await expect(bookCallBtn).toBeVisible();
   });
 
@@ -41,7 +43,9 @@ test.describe("Landing page smoke tests", () => {
 
   test("theme toggle switches between light and dark", async ({ page }) => {
     await page.goto("/");
-    const themeToggle = page.getByRole("button", { name: /toggle theme/i }).first();
+    const themeToggle = page
+      .getByRole("button", { name: /toggle theme/i })
+      .first();
     if (await themeToggle.isVisible()) {
       await themeToggle.click();
       await page.waitForTimeout(500);
@@ -53,13 +57,17 @@ test.describe("Landing page smoke tests", () => {
 });
 
 test.describe("Auth gating", () => {
-  test("/portal redirects to /login when not authenticated", async ({ page }) => {
+  test("/portal redirects to /login when not authenticated", async ({
+    page,
+  }) => {
     await page.goto("/portal");
     await page.waitForURL(/\/login/);
     expect(page.url()).toContain("/login");
   });
 
-  test("/admin redirects to /login when not authenticated", async ({ page }) => {
+  test("/admin redirects to /login when not authenticated", async ({
+    page,
+  }) => {
     await page.goto("/admin");
     await page.waitForURL(/\/login/);
     expect(page.url()).toContain("/login");
@@ -77,8 +85,8 @@ test.describe("API routes", () => {
       data: {
         email: "smoke-test@example.com",
         name: "Smoke Test",
-        source: "form"
-      }
+        source: "form",
+      },
     });
     expect(res.ok()).toBe(true);
     const body = await res.json();
@@ -87,14 +95,14 @@ test.describe("API routes", () => {
 
   test("POST /api/lead rejects invalid email", async ({ request }) => {
     const res = await request.post("/api/lead", {
-      data: { email: "not-valid" }
+      data: { email: "not-valid" },
     });
     expect(res.status()).toBe(400);
   });
 
   test("POST /api/lead rejects empty body", async ({ request }) => {
     const res = await request.post("/api/lead", {
-      data: {}
+      data: {},
     });
     expect(res.status()).toBe(400);
   });

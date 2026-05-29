@@ -32,7 +32,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
       track("booking_scheduled", {
         source: "calendly",
         event_uri: e.data.payload.event.uri,
-        invitee_uri: e.data.payload.invitee.uri
+        invitee_uri: e.data.payload.invitee.uri,
       });
       // NOTE: Calendly's client-side scheduled-event payload only exposes the
       // invitee/event *URIs*, not the invitee email or name. Mirroring the booking
@@ -42,7 +42,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
       // the booking itself is already captured by Calendly and our analytics event.
       // Close the lightbox after a beat so the confirmation screen flashes briefly.
       setTimeout(onClose, 1500);
-    }
+    },
   });
 
   if (!calendlyUrl) {
@@ -53,7 +53,8 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
           <div className="space-y-1">
             <p className="font-semibold text-sm">Calendly not yet wired.</p>
             <p className="text-xs text-muted-foreground">
-              Drop your details and I&apos;ll send time options within a few hours.
+              Drop your details and I&apos;ll send time options within a few
+              hours.
             </p>
           </div>
         </div>
@@ -69,7 +70,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
     textColor: mounted && resolvedTheme === "dark" ? "FAFAFC" : "1A1A2E",
     hideEventTypeDetails: false,
     hideLandingPageDetails: false,
-    hideGdprBanner: true
+    hideGdprBanner: true,
   };
 
   return (
