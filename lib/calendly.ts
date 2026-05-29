@@ -66,6 +66,8 @@ export interface CalendlyInviteeCreatedPayload {
     uri?: string;
     name?: string;
     start_time?: string;
+    end_time?: string;
+    location?: { type?: string; location?: string; join_url?: string };
   };
   tracking?: {
     utm_source?: string | null;
