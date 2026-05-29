@@ -93,6 +93,7 @@ export interface Database {
           status: "open" | "paid" | "void" | "overdue";
           stripe_invoice_id: string | null;
           stripe_payment_intent: string | null;
+          hosted_invoice_url: string | null;
           due_date: string | null;
           paid_at: string | null;
           created_at: string;

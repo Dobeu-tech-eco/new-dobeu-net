@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processLead } from "@/lib/leads";
+import { createAdminClient } from "@/lib/supabase/server";
 import {
   isCalendlyWebhookConfigured,
   verifyCalendlySignature,
@@ -82,9 +83,41 @@ export async function POST(request: Request) {
     referrer: p.scheduled_event?.uri ?? null,
   });
 
+  // Mirror the booking into our bookings table so /admin/bookings + the
+  // overview tile show real data. Best-effort — never fail the webhook.
+  let bookingId: string | null = null;
+  if (p.scheduled_event?.start_time) {
+    try {
+      const supa = createAdminClient();
+      const { data } = await supa
+        .from("bookings")
+        .insert({
+          lead_id: leadId,
+          email: p.email,
+          name: p.name ?? null,
+          scheduled_at: p.scheduled_event.start_time,
+          meeting_url:
+            p.scheduled_event.location?.join_url ??
+            p.scheduled_event.uri ??
+            null,
+          notes: p.scheduled_event.name ?? null,
+          status: "scheduled",
+        })
+        .select("id")
+        .single();
+      bookingId = data?.id ?? null;
+    } catch (e) {
+      console.error(
+        "[/api/webhooks/calendly] booking upsert failed (non-fatal)",
+        e,
+      );
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     lead_id: leadId,
     apollo_contact_id: apolloContactId,
+    booking_id: bookingId,
   });
 }

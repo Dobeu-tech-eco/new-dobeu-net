@@ -7,7 +7,7 @@ export default async function InvoicesPage() {
   const { data: invoices } = await supabase
     .from("invoices")
     .select(
-      "id,project_id,amount_cents,currency,status,due_date,paid_at,stripe_invoice_id",
+      "id,project_id,amount_cents,currency,status,due_date,paid_at,stripe_invoice_id,hosted_invoice_url",
     )
     .order("created_at", { ascending: false });
 
@@ -66,19 +66,24 @@ export default async function InvoicesPage() {
                       : "—"}
                   </td>
                   <td className="p-3 text-right">
-                    {inv.status === "open" || inv.status === "overdue" ? (
+                    {(inv.status === "open" || inv.status === "overdue") &&
+                    inv.hosted_invoice_url ? (
                       <Button asChild size="sm">
                         <a
-                          href={`https://invoice.stripe.com/i/${inv.stripe_invoice_id ?? ""}`}
+                          href={inv.hosted_invoice_url}
                           target="_blank"
                           rel="noreferrer"
                         >
                           Pay
                         </a>
                       </Button>
-                    ) : (
+                    ) : inv.status === "paid" ? (
                       <span className="text-muted-foreground text-xs">
                         Paid
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">
+                        Pending
                       </span>
                     )}
                   </td>
