@@ -3,9 +3,11 @@
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { LeadForm } from "@/components/landing/LeadForm";
-import { BookingTab } from "@/components/landing/BookingTab";
-import { TypeformTab } from "@/components/landing/TypeformTab";
+import dynamic from "next/dynamic";
+// Lazily load heavy form tabs to reduce First Load JS by ~200kB
+const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm));
+const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
+const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
 
 type Tab = "book" | "form" | "email";
 
