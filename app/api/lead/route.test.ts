@@ -90,4 +90,18 @@ describe("POST /api/lead", () => {
     // 5 succeeded, 6th short-circuited before processLead.
     expect(mockedProcessLead).toHaveBeenCalledTimes(5);
   });
+
+  it("extracts the real IP correctly to prevent spoofing bypass", async () => {
+    // Attackers might send a forged IP first. We should parse the rightmost IP
+    // (appended by the proxy) to track the true client, not the forged one.
+    const spoofedIpHeader = "fake-ip, 203.0.113.100";
+    for (let i = 0; i < 5; i++) {
+      const res = await POST(makeRequest({ email: "spoofer@f.com" }, spoofedIpHeader));
+      expect(res.status).toBe(200);
+    }
+    // The 6th request with the same true IP (but a different fake-ip) should be blocked.
+    const diffFakeHeader = "different-fake, 203.0.113.100";
+    const sixth = await POST(makeRequest({ email: "spoofer@f.com" }, diffFakeHeader));
+    expect(sixth.status).toBe(429);
+  });
 });
