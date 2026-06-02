@@ -67,16 +67,20 @@ export default async function AdminLayout({
               key={item.href}
               href={item.href}
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
+              aria-label={item.label}
+              title={item.label}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">{item.label}</span>
             </Link>
           ))}
           <Link
             href="/portal"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
+            aria-label="Portal view"
+            title="Portal view"
           >
-            <LayoutDashboard className="h-4 w-4" />{" "}
+            <LayoutDashboard className="h-4 w-4" aria-hidden="true" />{" "}
             <span className="hidden sm:inline">Portal view</span>
           </Link>
           <LogoutButton />
