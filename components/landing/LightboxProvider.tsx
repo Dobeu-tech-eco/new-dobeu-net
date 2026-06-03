@@ -10,8 +10,12 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LeadForm } from "@/components/landing/LeadForm";
-import { BookingTab } from "@/components/landing/BookingTab";
-import { TypeformTab } from "@/components/landing/TypeformTab";
+import dynamic from "next/dynamic";
+
+// ⚡ Bolt: Dynamically import heavy third-party modal components (Calendly & Typeform)
+// This reduces the initial First Load JS size by only loading them when a user opens the modal.
+const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
+const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
 
 type Tab = "book" | "form" | "email";
 
