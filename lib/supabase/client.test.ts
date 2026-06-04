@@ -8,8 +8,8 @@ vi.mock("@supabase/ssr", () => ({
   createBrowserClient: createBrowserClientMock
 }));
 
-const URL_KEY = "NEXT_PUBLIC_SUPABASE_URL";
-const ANON_KEY = "NEXT_PUBLIC_SUPABASE_ANON_KEY";
+const URL_KEY = "NEXT_PUBLIC_VERCEL_SUPABASE_URL";
+const ANON_KEY = "NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY";
 
 function clearEnv() {
   delete process.env[URL_KEY];

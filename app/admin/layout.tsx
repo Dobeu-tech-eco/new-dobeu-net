@@ -18,6 +18,17 @@ import { isAdminEmail } from "@/lib/utils";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
+import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
+
+function intercomNameFromUser(user: {
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}): string | undefined {
+  const meta = user.user_metadata ?? {};
+  const fullName = typeof meta.full_name === "string" ? meta.full_name : undefined;
+  const name = typeof meta.name === "string" ? meta.name : undefined;
+  return fullName ?? name ?? user.email ?? undefined;
+}
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -41,6 +52,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      <IntercomIdentify
+        user_id={user.id}
+        email={user.email ?? undefined}
+        name={intercomNameFromUser(user)}
+        created_at={user.created_at}
+      />
       <aside className="md:w-64 md:min-h-screen border-b md:border-b-0 md:border-r border-accent/40 bg-card/60">
         <div className="p-4 flex items-center justify-between">
           <Link href="/admin" className="flex items-center gap-2">

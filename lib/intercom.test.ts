@@ -110,6 +110,23 @@ describe("identifyIntercom", () => {
     );
   });
 
+  it("forwards created_at as a Unix timestamp in seconds", async () => {
+    process.env[APP_ID] = "abc123";
+    const { identifyIntercom } = await freshImport();
+    identifyIntercom({ user_id: "u1", created_at: 1704067200 });
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ created_at: 1704067200 })
+    );
+  });
+
+  it("leaves created_at undefined when not provided", async () => {
+    process.env[APP_ID] = "abc123";
+    const { identifyIntercom } = await freshImport();
+    identifyIntercom({ user_id: "u1" });
+    const [payload] = updateMock.mock.calls[0];
+    expect(payload.created_at).toBeUndefined();
+  });
+
   it("still calls update even when not configured (no boot)", async () => {
     const { identifyIntercom } = await freshImport();
     identifyIntercom({ user_id: "u1" });

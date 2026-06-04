@@ -35,8 +35,13 @@ export function identifyIntercom(user: {
   user_id: string;
   email?: string;
   name?: string;
+  /**
+   * Unix timestamp **in seconds** (Intercom's required format), e.g. 1704067200.
+   * Pass `Math.floor(new Date(supabaseUser.created_at).getTime() / 1000)`.
+   */
+  created_at?: number;
   company?: string;
-  // user_hash from server when identity verification is on
+  /** HMAC user_hash from server when Intercom identity verification is on. */
   user_hash?: string;
 }): void {
   if (!booted) initIntercom();
@@ -44,6 +49,7 @@ export function identifyIntercom(user: {
     user_id: user.user_id,
     email: user.email,
     name: user.name,
+    created_at: user.created_at,
     company: user.company ? { id: user.company, name: user.company } : undefined,
     user_hash: user.user_hash
   });

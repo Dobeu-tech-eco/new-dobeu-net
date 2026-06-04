@@ -44,14 +44,26 @@ const csp = {
     "https://*.browser-intake-us5-datadoghq.com",
     "https://vitals.vercel-insights.com",
     "https://vercel.live",
+    "https://api.intercom.io",
     "https://api-iam.intercom.io",
     "https://api-iam.eu.intercom.io",
+    "https://api-ping.intercom.io",
     "https://nexus-websocket-a.intercom.io",
+    "https://nexus-websocket-b.intercom.io",
+    "https://nexus-europe-websocket.intercom.io",
     "wss://nexus-websocket-a.intercom.io",
-    "https://uploads.intercomcdn.com"
+    "wss://nexus-websocket-b.intercom.io",
+    "https://uploads.intercomcdn.com",
+    "https://uploads.intercomusercontent.com"
   ],
   img: ["'self'", "data:", "blob:", "https:"],
-  font: ["'self'", "https://fonts.gstatic.com", "data:", "https://js.intercomcdn.com"],
+  font: [
+    "'self'",
+    "https://fonts.gstatic.com",
+    "data:",
+    "https://js.intercomcdn.com",
+    "https://fonts.intercomcdn.com"
+  ],
   style: [
     "'self'",
     "'unsafe-inline'",

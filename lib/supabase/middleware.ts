@@ -10,8 +10,8 @@ import type { Database } from "@/lib/database.types";
  * fall through without crashing so the marketing landing still renders.
  */
 export async function updateSession(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY;
   const path = request.nextUrl.pathname;
 
   // Bail gracefully if Supabase isn't configured yet

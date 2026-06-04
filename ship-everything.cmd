@@ -26,8 +26,10 @@ REM Adds one env var to all three Vercel environments via echo|set /p (no traili
 :start
 
 REM ---------- Step 1: Add env vars ----------
-call :add_env NEXT_PUBLIC_SUPABASE_URL https://qdwvcrmdqweojverdmmz.supabase.co
-call :add_env NEXT_PUBLIC_SUPABASE_ANON_KEY eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkd3Zjcm1kcXdlb2p2ZXJkbW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MzM3MTUsImV4cCI6MjA5MTAwOTcxNX0.dm1jVqqyQ44j3-Ckr2-NQ7ZsA_6wRUCnaE1Gl0Rr2g4
+REM Note: VERCEL_SUPABASE_* are provisioned automatically by the Vercel
+REM Marketplace Supabase integration. The only one we add manually is the
+REM NEXT_PUBLIC_VERCEL_SUPABASE_URL alias (Marketplace ships URL server-only).
+call :add_env NEXT_PUBLIC_VERCEL_SUPABASE_URL https://ipmjokuezeuukhrilduq.supabase.co
 call :add_env NEXT_PUBLIC_MIXPANEL_TOKEN f5596f8dbfc32267e58b767dd1ede3ea
 call :add_env NEXT_PUBLIC_POSTHOG_HOST https://us.i.posthog.com
 call :add_env RESEND_FROM_EMAIL hello@dobeu.net
@@ -60,10 +62,10 @@ echo === DONE ===
 echo Vercel will auto-redeploy in ~60s with all env vars set.
 echo Watch: https://vercel.com/dobeutechnology/new-dobeu-net/deployments
 echo.
-echo One manual step left:
-echo   Grab SUPABASE_SERVICE_ROLE_KEY from:
-echo   https://supabase.com/dashboard/project/qdwvcrmdqweojverdmmz/settings/api
-echo   Reveal service_role, paste into Vercel as SUPABASE_SERVICE_ROLE_KEY (Sensitive).
+echo Note:
+echo   VERCEL_SUPABASE_SERVICE_ROLE_KEY (and the rest of the VERCEL_SUPABASE_*
+echo   set) are auto-provisioned by the Vercel Marketplace Supabase integration.
+echo   No manual paste needed.
 echo.
 git log --oneline -5
 pause

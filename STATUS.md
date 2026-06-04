@@ -54,9 +54,10 @@ In the Vercel project settings → Environment Variables, add (mark as "Producti
 | `NEXT_PUBLIC_SITE_URL` | `https://new-dobeu-net.vercel.app` (or the actual URL Vercel assigns) |
 | `NEXT_PUBLIC_CALENDLY_URL` | `https://calendly.com/jeremyw-dobeu-r_el` |
 | `ADMIN_EMAILS` | `jeremyw@dobeu.net` |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://qdwvcrmdqweojverdmmz.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkd3Zjcm1kcXdlb2p2ZXJkbW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MzM3MTUsImV4cCI6MjA5MTAwOTcxNX0.dm1jVqqyQ44j3-Ckr2-NQ7ZsA_6wRUCnaE1Gl0Rr2g4` |
-| `SUPABASE_SERVICE_ROLE_KEY` | (grab from Supabase dashboard → API settings → service_role secret) |
+| `NEXT_PUBLIC_VERCEL_SUPABASE_URL` | `https://ipmjokuezeuukhrilduq.supabase.co` (auto-managed by Vercel Marketplace; mirror of `VERCEL_SUPABASE_URL` for browser exposure) |
+| `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY` | (auto-provisioned by Vercel Marketplace Supabase integration) |
+| `VERCEL_SUPABASE_URL` | `https://ipmjokuezeuukhrilduq.supabase.co` (server-only, auto-managed) |
+| `VERCEL_SUPABASE_SERVICE_ROLE_KEY` | (auto-provisioned by Vercel Marketplace Supabase integration; bypasses RLS — server only) |
 | `APOLLO_API_KEY` | (your Apollo key) |
 | `RESEND_API_KEY` | (your Resend key) |
 | `RESEND_FROM_EMAIL` | `hello@dobeu.net` |

@@ -10,8 +10,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Sibling agent-instruction files (`AGENTS.md`, `GEMINI.md`, `.github/copilot-instructions.md`) are **thin pointers only**. Do not duplicate architectural guidance there — update this file instead. They exist solely because Codex / Gemini CLI / Copilot look for those filenames.
 
-Active workstream: branch `test/coverage` is expanding unit-test coverage (~100+ tests and growing — commit `9cb000d` did the initial 18 → 106 jump). Don't rewrite the existing test files unless you mean to. Recent work also wired the live GTM container (`GTM-M97GN5T7`) + `dataLayer` events (commit `5088a67`); PR notes captured in `.agent/pr-body-gtm.md`.
-
 ## Commands
 
 Package manager is **pnpm** (`packageManager: pnpm@11.1.3`, Node >=20).
@@ -38,9 +36,10 @@ pnpm supabase db push          # apply migrations in supabase/migrations/
 pnpm db:types                  # regenerate lib/database.types.ts from local schema
 ```
 
-Vitest is wired up (`vitest.config.ts` + ~100+ unit tests under `app/api/**/*.test.ts` and `lib/**/*.test.ts`, growing on `test/coverage`). Run a single file with `pnpm test:ci -- lib/leads.test.ts`, or focus by name with `pnpm test:ci -- -t "processLead"`.
-
-Playwright is wired up (`playwright.config.ts` + `e2e/*`). Run smoke tests with `pnpm test:e2e`.
+## Testing
+- **Vitest** — `vitest.config.ts`, tests colocated as `*.test.ts(x)` under `app/` and `lib/`. Run a single file: `pnpm test:ci -- lib/leads.test.ts`. Focus by name: `pnpm test:ci -- -t "processLead"`.
+- **Playwright** — `playwright.config.ts` + `e2e/*`. Smoke-only today. Run with `pnpm test:e2e` (or `pnpm test:e2e:ui` for UI mode).
+- CI does **not** run tests — `pnpm verify` is the only place tests gate a merge locally.
 
 ## Build verification
 
@@ -58,7 +57,7 @@ For a full pre-merge check, run `pnpm verify` (`type-check && lint && test:ci &&
 ### Supabase access pattern (three clients -- pick deliberately)
 - `lib/supabase/client.ts` -- browser client.
 - `lib/supabase/server.ts` -> `createClient()` -- request-cookie-bound client for Server Components / Route Handlers / Server Actions; respects RLS as the logged-in user.
-- `lib/supabase/server.ts` -> `createAdminClient()` -- **service-role, bypasses RLS, server-only**. Use only for admin ops and webhooks (e.g. the lead API). Throws if `SUPABASE_SERVICE_ROLE_KEY` is missing.
+- `lib/supabase/server.ts` -> `createAdminClient()` -- **service-role, bypasses RLS, server-only**. Use only for admin ops and webhooks (e.g. the lead API). Throws if `VERCEL_SUPABASE_SERVICE_ROLE_KEY` is missing.
 - `lib/supabase/middleware.ts` + root `middleware.ts` -- refreshes the auth session on every request (matcher excludes static assets).
 
 All `/admin/*` and `/api/lead` use `export const dynamic = "force-dynamic"` because they read per-request auth/cookies and must never be statically pre-rendered.
@@ -79,6 +78,29 @@ Entry points that call `processLead()`:
 ### Security headers / CSP
 `next.config.ts` builds a strict Content-Security-Policy plus HSTS, X-Frame-Options, etc., applied to all routes. **When adding any third-party script, embed, or API host, add its domains to the relevant CSP array** (`script`, `connect`, `frame`, `font`, `style`) or it will be blocked at runtime. CSP arrays are intentionally split line-per-entry so git keeps treating the file as text.
 
+### `lib/` map
+- `lib/supabase/{client,server,middleware}.ts` — the three clients described above.
+- `lib/leads.ts` — `processLead()` fan-out (single shared path).
+- `lib/apollo.ts`, `lib/customerio.ts`, `lib/calendly.ts`, `lib/typeform.ts` — third-party integrations called from the lead pipeline / webhooks.
+- `lib/analytics.ts` — client-side fan-out (PostHog + Mixpanel + GA4 + GTM dataLayer).
+- `lib/datadog.ts`, `lib/intercom.ts` — observability + support widget, wired via `components/analytics-provider.tsx`.
+- `lib/utils.ts` — `isAdminEmail()` lives here (admin gate); also shared cn/format helpers.
+- `lib/database.types.ts` — **generated**, regenerate with `pnpm db:types`.
+
+### Env vars (server-only unless noted)
+| Var | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY` | Browser + cookie-bound Supabase clients (client-exposed). Provisioned by the Vercel Marketplace Supabase integration; the `NEXT_PUBLIC_` URL is a manually-added mirror of `VERCEL_SUPABASE_URL`. |
+| `VERCEL_SUPABASE_URL` | Server-only Supabase URL. `createClient()` and `createAdminClient()` fall back to this when `NEXT_PUBLIC_VERCEL_SUPABASE_URL` is unset. |
+| `VERCEL_SUPABASE_SERVICE_ROLE_KEY` | `createAdminClient()` — bypasses RLS. Required for admin pages + `/api/lead`. Auto-provisioned by the Marketplace integration. |
+| `ADMIN_EMAILS` | Comma-separated. Drives `isAdminEmail()` — the actual admin gate. |
+| `CALENDLY_WEBHOOK_SIGNING_KEY` | HMAC verification for `/api/webhooks/calendly`. Webhook returns 503 if unset. |
+| `APOLLO_API_KEY` | Apollo upsert in `processLead()`. |
+| `CUSTOMERIO_SITE_ID`, `CUSTOMERIO_API_KEY` | Customer.io identify + `lead_captured`. |
+| `RESEND_API_KEY` | Confirmation + admin-notification emails. |
+| `STRIPE_SECRET_KEY` | Invoice/payment surfaces. |
+| `NEXT_PUBLIC_*` (PostHog, Mixpanel, GA4, GTM, Intercom, Datadog) | Per-provider client-side analytics — feature-flagged by presence. |
+
 ## Quality standards
 - **Lighthouse targets** (informational, not a build gate): Performance ≥90, Accessibility ≥95, Best Practices ≥90, SEO ≥95.
 - **Immutability** in `lib/*` helpers — never mutate inputs; return new objects.
@@ -89,17 +111,12 @@ Entry points that call `processLead()`:
 - Path alias `@/*` -> repo root (e.g. `@/lib/supabase/server`).
 - shadcn/ui primitives live in `components/ui/`; brand mark in `components/brand/`.
 - Theming via `next-themes`, `attribute="class"`, three modes (Light/Dark/System); Dobeu Design System v2 tokens in `app/globals.css` and `tailwind.config.ts`.
-- Env: copy `.env.example` -> `.env.local`. `NEXT_PUBLIC_*` keys are client-exposed; everything else (`SUPABASE_SERVICE_ROLE_KEY`, `APOLLO_API_KEY`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, etc.) is server-only.
+- Env: run `vercel env pull .env.local` (Vercel-managed Supabase + analytics envs auto-fill). `NEXT_PUBLIC_*` keys are client-exposed; everything else (`VERCEL_SUPABASE_SERVICE_ROLE_KEY`, `APOLLO_API_KEY`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, etc.) is server-only.
 
 ## Deployment
-Vercel (`vercel.json`, `docs/DEPLOYMENT.md`). The root contains ~15+ `*.cmd` helper scripts for committing/pushing/deploying from Windows -- these are ad-hoc operator scripts, not part of the app, and they accumulate. Recurring-pain shortcuts worth knowing about:
-
-- `push-vercel-lockfile-fix.cmd` / `fix-lockfile-and-deploy.cmd` -- run when Vercel build fails because `pnpm-lock.yaml` is out of sync with `package.json`.
-- `push-csp-fix.cmd` -- canned commit/push for CSP tweaks in `next.config.ts` (common after adding a new third-party host).
-- `just-push.cmd` -- bare `git push` with nothing else.
-- `commit-gtm-and-push.cmd`, `push-observability.cmd`, `ship-everything.cmd`, etc. -- one-shot scripts named after the work they were created for; usually safe to ignore unless you're the one who authored them.
-
-These are convenience only; nothing in the app depends on them. Don't add new ones for tasks an agent can already do via `git` directly.
+Vercel (`vercel.json`, `docs/DEPLOYMENT.md`). Root has ~15+ untracked `*.cmd` operator scripts — convenience only, nothing in the app depends on them. Don't add new ones for work `git` already does. Two worth knowing:
+- `push-vercel-lockfile-fix.cmd` / `fix-lockfile-and-deploy.cmd` — when Vercel build fails because `pnpm-lock.yaml` is out of sync with `package.json`.
+- `push-csp-fix.cmd` — canned commit/push for CSP tweaks (common after adding a new third-party host).
 
 ## Untracked working-tree noise
 A few patterns show up regularly in `git status` and are **not** project artifacts you should commit or "clean up" without checking:
