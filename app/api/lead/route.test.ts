@@ -12,14 +12,21 @@ import { processLead } from "@/lib/leads";
 
 const mockedProcessLead = vi.mocked(processLead);
 
-function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string): Request {
+function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string, useRealIp = false): Request {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+
+  if (useRealIp) {
+    headers["x-real-ip"] = ip;
+  } else {
+    headers["x-forwarded-for"] = ip;
+  }
+
   return new Request("http://localhost/api/lead", {
     method: "POST",
     body: rawBody ?? JSON.stringify(body),
-    headers: {
-      "content-type": "application/json",
-      "x-forwarded-for": ip,
-    },
+    headers,
   });
 }
 
@@ -44,6 +51,33 @@ describe("POST /api/lead", () => {
     expect(arg).toMatchObject({ email: "a@b.com", source: "form" });
     // ipHash derived from x-forwarded-for (light non-crypto hash, ip_ prefix).
     expect(arg.ipHash).toMatch(/^ip_/);
+  });
+
+  it("extracts IP correctly from x-forwarded-for when spoofed", async () => {
+    // Attackers might try to spoof IP to bypass rate limits by passing comma separated lists.
+    // The last IP in x-forwarded-for is appended by the nearest proxy, so it's the real one.
+    const res = await POST(
+      makeRequest({ email: "spoof@b.com", source: "form" }, "192.168.1.1, 10.0.0.99"),
+    );
+    expect(res.status).toBe(200);
+
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
+  });
+
+  it("prioritizes x-real-ip over x-forwarded-for", async () => {
+    const request = new Request("http://localhost/api/lead", {
+      method: "POST",
+      body: JSON.stringify({ email: "real@ip.com" }),
+      headers: {
+        "content-type": "application/json",
+        "x-real-ip": "10.0.0.100",
+        "x-forwarded-for": "10.0.0.101",
+      },
+    });
+
+    const res = await POST(request);
+    expect(res.status).toBe(200);
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
   });
 
   it("defaults source to 'other' when omitted", async () => {
