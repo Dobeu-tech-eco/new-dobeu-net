@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { getSiteUrl } from "@/lib/utils";
 import "./globals.css";
 
 /**
@@ -16,7 +17,7 @@ const nunito = Nunito({
   weight: ["400", "500", "600", "700", "800"]
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dobeu.net";
+const SITE_URL = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

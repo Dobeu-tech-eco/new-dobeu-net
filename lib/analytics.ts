@@ -9,6 +9,7 @@
 
 import posthog from "posthog-js";
 import mixpanel from "mixpanel-browser";
+import { getPosthogHost } from "@/lib/utils";
 
 type EventProps = Record<string, string | number | boolean | null | undefined>;
 
@@ -24,7 +25,7 @@ export function initAnalytics(consent: boolean): void {
   // ---- PostHog ----
   if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
+      api_host: getPosthogHost(),
       capture_pageview: true,
       capture_pageleave: true,
       autocapture: false,

@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dobeu.net";
+import { getSiteUrl } from "@/lib/utils";
 
 export default function robots(): MetadataRoute.Robots {
+  const SITE_URL = getSiteUrl();
   return {
     rules: [
       { userAgent: "*", allow: "/", disallow: ["/portal", "/admin", "/api", "/auth"] },

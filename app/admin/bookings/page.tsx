@@ -8,26 +8,12 @@ export default async function AdminBookingsPage() {
     .order("scheduled_at", { ascending: false })
     .limit(100);
 
-  const fallbackLeads =
-    error || !bookings
-      ? (
-          await supabase
-            .from("leads")
-            .select("id,email,name,first_seen,source")
-            .eq("source", "book")
-            .order("first_seen", { ascending: false })
-            .limit(100)
-        ).data ?? []
-      : [];
-
-  const rows = bookings ?? fallbackLeads.map((lead) => ({
-    id: lead.id,
-    email: lead.email,
-    name: lead.name,
-    notes: "Captured from Calendly webhook",
-    scheduled_at: lead.first_seen,
-    status: "scheduled"
-  }));
+  // Schema is now unified — surface bookings errors honestly instead of
+  // masking them behind a fallback read against the leads table.
+  if (error) {
+    console.error("[admin/bookings] supabase error:", error.message ?? error);
+  }
+  const rows = bookings ?? [];
 
   return (
     <div className="space-y-6">
@@ -35,6 +21,12 @@ export default async function AdminBookingsPage() {
         <h1 className="font-display text-3xl font-bold tracking-tight">Bookings</h1>
         <p className="text-muted-foreground mt-1">Discovery calls scheduled via the landing lightbox.</p>
       </header>
+
+      {error ? (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          Couldn&rsquo;t load bookings. Check Supabase connectivity — see server logs for details.
+        </p>
+      ) : null}
 
       {rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">

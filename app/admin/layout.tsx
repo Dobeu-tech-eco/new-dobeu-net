@@ -19,16 +19,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
 import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
-
-function intercomNameFromUser(user: {
-  email?: string | null;
-  user_metadata?: Record<string, unknown> | null;
-}): string | undefined {
-  const meta = user.user_metadata ?? {};
-  const fullName = typeof meta.full_name === "string" ? meta.full_name : undefined;
-  const name = typeof meta.name === "string" ? meta.name : undefined;
-  return fullName ?? name ?? user.email ?? undefined;
-}
+import { intercomNameFromUser } from "@/lib/intercom";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },

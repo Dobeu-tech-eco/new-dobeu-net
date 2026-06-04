@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
+import { isAdminEmail } from "@/lib/utils";
 
 /**
  * Refresh the Supabase session on every request so server components see fresh auth.
@@ -62,11 +63,9 @@ export async function updateSession(request: NextRequest) {
       url.searchParams.set("next", path);
       return NextResponse.redirect(url);
     }
-    const adminList = (process.env.ADMIN_EMAILS ?? "")
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
-    if (!user.email || !adminList.includes(user.email.toLowerCase())) {
+    // Single source of truth for the admin gate — keep parsing centralised
+    // in lib/utils so middleware, server actions, and admin layout never drift.
+    if (!isAdminEmail(user.email)) {
       const url = request.nextUrl.clone();
       url.pathname = "/portal";
       url.searchParams.set("error", "not_authorized");

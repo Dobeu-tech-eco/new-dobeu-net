@@ -1,5 +1,13 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { cn, isAdminEmail, formatCurrency, captureAcquisition } from "@/lib/utils";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import {
+  cn,
+  isAdminEmail,
+  parseAdminEmails,
+  formatCurrency,
+  captureAcquisition,
+  getSiteUrl,
+  getPosthogHost
+} from "@/lib/utils";
 
 describe("cn", () => {
   it("merges conditional classes and drops falsy values", () => {
@@ -37,6 +45,70 @@ describe("formatCurrency", () => {
   });
   it("keeps cents when present", () => {
     expect(formatCurrency(2599)).toBe("$25.99");
+  });
+});
+
+describe("parseAdminEmails", () => {
+  it("trims, lowercases, and drops empties", () => {
+    process.env.ADMIN_EMAILS = "  JeremyW@Dobeu.net , admin@dobeu.net ,, ";
+    expect(parseAdminEmails()).toEqual(["jeremyw@dobeu.net", "admin@dobeu.net"]);
+  });
+
+  it("returns [] when env var is missing or empty", () => {
+    delete process.env.ADMIN_EMAILS;
+    expect(parseAdminEmails()).toEqual([]);
+    process.env.ADMIN_EMAILS = "";
+    expect(parseAdminEmails()).toEqual([]);
+  });
+});
+
+describe("getSiteUrl", () => {
+  const original = process.env.NEXT_PUBLIC_SITE_URL;
+  afterEach(() => {
+    if (original === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = original;
+  });
+
+  it("falls back to https://dobeu.net when env var is unset", () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    expect(getSiteUrl()).toBe("https://dobeu.net");
+  });
+
+  it("falls back to https://dobeu.net when env var is the empty string (Vercel sensitive-env injection)", () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "";
+    expect(getSiteUrl()).toBe("https://dobeu.net");
+  });
+
+  it("falls back when env var is whitespace-only", () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "   ";
+    expect(getSiteUrl()).toBe("https://dobeu.net");
+  });
+
+  it("returns the configured site url when present", () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://staging.dobeu.net";
+    expect(getSiteUrl()).toBe("https://staging.dobeu.net");
+  });
+});
+
+describe("getPosthogHost", () => {
+  const original = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+  afterEach(() => {
+    if (original === undefined) delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
+    else process.env.NEXT_PUBLIC_POSTHOG_HOST = original;
+  });
+
+  it("falls back when env var is unset, empty, or whitespace", () => {
+    delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
+    expect(getPosthogHost()).toBe("https://us.i.posthog.com");
+    process.env.NEXT_PUBLIC_POSTHOG_HOST = "";
+    expect(getPosthogHost()).toBe("https://us.i.posthog.com");
+    process.env.NEXT_PUBLIC_POSTHOG_HOST = "  ";
+    expect(getPosthogHost()).toBe("https://us.i.posthog.com");
+  });
+
+  it("returns the configured host when present", () => {
+    process.env.NEXT_PUBLIC_POSTHOG_HOST = "https://eu.i.posthog.com";
+    expect(getPosthogHost()).toBe("https://eu.i.posthog.com");
   });
 });
 
