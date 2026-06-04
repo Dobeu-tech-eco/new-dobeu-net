@@ -22,9 +22,23 @@ export const dynamic = "force-dynamic";
  *     `invitee.created` event via Calendly's API.
  */
 export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const requestId = request.headers.get("calendly-request-id") ?? crypto.randomUUID();
+  console.log(
+    JSON.stringify({
+      msg: "calendly_webhook_received",
+      request_id: requestId,
+      ts: new Date().toISOString()
+    })
+  );
+
   if (!isCalendlyWebhookConfigured()) {
-    // Inert until configured — mirrors the rest of the env-gated pipeline.
-    console.warn("[/api/webhooks/calendly] CALENDLY_WEBHOOK_SIGNING_KEY unset — ignoring webhook");
+    console.warn(
+      JSON.stringify({
+        msg: "calendly_webhook_not_configured",
+        request_id: requestId
+      })
+    );
     return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
   }
 
@@ -81,6 +95,16 @@ export async function POST(request: Request) {
       console.warn("[/api/webhooks/calendly] booking mirror insert failed", error);
     }
   }
+
+  console.log(
+    JSON.stringify({
+      msg: "calendly_webhook_complete",
+      request_id: requestId,
+      event_type: evt.event,
+      lead_id: leadId,
+      duration_ms: Date.now() - startedAt
+    })
+  );
 
   return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
 }

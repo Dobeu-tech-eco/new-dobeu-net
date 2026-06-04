@@ -73,3 +73,10 @@
 
 - Initial schema (`20260521000000`) applied: **YES**
 - Reconciliation (`20260605000000`) applied: **YES**
+
+
+## Phase 3 mini-migration (2026-06-15)
+
+- `profiles.stripe_customer_id` column: ✅
+- `profiles_stripe_customer_id_unique` partial unique index: ✅
+- Applied at: 2026-06-04T22:26:45.133Z

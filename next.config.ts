@@ -34,6 +34,7 @@ const csp = {
     "https://*.google-analytics.com",
     "https://*.analytics.google.com",
     "https://api.stripe.com",
+    "https://m.stripe.network",
     "https://api.apollo.io",
     "https://*.typeform.com",
     "https://api.calendly.com",

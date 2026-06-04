@@ -11,7 +11,8 @@ import {
   Receipt,
   Inbox,
   CalendarCheck,
-  BarChart3
+  BarChart3,
+  Ticket
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/utils";
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
+  { href: "/admin/tickets", label: "Tickets", icon: Ticket },
   { href: "/admin/invoices", label: "Invoices", icon: Receipt },
   { href: "/admin/leads", label: "Leads", icon: Inbox },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },

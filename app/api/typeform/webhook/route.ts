@@ -25,7 +25,20 @@ function answerByRef(answers: TypeformAnswer[], refs: string[]): TypeformAnswer 
 }
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const requestId = request.headers.get("typeform-event-id") ?? crypto.randomUUID();
+  console.log(
+    JSON.stringify({
+      msg: "typeform_webhook_received",
+      request_id: requestId,
+      ts: new Date().toISOString()
+    })
+  );
+
   if (!isTypeformWebhookConfigured()) {
+    console.warn(
+      JSON.stringify({ msg: "typeform_webhook_not_configured", request_id: requestId })
+    );
     return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
   }
 
@@ -85,6 +98,16 @@ export async function POST(request: Request) {
     utm,
     referrer: hidden.referrer ?? hidden.landing_url ?? null
   });
+
+  console.log(
+    JSON.stringify({
+      msg: "typeform_webhook_complete",
+      request_id: requestId,
+      event_type: payload.event_type,
+      lead_id: leadId,
+      duration_ms: Date.now() - startedAt
+    })
+  );
 
   return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
 }

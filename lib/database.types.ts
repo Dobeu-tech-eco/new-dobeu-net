@@ -15,6 +15,9 @@
  *   - dropped `messages` (Intercom owns chat)
  *   - added `invoices.hosted_invoice_url`
  *   - added `work_orders` + `work_order_attachments`
+ *
+ * 2026-06-15 (Phase 3): synced with `20260615000000_phase3_stripe_customer_id.sql`
+ *   - added `profiles.stripe_customer_id` (lazy-created on first invoice)
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
@@ -48,6 +51,7 @@ export interface Database {
           avatar_url: string | null;
           apollo_contact_id: string | null;
           is_admin: boolean;
+          stripe_customer_id: string | null;
           created_at: string;
           updated_at: string;
         };
