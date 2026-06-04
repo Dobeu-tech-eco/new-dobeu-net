@@ -111,6 +111,8 @@ Entry points that call `processLead()`:
 - Path alias `@/*` -> repo root (e.g. `@/lib/supabase/server`).
 - shadcn/ui primitives live in `components/ui/`; brand mark in `components/brand/`.
 - Theming via `next-themes`, `attribute="class"`, three modes (Light/Dark/System); Dobeu Design System v2 tokens in `app/globals.css` and `tailwind.config.ts`.
+- **Node version policy** — `engines.node` is pinned to `20.x` in `package.json`, mirrored in `.nvmrc` and `.github/workflows/ci.yml`. Bumping the major is a deliberate change requiring all three updated together. Don't loosen to `>=20.0.0` (Vercel warns and will auto-float to a new major) and don't pin to a specific minor (`20.18.0`) unless there's a real reason.
+- **Edge runtime policy** — only use `export const runtime = "edge"` for routes that genuinely need per-request edge execution (auth-adjacent middleware, geo-personalization). Don't use it for static metadata routes (OG images, sitemap, robots) — Next.js will warn that static generation is disabled and the asset will be rebuilt per request. `pnpm verify` blocks regressions via `scripts/strict-build.mjs` (which fails on the `Detected "engines"` and `currently disables static generation` warnings); plain `pnpm build` (used by Vercel) stays lenient so a harmless future warning can't block production deploys.
 - Env: run `vercel env pull .env.local` (Vercel-managed Supabase + analytics envs auto-fill). `NEXT_PUBLIC_*` keys are client-exposed; everything else (`VERCEL_SUPABASE_SERVICE_ROLE_KEY`, `APOLLO_API_KEY`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, etc.) is server-only.
 
 ## Deployment

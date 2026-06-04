@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
-    "verify": "pnpm type-check && pnpm lint && pnpm test:ci && pnpm build"
+    "build:strict": "node scripts/strict-build.mjs",
+    "verify": "pnpm type-check && pnpm lint && pnpm test:ci && pnpm build:strict"
   },
   "dependencies": {
     "@datadog/browser-logs": "5.35.1",
@@ -88,7 +89,7 @@
     "vitest": "^4.1.7"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
   "packageManager": "pnpm@11.1.3"
 }

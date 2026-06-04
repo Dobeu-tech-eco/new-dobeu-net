@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Incremental index for the continual-learning skill. Tracks parent transcripts already mined for AGENTS.md / CLAUDE.md learnings. Subagent transcripts under subagents/ are intentionally excluded.",
+  "transcripts": {
+    "C:\\Users\\jswil\\.cursor\\projects\\c-Users-jswil-repos-new-dobeu-net\\agent-transcripts\\088373cd-947e-43ba-b63b-270f7c638780\\088373cd-947e-43ba-b63b-270f7c638780.jsonl": {
+      "mtime_ms": 1780592915809,
+      "size_bytes": 306157,
+      "last_processed_at": "2026-06-04T17:08:00Z"
+    },
+    "C:\\Users\\jswil\\.cursor\\projects\\c-Users-jswil-repos-new-dobeu-net\\agent-transcripts\\cbc17096-8959-4940-8008-2b25666e77fd\\cbc17096-8959-4940-8008-2b25666e77fd.jsonl": {
+      "mtime_ms": 1779602677302,
+      "size_bytes": 212000,
+      "last_processed_at": "2026-06-04T17:08:00Z"
+    }
+  }
+}
