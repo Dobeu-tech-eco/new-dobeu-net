@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { FolderKanban, Receipt, MessagesSquare } from "lucide-react";
+import { FolderKanban, Receipt } from "lucide-react";
 import Link from "next/link";
 
 export default async function PortalDashboard() {
@@ -8,25 +8,21 @@ export default async function PortalDashboard() {
     data: { user }
   } = await supabase.auth.getUser();
 
-  // Fetch dashboard data — RLS auto-scopes to this user
-  const [projectsRes, invoicesRes, messagesRes] = await Promise.all([
+  // Fetch dashboard data — RLS auto-scopes to this user.
+  // (Messages tile dropped in Phase 1 — Intercom owns chat now;
+  // tickets/work-orders tile will land in Phase 3.)
+  const [projectsRes, invoicesRes] = await Promise.all([
     supabase.from("projects").select("id,title,status").limit(5),
     supabase
       .from("invoices")
       .select("id,project_id,amount_cents,currency,status,due_date")
       .in("status", ["open", "overdue"])
-      .limit(5),
-    supabase
-      .from("messages")
-      .select("id,thread_id,body,created_at,read_at")
-      .eq("to_user_id", user!.id)
-      .is("read_at", null)
       .limit(5)
   ]);
 
   const projects = projectsRes.data ?? [];
   const openInvoices = invoicesRes.data ?? [];
-  const unreadMessages = messagesRes.data ?? [];
+  void user;
 
   return (
     <div className="space-y-8">
@@ -37,7 +33,7 @@ export default async function PortalDashboard() {
         <p className="text-muted-foreground mt-1">Here&apos;s what&apos;s open.</p>
       </header>
 
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 gap-4">
         <DashboardTile
           href="/portal/projects"
           icon={<FolderKanban className="h-5 w-5" />}
@@ -50,12 +46,6 @@ export default async function PortalDashboard() {
           value={openInvoices.length}
           label="Open invoices"
         />
-        <DashboardTile
-          href="/portal/messages"
-          icon={<MessagesSquare className="h-5 w-5" />}
-          value={unreadMessages.length}
-          label="Unread messages"
-        />
       </div>
 
       <section>
@@ -63,7 +53,7 @@ export default async function PortalDashboard() {
         {projects.length === 0 ? (
           <EmptyState
             title="No projects yet"
-            body="When we start working together, projects show up here with files, invoices, and messages."
+            body="When we start working together, projects show up here with files and invoices."
           />
         ) : (
           <ul className="rounded-lg border border-border divide-y divide-border">

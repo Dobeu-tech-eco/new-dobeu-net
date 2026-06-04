@@ -10,9 +10,32 @@
  * constraint. Without it the schema generic collapses and every `.from().select()`
  * row resolves to `never`. Regenerate via `pnpm db:types` once the live schema
  * exists — that also captures real foreign-key relationships and nullability drift.
+ *
+ * 2026-06-04 (Phase 2): synced with `20260605000000_phase1_reconciliation.sql`
+ *   - dropped `messages` (Intercom owns chat)
+ *   - added `invoices.hosted_invoice_url`
+ *   - added `work_orders` + `work_order_attachments`
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type WorkOrderServiceType =
+  | "logo"
+  | "website_update"
+  | "data_export"
+  | "consulting"
+  | "other";
+
+export type WorkOrderStatus =
+  | "open"
+  | "quoted"
+  | "accepted"
+  | "in_progress"
+  | "delivered"
+  | "closed"
+  | "cancelled";
+
+export type WorkOrderPriority = "low" | "normal" | "high";
 
 export interface Database {
   public: {
@@ -83,6 +106,7 @@ export interface Database {
           status: "open" | "paid" | "void" | "overdue";
           stripe_invoice_id: string | null;
           stripe_payment_intent: string | null;
+          hosted_invoice_url: string | null;
           due_date: string | null;
           paid_at: string | null;
           created_at: string;
@@ -92,25 +116,6 @@ export interface Database {
           amount_cents: number;
         };
         Update: Partial<Database["public"]["Tables"]["invoices"]["Row"]>;
-        Relationships: [];
-      };
-      messages: {
-        Row: {
-          id: string;
-          thread_id: string;
-          from_user_id: string;
-          to_user_id: string;
-          body: string;
-          read_at: string | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["messages"]["Row"]> & {
-          thread_id: string;
-          from_user_id: string;
-          to_user_id: string;
-          body: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["messages"]["Row"]>;
         Relationships: [];
       };
       leads: {
@@ -172,6 +177,49 @@ export interface Database {
           event_name: string;
         };
         Update: Partial<Database["public"]["Tables"]["page_events"]["Row"]>;
+        Relationships: [];
+      };
+      work_orders: {
+        Row: {
+          id: string;
+          created_by: string;
+          project_id: string | null;
+          service_type: WorkOrderServiceType;
+          title: string;
+          description: string | null;
+          status: WorkOrderStatus;
+          priority: WorkOrderPriority;
+          quoted_amount_cents: number | null;
+          quoted_at: string | null;
+          accepted_at: string | null;
+          invoice_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["work_orders"]["Row"]> & {
+          created_by: string;
+          service_type: WorkOrderServiceType;
+          title: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["work_orders"]["Row"]>;
+        Relationships: [];
+      };
+      work_order_attachments: {
+        Row: {
+          id: string;
+          work_order_id: string;
+          storage_path: string;
+          filename: string;
+          mime_type: string | null;
+          size_bytes: number | null;
+          uploaded_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["work_order_attachments"]["Row"]> & {
+          work_order_id: string;
+          storage_path: string;
+          filename: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["work_order_attachments"]["Row"]>;
         Relationships: [];
       };
     };

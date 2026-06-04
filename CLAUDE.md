@@ -86,6 +86,13 @@ Entry points that call `processLead()`:
 - `lib/datadog.ts`, `lib/intercom.ts` — observability + support widget, wired via `components/analytics-provider.tsx`.
 - `lib/utils.ts` — `isAdminEmail()` lives here (admin gate); also shared cn/format helpers.
 - `lib/database.types.ts` — **generated**, regenerate with `pnpm db:types`.
+- `lib/actions/` — **server-action layer** (Phase 2). Every file is a `"use server"` module; all return a discriminated `{ ok: true, data } | { ok: false, error }` shape so callers can branch without throwing. Server-only by transitive import of `next/headers` from `@/lib/supabase/server`.
+  - `auth.ts` — `requireUser()` (cookie-bound client + authenticated user) and `requireAdmin()` (same + `isAdminEmail()` gate + admin client) shared guards. Throws `AuthError("not_authenticated" | "forbidden")`.
+  - `work-orders.ts` — `submitWorkOrder` (client), `quoteWorkOrder` (admin), `acceptWorkOrderQuote` (client, owner-only), `updateWorkOrderStatus` (admin). The owner email side-effects (Resend) and the Stripe-invoice creation triggered by `acceptWorkOrderQuote` are intentionally `// PHASE 3:` markers — not silent stubs.
+  - `projects.ts` — `createProject` / `updateProject` / `deleteProject` (admin CRUD). Cascade-deletes `project_files` per the FK ON DELETE CASCADE.
+  - `invoices.ts` — `createInvoice` (admin, inserts draft row; `stripe_invoice_id` + `hosted_invoice_url` are NULL until Phase 3) and `markInvoicePaidManually` (admin escape-hatch for cash / wire / check payments outside Stripe).
+  - `profile.ts` — `updateProfile` (cookie-bound; RLS enforces ownership). `phone` is currently dropped on the floor — the column doesn't exist on `profiles` yet; see returned `unstored_phone` for visibility.
+  - `__test-helpers.ts` — `buildStubClient()` chainable mock used by all `lib/actions/*.test.ts`. Don't reach for `vi.mock("@supabase/...")` in new action tests; use this helper.
 
 ### Env vars (server-only unless noted)
 | Var | Purpose |

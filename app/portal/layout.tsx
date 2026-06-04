@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 // All /portal/* pages depend on the authed user, so never pre-render.
 export const dynamic = "force-dynamic";
 
-import { LayoutDashboard, FolderKanban, FileText, Receipt, MessagesSquare, Settings } from "lucide-react";
+import { LayoutDashboard, FolderKanban, FileText, Receipt, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -13,12 +13,13 @@ import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
 import { isAdminEmail } from "@/lib/utils";
 import { intercomNameFromUser } from "@/lib/intercom";
 
+// `Messages` nav was dropped along with the `messages` table (Phase 1 reconciliation —
+// Intercom owns chat now). A `Tickets` entry lands in Phase 3 with the work-order UI.
 const NAV = [
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
   { href: "/portal/projects", label: "Projects", icon: FolderKanban },
   { href: "/portal/files", label: "Files", icon: FileText },
   { href: "/portal/invoices", label: "Invoices", icon: Receipt },
-  { href: "/portal/messages", label: "Messages", icon: MessagesSquare },
   { href: "/portal/settings", label: "Settings", icon: Settings }
 ];
 
