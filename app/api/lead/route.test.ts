@@ -18,7 +18,7 @@ function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string): Request {
     body: rawBody ?? JSON.stringify(body),
     headers: {
       "content-type": "application/json",
-      "x-forwarded-for": ip,
+      "x-real-ip": ip,
     },
   });
 }
@@ -42,7 +42,7 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead).toHaveBeenCalledTimes(1);
     const arg = mockedProcessLead.mock.calls[0][0];
     expect(arg).toMatchObject({ email: "a@b.com", source: "form" });
-    // ipHash derived from x-forwarded-for (light non-crypto hash, ip_ prefix).
+    // ipHash derived from x-real-ip (light non-crypto hash, ip_ prefix).
     expect(arg.ipHash).toMatch(/^ip_/);
   });
 

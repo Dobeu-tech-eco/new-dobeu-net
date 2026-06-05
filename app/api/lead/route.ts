@@ -19,7 +19,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  // Always prioritize x-real-ip as Vercel guarantees it. If falling back to x-forwarded-for,
+  // use the rightmost IP as the leftmost IP can be spoofed by the client.
+  const xForwardedFor = request.headers.get("x-forwarded-for");
+  const fallbackIp = xForwardedFor ? xForwardedFor.split(",").pop()?.trim() : "unknown";
+  const ip = request.headers.get("x-real-ip") || fallbackIp || "unknown";
+
   const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
   if (rl.limited) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "X-RateLimit-Backend": rl.backend } });
