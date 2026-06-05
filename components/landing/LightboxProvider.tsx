@@ -15,8 +15,12 @@ import dynamic from "next/dynamic";
 // ⚡ Bolt: Lazy load heavy third-party embeds (Calendly & Typeform)
 // to reduce the initial JS bundle size of the landing page.
 // Expected impact: ~19kB reduction in First Load JS.
-const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
-const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
+const BookingTab = dynamic(() =>
+  import("@/components/landing/BookingTab").then((mod) => mod.BookingTab),
+);
+const TypeformTab = dynamic(() =>
+  import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab),
+);
 
 type Tab = "book" | "form" | "email";
 
@@ -45,8 +49,12 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
+  // ⚡ Bolt: Memoize the context value to prevent app-wide re-renders
+  // of all consumers (Hero, SiteNav, etc) when isOpen or tab changes.
+  const contextValue = React.useMemo(() => ({ open, close }), [open, close]);
+
   return (
-    <Ctx.Provider value={{ open, close }}>
+    <Ctx.Provider value={contextValue}>
       {children}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

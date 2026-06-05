@@ -20,14 +20,22 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
-    console.warn("[/api/webhooks/stripe] STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET unset — ignoring webhook");
-    return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
+    console.warn(
+      "[/api/webhooks/stripe] STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET unset — ignoring webhook",
+    );
+    return NextResponse.json(
+      { ok: false, error: "not_configured" },
+      { status: 503 },
+    );
   }
 
   const rawBody = await request.text();
   const evt = verifyWebhook(rawBody, request.headers.get("stripe-signature"));
   if (!evt) {
-    return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "invalid_signature" },
+      { status: 401 },
+    );
   }
 
   try {
@@ -51,13 +59,19 @@ export async function POST(request: Request) {
     console.error("[/api/webhooks/stripe] handler error", e);
     // Returning 500 prompts Stripe to retry; that's the right call for transient
     // Supabase failures. Signature already verified by this point.
-    return NextResponse.json({ ok: false, error: "handler_error" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "handler_error" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ ok: true, type: evt.type });
 }
 
-async function updateInvoiceStatus(invoice: Stripe.Invoice, status: "paid" | "overdue") {
+async function updateInvoiceStatus(
+  invoice: Stripe.Invoice,
+  status: "paid" | "overdue",
+) {
   if (!invoice.id) return;
   const supa = createAdminClient();
   const patch: { status: "paid" | "overdue"; paid_at?: string } = { status };

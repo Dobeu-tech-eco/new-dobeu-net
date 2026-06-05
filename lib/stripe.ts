@@ -48,20 +48,22 @@ interface UpsertCustomerResult {
  * so we search first (`Search API` requires a query field), and only create
  * when no match exists.
  */
-export async function upsertStripeCustomer(input: UpsertCustomerInput): Promise<UpsertCustomerResult> {
+export async function upsertStripeCustomer(
+  input: UpsertCustomerInput,
+): Promise<UpsertCustomerResult> {
   try {
     if (!isStripeConfigured()) return { ok: false, error: "not_configured" };
     const stripe = getStripe();
     const search = await stripe.customers.search({
       query: `email:'${input.email.replace(/'/g, "")}'`,
-      limit: 1
+      limit: 1,
     });
     if (search.data.length > 0) {
       const existing = search.data[0]!;
       if (input.name || input.metadata) {
         await stripe.customers.update(existing.id, {
           ...(input.name ? { name: input.name } : {}),
-          ...(input.metadata ? { metadata: input.metadata } : {})
+          ...(input.metadata ? { metadata: input.metadata } : {}),
         });
       }
       return { ok: true, customerId: existing.id };
@@ -69,7 +71,7 @@ export async function upsertStripeCustomer(input: UpsertCustomerInput): Promise<
     const created = await stripe.customers.create({
       email: input.email,
       ...(input.name ? { name: input.name } : {}),
-      ...(input.metadata ? { metadata: input.metadata } : {})
+      ...(input.metadata ? { metadata: input.metadata } : {}),
     });
     return { ok: true, customerId: created.id };
   } catch (e) {
@@ -100,7 +102,9 @@ interface CreateHostedInvoiceResult {
  * own `invoices.hosted_invoice_url` so the portal "Pay" button never has to
  * hand-build a URL again.
  */
-export async function createHostedInvoice(input: CreateHostedInvoiceInput): Promise<CreateHostedInvoiceResult> {
+export async function createHostedInvoice(
+  input: CreateHostedInvoiceInput,
+): Promise<CreateHostedInvoiceResult> {
   try {
     if (!isStripeConfigured()) return { ok: false, error: "not_configured" };
     const stripe = getStripe();
@@ -112,7 +116,7 @@ export async function createHostedInvoice(input: CreateHostedInvoiceInput): Prom
       collection_method: "send_invoice",
       days_until_due: dueDays,
       ...(input.description ? { description: input.description } : {}),
-      ...(input.metadata ? { metadata: input.metadata } : {})
+      ...(input.metadata ? { metadata: input.metadata } : {}),
     });
 
     await stripe.invoiceItems.create({
@@ -120,7 +124,7 @@ export async function createHostedInvoice(input: CreateHostedInvoiceInput): Prom
       invoice: invoice.id,
       amount: input.amountCents,
       currency,
-      ...(input.description ? { description: input.description } : {})
+      ...(input.description ? { description: input.description } : {}),
     });
 
     const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
@@ -129,7 +133,7 @@ export async function createHostedInvoice(input: CreateHostedInvoiceInput): Prom
       ok: true,
       invoiceId: finalized.id,
       hostedUrl: finalized.hosted_invoice_url ?? null,
-      status: finalized.status ?? undefined
+      status: finalized.status ?? undefined,
     };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
@@ -140,11 +144,18 @@ export async function createHostedInvoice(input: CreateHostedInvoiceInput): Prom
  * Verify a Stripe webhook signature against the raw body. Returns the parsed
  * event or null on any failure. Callers MUST pass the unparsed request body.
  */
-export function verifyWebhook(rawBody: string, signatureHeader: string | null): Stripe.Event | null {
+export function verifyWebhook(
+  rawBody: string,
+  signatureHeader: string | null,
+): Stripe.Event | null {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret || !signatureHeader) return null;
   try {
-    return getStripe().webhooks.constructEvent(rawBody, signatureHeader, secret);
+    return getStripe().webhooks.constructEvent(
+      rawBody,
+      signatureHeader,
+      secret,
+    );
   } catch {
     return null;
   }

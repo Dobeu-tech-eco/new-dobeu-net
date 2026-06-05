@@ -22,7 +22,10 @@ export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
   const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
   if (rl.limited) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "X-RateLimit-Backend": rl.backend } });
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "X-RateLimit-Backend": rl.backend } },
+    );
   }
 
   let body: unknown;

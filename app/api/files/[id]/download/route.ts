@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 async function issueSignedUrl(id: string, origin: string) {
   const supabase = await createClient();
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.redirect(new URL(`/login?next=/portal/files`, origin));
@@ -45,13 +45,19 @@ async function issueSignedUrl(id: string, origin: string) {
   return NextResponse.redirect(signed.data.signedUrl, 303);
 }
 
-export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
   const { id } = await ctx.params;
   return issueSignedUrl(id, new URL(request.url).origin);
 }
 
 // Allow GET too for direct links from emails / future admin tools — same auth check.
-export async function GET(request: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
   const { id } = await ctx.params;
   return issueSignedUrl(id, new URL(request.url).origin);
 }
