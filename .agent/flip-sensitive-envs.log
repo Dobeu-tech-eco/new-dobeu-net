@@ -1,0 +1,38 @@
+Found 20 sensitive NEXT_PUBLIC_* envs to consider
+
+SKIP  NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY  ::  Marketplace-managed (integration-store-secret); will be re-provisioned by Vercel Supabase integration. Flip via dashboard if needed.
+SKIP  NEXT_PUBLIC_VERCEL_SUPABASE_PUBLISHABLE_KEY  ::  Marketplace-managed (integration-store-secret); will be re-provisioned by Vercel Supabase integration. Flip via dashboard if needed.
+SKIP  NEXT_PUBLIC_VERCEL_SUPABASE_URL  ::  Marketplace-managed (integration-store-secret); will be re-provisioned by Vercel Supabase integration. Flip via dashboard if needed.
+FLIP  NEXT_PUBLIC_DATADOG_ENV  (id=LnjOc7F31Jjri0r9, targets=preview,production)
+  OK
+SKIP  NEXT_PUBLIC_DATADOG_APPLICATION_ID  ::  empty string in .env.local (needs manual intervention)
+FLIP  NEXT_PUBLIC_DATADOG_CLIENT_TOKEN  (id=OYa0AIR1BqqBRSJZ, targets=preview,production)
+  OK
+FLIP  NEXT_PUBLIC_DATADOG_SITE  (id=m07p40iqBPmCZQbY, targets=preview,production)
+  OK
+FLIP  NEXT_PUBLIC_DATADOG_SERVICE  (id=qzhBW6tqUBO9OsFl, targets=preview,production)
+  OK
+SKIP  NEXT_PUBLIC_SITE_URL  ::  localhost value in .env.local (dev-only); skipped -- getSiteUrl()/etc. fallbacks now handle the empty-string inline
+FLIP  NEXT_PUBLIC_SITE_NAME  (id=R9SwieTfHc9UQoFc, targets=production,preview)
+  OK
+FLIP  NEXT_PUBLIC_CALENDLY_URL  (id=etsebshG8lFkgzAb, targets=production,preview)
+  OK
+SKIP  NEXT_PUBLIC_SUPABASE_URL  ::  absent from .env.local (needs manual intervention)
+SKIP  NEXT_PUBLIC_SUPABASE_ANON_KEY  ::  absent from .env.local (needs manual intervention)
+FLIP  NEXT_PUBLIC_TYPEFORM_FORM_ID  (id=L6h9wzxzt3ufvaGh, targets=production,preview)
+  OK
+FLIP  NEXT_PUBLIC_POSTHOG_KEY  (id=UDBVLPnQLFTNfEAK, targets=production,preview)
+  OK
+FLIP  NEXT_PUBLIC_POSTHOG_HOST  (id=J0DeyROokRb6oGp0, targets=production,preview)
+  OK
+FLIP  NEXT_PUBLIC_MIXPANEL_TOKEN  (id=gx2A5IWTCkXX2seH, targets=production,preview)
+  OK
+FLIP  NEXT_PUBLIC_GA4_MEASUREMENT_ID  (id=w1Ek73ZTNidIM6WK, targets=production,preview)
+  OK
+FLIP  NEXT_PUBLIC_GTM_ID  (id=t4FCWu1Yv7aDWavw, targets=production,preview)
+  OK
+FLIP  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY  (id=HPjuoa2gfoWrb4Mh, targets=production,preview)
+  OK
+
+Flipped: 13
+Skipped: 7
