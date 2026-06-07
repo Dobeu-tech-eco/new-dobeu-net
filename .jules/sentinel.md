@@ -1,0 +1,4 @@
+## 2024-05-21 - IP Spoofing for Rate Limit Bypass
+**Vulnerability:** The application was extracting the client IP from the leftmost value of `x-forwarded-for`, which is easily spoofable by an attacker sending requests with a custom `x-forwarded-for` header, bypassing IP-based rate limiting.
+**Learning:** In Vercel environments, `x-real-ip` is guaranteed to be the actual client IP. If falling back to `x-forwarded-for`, the rightmost IP is the one appended by the last trusted proxy before reaching the application, making it the most reliable. Leftmost values are easily spoofed by the client.
+**Prevention:** Always prioritize `x-real-ip` for IP determination. If using `x-forwarded-for`, use the rightmost (last) IP to prevent IP spoofing for rate limiting, while being mindful of multi-proxy architectures.

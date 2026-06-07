@@ -19,7 +19,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  // Security: Prioritize x-real-ip to prevent IP spoofing, fallback to rightmost x-forwarded-for
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const ip =
+    request.headers.get("x-real-ip") ??
+    (forwardedFor ? forwardedFor.split(",").pop()?.trim() : null) ??
+    "unknown";
   const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
   if (rl.limited) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "X-RateLimit-Backend": rl.backend } });

@@ -12,14 +12,23 @@ import { processLead } from "@/lib/leads";
 
 const mockedProcessLead = vi.mocked(processLead);
 
-function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string): Request {
+function makeRequest(
+  body: unknown,
+  ip = "1.1.1.1",
+  rawBody?: string,
+  opts?: { xRealIp?: string }
+): Request {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    "x-forwarded-for": ip,
+  };
+  if (opts?.xRealIp) {
+    headers["x-real-ip"] = opts.xRealIp;
+  }
   return new Request("http://localhost/api/lead", {
     method: "POST",
     body: rawBody ?? JSON.stringify(body),
-    headers: {
-      "content-type": "application/json",
-      "x-forwarded-for": ip,
-    },
+    headers,
   });
 }
 
@@ -89,5 +98,26 @@ describe("POST /api/lead", () => {
     expect(await sixth.json()).toEqual({ error: "Too many requests" });
     // 5 succeeded, 6th short-circuited before processLead.
     expect(mockedProcessLead).toHaveBeenCalledTimes(5);
+  });
+
+  it("extracts client IP using x-real-ip preferentially to avoid spoofing", async () => {
+    await POST(
+      makeRequest(
+        { email: "g@h.com" },
+        "attacker.ip.com, victim.ip.com",
+        undefined,
+        { xRealIp: "guaranteed.real.ip" }
+      )
+    );
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
+    const arg = mockedProcessLead.mock.calls[0][0];
+    expect(arg.email).toBe("g@h.com");
+  });
+
+  it("extracts client IP using rightmost x-forwarded-for when x-real-ip is missing", async () => {
+    await POST(makeRequest({ email: "i@j.com" }, "spoofed.ip.com, actual.client.ip"));
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
+    const arg = mockedProcessLead.mock.calls[0][0];
+    expect(arg.email).toBe("i@j.com");
   });
 });
