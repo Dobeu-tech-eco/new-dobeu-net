@@ -1,0 +1,4 @@
+## 2024-10-25 - [Prevent Open Redirects]
+**Vulnerability:** The application was vulnerable to open redirects when using the `next` parameter to redirect users after authentication. The `next` parameter was not properly validated to ensure it was a local path before being used to construct a `new URL()` object. This could allow an attacker to craft a malicious URL (e.g., `//evil.com`) that would redirect the user to a phishing site after logging in.
+**Learning:** Always validate that redirect targets provided via URL parameters are local paths (e.g., `next.startsWith("/") && !next.startsWith("//")`) before using them in a redirect response. Do not trust user input for redirect URLs.
+**Prevention:** Implement a strict validation check for the `next` parameter to ensure it is a safe local path before constructing the redirect URL.
