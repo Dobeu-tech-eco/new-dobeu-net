@@ -13,14 +13,14 @@ const mockedProcessLead = vi.mocked(processLead);
 function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string, realIp?: string): Request {
   const headers: Record<string, string> = {
     "content-type": "application/json",
-    "x-forwarded-for": ip
+    "x-forwarded-for": ip,
   };
   if (realIp) headers["x-real-ip"] = realIp;
 
   return new Request("http://localhost/api/lead", {
     method: "POST",
     body: rawBody ?? JSON.stringify(body),
-    headers
+    headers,
   });
 }
 
