@@ -16,11 +16,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  // Prioritize x-real-ip as Vercel guarantees this.
-  // Fallback to x-forwarded-for taking the rightmost IP to prevent spoofing.
+  // Security: Prioritize x-real-ip to prevent IP spoofing, fallback to rightmost x-forwarded-for
+  const forwardedFor = request.headers.get("x-forwarded-for");
   const ip =
     request.headers.get("x-real-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ??
+    (forwardedFor ? forwardedFor.split(",").pop()?.trim() : null) ??
     "unknown";
   const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
   if (rl.limited) {
