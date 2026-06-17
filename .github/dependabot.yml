@@ -1,11 +1,79 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # ── npm / pnpm (root package.json) ──────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    target-branch: "main"
+    labels:
+      - "dependencies"
+    groups:
+      # Radix UI primitives – ship together, review together
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      # Supabase clients
+      supabase:
+        patterns:
+          - "@supabase/*"
+          - "supabase"
+      # TanStack libraries
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      # Datadog observability
+      datadog:
+        patterns:
+          - "@datadog/*"
+      # Tailwind ecosystem
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "tailwindcss-animate"
+          - "autoprefixer"
+          - "postcss"
+          - "prettier-plugin-tailwindcss"
+      # ESLint / Prettier tooling
+      linting:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "prettier"
+          - "prettier-*"
+      # TypeScript type stubs
+      types:
+        patterns:
+          - "@types/*"
+      # Test tooling (vitest, Playwright, Testing Library)
+      testing:
+        patterns:
+          - "@playwright/*"
+          - "@testing-library/*"
+          - "@vitejs/*"
+          - "vitest"
+          - "jsdom"
+    ignore:
+      # Review framework major bumps manually – breaking changes are common
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "stripe"
+        update-types: ["version-update:semver-major"]
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "github-actions"
