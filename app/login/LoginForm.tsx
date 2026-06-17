@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/analytics";
-import { sanitizeNextPath } from "@/lib/utils";
+import { buildAuthCallbackUrl, sanitizeNextPath } from "@/lib/utils";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -37,7 +37,7 @@ export function LoginForm() {
     setSubmitting(true);
     try {
       const supabase = createClient();
-      const redirect = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+      const redirect = buildAuthCallbackUrl(nextPath);
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: redirect },

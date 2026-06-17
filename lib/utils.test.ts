@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   cn,
   isAdminEmail,
@@ -7,6 +7,8 @@ import {
   captureAcquisition,
   getSiteUrl,
   getPosthogHost,
+  buildAuthCallbackUrl,
+  resolveAuthOrigin,
   requiresAal2Stepup
 } from "@/lib/utils";
 
@@ -88,6 +90,69 @@ describe("getSiteUrl", () => {
   it("returns the configured site url when present", () => {
     process.env.NEXT_PUBLIC_SITE_URL = "https://staging.dobeu.net";
     expect(getSiteUrl()).toBe("https://staging.dobeu.net");
+  });
+});
+
+describe("buildAuthCallbackUrl", () => {
+  const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    if (originalSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
+    if (originalWindow === undefined) {
+      // @ts-expect-error vitest may delete window in node
+      delete globalThis.window;
+    } else {
+      globalThis.window = originalWindow;
+    }
+    vi.unstubAllGlobals();
+  });
+
+  it("uses canonical site url when window is unavailable (SSR / tests)", () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    // @ts-expect-error simulate node
+    delete globalThis.window;
+    expect(buildAuthCallbackUrl("/portal")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal",
+    );
+  });
+
+  it("uses browser origin on localhost", () => {
+    vi.stubGlobal("window", {
+      location: { hostname: "localhost", origin: "http://localhost:3000" },
+    });
+    expect(buildAuthCallbackUrl("/portal/tickets")).toBe(
+      "http://localhost:3000/auth/callback?next=%2Fportal%2Ftickets",
+    );
+  });
+
+  it("uses browser origin on vercel preview", () => {
+    vi.stubGlobal("window", {
+      location: {
+        hostname: "dobeu-net-git-main-dobeu.vercel.app",
+        origin: "https://dobeu-net-git-main-dobeu.vercel.app",
+      },
+    });
+    expect(resolveAuthOrigin()).toBe("https://dobeu-net-git-main-dobeu.vercel.app");
+  });
+
+  it("uses canonical site url on production custom domain", () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    vi.stubGlobal("window", {
+      location: { hostname: "dobeu.net", origin: "https://dobeu.net" },
+    });
+    expect(buildAuthCallbackUrl("/admin")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fadmin",
+    );
+  });
+
+  it("sanitizes open-redirect next paths", () => {
+    // @ts-expect-error simulate node
+    delete globalThis.window;
+    expect(buildAuthCallbackUrl("https://evil.example")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal",
+    );
   });
 });
 

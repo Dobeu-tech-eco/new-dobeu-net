@@ -93,6 +93,33 @@ export function captureAcquisition(searchParams: URLSearchParams, referrer = "")
 }
 
 /**
+ * Origin for Supabase magic-link `emailRedirectTo` callbacks.
+ *
+ * - localhost / *.vercel.app → use the live browser origin (dev + preview).
+ * - Production custom domain → `getSiteUrl()` so links always target
+ *   `https://dobeu.net` even if Supabase Site URL is misconfigured.
+ */
+export function resolveAuthOrigin(): string {
+  if (typeof window !== "undefined") {
+    const { hostname, origin } = window.location;
+    if (hostname === "localhost" || hostname.endsWith(".vercel.app")) {
+      return origin;
+    }
+  }
+  return getSiteUrl();
+}
+
+/**
+ * Build the Supabase `emailRedirectTo` URL for magic-link sign-in.
+ * Always routes through `/auth/callback` with a sanitized `next` param.
+ */
+export function buildAuthCallbackUrl(nextPath: string, fallback = "/portal"): string {
+  const safeNext = sanitizeNextPath(nextPath, fallback);
+  const base = resolveAuthOrigin().replace(/\/$/, "");
+  return `${base}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+}
+
+/**
  * Keep redirect targets on-site to prevent open-redirect abuse.
  * Accept only absolute-path URLs like `/portal` and normalize malformed values.
  */

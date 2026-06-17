@@ -59,8 +59,17 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
    pnpm supabase db push
    ```
 4. Enable **Email auth** in Supabase Dashboard → Authentication → Providers.
-5. Set redirect allowlist: `https://dobeu.net/auth/callback`, `https://*.vercel.app/auth/callback`,
-   `http://localhost:3000/auth/callback`.
+5. **Authentication → URL Configuration** (project `ipmjokuezeuukhrilduq`):
+   - **Site URL:** `https://dobeu.net`
+   - **Redirect URLs** (add each line):
+     - `https://dobeu.net/**`
+     - `https://dobeu.net/auth/callback`
+     - `https://*.vercel.app/**`
+     - `http://localhost:3000/**`
+     - `http://localhost:3000/auth/callback`
+   If Site URL is still `http://localhost:3000`, magic links fall back to localhost even when
+   requested from production. After saving, request a **new** magic link (old emails keep the
+   stale `redirect_to`).
 
 ---
 
