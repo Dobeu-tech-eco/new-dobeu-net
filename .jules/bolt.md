@@ -1,3 +1,3 @@
-## 2024-05-24 - Lightbox Bundle Size Optimization
-**Learning:** The LightboxProvider on the marketing page imports heavy components (like react-calendly in BookingTab and @typeform/embed-react in TypeformTab) synchronously. Since the lightbox is conditionally rendered and initially hidden, this bloats the initial bundle size of the homepage (first load JS was 420 kB).
-**Action:** Use Next.js `dynamic` imports for components inside the LightboxProvider. This splits the heavy dependencies out of the main page bundle, deferring their load until the user opens the lightbox. This simple change halved the first load JS on `/` from 420 kB to 199 kB.
+## 2023-10-27 - Lazy loading third-party embeds in Radix Dialogs
+**Learning:** Initial bundle sizes can be bloated by heavy third-party components (like Typeform or Calendly embeds) that are wrapped inside hidden Modal/Dialog components (like Radix UI's Dialog), meaning the user downloads the JS before even opening the modal.
+**Action:** Use Next.js `next/dynamic` to dynamically import heavy third-party embed components when they are conditionally rendered or hidden inside a Dialog by default. This shaves off unnecessary MBs from the initial page load JS payload.

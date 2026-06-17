@@ -5,14 +5,11 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LeadForm } from "@/components/landing/LeadForm";
 import dynamic from "next/dynamic";
 
-// ⚡ Bolt Performance Optimization:
-// Lazily load these heavy components. Since the lightbox is conditionally rendered,
-// this splits them out of the main bundle, halving the first load JS size on `/` from 420 kB to 199 kB.
-const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm));
-const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
-const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
+const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then(mod => mod.BookingTab));
+const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then(mod => mod.TypeformTab));
 
 type Tab = "book" | "form" | "email";
 
