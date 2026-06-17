@@ -11,7 +11,7 @@ export const maxDuration = 60;
 
 const AgentRequestSchema = z.object({
   prompt: z.string().min(1).max(8000),
-  systemPrompt: z.string().max(8000).optional()
+  systemPrompt: z.string().max(8000).optional(),
 });
 
 /**
@@ -26,7 +26,7 @@ const AgentRequestSchema = z.object({
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
 
   if (!user || !isAdminEmail(user.email)) {
@@ -44,19 +44,28 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: "invalid_input", details: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const result = await runAgent({
     userId: user.id,
     prompt: parsed.data.prompt,
-    ...(parsed.data.systemPrompt ? { systemPrompt: parsed.data.systemPrompt } : {})
+    ...(parsed.data.systemPrompt
+      ? { systemPrompt: parsed.data.systemPrompt }
+      : {}),
   });
 
   if (!result.ok) {
-    const status = result.error === "not_configured" || result.error === "sdk_not_installed" ? 503 : 500;
+    const status =
+      result.error === "not_configured" || result.error === "sdk_not_installed"
+        ? 503
+        : 500;
     return NextResponse.json({ ok: false, error: result.error }, { status });
   }
-  return NextResponse.json({ ok: true, result: result.result, trace: result.trace });
+  return NextResponse.json({
+    ok: true,
+    result: result.result,
+    trace: result.trace,
+  });
 }
