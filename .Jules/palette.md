@@ -1,3 +1,3 @@
-## 2026-05-27 - Global SVG styles in Buttons
-**Learning:** `components/ui/button.tsx` already styles child SVGs globally (`[&_svg]:size-4`), meaning we don't need to add manual sizing or margin classes to icons placed inside buttons.
-**Action:** Use icons in buttons without applying redundant size or margin utility classes.
+## 2026-05-28 - Added Loader2 spinner to async buttons
+**Learning:** Loading states on async form submissions drastically improve UX by giving immediate feedback. Adding a spinner icon next to the text is a lightweight and effective way to do this.
+**Action:** Always include a visual loading indicator (like a spinner) on form submit buttons that perform asynchronous actions (e.g., API calls, magic link sending).
