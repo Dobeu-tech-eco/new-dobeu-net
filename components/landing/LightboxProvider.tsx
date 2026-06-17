@@ -50,9 +50,8 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
-  // ⚡ Bolt: Memoize context value to ensure referential equality across renders
-  // Expected impact: Prevents unnecessary app-wide re-renders of consuming components
-  // when LightboxProvider's internal state (isOpen, tab) changes.
+  // ⚡ Bolt: Memoize context value to prevent unnecessary re-renders of consuming components
+  // when internal state changes. Expected impact: eliminates app-wide re-renders.
   const contextValue = React.useMemo(() => ({ open, close }), [open, close]);
 
   return (
