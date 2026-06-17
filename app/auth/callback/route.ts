@@ -7,12 +7,10 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  let next = url.searchParams.get("next") ?? "/portal";
+  const nextParam = url.searchParams.get("next") ?? "/portal";
 
-  // Security: Prevent Open Redirect
-  if (!next.startsWith("/") || next.startsWith("//")) {
-    next = "/portal";
-  }
+  // Validate next parameter to prevent open redirect vulnerabilities
+  const safeNext = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/portal";
 
   if (code) {
     const supabase = await createClient();

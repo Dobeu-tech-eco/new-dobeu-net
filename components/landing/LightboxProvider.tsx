@@ -2,16 +2,26 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import dynamic from "next/dynamic";
+import { LeadForm } from "@/components/landing/LeadForm";
 
-// ⚡ Bolt Performance Optimization:
-// Lazily load these heavy components. Since the lightbox is conditionally rendered,
-// this splits them out of the main bundle, halving the first load JS size on `/` from 420 kB to 199 kB.
-const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm));
-const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
-const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
+// ⚡ Bolt: Lazy load heavy third-party embeds (Calendly & Typeform)
+// to reduce the initial JS bundle size of the landing page.
+// Expected impact: ~19kB reduction in First Load JS.
+const BookingTab = dynamic(() =>
+  import("@/components/landing/BookingTab").then((mod) => mod.BookingTab),
+);
+const TypeformTab = dynamic(() =>
+  import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab),
+);
 
 type Tab = "book" | "form" | "email";
 
@@ -39,13 +49,12 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
-  // ⚡ Bolt Optimization: Memoize the context value
-  // Expected impact: Prevents unnecessary re-renders of all useLightbox() consumers
-  // (e.g., Hero, Services, SiteNav, FinalCTA) when LightboxProvider's state changes.
-  const ctxValue = React.useMemo(() => ({ open, close }), [open, close]);
+  // Memoize context value to prevent unnecessary re-renders of consuming components
+  // when internal state (isOpen, tab) changes.
+  const contextValue = React.useMemo(() => ({ open, close }), [open, close]);
 
   return (
-    <Ctx.Provider value={ctxValue}>
+    <Ctx.Provider value={contextValue}>
       {children}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

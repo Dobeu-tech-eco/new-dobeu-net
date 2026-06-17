@@ -1,4 +1,4 @@
-## 2024-05-25 - Removed unnecessary dangerouslySetInnerHTML
-**Vulnerability:** Use of `dangerouslySetInnerHTML` for simple text rendering (with HTML entities).
-**Learning:** Even for static hardcoded strings, `dangerouslySetInnerHTML` creates unnecessary risk if those strings are ever migrated to dynamic sources (like a CMS) in the future.
-**Prevention:** Always use standard React text interpolation (`{string}`) which safely escapes content automatically. Only use `dangerouslySetInnerHTML` when absolutely required for rendering complex HTML, and sanitize it first.
+## 2026-06-17 - IP Spoofing Prevention
+**Vulnerability:** IP spoofing in rate limiting logic by reading the leftmost IP from `x-forwarded-for`.
+**Learning:** When determining client IPs (e.g., for rate limiting on Vercel), always prioritize the guaranteed `x-real-ip` header. If forced to parse `x-forwarded-for`, use the rightmost IP to prevent IP spoofing, but be cautious as taking the rightmost IP can introduce DoS risks in multi-proxy architectures.
+**Prevention:** Use `x-real-ip` first, then fallback to `x-forwarded-for`'s rightmost IP using `.pop()`.
