@@ -47,15 +47,9 @@ const h = vi.hoisted(() => {
 
   const adminEmails: { value: string } = { value: "admin@dobeu.net" };
   const sendEmailMock = vi.fn(() => Promise.resolve({ ok: true }));
-  type InvoiceResult =
-    | { ok: true; data: { id: string; stripe_invoice_id: string | null; hosted_invoice_url: string | null } }
-    | { ok: false; error: string };
-  const createInvoiceMock = vi.fn<(args: unknown) => Promise<InvoiceResult>>().mockResolvedValue({
-    ok: true,
-    data: { id: "inv_42", stripe_invoice_id: "in_42", hosted_invoice_url: "https://pay.test/x" }
-  });
+  const cioTrackMock = vi.fn(() => Promise.resolve({ ok: true }));
 
-  return { state, adminEmails, sendEmailMock, createInvoiceMock };
+  return { state, adminEmails, sendEmailMock, cioTrackMock };
 });
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -65,8 +59,9 @@ vi.mock("@/lib/resend", () => ({
   isResendConfigured: () => true
 }));
 
-vi.mock("@/lib/invoice-creation", () => ({
-  createInvoiceForUser: h.createInvoiceMock
+vi.mock("@/lib/customerio", () => ({
+  cioTrack: h.cioTrackMock,
+  isCustomerIoConfigured: () => true
 }));
 
 vi.mock("@/lib/supabase/server", () => {
@@ -80,6 +75,14 @@ vi.mock("@/lib/supabase/server", () => {
             error: null
           }))
         }
+      },
+      storage: {
+        from: vi.fn(() => ({
+          createSignedUploadUrl: vi.fn(async (path: string) => ({
+            data: { path, token: "signed-token", signedUrl: `https://storage.test/${path}` },
+            error: null
+          }))
+        }))
       },
       from: vi.fn((table: string) => ({
         insert: vi.fn(() => {
@@ -144,11 +147,7 @@ beforeEach(() => {
     created_by: "user_owner"
   };
   h.sendEmailMock.mockClear();
-  h.createInvoiceMock.mockClear();
-  h.createInvoiceMock.mockResolvedValue({
-    ok: true,
-    data: { id: "inv_42", stripe_invoice_id: "in_42", hosted_invoice_url: "https://pay.test/x" }
-  });
+  h.cioTrackMock.mockClear();
   process.env.ADMIN_EMAILS = h.adminEmails.value;
 });
 
@@ -160,7 +159,7 @@ describe("submitWorkOrder", () => {
       title: "Need a new logo",
       description: "Something modern"
     });
-    expect(result).toEqual({ ok: true, data: { id: "wo_1", uploadPaths: [] } });
+    expect(result).toEqual({ ok: true, data: { id: "wo_1", uploadPaths: [], uploadTargets: [] } });
   });
 
   it("fires an admin notification email on submit (non-fatal)", async () => {
@@ -226,7 +225,7 @@ describe("submitWorkOrder", () => {
     if (!result.ok) expect(result.error).toMatch(/not allowed/);
   });
 
-  it("records signed upload paths for allowed attachments", async () => {
+  it("mints signed upload targets for allowed attachments", async () => {
     const { submitWorkOrder } = await import("@/lib/actions/work-orders");
     const result = await submitWorkOrder({
       service_type: "logo",
@@ -237,7 +236,23 @@ describe("submitWorkOrder", () => {
     if (result.ok) {
       expect(result.data.uploadPaths).toHaveLength(1);
       expect(result.data.uploadPaths[0]).toMatch(/^wo_1\/.+brief\.pdf$/);
+      expect(result.data.uploadTargets).toHaveLength(1);
+      expect(result.data.uploadTargets[0]).toMatchObject({
+        filename: "brief.pdf",
+        mime_type: "application/pdf",
+        size_bytes: 1024,
+        token: "signed-token"
+      });
+      expect(result.data.uploadTargets[0].storage_path).toMatch(/^wo_1\/.+brief\.pdf$/);
     }
+  });
+
+  it("emits a non-fatal work_order_created event", async () => {
+    const { submitWorkOrder } = await import("@/lib/actions/work-orders");
+    await submitWorkOrder({ service_type: "logo", title: "Need a new logo" });
+    expect(h.cioTrackMock).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "work_order_created" })
+    );
   });
 
   it("surfaces a Supabase insert error", async () => {
@@ -278,6 +293,11 @@ describe("quoteWorkOrder (admin)", () => {
 
   it("succeeds when admin + valid input + emails the client", async () => {
     h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
+    // Pre-read status must be `open` for the open→quoted transition to be legal.
+    h.state.selectResult = {
+      data: { id: "wo_1", created_by: "user_owner", status: "open", title: "Logo" },
+      error: null
+    };
     const { quoteWorkOrder } = await import("@/lib/actions/work-orders");
     const result = await quoteWorkOrder({
       id: "00000000-0000-0000-0000-000000000001",
@@ -287,6 +307,21 @@ describe("quoteWorkOrder (admin)", () => {
     expect(h.sendEmailMock).toHaveBeenCalledWith(
       expect.objectContaining({ subject: expect.stringMatching(/Quote ready/) })
     );
+  });
+
+  it("rejects quoting a non-open (e.g. closed) work order", async () => {
+    h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
+    h.state.selectResult = {
+      data: { id: "wo_1", created_by: "user_owner", status: "closed", title: "Logo" },
+      error: null
+    };
+    const { quoteWorkOrder } = await import("@/lib/actions/work-orders");
+    const result = await quoteWorkOrder({
+      id: "00000000-0000-0000-0000-000000000001",
+      amount_cents: 50000
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/cannot quote/);
   });
 });
 
@@ -307,7 +342,6 @@ describe("acceptWorkOrderQuote (client)", () => {
     const { acceptWorkOrderQuote } = await import("@/lib/actions/work-orders");
     const result = await acceptWorkOrderQuote({ id: "00000000-0000-0000-0000-000000000001" });
     expect(result).toEqual({ ok: false, error: "forbidden" });
-    expect(h.createInvoiceMock).not.toHaveBeenCalled();
   });
 
   it("blocks acceptance when status is not 'quoted'", async () => {
@@ -326,28 +360,20 @@ describe("acceptWorkOrderQuote (client)", () => {
     const result = await acceptWorkOrderQuote({ id: "00000000-0000-0000-0000-000000000001" });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/open/);
-    expect(h.createInvoiceMock).not.toHaveBeenCalled();
   });
 
-  it("accepts when owner + status='quoted' and triggers invoice creation", async () => {
+  it("accepts when owner + status='quoted' (no auto-invoice; invoice_id stays null)", async () => {
     const { acceptWorkOrderQuote } = await import("@/lib/actions/work-orders");
     const result = await acceptWorkOrderQuote({ id: "00000000-0000-0000-0000-000000000001" });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.invoice_id).toBe("inv_42");
+      // Locked model: accept only flips to `accepted`; the ADMIN creates the
+      // invoice later via createInvoiceForWorkOrder.
+      expect(result.data.invoice_id).toBeNull();
     }
-    expect(h.createInvoiceMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("notifies admin when Stripe invoice creation fails", async () => {
-    h.createInvoiceMock.mockResolvedValueOnce({ ok: false, error: "stripe down" });
-    const { acceptWorkOrderQuote } = await import("@/lib/actions/work-orders");
-    const result = await acceptWorkOrderQuote({ id: "00000000-0000-0000-0000-000000000001" });
-    expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.invoice_id).toBeNull();
-
+    // Admin gets the "quote accepted" cue email.
     expect(h.sendEmailMock).toHaveBeenCalledWith(
-      expect.objectContaining({ subject: expect.stringMatching(/Invoice creation FAILED/i) })
+      expect.objectContaining({ subject: expect.stringMatching(/accepted/i) })
     );
   });
 
@@ -400,6 +426,11 @@ describe("updateWorkOrderStatus (admin)", () => {
 
   it("updates status for an admin caller + emails the owner", async () => {
     h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
+    // Pre-read status must be `accepted` for accepted→in_progress to be legal.
+    h.state.selectResult = {
+      data: { id: "wo_1", created_by: "user_owner", status: "accepted", title: "Logo" },
+      error: null
+    };
     const { updateWorkOrderStatus } = await import("@/lib/actions/work-orders");
     const result = await updateWorkOrderStatus({
       id: "00000000-0000-0000-0000-000000000001",
@@ -410,5 +441,20 @@ describe("updateWorkOrderStatus (admin)", () => {
     expect(h.sendEmailMock).toHaveBeenCalledWith(
       expect.objectContaining({ subject: expect.stringMatching(/Update:/) })
     );
+  });
+
+  it("rejects an illegal transition (delivered → in_progress)", async () => {
+    h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
+    h.state.selectResult = {
+      data: { id: "wo_1", created_by: "user_owner", status: "delivered", title: "Logo" },
+      error: null
+    };
+    const { updateWorkOrderStatus } = await import("@/lib/actions/work-orders");
+    const result = await updateWorkOrderStatus({
+      id: "00000000-0000-0000-0000-000000000001",
+      status: "in_progress"
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/illegal transition/);
   });
 });
