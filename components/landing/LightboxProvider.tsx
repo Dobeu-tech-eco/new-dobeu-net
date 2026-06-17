@@ -3,23 +3,19 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import dynamic from "next/dynamic";
 
-// ⚡ Bolt Performance Optimization:
-// Lazy load heavy form/booking components that are only needed when the modal opens.
-// These pull in large external dependencies like react-hook-form, react-calendly, and @typeform/embed-react.
-// Impact: Reduced First Load JS on the root page (/) by ~52% (from 420 kB down to 199 kB).
-const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm), { ssr: false });
-const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab), { ssr: false });
-const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab), { ssr: false });
+// Lazy load heavy form/booking components to reduce initial bundle size
+const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm), {
+  loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
+});
+const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab), {
+  loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
+});
+const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab), {
+  loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
+});
 
 type Tab = "book" | "form" | "email";
 

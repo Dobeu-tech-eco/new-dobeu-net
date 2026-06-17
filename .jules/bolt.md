@@ -1,3 +1,3 @@
-## 2024-06-25 - Modal Component Lazy Loading
-**Learning:** Components rendered inside UI Modals/Lightboxes that pull in heavy external dependencies (e.g., forms, date pickers) can significantly bloat the First Load JS if eagerly imported. By lazy loading them using `next/dynamic` with `ssr: false`, we saw a massive 52% bundle size reduction on the homepage because these elements are strictly client-side and only activated via user interaction.
-**Action:** Next time an application has heavy client-side only modal components, evaluate if they can be dynamically imported to improve initial page load times.
+## 2024-05-28 - Next.js Modal Third-Party Payload Optimization
+**Learning:** Heavy third-party React libraries (like `react-calendly` and `@typeform/embed-react`) imported synchronously into Modal/Dialog components are included in the initial page bundle even if the modal isn't opened immediately, significantly bloating the First Load JS for landing pages.
+**Action:** Always use `next/dynamic` to code-split and lazily load these heavy components only when the modal is opened, which in this codebase reduced the root page First Load JS by over 50% (from ~420kB to ~199kB).
