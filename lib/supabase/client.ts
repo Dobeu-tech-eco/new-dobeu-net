@@ -21,10 +21,3 @@ export function createClient() {
   }
   return createBrowserClient<Database>(url, anon);
 }
-
-export function isSupabaseConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY
-  );
-}

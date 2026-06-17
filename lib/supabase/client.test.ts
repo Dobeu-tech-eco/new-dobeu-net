@@ -30,32 +30,6 @@ afterEach(() => {
   clearEnv();
 });
 
-describe("isSupabaseConfigured", () => {
-  it("returns false when both env vars are absent", async () => {
-    const { isSupabaseConfigured } = await freshImport();
-    expect(isSupabaseConfigured()).toBe(false);
-  });
-
-  it("returns false when only the url is present", async () => {
-    process.env[URL_KEY] = "https://proj.supabase.co";
-    const { isSupabaseConfigured } = await freshImport();
-    expect(isSupabaseConfigured()).toBe(false);
-  });
-
-  it("returns false when only the anon key is present", async () => {
-    process.env[ANON_KEY] = "anon-key";
-    const { isSupabaseConfigured } = await freshImport();
-    expect(isSupabaseConfigured()).toBe(false);
-  });
-
-  it("returns true when both env vars are present", async () => {
-    process.env[URL_KEY] = "https://proj.supabase.co";
-    process.env[ANON_KEY] = "anon-key";
-    const { isSupabaseConfigured } = await freshImport();
-    expect(isSupabaseConfigured()).toBe(true);
-  });
-});
-
 describe("createClient", () => {
   it("uses placeholder credentials when env is missing", async () => {
     const { createClient } = await freshImport();
