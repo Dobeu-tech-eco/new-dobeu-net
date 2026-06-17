@@ -1,3 +1,5 @@
-## 2024-05-23 - [Code Split Lightbox Provider Tabs]
-**Learning:** Next.js static page output bundles all heavy components unless lazily loaded with dynamic imports. In this application's `/` route, the first load JS size drops significantly from 420 kB down to 199 kB when components inside the `LightboxProvider` are lazily loaded.
-**Action:** Use `next/dynamic` for heavy hidden UI elements like modals and tabs that are not needed on initial paint to save JS bundle size.
+## 2026-05-22 - Dynamic Imports for Heavy Third-Party Modals
+
+**Learning:** When heavy third-party components (like Typeform or Calendly embeds) are placed inside hidden modals (like Dialogs/Tabs) they are still loaded in the initial JS bundle, increasing the First Load JS size unnecessarily.
+
+**Action:** Wrap these heavy, conditionally-rendered third-party component imports in `next/dynamic` so they are lazy-loaded only when the user clicks to open the modal/tab. This drastically reduces the initial JS footprint.

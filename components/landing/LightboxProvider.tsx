@@ -4,9 +4,11 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LeadForm } from "@/components/landing/LeadForm";
 import dynamic from "next/dynamic";
-// Lazily load heavy form tabs to reduce First Load JS by ~200kB
-const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm));
+
+// ⚡ Bolt: Dynamically import heavy third-party modal components (Calendly & Typeform)
+// This reduces the initial First Load JS size by only loading them when a user opens the modal.
 const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
 const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
 
