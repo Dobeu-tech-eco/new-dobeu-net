@@ -2,6 +2,6 @@
 
 **Learning:** Users often lack clear feedback when submitting forms, which can lead to double submissions or confusion. Using icon-only loading states combined with accessible text is crucial for asynchronous form operations.
 **Action:** Always include a visual loading indicator (e.g., `Loader2` with `animate-spin`) in submit buttons alongside the loading text when the form is in a `submitting` state. Ensure disabled state is active to prevent duplicate requests.
-## 2026-06-14 - Fix accessibility for responsively hidden text
-**Learning:** When using Tailwind's `hidden` class (e.g., `hidden sm:inline`) to hide text responsively inside buttons or links, the text is hidden from screen readers on smaller screens but the button remains focusable, creating an empty tab stop or an inaccessible button.
-**Action:** Always add an explicit `aria-label` and `title` to the parent element, and `aria-hidden="true"` to the child icon to ensure screen reader accessibility on all screen sizes.
+## 2024-05-18 - Ensure Accessibility for Responsively Hidden Text
+**Learning:** When using Tailwind classes like `hidden sm:inline` to hide text within links or buttons on smaller screens, it causes a loss of context for screen reader users and those without textual labels.
+**Action:** Always add an explicit `aria-label` and `title` to the parent element, and `aria-hidden="true"` to any accompanying decorative child icons to ensure full accessibility and clear tooltips on hover across all device sizes.

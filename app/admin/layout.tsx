@@ -76,8 +76,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link
               key={item.href}
               href={item.href}
-              aria-label={item.label}
               title={item.label}
+              aria-label={item.label}
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
               aria-label={item.label}
               title={item.label}
@@ -88,8 +88,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ))}
           <Link
             href="/portal"
-            aria-label="Portal view"
             title="Portal view"
+            aria-label="Portal view"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
             aria-label="Portal view"
             title="Portal view"
