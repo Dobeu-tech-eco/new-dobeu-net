@@ -238,26 +238,76 @@ secrets or implementation details that aren't relevant to the public repo.
 
 ## Findings (fill in)
 
-Paste the raw output from each section into the matching block, then ping
-the parent agent. The mapping SQL is authored from this, not from memory.
+**Inventory status (2026-06-16):** partial — §1–§3 verified via Supabase SQL
+Editor screenshots on `db-dobeutech-unified`. §4–§8 still pending; run
+[`.agent/migration/inventory-followup.sql`](inventory-followup.sql) and paste
+results below.
 
 ### §1 — public tables
 
+**30 rows total** (`information_schema.tables`, `public` + `BASE TABLE`).
+Screenshot showed first 6 only; **24 table names not captured** (operator did
+not scroll).
+
 ```text
-<paste output>
+agent_principles
+analytics_daily
+audit_logs
+ccpa_requests
+client_files
+cloud_accounts
+(... 24 more — unknown from screenshots; run inventory-followup.sql §1)
 ```
 
 ### §2 — approximate row counts
 
+Planner stats (`pg_stat_user_tables`, `schemaname = 'public'`, ordered by
+`n_live_tup desc`). **30 rows total**; screenshot showed top 6 only.
+
 ```text
-<paste output>
+ table_name          | approx_rows
+---------------------+-------------
+ composio_tools      |        3072
+ analytics_daily     |          50
+ dobeu_ecosystem     |          17
+ cloud_accounts      |          12
+ cowork_task_state   |           4
+ service_credentials |           2
+ (... remaining 24 tables — counts unknown from screenshots)
 ```
+
+**Interpretation:** bulk of row volume is `composio_tools` (unified-platform
+internals). No lead-candidate table appears in the top-6 by row count.
 
 ### §3 — lead-candidate table existence + exact counts
 
-```text
-<paste output>
+```sql
+select to_regclass('public.leads')               as leads,
+       to_regclass('public.dobeu_net_leads')     as dobeu_net_leads,
+       to_regclass('public.contact_submissions') as contact_submissions;
 ```
+
+```text
+ leads | dobeu_net_leads | contact_submissions
+-------+-----------------+---------------------
+ NULL  | NULL            | contact_submissions
+```
+
+(`NULL` regclass = table does not exist. User note: "1 tablet with null" =
+the two NULL results for `leads` / `dobeu_net_leads`.)
+
+```sql
+select count(*) from public.contact_submissions;
+```
+
+```text
+ count
+-------
+     0
+```
+
+**Confirmed:** no `public.leads` or `public.dobeu_net_leads` on legacy;
+`contact_submissions` exists but is **empty**.
 
 ### §4 — full column schema
 
@@ -292,7 +342,16 @@ the parent agent. The mapping SQL is authored from this, not from memory.
 ### Notes / surprises (anything that doesn't match the production plan's assumed legacy shape)
 
 ```text
-<freeform notes>
+- Legacy is a unified Dobeu platform schema (30 public tables), NOT the
+  dobeu.net v3 initial_schema.sql shape assumed in early 2026-05 docs.
+- Top row volume is composio_tools (3072 rows) — platform tooling, not portal data.
+- Lead pipeline source tables: only contact_submissions exists; 0 rows. No legacy
+  leads or dobeu_net_leads tables.
+- CHAT-TRANSCRIPT-2026-05-21 listed projects, messages, services, purchases,
+  client_files, contact_submissions, audit_logs, rate_limits, newsletter_* —
+  some may be among the 24 unscrolled table names; follow-up SQL required.
+- Cutover should be SELECTIVE (portal-relevant tables only), not full pg_dump —
+  see cutover-execute.md and mapping.sql draft.
 ```
 
 ---

@@ -4,7 +4,28 @@
 **Target:** Vercel Marketplace Supabase `ipmjokuezeuukhrilduq`  
 **Plan refs:** `.agent/PRODUCTION-PLAN.md` §6, `docs/superpowers/plans/2026-06-05-remaining-phases.md` Task Group C
 
-> **Prerequisite:** [`.agent/migration/inventory.md`](inventory.md) Findings filled (§1–§8). Agent-authored `restore-staging.sql` + `mapping.sql` must exist before execution — do not run cutover from memory.
+> **Prerequisite:** [`.agent/migration/inventory.md`](inventory.md) Findings complete (§1–§8). Partial inventory as of 2026-06-16 — run [`.agent/migration/inventory-followup.sql`](inventory-followup.sql) first. Agent-authored `mapping.sql` exists (draft); `restore-staging.sql` TBD after schema follow-up.
+
+## Strategy revision (2026-06-16 — partial inventory)
+
+Legacy `db-dobeutech-unified` is a **unified platform schema** (30 `public` tables),
+not the dobeu.net v3 `initial_schema.sql` shape. Bulk of row volume is
+`composio_tools` (3072 rows) and other platform internals — **not** portal data.
+
+**Confirmed so far:**
+
+| Finding | Implication |
+|---------|-------------|
+| `contact_submissions` exists, **0 rows** | No lead migration work |
+| `leads` / `dobeu_net_leads` **absent** | No dedupe needed |
+| Top tables are platform tooling | Full `pg_dump` restore would pollute target |
+
+**Recommended approach:** **selective SQL migration** via `.agent/migration/mapping.sql`
+only for portal-relevant tables (`client_files`, and any of `users` / `projects` /
+`invoices` confirmed by follow-up). Skip excluded platform tables (see `mapping.sql`
+header). If follow-up shows `auth.users` count = 0 and no portal rows, cutover
+may reduce to **schema-only target** (already applied) + optional `client_files`
+row/storage copy — no full dump/restore cycle.
 
 ---
 
@@ -29,53 +50,53 @@
 
 ---
 
-## Phase 2 — Dump legacy
+## Phase 2 — Extract legacy data (selective, not full dump)
+
+**Prefer per-table export** for portal-relevant tables only. Full `pg_dump -n public`
+imports `composio_tools` and other platform tables — avoid unless operator overrides.
 
 ```bash
-# Requires pg_dump + LEGACY_DATABASE_URL (direct connection, not committed)
-pg_dump "$LEGACY_DATABASE_URL" \
-  --no-owner --no-privileges \
-  -n public \
-  -Fc \
-  > .agent/migration/legacy-data.dump
-```
+# Option A — single table (repeat per confirmed migratable table)
+psql "$LEGACY_DATABASE_URL" -c "\copy public.client_files TO 'client_files.csv' CSV HEADER"
 
-Optional structure-only for diff:
-
-```bash
+# Option B — structure-only for diffing (safe, no row pollution)
 pg_dump "$LEGACY_DATABASE_URL" \
   --schema-only --no-owner --no-privileges \
   -n public \
   > .agent/migration/legacy-schema.sql
 ```
 
----
-
-## Phase 3 — Restore into staging schema on target
-
-1. Connect to target Postgres (`VERCEL_POSTGRES_URL_NON_POOLING` or Supabase Studio).
-2. Run agent-authored **`.agent/migration/restore-staging.sql`** (creates `legacy_import` schema + tables matching legacy shapes).
-3. Restore dump into `legacy_import`:
+If multiple portal tables have rows, a **table-filtered** dump is acceptable:
 
 ```bash
-pg_restore -d "$TARGET_DATABASE_URL" \
-  --schema=legacy_import \
+# Example: only tables listed in mapping.sql MIGRATE section (adjust after follow-up)
+pg_dump "$LEGACY_DATABASE_URL" \
   --no-owner --no-privileges \
-  .agent/migration/legacy-data.dump
+  -t public.client_files \
+  -t public.projects \
+  -t public.users \
+  -Fc > .agent/migration/legacy-portal-data.dump
 ```
 
-Adjust if dump format differs; `psql` COPY from CSV is an alternative per table.
+---
+
+## Phase 3 — Load into staging schema on target
+
+1. Connect to target Postgres (`VERCEL_POSTGRES_URL_NON_POOLING` or Supabase Studio).
+2. Create `legacy_import` schema + staging tables matching **migratable** legacy shapes only (agent `restore-staging.sql` or manual `\copy` into temp tables).
+3. Load CSV/dump into `legacy_import` — **do not** restore full 30-table dump into `public`.
 
 ---
 
 ## Phase 4 — Transform + auth import
 
 1. Run **`.agent/migration/mapping.sql`** on target (`insert into public.X select … from legacy_import.Y`).
-   - Leads: dedupe by email, keep most recent `last_seen`.
+   - **Leads:** skip — `contact_submissions` empty; no legacy `leads` table.
    - `profiles` insert: **omit `is_admin`** (column dropped on target).
    - `messages`: excluded (Intercom owns chat).
-2. **Auth users** — scripted loop via Supabase Admin API (`auth.admin.createUser`) keyed off legacy `users` rows. `handle_new_user()` creates `profiles` rows; reconcile FKs after.
-3. **Storage** — copy objects legacy `project-files` → target `project-files` bucket; verify `project_files.storage_path` resolves.
+   - Platform tables in EXCLUDED list: never insert.
+2. **Auth users** — only if `auth.users` count > 0 on legacy (check inventory-followup.sql §8). Scripted loop via Supabase Admin API (`auth.admin.createUser`) keyed off legacy `users` rows. `handle_new_user()` creates `profiles` rows; reconcile FKs after.
+3. **Storage** — copy objects for migrated `client_files` / `project_files` rows only; verify `project_files.storage_path` resolves in target `project-files` bucket.
 
 ---
 
@@ -125,9 +146,10 @@ Redeploy production.
 
 ## Artifacts checklist
 
-- [ ] `inventory.md` Findings complete
-- [ ] `restore-staging.sql` (agent)
-- [ ] `mapping.sql` (agent)
-- [ ] `legacy-data.dump` (operator, gitignored)
-- [ ] Auth import script (agent)
-- [ ] Storage copy log (operator)
+- [x] `inventory.md` Findings §1–§3 (partial, 2026-06-16)
+- [ ] `inventory.md` Findings §4–§8 (run `inventory-followup.sql`)
+- [ ] `restore-staging.sql` (agent — after schema follow-up)
+- [x] `mapping.sql` (agent draft — do not run until schema confirmed)
+- [ ] `legacy-portal-data.dump` or per-table CSVs (operator, gitignored)
+- [ ] Auth import script (agent — only if legacy `auth.users` > 0)
+- [ ] Storage copy log (operator — only if `client_files` rows > 0)
