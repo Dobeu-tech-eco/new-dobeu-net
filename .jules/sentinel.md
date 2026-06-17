@@ -1,4 +1,4 @@
-## 2024-05-24 - [Open Redirect in Auth Callback]
-**Vulnerability:** The `app/auth/callback/route.ts` blindly redirects users using the `next` search parameter, which can be easily manipulated to redirect users to an external attacker-controlled domain by appending an absolute URL to the parameter like `?next=https://evil.com`.
-**Learning:** Never trust the `next` query parameter or any user-controlled input for redirects. Unvalidated redirects can be used in phishing attacks.
-**Prevention:** Validate that the redirect URL is relative to the application's root by checking that it starts with a `/` and does not start with `//` or by explicitly checking the hostname if absolute URLs are allowed.
+## 2025-01-20 - Fix rate-limit bypass via IP spoofing
+**Vulnerability:** The rate limiter in `/api/lead` was using the first (leftmost) IP address from the `X-Forwarded-For` header. Because the leftmost IP can be easily set by the client before the request reaches the trusted proxy, an attacker could spoof it to continually bypass the rate limits.
+**Learning:** Always use the rightmost IP in the `X-Forwarded-For` chain if the infrastructure only appends one trusted IP at the edge, to ensure the rate limit keys off the true client IP.
+**Prevention:** Extract the true client IP using the rightmost element in the `X-Forwarded-For` list instead of the leftmost.

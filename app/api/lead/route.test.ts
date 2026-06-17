@@ -145,24 +145,17 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead).toHaveBeenCalledTimes(5);
   });
 
-  it("extracts client IP using x-real-ip preferentially to avoid spoofing", async () => {
-    await POST(
-      makeRequest(
-        { email: "g@h.com" },
-        "attacker.ip.com, victim.ip.com",
-        undefined,
-        { xRealIp: "guaranteed.real.ip" }
-      )
-    );
-    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
-    const arg = mockedProcessLead.mock.calls[0][0];
-    expect(arg.email).toBe("g@h.com");
-  });
-
-  it("extracts client IP using rightmost x-forwarded-for when x-real-ip is missing", async () => {
-    await POST(makeRequest({ email: "i@j.com" }, "spoofed.ip.com, actual.client.ip"));
-    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
-    const arg = mockedProcessLead.mock.calls[0][0];
-    expect(arg.email).toBe("i@j.com");
+  it("extracts the real IP correctly to prevent spoofing bypass", async () => {
+    // Attackers might send a forged IP first. We should parse the rightmost IP
+    // (appended by the proxy) to track the true client, not the forged one.
+    const spoofedIpHeader = "fake-ip, 203.0.113.100";
+    for (let i = 0; i < 5; i++) {
+      const res = await POST(makeRequest({ email: "spoofer@f.com" }, spoofedIpHeader));
+      expect(res.status).toBe(200);
+    }
+    // The 6th request with the same true IP (but a different fake-ip) should be blocked.
+    const diffFakeHeader = "different-fake, 203.0.113.100";
+    const sixth = await POST(makeRequest({ email: "spoofer@f.com" }, diffFakeHeader));
+    expect(sixth.status).toBe(429);
   });
 });
