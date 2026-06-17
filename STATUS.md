@@ -1,6 +1,8 @@
 # dobeu.net v3 — Status
 
-_Last updated: 2026-06-04 — end of Phase 2._
+_Last updated: 2026-06-05 — Phases 4–5 code-complete on `test/coverage` (HEAD `6e2b013`)._
+
+> **Convergence:** see [`.agent/convergence/2026-06-05-production-readiness.md`](.agent/convergence/2026-06-05-production-readiness.md) for the full production-readiness verdict (✅ READY TO MERGE), operator checklist, legacy-cutover status, post-merge smoke path, and merge strategy.
 
 ## Phase tracker (vs `.agent/PRODUCTION-PLAN.md`)
 
@@ -8,10 +10,22 @@ _Last updated: 2026-06-04 — end of Phase 2._
 |---|---|---|
 | **0 — Launch** | Stack, brand v2, landing, portal/admin scaffolds, lead pipeline, analytics fan-out, security headers, magic-link auth, deploy to Vercel | ✅ Shipped (commits up to `2a80db8`) |
 | **1 — P0 + DB reconciliation** | `NEXT_PUBLIC_SITE_URL` guard, lead-table probe drop, intercom/admin-email dedup, draft reconciliation migration | ✅ Shipped (commit `9ceefa2`) — migration applied to Vercel Supabase in Phase 2 |
-| **2 — Server-action foundation + portal/admin CRUD + work-order schema deployed** | `lib/actions/{work-orders,projects,invoices,profile}.ts` + tests; admin/projects write-CRUD; portal/settings update form; legacy env cleanup | ✅ **Shipped (this commit)** |
-| **3 — Stripe-hosted invoicing + work-order UI end-to-end + observability** | `lib/stripe.ts`, `/api/webhooks/stripe`, portal/admin `tickets` UIs, work-order Resend notifications, Datadog log drain | ⏳ Next — see "Phase 3 readiness checklist" below |
-| **4 — Auth hardening** | Supabase TOTP MFA, Intercom HMAC, Upstash rate-limit | ⏳ |
-| **5 — Polish** | Lighthouse ≥90, CI runs tests, a11y on new ticket UIs, dead-code cleanup, missing webhooks (Resend bounce, Apollo) | ⏳ |
+| **2 — Server-action foundation + portal/admin CRUD + work-order schema deployed** | `lib/actions/{work-orders,projects,invoices,profile}.ts` + tests; admin/projects write-CRUD; portal/settings update form; legacy env cleanup | ✅ Shipped |
+| **3 — Stripe-hosted invoicing + work-order UI end-to-end + observability** | `lib/stripe.ts`, `/api/webhooks/stripe`, portal/admin `tickets` UIs, work-order Resend notifications, Datadog log drain | ✅ Shipped (live on `https://dobeu.net`, HEAD `4cc72f2`) |
+| **4 — Auth hardening** | Supabase TOTP MFA (admin AAL2 gate), Intercom HMAC identity verification, rate-limit (in-memory accepted-risk) | ✅ **Code complete** (`test/coverage`, commits `1652f00`→`487fded`) |
+| **5 — Polish** | Desktop Lighthouse ≥90, CI runs tests, a11y on ticket UIs, dead-code cleanup, drop `profiles.is_admin`, ticket E2E | ✅ **Code complete** (`test/coverage`, through `6e2b013`) — see "Pending operator actions" |
+
+## Pending before production cutover (not code blockers)
+
+These do not block the `test/coverage` → `main` merge; they gate full production cutover. Full detail + exact URLs/commands in the convergence doc.
+
+1. **Apply `20260616000000_phase5_drop_is_admin.sql` to live Vercel Supabase** — committed but **not yet applied** (`pnpm supabase db push` or run the `alter table` in Studio). Idempotent, backward-safe; clears schema drift.
+2. **Provision `INTERCOM_IDENTITY_VERIFICATION_SECRET`** in Vercel + enable Identity Verification in the Intercom workspace with the same secret.
+3. **Verify the Stripe webhook endpoint** (`/api/webhooks/stripe` subscribed to `invoice.paid`/`invoice.payment_failed`/`invoice.finalized`; signing secret matches `STRIPE_WEBHOOK_SECRET`).
+4. **Resend DKIM/SPF** verified for `dobeu.net`; **Vercel ↔ GitHub** re-linked for auto-deploy.
+5. **Legacy `db-dobeutech-unified` cutover** — not started; gated on the user filling `.agent/migration/inventory.md` Findings. Target user data is empty today, so nothing depends on it pre-merge.
+
+_Informational:_ mobile landing Lighthouse Performance ≈ 80 (target 90) is a deferred, non-gating follow-up (rationale in the convergence doc §7)._
 
 ## Database state (Vercel Supabase)
 
