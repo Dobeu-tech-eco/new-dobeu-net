@@ -1,4 +1,4 @@
-## 2025-01-20 - IP Spoofing Prevention via x-forwarded-for parsing
-**Vulnerability:** IP spoofing in rate limit implementation. The `x-forwarded-for` header was being split by `,` and the first element (`[0]`) was being used as the client's IP.
-**Learning:** Attackers can spoof the leftmost IP address in `x-forwarded-for` by appending their own proxy headers, bypassing rate limit configurations. The proxy appends the real IP of the client at the end of the header list (rightmost).
-**Prevention:** Always parse the rightmost IP in the `x-forwarded-for` header. Example: `request.headers.get("x-forwarded-for")?.split(",").pop()?.trim()`.
+## 2025-02-14 - Fix Unbounded Rate Limiting Map Memory Exhaustion DoS
+**Vulnerability:** The in-memory Map (`ipBuckets`) used for IP rate limiting in `app/api/lead/route.ts` grew unbounded. A malicious actor could spoof `x-forwarded-for` IPs to exhaust server memory and cause a DoS attack.
+**Learning:** In-memory Maps or objects used for caching, rate limiting, or state tracking without upper bounds or cleanup mechanisms are a significant DoS risk.
+**Prevention:** Always implement an explicit size limit and cleanup strategy (like evicting expired items or clearing the structure) when using in-memory data structures for tracking untrusted inputs.
