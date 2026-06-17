@@ -1,4 +1,4 @@
-## 2024-05-24 - Open Redirect in Auth Callback
-**Vulnerability:** Open redirect vulnerability in /auth/callback when using the next parameter.
-**Learning:** User input used in redirections must be validated to ensure it targets local paths. Failing to do so exposes the app to phishing and token leakage.
-**Prevention:** Always validate that the target is a local path (e.g., next.startsWith("/") && !next.startsWith("//")) before passing it to new URL() or a redirect response.
+## 2026-06-17 - IP Spoofing Prevention
+**Vulnerability:** IP spoofing in rate limiting logic by reading the leftmost IP from `x-forwarded-for`.
+**Learning:** When determining client IPs (e.g., for rate limiting on Vercel), always prioritize the guaranteed `x-real-ip` header. If forced to parse `x-forwarded-for`, use the rightmost IP to prevent IP spoofing, but be cautious as taking the rightmost IP can introduce DoS risks in multi-proxy architectures.
+**Prevention:** Use `x-real-ip` first, then fallback to `x-forwarded-for`'s rightmost IP using `.pop()`.
