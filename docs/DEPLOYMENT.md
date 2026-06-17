@@ -5,6 +5,20 @@ backed by `dobeutech/digital-wharf-dynamics`).
 
 ---
 
+## Phase 0 — Enable Claude GitHub automation
+
+1. Install the Claude GitHub App for the `Dobeu-tech-eco` organization (or this repository only).
+2. Add the repository (or organization) Actions secret:
+   - `CLAUDE_CODE_OAUTH_TOKEN`
+3. Claude workflows are configured in:
+   - `.github/workflows/claude.yml`
+   - `.github/workflows/claude-code-review.yml`
+4. Open a PR to test:
+   - mention `@claude` in a PR comment, or
+   - rely on `Claude Code Review` running on PR `opened/synchronize/ready_for_review/reopened`.
+
+---
+
 ## Phase 1 — Push to GitHub
 
 ```bash
@@ -99,6 +113,7 @@ Before touching DNS, walk every flow on the `*.vercel.app` preview:
 1. Pause auto-deploys on the old `digital-wharf-dynamics` Vercel project (or whichever host serves it now).
 2. Keep the old Netlify/Vercel site running for **7 days** in case rollback is needed.
 3. Email existing client users a heads-up:
+
    ```
    Subject: We've rebuilt dobeu.net — re-verify with this magic link
 
@@ -109,6 +124,7 @@ Before touching DNS, walk every flow on the `*.vercel.app` preview:
 
    — Jeremy
    ```
+
 4. After 7-day soak: archive the old repo, downgrade or delete the old hosting project.
 
 ---
@@ -126,11 +142,11 @@ If anything goes wrong post-cutover:
 
 ## Webhooks to update on cutover
 
-| Service | New URL |
-|---|---|
-| Stripe | `https://dobeu.net/api/webhooks/stripe` |
-| Apollo | `https://dobeu.net/api/webhooks/apollo` |
-| Resend | `https://dobeu.net/api/webhooks/resend` |
+| Service     | New URL                                     |
+| ----------- | ------------------------------------------- |
+| Stripe      | `https://dobeu.net/api/webhooks/stripe`     |
+| Apollo      | `https://dobeu.net/api/webhooks/apollo`     |
+| Resend      | `https://dobeu.net/api/webhooks/resend`     |
 | Customer.io | `https://dobeu.net/api/webhooks/customerio` |
 
 Each webhook secret should be rotated on cutover and stored in Vercel env vars.

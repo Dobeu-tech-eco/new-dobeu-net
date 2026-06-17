@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +40,7 @@ export function LoginForm() {
       const redirect = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: redirect }
+        options: { emailRedirectTo: redirect },
       });
       if (error) throw error;
       track("login_magic_link_sent", { destination: nextPath });
@@ -57,7 +58,8 @@ export function LoginForm() {
       <div className="text-center space-y-2">
         <p className="font-semibold">Check your inbox.</p>
         <p className="text-sm text-muted-foreground">
-          A magic link is on its way. Click it to log in — link expires in 15 minutes.
+          A magic link is on its way. Click it to log in — link expires in 15
+          minutes.
         </p>
       </div>
     );
@@ -78,7 +80,14 @@ export function LoginForm() {
         />
       </div>
       <Button type="submit" size="lg" className="w-full" disabled={submitting}>
-        {submitting ? "Sending…" : "Send magic link"}
+        {submitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Sending…
+          </>
+        ) : (
+          "Send magic link"
+        )}
       </Button>
     </form>
   );

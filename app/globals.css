@@ -18,7 +18,7 @@
        Ink 900    = #1A1A2E  → hsl(240, 28%, 14%)
        Paper 50   = #FAFAFC  → hsl(240, 22%, 99%) */
 
-    --dobeu-indigo-50:  249 80% 96%;
+    --dobeu-indigo-50: 249 80% 96%;
     --dobeu-indigo-100: 249 78% 92%;
     --dobeu-indigo-200: 249 76% 84%;
     --dobeu-indigo-300: 249 74% 76%;
@@ -132,7 +132,10 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1,
+      "ss01" 1;
   }
   /* Focus ring — accent-colored, high contrast */
   :focus-visible {
@@ -162,7 +165,11 @@
     @apply bg-gradient-to-r from-dobeu-indigo-500 to-dobeu-amber-500 bg-clip-text text-transparent;
   }
   .gradient-text-deep {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--accent)) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
