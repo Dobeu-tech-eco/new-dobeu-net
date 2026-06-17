@@ -16,12 +16,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  // SECURITY: Use platform-provided guaranteed client IP (x-real-ip on Vercel) if available.
-  // Fall back to the rightmost IP in x-forwarded-for to prevent spoofing on single-proxy deployments.
-  const ip =
-    request.headers.get("x-real-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ??
-    "unknown";
+  const ip = request.headers.get("x-real-ip") ?? request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "unknown";
   const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
   if (rl.limited) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "X-RateLimit-Backend": rl.backend } });
