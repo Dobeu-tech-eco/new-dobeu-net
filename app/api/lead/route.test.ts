@@ -45,7 +45,7 @@ describe("POST /api/lead", () => {
     expect(arg.ipHash).toMatch(/^ip_/);
   });
 
-  it("prioritizes x-real-ip over x-forwarded-for and takes rightmost IP for x-forwarded-for", async () => {
+  it("uses the rightmost IP from x-forwarded-for when x-real-ip is absent", async () => {
     const res = await POST(new Request("http://localhost/api/lead", {
       method: "POST",
       body: JSON.stringify({ email: "x@y.com" }),
