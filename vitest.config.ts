@@ -8,11 +8,11 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["node_modules", ".next", "e2e/**"],
+    exclude: ["node_modules", ".next", "e2e/**"]
   },
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL(".", import.meta.url)),
-    },
-  },
+      "@": fileURLToPath(new URL(".", import.meta.url))
+    }
+  }
 });

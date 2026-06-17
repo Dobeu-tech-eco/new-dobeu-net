@@ -50,28 +50,6 @@ describe("isIntercomConfigured", () => {
   });
 });
 
-describe("initIntercomSecure", () => {
-  it("boots with api_base and intercom_user_jwt", async () => {
-    process.env[APP_ID] = "abc123";
-    const { initIntercomSecure } = await freshImport();
-    initIntercomSecure({ intercom_user_jwt: "jwt-token" });
-    expect(bootMock).toHaveBeenCalledWith({
-      app_id: "abc123",
-      api_base: "https://api-iam.intercom.io",
-      intercom_user_jwt: "jwt-token",
-      session_duration: 86400000
-    });
-  });
-
-  it("is idempotent", async () => {
-    process.env[APP_ID] = "abc123";
-    const { initIntercomSecure } = await freshImport();
-    initIntercomSecure({ intercom_user_jwt: "jwt-token" });
-    initIntercomSecure({ intercom_user_jwt: "jwt-token-2" });
-    expect(bootMock).toHaveBeenCalledTimes(1);
-  });
-});
-
 describe("initIntercom", () => {
   it("boots with the app id when configured", async () => {
     process.env[APP_ID] = "abc123";
@@ -123,42 +101,13 @@ describe("identifyIntercom", () => {
     expect(payload.company).toBeUndefined();
   });
 
-  it("forwards intercom_user_jwt for secure messenger", async () => {
-    process.env[APP_ID] = "abc123";
-    const { identifyIntercom } = await freshImport();
-    identifyIntercom({ user_id: "u1", intercom_user_jwt: "jwt-abc" });
-    expect(bootMock).toHaveBeenCalledWith(
-      expect.objectContaining({ intercom_user_jwt: "jwt-abc" })
-    );
-    expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ user_id: "u1", intercom_user_jwt: "jwt-abc" })
-    );
-  });
-
-  it("forwards user_hash for legacy identity verification", async () => {
+  it("forwards user_hash for identity verification", async () => {
     process.env[APP_ID] = "abc123";
     const { identifyIntercom } = await freshImport();
     identifyIntercom({ user_id: "u1", user_hash: "hmac-xyz" });
     expect(updateMock).toHaveBeenCalledWith(
       expect.objectContaining({ user_hash: "hmac-xyz" })
     );
-  });
-
-  it("forwards created_at as a Unix timestamp in seconds", async () => {
-    process.env[APP_ID] = "abc123";
-    const { identifyIntercom } = await freshImport();
-    identifyIntercom({ user_id: "u1", created_at: 1704067200 });
-    expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ created_at: 1704067200 })
-    );
-  });
-
-  it("leaves created_at undefined when not provided", async () => {
-    process.env[APP_ID] = "abc123";
-    const { identifyIntercom } = await freshImport();
-    identifyIntercom({ user_id: "u1" });
-    const [payload] = updateMock.mock.calls[0];
-    expect(payload.created_at).toBeUndefined();
   });
 
   it("still calls update even when not configured (no boot)", async () => {

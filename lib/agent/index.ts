@@ -30,7 +30,11 @@
  * automation use cases (e.g. cron jobs in scripts/agent.ts) where there is
  * no human in the loop. Never accept this value from an end-user request.
  */
-export type AgentPermissionMode = "default" | "acceptEdits" | "plan" | "bypassPermissions";
+export type AgentPermissionMode =
+  | "default"
+  | "acceptEdits"
+  | "plan"
+  | "bypassPermissions";
 
 export interface AgentRunInput {
   /** A short stable identifier for the calling user — scopes the Composio session. */
@@ -72,16 +76,25 @@ export async function runAgent(input: AgentRunInput): Promise<AgentRunResult> {
   // so `next build` doesn't fail with "Module not found" before the SDKs are
   // installed. Once `pnpm add @composio/core @anthropic-ai/claude-agent-sdk`
   // runs, this resolves at runtime exactly like a normal `import()`.
-  const dynamicImport = new Function("p", "return import(p)") as <T>(p: string) => Promise<T>;
+  const dynamicImport = new Function("p", "return import(p)") as <T>(
+    p: string,
+  ) => Promise<T>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let Composio: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any;
   try {
-    ({ Composio } = await dynamicImport<{ Composio: unknown }>("@composio/core"));
-    ({ query } = await dynamicImport<{ query: unknown }>("@anthropic-ai/claude-agent-sdk"));
+    ({ Composio } = await dynamicImport<{ Composio: unknown }>(
+      "@composio/core",
+    ));
+    ({ query } = await dynamicImport<{ query: unknown }>(
+      "@anthropic-ai/claude-agent-sdk",
+    ));
   } catch (e) {
-    console.warn("[agent] SDKs not installed:", e instanceof Error ? e.message : e);
+    console.warn(
+      "[agent] SDKs not installed:",
+      e instanceof Error ? e.message : e,
+    );
     return { ok: false, error: "sdk_not_installed" };
   }
 
@@ -104,9 +117,9 @@ export async function runAgent(input: AgentRunInput): Promise<AgentRunResult> {
       options: {
         permissionMode: input.mode ?? "default",
         mcpServers: {
-          composio: session.mcp
-        }
-      }
+          composio: session.mcp,
+        },
+      },
     });
 
     let result = "";

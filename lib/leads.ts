@@ -6,14 +6,10 @@
  * Every step is best-effort: a failure in one provider never throws out of
  * processLead, so one integration being down can't drop the lead on the floor.
  */
+import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 import { upsertApolloContact } from "@/lib/apollo";
 import { cioIdentify, cioTrack, isCustomerIoConfigured } from "@/lib/customerio";
-import { sendEmail } from "@/lib/resend";
-import {
-  leadConfirmationToClient,
-  leadAdminNotification
-} from "@/lib/resend-templates";
 
 export type LeadSource = "book" | "form" | "email" | "typeform" | "other";
 
@@ -42,10 +38,7 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
   const utm = input.utm ?? {};
   const referrer = input.referrer ?? null;
 
-  // 1. Write to Supabase leads table (admin client bypasses RLS).
-  // Schema is now unified — write directly to `leads` and surface real errors
-  // instead of probing legacy candidate names. If the insert fails, the lead
-  // still flows through Apollo / Customer.io / Resend below.
+  // 1. Write to Supabase leads table (admin client bypasses RLS)
   let leadId: string | null = null;
   try {
     const supa = createAdminClient();
@@ -66,13 +59,10 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
       })
       .select("id")
       .single();
-    if (error) {
-      console.error("[processLead] leads insert failed:", error.message ?? error);
-    } else {
-      leadId = data?.id ?? null;
-    }
+    if (error) throw error;
+    leadId = data?.id ?? null;
   } catch (e) {
-    console.error("[processLead] Supabase insert threw", e);
+    console.error("[processLead] Supabase insert failed", e);
     // Don't fail the flow if Supabase is down — Apollo + email still try.
   }
 
@@ -126,32 +116,28 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
     if (!trackRes.ok) console.warn("[processLead] Customer.io track:", trackRes.error);
   }
 
-  // 4. Send confirmation email via Resend + notify admin (Phase 3: now uses
-  // shared templates so visual language matches work-order + invoice emails).
+  // 4. Send confirmation email via Resend + notify admin
   try {
-    const replyTo = process.env.RESEND_REPLY_TO ?? "jeremyw@dobeu.net";
-    const confirm = leadConfirmationToClient({ name, source });
-    await sendEmail({
-      to: email,
-      subject: confirm.subject,
-      text: confirm.text,
-      html: confirm.html
-    });
-    const notify = leadAdminNotification({
-      email,
-      name,
-      company,
-      message,
-      source,
-      utm,
-      referrer
-    });
-    await sendEmail({
-      to: replyTo,
-      subject: notify.subject,
-      text: notify.text,
-      html: notify.html
-    });
+    if (process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const fromEmail = process.env.RESEND_FROM_EMAIL ?? "hello@dobeu.net";
+      const replyTo = process.env.RESEND_REPLY_TO ?? "jeremyw@dobeu.net";
+
+      await resend.emails.send({
+        from: `Dobeu Tech Solutions <${fromEmail}>`,
+        to: email,
+        replyTo,
+        subject: "Got it — I'll be in touch shortly",
+        html: confirmEmailHtml({ name: name ?? "there", source })
+      });
+
+      await resend.emails.send({
+        from: `dobeu.net <${fromEmail}>`,
+        to: replyTo,
+        subject: `New lead: ${name ?? email} (${source})`,
+        html: notifyEmailHtml({ email, name, company, message, source, utm, referrer })
+      });
+    }
   } catch (e) {
     console.error("[processLead] Resend failed (non-fatal)", e);
   }
@@ -159,9 +145,30 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
   return { leadId, apolloContactId };
 }
 
-/** Retained as a public utility; some legacy callers used to import this. */
+// ---- email templates ----
+
+function confirmEmailHtml(args: { name: string; source: string }): string {
+  return `
+  <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;line-height:1.6;color:#1A1A2E;max-width:560px;margin:0 auto;padding:24px;">
+    <h2 style="margin:0 0 16px;font-size:22px;">Hey ${escapeHtml(args.name)} —</h2>
+    <p style="margin:0 0 16px;">Got your note. I personally read every inquiry and reply within 24 hours (usually faster).</p>
+    <p style="margin:0 0 16px;">If you booked a call, expect a calendar invite shortly. Otherwise, I'll be in touch with next steps.</p>
+    <p style="margin:0 0 24px;">— Jeremy<br/>Dobeu Tech Solutions</p>
+    <p style="font-size:12px;color:#666;border-top:1px solid #eee;padding-top:12px;">This was triggered by you submitting the <strong>${escapeHtml(args.source)}</strong> form on dobeu.net.</p>
+  </div>`;
+}
+
+function notifyEmailHtml(args: Record<string, unknown>): string {
+  const rows = Object.entries(args)
+    .filter(([, v]) => v && (typeof v !== "object" || Object.keys(v as object).length > 0))
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:6px 12px;font-weight:600;color:#666;">${escapeHtml(k)}</td><td style="padding:6px 12px;">${escapeHtml(JSON.stringify(v))}</td></tr>`
+    )
+    .join("");
+  return `<div style="font-family:-apple-system,sans-serif;"><h2>New lead from dobeu.net</h2><table style="border-collapse:collapse;">${rows}</table></div>`;
+}
+
 export function escapeHtml(s: unknown): string {
-  return String(s).replace(/[&<>"']/g, (m) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m]!
-  );
+  return String(s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m]!);
 }

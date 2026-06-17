@@ -43,6 +43,17 @@ export default async function TicketDetailPage({ params }: PageProps) {
 
   if (!ticket) notFound();
 
+  // The per-status timestamp columns (in_progress_at / delivered_at /
+  // closed_at / cancelled_at) land in lib/database.types.ts via the central
+  // `pnpm db:types` regen (migration 20260618000000). Until then the generated
+  // row type is stale, so read them through a narrow cast.
+  const milestones = ticket as typeof ticket & {
+    in_progress_at: string | null;
+    delivered_at: string | null;
+    closed_at: string | null;
+    cancelled_at: string | null;
+  };
+
   const { data: attachments } = await supabase
     .from("work_order_attachments")
     .select("id,filename,mime_type,size_bytes,storage_path,uploaded_at")
@@ -186,30 +197,28 @@ export default async function TicketDetailPage({ params }: PageProps) {
 
       <section className="rounded-lg border border-border bg-card p-4">
         <h2 className="font-semibold mb-2">Timeline</h2>
-        <ul className="text-sm space-y-1.5">
-          <li>
-            <span className="font-medium">Opened</span> ·{" "}
-            <span className="text-muted-foreground">
-              {new Date(ticket.created_at).toLocaleString()}
-            </span>
-          </li>
-          {ticket.quoted_at && (
-            <li>
-              <span className="font-medium">Quoted</span> ·{" "}
-              <span className="text-muted-foreground">
-                {new Date(ticket.quoted_at).toLocaleString()}
-              </span>
-            </li>
-          )}
-          {ticket.accepted_at && (
-            <li>
-              <span className="font-medium">Accepted</span> ·{" "}
-              <span className="text-muted-foreground">
-                {new Date(ticket.accepted_at).toLocaleString()}
-              </span>
-            </li>
-          )}
-        </ul>
+        <ol className="text-sm space-y-1.5">
+          {(
+            [
+              { label: "Opened", at: ticket.created_at },
+              { label: "Quoted", at: ticket.quoted_at },
+              { label: "Accepted", at: ticket.accepted_at },
+              { label: "In progress", at: milestones.in_progress_at },
+              { label: "Delivered", at: milestones.delivered_at },
+              { label: "Closed", at: milestones.closed_at },
+              { label: "Cancelled", at: milestones.cancelled_at }
+            ] as Array<{ label: string; at: string | null | undefined }>
+          )
+            .filter((m) => Boolean(m.at))
+            .map((m) => (
+              <li key={m.label}>
+                <span className="font-medium">{m.label}</span> ·{" "}
+                <span className="text-muted-foreground">
+                  {new Date(m.at as string).toLocaleString()}
+                </span>
+              </li>
+            ))}
+        </ol>
       </section>
     </div>
   );

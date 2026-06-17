@@ -17,7 +17,7 @@ import { runAgent } from "@/lib/agent";
 async function main() {
   const prompt = process.argv.slice(2).join(" ").trim();
   if (!prompt) {
-    console.error("usage: pnpm tsx scripts/agent.ts \"<prompt>\"");
+    console.error('usage: pnpm tsx scripts/agent.ts "<prompt>"');
     process.exit(2);
   }
   const userId = process.env.AGENT_USER_ID ?? "dobeu-ops";
