@@ -106,3 +106,18 @@ export function sanitizeNextPath(nextPath: string | null | undefined, fallback =
   if (!nextPath.startsWith("/") || nextPath.startsWith("//")) return fallback;
   return nextPath;
 }
+
+/**
+ * Decide whether the current session must complete an AAL2 (TOTP) step-up.
+ * Input is the shape returned by `supabase.auth.mfa.getAuthenticatorAssuranceLevel()`.
+ * - nextLevel 'aal2' + currentLevel not 'aal2' → a factor exists but the
+ *   session hasn't satisfied it → step-up required.
+ * - No factor enrolled (currentLevel === nextLevel === 'aal1') → bootstrap,
+ *   no step-up (the admin can still reach /admin to enroll; layout nags).
+ */
+export function requiresAal2Stepup(
+  aal: { currentLevel: string | null; nextLevel: string | null } | null
+): boolean {
+  if (!aal) return false;
+  return aal.nextLevel === "aal2" && aal.currentLevel !== "aal2";
+}

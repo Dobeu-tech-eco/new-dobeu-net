@@ -6,7 +6,8 @@ import {
   formatCurrency,
   captureAcquisition,
   getSiteUrl,
-  getPosthogHost
+  getPosthogHost,
+  requiresAal2Stepup
 } from "@/lib/utils";
 
 describe("cn", () => {
@@ -125,5 +126,20 @@ describe("captureAcquisition", () => {
   it("omits referrer when not provided", () => {
     const sp = new URLSearchParams("gclid=123");
     expect(captureAcquisition(sp)).toEqual({ gclid: "123" });
+  });
+});
+
+describe("requiresAal2Stepup", () => {
+  it("returns false when no factor is enrolled (bootstrap: aal1/aal1)", () => {
+    expect(requiresAal2Stepup({ currentLevel: "aal1", nextLevel: "aal1" })).toBe(false);
+  });
+  it("returns true when a factor exists but session is still aal1", () => {
+    expect(requiresAal2Stepup({ currentLevel: "aal1", nextLevel: "aal2" })).toBe(true);
+  });
+  it("returns false when the session already satisfied aal2", () => {
+    expect(requiresAal2Stepup({ currentLevel: "aal2", nextLevel: "aal2" })).toBe(false);
+  });
+  it("returns false when assurance info is null (fail-open for shape, gate handles network errors separately)", () => {
+    expect(requiresAal2Stepup(null)).toBe(false);
   });
 });
