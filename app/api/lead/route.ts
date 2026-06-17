@@ -16,8 +16,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const parts = request.headers.get("x-forwarded-for")?.split(",") ?? [];
-  const ip = parts[parts.length - 1]?.trim() || "unknown";
+  // SECURITY: Always parse the rightmost IP in x-forwarded-for to prevent IP spoofing
+  // Attackers can prepend fake IPs to x-forwarded-for, but the proxy appends the real one last.
+  const ip = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "unknown";
   const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
   if (rl.limited) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "X-RateLimit-Backend": rl.backend } });
