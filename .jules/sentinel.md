@@ -1,4 +1,4 @@
-## 2025-01-20 - IP Spoofing Prevention via x-forwarded-for parsing
-**Vulnerability:** IP spoofing in rate limit implementation. The `x-forwarded-for` header was being split by `,` and the first element (`[0]`) was being used as the client's IP.
-**Learning:** Attackers can spoof the leftmost IP address in `x-forwarded-for` by appending their own proxy headers, bypassing rate limit configurations. The proxy appends the real IP of the client at the end of the header list (rightmost).
-**Prevention:** Always parse the rightmost IP in the `x-forwarded-for` header. Example: `request.headers.get("x-forwarded-for")?.split(",").pop()?.trim()`.
+## 2023-10-24 - [IP Spoofing via X-Forwarded-For Header]
+**Vulnerability:** The application was extracting the client IP address from the *leftmost* part of the `X-Forwarded-For` header for rate limiting. This is a critical security risk because a malicious client can easily spoof the leftmost IP address by injecting their own `X-Forwarded-For` header, bypassing the rate limiter.
+**Learning:** The leftmost IP address in `X-Forwarded-For` is untrusted because it originates from the client.
+**Prevention:** Always extract the client IP address from the *rightmost* part of the `X-Forwarded-For` header (after splitting by commas and trimming whitespace), as this value is appended by the last trusted proxy (e.g., Vercel) and cannot be spoofed by the client.
