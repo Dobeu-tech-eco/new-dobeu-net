@@ -6,10 +6,16 @@ export const dynamic = "force-dynamic";
 
 const SIGNED_URL_TTL_SECONDS = 60;
 
-export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
-  // Explicit authn gate. RLS on `project_files` / storage is defense-in-depth,
-  // but we assert an authenticated user up front so anonymous callers get a
-  // clean 401 instead of a misleading 404 from an RLS-filtered empty result.
+/**
+ * Authenticated file download. POST from the portal "Files" / per-project forms;
+ * GET for direct links (emails / future admin tools). Both share one path:
+ *   1. Assert an authenticated user (requireUser) — anonymous callers get a clean
+ *      401 instead of an RLS-masked 404.
+ *   2. Look up the project_files row via the RLS-bound client (RLS scopes to
+ *      owner/admin; a missing/unauthorized id 404s without leaking existence).
+ *   3. Issue a 60s signed URL against the `project-files` bucket and 303-redirect.
+ */
+async function issueSignedUrl(id: string) {
   let supabase;
   try {
     ({ supabase } = await requireUser());
@@ -20,7 +26,6 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     throw error;
   }
 
-  const { id } = await context.params;
   if (!id) return NextResponse.json({ error: "Missing file id" }, { status: 400 });
 
   const { data: file, error: fileError } = await supabase
@@ -42,4 +47,15 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   }
 
   return NextResponse.redirect(signed.signedUrl, 303);
+}
+
+export async function POST(_request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  return issueSignedUrl(id);
+}
+
+// Allow GET too for direct links from emails / future admin tools — same auth check.
+export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  return issueSignedUrl(id);
 }

@@ -1,20 +1,44 @@
 # AGENTS.md
 
-Guidance for Codex (and any other `AGENTS.md`-reading agent) in this repository.
+## Cursor Cloud specific instructions
 
-**Canonical instructions live in [`CLAUDE.md`](./CLAUDE.md).** Read that file first and treat it as the single source of truth for architecture, commands, security notes, and workflow status.
+### Services overview
 
-This file is intentionally a thin pointer because some tools discover instructions by filename. Do not duplicate architectural guidance here.
+This is a single Next.js 15 (App Router) project with three surfaces: public marketing landing (`/`), client portal (`/portal/*`), and admin panel (`/admin/*`). All share one deployment.
 
-Sibling pointer files:
-- `GEMINI.md`
-- `.github/copilot-instructions.md`
+### Running the dev server
 
-If guidance changes, update `CLAUDE.md` and keep this file minimal.
+```bash
+pnpm dev   # → http://localhost:3000
+```
 
-## Learned preferences
+The marketing landing page renders fully without any external services. Portal and admin routes require Supabase auth — without it, the middleware redirects to `/login`.
 
-These are durable workflow preferences observed across multiple sessions. They are operational (not architectural), so they live here instead of `CLAUDE.md`.
+### Environment variables
 
-- When the user attaches a plan file from `.cursor/plans/` and says "implement the plan as specified", do NOT edit the plan file itself; its todos are pre-created — mark them `in_progress` as you work and do not recreate them.
-- Before reproposing or refreshing any plan, re-read the current codebase first (git status + diff + relevant files). The user has repeatedly corrected attempts to update a plan from prior-session memory or stale context with "review codebase and update plan accordingly".
+Copy `.env.example` → `.env.local`. All third-party integrations (Supabase, Stripe, Apollo, Resend, PostHog, etc.) are feature-flagged by the presence of their env vars and degrade gracefully when missing. The app builds and runs without any of them configured.
+
+### Key commands (see CLAUDE.md for full list)
+
+| Task | Command |
+|------|---------|
+| Type-check | `pnpm type-check` |
+| Lint | `pnpm lint` |
+| Build | `pnpm build` |
+| Dev server | `pnpm dev` |
+| Full verify | `pnpm verify` |
+
+### Testing
+
+- **Unit tests**: `pnpm test:ci` runs vitest. Tests live alongside source as `*.test.ts` files in `lib/`.
+- **E2E tests**: `pnpm test:e2e` runs Playwright (Chromium). Tests live in `e2e/`. Config reuses the running dev server when available (`reuseExistingServer: true`).
+- **Full pre-merge check**: `pnpm verify` runs type-check + lint + test:ci + build in sequence.
+
+### Gotchas
+
+- **`next.config.ts` has `ignoreBuildErrors: false`** — the build fails on type errors and lint errors. Always run `pnpm type-check` and `pnpm lint` before pushing.
+- **`next lint` is deprecated** in Next.js 15.5+ and will show a deprecation warning. It still works; the output is valid.
+- **Supabase local stack requires Docker** — `pnpm supabase start` won't work without Docker installed. This is only needed if you're testing auth/portal/admin flows against a real database.
+- **The lead API (`POST /api/lead`)** returns `{"ok":true,"lead_id":null}` when Supabase isn't configured — this is expected graceful degradation, not an error.
+- **CSP headers** — when adding third-party scripts/embeds, add domains to the CSP arrays in `next.config.ts` or they'll be blocked at runtime.
+- **Resend mock in tests** — `vi.fn()` mocks used as constructors (e.g. Resend) must use `function` keyword, not arrow functions. Vitest 4.x enforces this.

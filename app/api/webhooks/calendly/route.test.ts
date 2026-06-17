@@ -5,13 +5,6 @@ import { createHmac } from "node:crypto";
 vi.mock("@/lib/leads", () => ({
   processLead: vi.fn().mockResolvedValue({ leadId: "lead_1", apolloContactId: "apollo_1" })
 }));
-vi.mock("@/lib/supabase/server", () => ({
-  createAdminClient: vi.fn(() => ({
-    from: vi.fn(() => ({
-      insert: vi.fn().mockResolvedValue({ data: null, error: null })
-    }))
-  }))
-}));
 
 import { POST } from "@/app/api/webhooks/calendly/route";
 import { processLead } from "@/lib/leads";
@@ -79,7 +72,7 @@ describe("POST /api/webhooks/calendly", () => {
     expect(await res.json()).toEqual({
       ok: true,
       lead_id: "lead_1",
-      apollo_contact_id: "apollo_1"
+      apollo_contact_id: "apollo_1",
     });
 
     expect(mockedProcessLead).toHaveBeenCalledTimes(1);

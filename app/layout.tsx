@@ -1,23 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
+import { Nunito, Quicksand } from "next/font/google";
 import { Toaster } from "sonner";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
-import { getSiteUrl } from "@/lib/utils";
 import "./globals.css";
 
-/**
- * Dobeu Design System v2 — Nunito only (weights 400/500/600/700/800).
- * Used for both `font-sans` and `font-display` in tailwind.config.ts.
- */
 const nunito = Nunito({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-nunito",
-  weight: ["400", "500", "600", "700", "800"]
+  weight: ["300", "400", "600", "700", "800", "900"]
 });
 
-const SITE_URL = getSiteUrl();
+const quicksand = Quicksand({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-quicksand",
+  weight: ["400", "500", "600", "700"]
+});
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dobeu.net";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -58,13 +62,11 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, "max-image-preview": "large" }
   }
-  // Favicon, icon, and apple-icon resolve via Next.js metadata file convention
-  // from app/favicon.ico, app/icon.svg, app/apple-icon.png — no `icons:` block needed.
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
+    { media: "(prefers-color-scheme: light)", color: "#FAFAFC" },
     { media: "(prefers-color-scheme: dark)", color: "#1A1A2E" }
   ],
   width: "device-width",
@@ -74,16 +76,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      data-brand="net"
-      suppressHydrationWarning
-      className={nunito.variable}
-    >
+    <html lang="en" suppressHydrationWarning className={`${nunito.variable} ${quicksand.variable}`}>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <a href="#main" className="skip-link">Skip to main content</a>
         <ThemeProvider>
           <AnalyticsProvider>{children}</AnalyticsProvider>
+          <VercelAnalytics />
+          <SpeedInsights />
           <Toaster position="bottom-right" theme="system" richColors closeButton />
         </ThemeProvider>
         {/* JSON-LD Organization schema */}
@@ -95,7 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@type": "Organization",
               name: "Dobeu Tech Solutions LLC",
               url: SITE_URL,
-              logo: `${SITE_URL}/brand/dobeu-horizontal.png`,
+              logo: `${SITE_URL}/logo.svg`,
               founder: { "@type": "Person", name: "Jeremy Williams" },
               sameAs: ["https://www.linkedin.com/in/jeremy-williams"]
             })

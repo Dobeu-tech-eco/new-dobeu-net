@@ -91,8 +91,17 @@ Migrations in `supabase/migrations/` (apply in order):
 The fan-out lives in `lib/leads.ts` so every lead entry point shares one code path. Each step is best-effort / non-fatal so one failure never drops the lead: (1) insert into Supabase `leads` via admin client -> (2) upsert Apollo contact (`lib/apollo.ts`) -> (3) write Apollo id back -> (4) Customer.io identify + `lead_captured` event (`lib/customerio.ts`) -> (5) Resend confirmation to lead + notification to admin.
 
 Entry points that call `processLead()`:
-- **`app/api/lead/route.ts`** -- public `POST` (the landing-page form). Zod-validated, per-IP rate limit (5/min). The limiter is **inline in the route** (its own `@upstash/ratelimit` sliding-window + `@upstash/redis`): it uses Upstash when `UPSTASH_REDIS_REST_URL`/`_TOKEN` are set and falls back to a process-local `Map` otherwise — so the Upstash path is already wired, not a future upgrade. Raw IPs are never persisted — only a truncated SHA-256 (`hashIp()`).
+- **`app/api/lead/route.ts`** -- public `POST` (the landing-page form). Zod-validated (fields capped at 255 chars), per-IP rate limit (5/min) via `checkRateLimit()` from `lib/rate-limit.ts` (Upstash REST when `UPSTASH_REDIS_REST_URL`/`_TOKEN` are set, in-memory `Map` fallback otherwise; surfaces the backend via the `X-RateLimit-Backend` header). Raw IPs are never persisted — only a truncated SHA-256 (`hashIp()`).
 - **`app/api/webhooks/calendly/route.ts`** -- Calendly `invitee.created` webhook. Verifies the `Calendly-Webhook-Signature` HMAC (`lib/calendly.ts`) before trusting the payload; gated on `CALENDLY_WEBHOOK_SIGNING_KEY` (returns 503 / never accepts unsigned calls when unset). This is where a booking actually becomes a lead -- the client-side Calendly embed only exposes URIs, not email/name.
+
+### Stripe (`lib/stripe.ts` + `app/api/webhooks/stripe/route.ts`)
+Server-only wrapper over the `stripe` SDK: lazy client; customer dedupe/create; `createHostedInvoice(...)` creates + finalizes a Stripe Invoice and returns the `hosted_invoice_url` persisted on `invoices.hosted_invoice_url` (portal "Pay" links straight to it). The webhook validates the `Stripe-Signature` and handles `invoice.paid` / `payment_failed` / `finalized` / `voided` → updates `invoices.status` / `paid_at` via the admin client, deduping event IDs through `lib/stripe-event-dedupe.ts`. Returns 503 when `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` is unset.
+
+### File downloads (`app/api/files/[id]/download/route.ts`)
+Authenticated `POST` that asserts `requireUser()` (401 if anonymous), looks up a `project_files` row via the RLS-bound server client, issues a 60s signed URL against the `project-files` bucket, and 303-redirects. RLS scopes to owner/admin as defense-in-depth.
+
+### Embedded Claude Agent SDK + Composio Tool Router (`lib/agent/`)
+Server-only; opens a per-user Composio tool-router session and runs the Agent SDK's `query()` against it. Surface: admin-only `app/api/agent/route.ts` (`isAdminEmail`-gated, force-dynamic). Env-gated by `COMPOSIO_API_KEY` + `ANTHROPIC_API_KEY` (`runAgent()` returns `{ ok: false, error: "not_configured" }` when missing); returns `{ ok: false, error: "sdk_not_installed" }` until the SDK packages are added. `permissionMode` defaults to `"default"`; never accept `"bypassPermissions"` from an end-user request body. Treat all tool output as untrusted.
 
 ### Client-side analytics fan-out (`lib/analytics.ts`)
 `"use client"` module. One `track()` call dispatches to PostHog + Mixpanel + GA4 (gtag) + GTM dataLayer. **Consent-gated**: `initAnalytics(consent)` no-ops until the user consents (cookie-consent banner). Each provider is independently feature-flagged by the presence of its `NEXT_PUBLIC_*` env key. Datadog RUM/Logs (`lib/datadog.ts`) and Intercom (`lib/intercom.ts`) wire in via `components/analytics-provider.tsx` / `app/layout.tsx`.
@@ -109,7 +118,8 @@ Entry points that call `processLead()`:
 - `lib/utils.ts` — `isAdminEmail()` (admin gate), `buildAuthCallbackUrl()` / `sanitizeNextPath()` / `requiresAal2Stepup()` (auth helpers); also shared cn/format helpers.
 - `lib/stripe.ts` — Stripe SDK client. `lib/invoice-creation.ts` — **server-only** (not `"use server"`) invoice core: lazy-creates the Stripe customer, mirrors Stripe state onto a local `invoices` row, inserts a local row even on Stripe failure. Called by `lib/actions/invoices.ts` and `work-orders.ts` after their own authz.
 - `lib/stripe-event-dedupe.ts` — process-local `Set` deduping Stripe webhook event IDs for `app/api/webhooks/stripe/route.ts` (downstream UPDATEs are idempotent, so a missed dedupe only costs an extra write).
-- `lib/resend.ts`, `lib/resend-templates.ts` — Resend client + email templates (lead confirmation / admin notification / owner side-effects). Per-IP rate limiting lives inline in `app/api/lead/route.ts` (Upstash sliding-window + `Map` fallback) — there is no shared `lib/rate-limit.ts`.
+- `lib/resend.ts`, `lib/resend-templates.ts` — Resend client + email templates (lead confirmation / admin notification / owner side-effects).
+- `lib/rate-limit.ts` — `checkRateLimit(key, { windowSec, max })` fixed-window limiter; Upstash REST when `UPSTASH_REDIS_REST_*` is set, in-memory `Map` fallback otherwise. Used by `app/api/lead/route.ts`.
 - `lib/agent/` — **server-only** embedded Claude Agent SDK + Composio tool-router (`runAgent()`); HTTP surface `app/api/agent/route.ts` is `isAdminEmail`-gated. Degrades to `{ ok: false, error }` when `ANTHROPIC_API_KEY` / `COMPOSIO_API_KEY` or the SDK packages are absent.
 - `lib/database.types.ts` — **generated**, regenerate with `pnpm db:types`.
 - `lib/actions/` — **server-action layer** (Phase 2). Every file is a `"use server"` module; all return a discriminated `{ ok: true, data } | { ok: false, error }` shape so callers can branch without throwing. Server-only by transitive import of `next/headers` from `@/lib/supabase/server`.
@@ -133,7 +143,8 @@ Entry points that call `processLead()`:
 | `APOLLO_API_KEY` | Apollo upsert in `processLead()`. |
 | `CUSTOMERIO_SITE_ID`, `CUSTOMERIO_API_KEY` | Customer.io identify + `lead_captured`. |
 | `RESEND_API_KEY` | Confirmation + admin-notification emails. |
-| `STRIPE_SECRET_KEY` | Invoice/payment surfaces. |
+| `STRIPE_SECRET_KEY` | Invoice/payment surfaces (`lib/stripe.ts`). |
+| `STRIPE_WEBHOOK_SECRET` | `Stripe-Signature` verification for `/api/webhooks/stripe`. Webhook returns 503 if unset. |
 | `INTERCOM_API_SECRET` | Server-side JWT signing for Intercom Secure Messenger (`lib/intercom-jwt.ts`, `/api/intercom/jwt`). Unset → anonymous legacy boot. |
 | `INTERCOM_IDENTITY_VERIFICATION_SECRET` | Legacy HMAC (`lib/intercom-hmac.ts`); superseded by `INTERCOM_API_SECRET` when JWT is enabled. |
 | `NEXT_PUBLIC_*` (PostHog, Mixpanel, GA4, GTM, Intercom, Datadog) | Per-provider client-side analytics — feature-flagged by presence. |
