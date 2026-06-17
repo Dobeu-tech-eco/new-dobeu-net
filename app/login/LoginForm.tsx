@@ -252,8 +252,7 @@ export function LoginForm() {
       <Button type="submit" size="lg" className="w-full" disabled={submitting}>
         {submitting ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending…
+            <Loader2 className="animate-spin" /> Sending…
           </>
         ) : (
           "Send magic link"
