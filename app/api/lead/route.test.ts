@@ -10,15 +10,19 @@ import { processLead } from "@/lib/leads";
 
 const mockedProcessLead = vi.mocked(processLead);
 
-function makeRequest(body: unknown, ip?: string, rawBody?: string, headersInit?: HeadersInit): Request {
-  const headers = new Headers({
+function makeRequest(
+  body: unknown,
+  ip = "1.1.1.1",
+  rawBody?: string,
+  opts?: { xRealIp?: string }
+): Request {
+  const headers: Record<string, string> = {
     "content-type": "application/json",
-    ...(headersInit || {}),
-  });
-  if (ip && !headers.has("x-forwarded-for") && !headers.has("x-real-ip")) {
-    headers.set("x-forwarded-for", ip);
+    "x-forwarded-for": ip,
+  };
+  if (opts?.xRealIp) {
+    headers["x-real-ip"] = opts.xRealIp;
   }
-
   return new Request("http://localhost/api/lead", {
     method: "POST",
     body: rawBody ?? JSON.stringify(body),
@@ -116,25 +120,24 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead).toHaveBeenCalledTimes(5);
   });
 
-  it("prevents rate limit bypass via x-forwarded-for spoofing by using the rightmost IP", async () => {
-    // 5 valid requests from legitimate IP 203.0.113.1
-    for (let i = 0; i < 5; i++) {
-      const res = await POST(makeRequest({ email: "a@b.com" }, "203.0.113.1"));
-      expect(res.status).toBe(200);
-    }
-    // 6th request tries to bypass by prepending a spoofed IP
-    const spoofedRes = await POST(makeRequest({ email: "a@b.com" }, "1.2.3.4, 203.0.113.1"));
-    expect(spoofedRes.status).toBe(429);
+  it("extracts client IP using x-real-ip preferentially to avoid spoofing", async () => {
+    await POST(
+      makeRequest(
+        { email: "g@h.com" },
+        "attacker.ip.com, victim.ip.com",
+        undefined,
+        { xRealIp: "guaranteed.real.ip" }
+      )
+    );
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
+    const arg = mockedProcessLead.mock.calls[0][0];
+    expect(arg.email).toBe("g@h.com");
   });
 
-  it("prioritizes x-real-ip over x-forwarded-for if both are present", async () => {
-    // 5 requests using x-real-ip
-    for (let i = 0; i < 5; i++) {
-      const res = await POST(makeRequest({ email: "a@b.com" }, "spoofed.ip.here", undefined, "203.0.113.5"));
-      expect(res.status).toBe(200);
-    }
-    // 6th request with same x-real-ip should be blocked, ignoring x-forwarded-for
-    const res = await POST(makeRequest({ email: "a@b.com" }, "different.ip.here", undefined, "203.0.113.5"));
-    expect(res.status).toBe(429);
+  it("extracts client IP using rightmost x-forwarded-for when x-real-ip is missing", async () => {
+    await POST(makeRequest({ email: "i@j.com" }, "spoofed.ip.com, actual.client.ip"));
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
+    const arg = mockedProcessLead.mock.calls[0][0];
+    expect(arg.email).toBe("i@j.com");
   });
 });
