@@ -1,5 +1,4 @@
-
-## 2026-06-09 - [Rate Limit Bypass via IP Spoofing]
-**Vulnerability:** The application blindly parsed `x-forwarded-for` and took the leftmost IP for rate-limiting, which allowed an attacker to bypass rate limits entirely by prepending arbitrary IPs to their requests.
-**Learning:** `x-forwarded-for` can be trivially modified by external clients. The leftmost IP is the origin client IP but is completely untrustworthy. The rightmost IP is appended by the outermost trusted proxy and is safer, though `x-real-ip` (if provided by a trusted Edge network like Vercel) is the most secure identifier.
-**Prevention:** Always prioritize `x-real-ip`. If forced to use `x-forwarded-for` in a multi-proxy setup, use the rightmost IP for enforcing security policies. Add tests mimicking malicious IP spoofing in headers.
+## 2024-06-11 - Open Redirect via Unvalidated `next` Parameter
+**Vulnerability:** The OAuth callback route (`/auth/callback`) blindly trusted the `next` query parameter and passed it directly to `new URL(next, url.origin)`. An attacker could supply an absolute URL or a protocol-relative URL (e.g., `//attacker.com`) to redirect authenticated users to a malicious site.
+**Learning:** `new URL(path, base)` will ignore the `base` if the `path` is already an absolute URL or a protocol-relative URL. Relying on this constructor to forcefully scope paths to the origin is insufficient without explicit validation.
+**Prevention:** Always validate that redirect targets derived from user input are strictly local paths (e.g., `next.startsWith("/") && !next.startsWith("//")`) before execution.

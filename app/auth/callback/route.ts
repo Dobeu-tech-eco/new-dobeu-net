@@ -14,6 +14,10 @@ export async function GET(request: Request) {
     next = "/portal";
   }
 
+  // Security: Prevent open redirect by ensuring `next` is a local path
+  const isLocal = next.startsWith("/") && !next.startsWith("//");
+  const safeNext = isLocal ? next : "/portal";
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
