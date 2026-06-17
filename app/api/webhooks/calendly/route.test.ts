@@ -72,7 +72,8 @@ describe("POST /api/webhooks/calendly", () => {
     expect(await res.json()).toEqual({
       ok: true,
       lead_id: "lead_1",
-      apollo_contact_id: "apollo_1"
+      apollo_contact_id: "apollo_1",
+      booking_id: null,
     });
 
     expect(mockedProcessLead).toHaveBeenCalledTimes(1);
