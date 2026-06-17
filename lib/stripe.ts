@@ -23,7 +23,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 // installed `stripe@17.7.0` ships typings tied to `2025-02-24.acacia`; if you
 // upgrade the SDK, re-pin this to the new `LatestApiVersion` on purpose
 // (don't drift -- a Stripe API bump requires a dashboard upgrade too).
-export const STRIPE_API_VERSION = "2025-02-24.acacia" as const;
+const STRIPE_API_VERSION = "2025-02-24.acacia" as const;
 
 let _stripe: Stripe | null = null;
 
