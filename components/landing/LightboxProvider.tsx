@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LeadForm } from "@/components/landing/LeadForm";
-import dynamic from "next/dynamic";
 
 // ⚡ Bolt: Lazy load heavy third-party embeds (Calendly & Typeform)
 // to reduce the initial JS bundle size of the landing page.

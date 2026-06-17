@@ -69,8 +69,6 @@ export default async function PortalLayout({ children }: { children: React.React
               title={item.label}
               aria-label={item.label}
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
-              aria-label={item.label}
-              title={item.label}
             >
               <item.icon className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">{item.label}</span>
@@ -82,8 +80,6 @@ export default async function PortalLayout({ children }: { children: React.React
               title="Admin"
               aria-label="Admin"
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-accent hover:bg-accent/10 transition-colors whitespace-nowrap"
-              aria-label="Admin"
-              title="Admin"
             >
               <Settings className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Admin</span>
             </Link>
