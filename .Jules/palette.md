@@ -1,3 +1,3 @@
-## 2024-05-15 - Adding explicit visual feedback to async forms
-**Learning:** Users benefit from a visual spinner along with the "Sending..." text to confirm that an action is processing, especially in async flows like magic links and lead capture.
-**Action:** Always include a visual loading indicator (like a spinner) in addition to text changes for async submit buttons to improve clarity.
+## 2024-05-26 - Added visual feedback for async submit buttons
+**Learning:** Text-only feedback (e.g. changing "Submit" to "Sending...") during async operations is often insufficient. It can lead to a feeling of unresponsiveness or duplicate clicks since users are accustomed to movement/spinners indicating "loading".
+**Action:** Always include a visual animation, such as an animated spinner (`<Loader2 className="animate-spin" />`), alongside loading text on primary submit buttons.
