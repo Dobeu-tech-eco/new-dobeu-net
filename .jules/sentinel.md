@@ -1,4 +1,4 @@
-## 2024-05-24 - [Open Redirect in Auth Callback]
-**Vulnerability:** The `app/auth/callback/route.ts` blindly redirects users using the `next` search parameter, which can be easily manipulated to redirect users to an external attacker-controlled domain by appending an absolute URL to the parameter like `?next=https://evil.com`.
-**Learning:** Never trust the `next` query parameter or any user-controlled input for redirects. Unvalidated redirects can be used in phishing attacks.
-**Prevention:** Validate that the redirect URL is relative to the application's root by checking that it starts with a `/` and does not start with `//` or by explicitly checking the hostname if absolute URLs are allowed.
+## 2025-01-20 - IP Spoofing Prevention via x-forwarded-for parsing
+**Vulnerability:** IP spoofing in rate limit implementation. The `x-forwarded-for` header was being split by `,` and the first element (`[0]`) was being used as the client's IP.
+**Learning:** Attackers can spoof the leftmost IP address in `x-forwarded-for` by appending their own proxy headers, bypassing rate limit configurations. The proxy appends the real IP of the client at the end of the header list (rightmost).
+**Prevention:** Always parse the rightmost IP in the `x-forwarded-for` header. Example: `request.headers.get("x-forwarded-for")?.split(",").pop()?.trim()`.
