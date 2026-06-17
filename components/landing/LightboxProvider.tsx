@@ -4,7 +4,11 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { LeadForm } from "@/components/landing/LeadForm";
+
+const LeadForm = dynamic(
+  () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
+  { loading: () => <p className="text-sm text-muted-foreground py-4">Loading form…</p> }
+);
 
 const BookingTab = dynamic(
   () => import("@/components/landing/BookingTab").then((m) => m.BookingTab),

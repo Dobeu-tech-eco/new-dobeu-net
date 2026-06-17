@@ -37,11 +37,8 @@ export function Hero() {
           AI agents · Full-stack apps · Brand systems · Growth engineering
         </motion.div>
 
-        <motion.h1
+        <h1
           id="hero-heading"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.05 }}
           className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05]"
         >
           Ship the agent.
@@ -49,7 +46,7 @@ export function Hero() {
           <span className="gradient-text">Ship the app.</span>
           <br className="hidden sm:inline" />{" "}
           Ship the brand.
-        </motion.h1>
+        </h1>
 
         <motion.p
           initial={{ opacity: 0, y: 12 }}
