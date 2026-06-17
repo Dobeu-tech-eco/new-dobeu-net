@@ -64,10 +64,9 @@ export function Proof() {
               transition={{ duration: 0.4, delay: i * 0.1 }}
               className="rounded-xl border border-border bg-card p-6 md:p-8"
             >
-              <p
-                className="text-base md:text-lg leading-relaxed text-foreground"
-                dangerouslySetInnerHTML={{ __html: `“${q.quote}”` }}
-              />
+              <p className="text-base md:text-lg leading-relaxed text-foreground">
+                “{q.quote}”
+              </p>
               <footer className="mt-4 text-sm text-muted-foreground">
                 — {q.author}, {q.org}
               </footer>

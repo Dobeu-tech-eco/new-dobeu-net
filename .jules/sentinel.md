@@ -1,4 +1,4 @@
-## 2025-02-24 - Rate Limit Bypass via X-Forwarded-For Spoofing
-**Vulnerability:** The application was vulnerable to rate limit bypasses because it extracted the client IP address from the first (leftmost) entry of the `x-forwarded-for` header. In a Vercel/Next.js environment, attackers can spoof this value by providing their own `x-forwarded-for` header, leading to incorrect IP tracking.
-**Learning:** Never trust the leftmost IP in `x-forwarded-for` for rate limiting or security enforcement. Vercel automatically populates the `x-real-ip` header which is guaranteed to be the actual client IP connecting to Vercel's edge, but if forced to use `x-forwarded-for` (e.g. behind another CDN), the rightmost IP is the most trustworthy as it's appended by the immediate downstream proxy.
-**Prevention:** Always prioritize `x-real-ip` for client identification. If `x-real-ip` is unavailable, extract the rightmost IP from `x-forwarded-for` instead of the leftmost.
+## 2024-05-25 - Removed unnecessary dangerouslySetInnerHTML
+**Vulnerability:** Use of `dangerouslySetInnerHTML` for simple text rendering (with HTML entities).
+**Learning:** Even for static hardcoded strings, `dangerouslySetInnerHTML` creates unnecessary risk if those strings are ever migrated to dynamic sources (like a CMS) in the future.
+**Prevention:** Always use standard React text interpolation (`{string}`) which safely escapes content automatically. Only use `dangerouslySetInnerHTML` when absolutely required for rendering complex HTML, and sanitize it first.
