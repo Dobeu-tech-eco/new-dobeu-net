@@ -1,4 +1,4 @@
-## 2023-10-24 - [IP Spoofing via X-Forwarded-For Header]
-**Vulnerability:** The application was extracting the client IP address from the *leftmost* part of the `X-Forwarded-For` header for rate limiting. This is a critical security risk because a malicious client can easily spoof the leftmost IP address by injecting their own `X-Forwarded-For` header, bypassing the rate limiter.
-**Learning:** The leftmost IP address in `X-Forwarded-For` is untrusted because it originates from the client.
-**Prevention:** Always extract the client IP address from the *rightmost* part of the `X-Forwarded-For` header (after splitting by commas and trimming whitespace), as this value is appended by the last trusted proxy (e.g., Vercel) and cannot be spoofed by the client.
+## 2023-10-24 - [Fix IP Spoofing vulnerability]
+**Vulnerability:** X-Forwarded-For allowed clients to spoof their IP, bypassing rate limits.
+**Learning:** Client-supplied headers appear on the left of `X-Forwarded-For`. Taking `split(',')[0]` yields a spoofed IP. However, strictly using `.pop()` (the rightmost IP) works for single-hop proxies but breaks in multi-hop configurations (like Cloudflare -> Load Balancer), potentially causing an entire node of users to be rate limited together.
+**Prevention:** Rely on guaranteed headers like Vercel's `X-Real-IP` if available to fetch the actual client IP securely. Use `.pop()` as a fallback carefully, mindful of multi-proxy limitations, to prevent basic IP spoofing while minimizing the risk of a DoS condition on shared IPs.
