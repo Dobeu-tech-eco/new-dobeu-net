@@ -21,6 +21,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
 import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
 import { intercomNameFromUser } from "@/lib/intercom";
+import { intercomUserHash } from "@/lib/intercom-hmac";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -53,6 +54,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         email={user.email ?? undefined}
         name={intercomNameFromUser(user)}
         created_at={user.created_at}
+        user_hash={intercomUserHash(user.id)}
       />
       <aside className="md:w-64 md:min-h-screen border-b md:border-b-0 md:border-r border-accent/40 bg-card/60">
         <div className="p-4 flex items-center justify-between">
