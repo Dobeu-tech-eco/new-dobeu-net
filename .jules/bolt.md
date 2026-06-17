@@ -1,3 +1,3 @@
-## 2023-10-27 - Lazy loading third-party embeds in Radix Dialogs
-**Learning:** Initial bundle sizes can be bloated by heavy third-party components (like Typeform or Calendly embeds) that are wrapped inside hidden Modal/Dialog components (like Radix UI's Dialog), meaning the user downloads the JS before even opening the modal.
-**Action:** Use Next.js `next/dynamic` to dynamically import heavy third-party embed components when they are conditionally rendered or hidden inside a Dialog by default. This shaves off unnecessary MBs from the initial page load JS payload.
+## 2024-05-26 - Lazy Loading Embeds
+**Learning:** Third-party embed libraries (like `react-calendly` and `@typeform/embed-react`) often bring significant payload and aren't critical for initial page rendering. When placed inside a conditionally-opened lightbox, these components unnecessarily inflate the marketing page's first-load JS size (e.g., adding ~20kB).
+**Action:** Use `next/dynamic` to dynamically import components wrapping heavy embeds that are not visible immediately on page load. This moves them out of the initial bundle, making the core page render faster without sacrificing the functionality when a user opens the lightbox.

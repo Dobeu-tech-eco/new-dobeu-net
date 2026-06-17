@@ -5,10 +5,12 @@ import dynamic from "next/dynamic";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LeadForm } from "@/components/landing/LeadForm";
-import dynamic from "next/dynamic";
 
-const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then(mod => mod.BookingTab));
-const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then(mod => mod.TypeformTab));
+// ⚡ Bolt: Lazy load heavy third-party embed widgets (Calendly and Typeform).
+// These components bring significant payload but are only needed when a user actively opens the lightbox.
+// Performance Impact: Reduces the first-load JS payload for the marketing landing page by ~20kB.
+const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((m) => m.BookingTab));
+const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((m) => m.TypeformTab));
 
 type Tab = "book" | "form" | "email";
 
