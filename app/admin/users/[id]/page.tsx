@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/utils";
+import { EditUserForm } from "@/components/admin/EditUserForm";
 
 export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -43,10 +44,17 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         <Row label="Updated" value={new Date(profile.updated_at).toLocaleString()} />
       </section>
 
-      <section className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
-        Edit and role-mutation controls are intentionally deferred in this phase. This page is a safe
-        detail scaffold so the users list no longer routes to a 404.
+      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+        <h2 className="font-display text-xl font-semibold">Edit profile</h2>
+        <EditUserForm
+          user={{ id: profile.id, full_name: profile.full_name, company: profile.company }}
+        />
       </section>
+
+      <p className="text-xs text-muted-foreground">
+        Role / admin-access changes are governed by the <code>ADMIN_EMAILS</code> env var, not this
+        page.
+      </p>
     </div>
   );
 }
