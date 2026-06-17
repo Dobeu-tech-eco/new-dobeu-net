@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/utils";
 
 export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -8,11 +9,19 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("id,full_name,company,is_admin,apollo_contact_id,created_at,updated_at")
+    .select("id,full_name,company,apollo_contact_id,created_at,updated_at")
     .eq("id", id)
     .single();
 
   if (error || !profile) notFound();
+
+  let adminAccess = "No";
+  try {
+    const { data: authUser } = await supabase.auth.admin.getUserById(id);
+    if (isAdminEmail(authUser?.user?.email)) adminAccess = "Yes (ADMIN_EMAILS)";
+  } catch (e) {
+    console.warn("[admin users] auth.admin.getUserById failed:", e);
+  }
 
   return (
     <div className="space-y-6">
@@ -28,7 +37,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
 
       <section className="rounded-lg border border-border p-5 space-y-3">
         <Row label="User ID" value={profile.id} mono />
-        <Row label="Admin access" value={profile.is_admin ? "Yes" : "No"} />
+        <Row label="Admin access" value={adminAccess} />
         <Row label="Apollo contact id" value={profile.apollo_contact_id ?? "—"} mono />
         <Row label="Created" value={new Date(profile.created_at).toLocaleString()} />
         <Row label="Updated" value={new Date(profile.updated_at).toLocaleString()} />

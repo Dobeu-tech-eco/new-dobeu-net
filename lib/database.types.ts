@@ -50,7 +50,6 @@ export interface Database {
           company: string | null;
           avatar_url: string | null;
           apollo_contact_id: string | null;
-          is_admin: boolean;
           stripe_customer_id: string | null;
           created_at: string;
           updated_at: string;
