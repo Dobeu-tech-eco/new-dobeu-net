@@ -135,7 +135,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       <Button type="submit" size="lg" className="w-full" disabled={submitting}>
         {submitting ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Sending…
           </>
         ) : compact ? (
