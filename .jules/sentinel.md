@@ -1,5 +1,5 @@
 
-## 2024-06-08 - Fix IP Spoofing in Rate Limiter
-**Vulnerability:** The rate limit checking in `app/api/lead/route.ts` used `request.headers.get("x-forwarded-for")?.split(",")[0]` to determine the client IP. Taking the first IP in the `x-forwarded-for` list allows attackers to spoof their IP by sending a custom `x-forwarded-for` header, bypassing rate limits entirely and opening the application up to DoS.
-**Learning:** `x-forwarded-for` is a comma-separated list of IPs added by proxies. The leftmost IP is the original client IP (which is user-controllable), while proxies append to the right. Therefore, the rightmost IP is the most trustworthy if traversing a single trusted proxy layer. Vercel also provides a guaranteed, un-spoofable `x-real-ip` header.
-**Prevention:** Always prioritize trusted platform headers like `x-real-ip` when available. If you must use `x-forwarded-for`, extract the rightmost IP to determine the true edge connection, rather than the leftmost which is easily forged by malicious clients.
+## 2026-06-09 - [Rate Limit Bypass via IP Spoofing]
+**Vulnerability:** The application blindly parsed `x-forwarded-for` and took the leftmost IP for rate-limiting, which allowed an attacker to bypass rate limits entirely by prepending arbitrary IPs to their requests.
+**Learning:** `x-forwarded-for` can be trivially modified by external clients. The leftmost IP is the origin client IP but is completely untrustworthy. The rightmost IP is appended by the outermost trusted proxy and is safer, though `x-real-ip` (if provided by a trusted Edge network like Vercel) is the most secure identifier.
+**Prevention:** Always prioritize `x-real-ip`. If forced to use `x-forwarded-for` in a multi-proxy setup, use the rightmost IP for enforcing security policies. Add tests mimicking malicious IP spoofing in headers.
