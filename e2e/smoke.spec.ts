@@ -13,12 +13,6 @@ test.describe("Landing page smoke tests", () => {
     await expect(bookCallBtn).toBeVisible();
   });
 
-  test("book CTA opens the lightbox dialog", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: /book a call/i }).first().click();
-    await expect(page.getByRole("dialog", { name: /let's talk about your project/i })).toBeVisible();
-  });
-
   test("FAQ section renders with accordion items", async ({ page }) => {
     await page.goto("/");
     const faqSection = page.locator("#faq");

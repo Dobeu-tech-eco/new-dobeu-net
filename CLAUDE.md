@@ -34,16 +34,11 @@ pnpm supabase db push          # apply migrations in supabase/migrations/
 pnpm db:types                  # regenerate lib/database.types.ts from local schema
 ```
 
-## Testing
-- **Vitest** — `vitest.config.ts`, tests colocated as `*.test.ts(x)` under `app/` and `lib/`. Run a single file: `pnpm test:ci -- lib/leads.test.ts`. Focus by name: `pnpm test:ci -- -t "processLead"`.
-- **Playwright** — `playwright.config.ts` + `e2e/*`. Smoke-only today. Run with `pnpm test:e2e` (or `pnpm test:e2e:ui` for UI mode).
-- CI runs `pnpm test:ci` in `.github/workflows/ci.yml` alongside type-check, lint, and build.
+> `vitest.config.ts` and `playwright.config.ts` are committed. Unit tests live alongside source (`lib/*.test.ts`). E2E tests live in `e2e/`. Run `pnpm test:ci` for unit tests and `pnpm test:e2e` for Playwright smoke tests.
 
 ## Build verification
 
-`next.config.ts` sets `typescript.ignoreBuildErrors: false` and `eslint.ignoreDuringBuilds: false` -- **the build is a real verifier now**. A green `pnpm build` means the code typechecks and lints.
-
-For a full pre-merge check, run `pnpm verify` (`type-check && lint && test:ci && build`), which mirrors CI locally.
+`next.config.ts` sets `typescript.ignoreBuildErrors: false` and `eslint.ignoreDuringBuilds: false` -- **the build is a real verifier now**. A green `pnpm build` means the code typechecks and lints. For a full pre-merge check, run `pnpm verify` (type-check + lint + test:ci + build).
 
 ## Architecture
 
