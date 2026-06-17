@@ -1,4 +1,4 @@
-## 2025-02-14 - Fix Unbounded Rate Limiting Map Memory Exhaustion DoS
-**Vulnerability:** The in-memory Map (`ipBuckets`) used for IP rate limiting in `app/api/lead/route.ts` grew unbounded. A malicious actor could spoof `x-forwarded-for` IPs to exhaust server memory and cause a DoS attack.
-**Learning:** In-memory Maps or objects used for caching, rate limiting, or state tracking without upper bounds or cleanup mechanisms are a significant DoS risk.
-**Prevention:** Always implement an explicit size limit and cleanup strategy (like evicting expired items or clearing the structure) when using in-memory data structures for tracking untrusted inputs.
+## 2026-06-17 - IP Spoofing Prevention
+**Vulnerability:** IP spoofing in rate limiting logic by reading the leftmost IP from `x-forwarded-for`.
+**Learning:** When determining client IPs (e.g., for rate limiting on Vercel), always prioritize the guaranteed `x-real-ip` header. If forced to parse `x-forwarded-for`, use the rightmost IP to prevent IP spoofing, but be cautious as taking the rightmost IP can introduce DoS risks in multi-proxy architectures.
+**Prevention:** Use `x-real-ip` first, then fallback to `x-forwarded-for`'s rightmost IP using `.pop()`.

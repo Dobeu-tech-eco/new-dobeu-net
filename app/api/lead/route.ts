@@ -104,3 +104,10 @@ function hashIp(ip: string): string {
   const digest = createHash("sha256").update(ip).digest("hex").slice(0, 16);
   return `ip_${digest}`;
 }
+
+function getClientIp(request: Request): string {
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+  const lastForwarded = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
+  return lastForwarded || "unknown";
+}
