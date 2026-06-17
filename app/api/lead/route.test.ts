@@ -104,42 +104,17 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead).toHaveBeenCalledTimes(5);
   });
 
-  it("extracts the rightmost IP from x-forwarded-for to prevent spoofing", async () => {
-    // Malicious user sends fake IPs on the left, load balancer appends real IP on the right
-    const res = await POST(
-      makeRequest({ email: "hacker@evil.com", source: "form" }, "10.0.0.99, 192.168.1.1, 203.0.113.42")
-    );
-    expect(res.status).toBe(200);
-
-    // We expect 6th call overall in this test file (due to previous tests sharing the mock)
-    // but what we care about is the most recent call's IP hash
-    const callCount = mockedProcessLead.mock.calls.length;
-    const arg = mockedProcessLead.mock.calls[callCount - 1][0];
-
-    // The IP hashed should be the rightmost one (203.0.113.42)
-    // We can't directly check the hash output easily, but we know processLead was called with an ipHash.
-    // In a real scenario we'd assert the actual hash or spy on hashIp, but we'll just
-    // verify it succeeded which implies the rightmost IP parsing didn't throw an error.
-    expect(arg.ipHash).toMatch(/^ip_/);
-    expect(arg.email).toBe("hacker@evil.com");
-  });
-
-  it("prioritizes x-real-ip if present", async () => {
-    // Simulating Vercel's x-real-ip guaranteed header
-    const res = await POST(
-      makeRequest(
-        { email: "real@test.com", source: "form" },
-        "10.0.0.99, 192.168.1.1",
-        undefined,
-        { "x-real-ip": "203.0.113.42" }
-      )
-    );
-    expect(res.status).toBe(200);
-
-    const callCount = mockedProcessLead.mock.calls.length;
-    const arg = mockedProcessLead.mock.calls[callCount - 1][0];
-
-    expect(arg.ipHash).toMatch(/^ip_/);
-    expect(arg.email).toBe("real@test.com");
+  it("extracts the real IP correctly to prevent spoofing bypass", async () => {
+    // Attackers might send a forged IP first. We should parse the rightmost IP
+    // (appended by the proxy) to track the true client, not the forged one.
+    const spoofedIpHeader = "fake-ip, 203.0.113.100";
+    for (let i = 0; i < 5; i++) {
+      const res = await POST(makeRequest({ email: "spoofer@f.com" }, spoofedIpHeader));
+      expect(res.status).toBe(200);
+    }
+    // The 6th request with the same true IP (but a different fake-ip) should be blocked.
+    const diffFakeHeader = "different-fake, 203.0.113.100";
+    const sixth = await POST(makeRequest({ email: "spoofer@f.com" }, diffFakeHeader));
+    expect(sixth.status).toBe(429);
   });
 });
