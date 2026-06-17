@@ -80,3 +80,11 @@
 - `profiles.stripe_customer_id` column: ✅
 - `profiles_stripe_customer_id_unique` partial unique index: ✅
 - Applied at: 2026-06-04T22:26:45.133Z
+
+
+## Phase 5 migration (2026-06-16)
+
+- `profiles.is_admin` column dropped: **YES**
+- Applied at: 2026-06-17T02:53:40.419Z (automated apply via `apply-phase5-migration.mjs --apply`)
+- Re-verified: 2026-06-16 — operator manual SQL in Supabase Studio + `node .agent/scripts/apply-phase5-migration.mjs` → `is_admin column present: NO`
+- `profiles` columns: `id`, `full_name`, `company`, `avatar_url`, `apollo_contact_id`, `created_at`, `updated_at`, `stripe_customer_id`

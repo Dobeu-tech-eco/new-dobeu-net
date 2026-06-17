@@ -1,6 +1,6 @@
 # dobeu.net v3 — Status
 
-_Last updated: 2026-06-05 — Phases 4–5 code-complete on `test/coverage` (HEAD `6e2b013`)._
+_Last updated: 2026-06-16 — Phases 4–5 shipped on `main`; Phase 5 migration applied on live Vercel Supabase._
 
 > **Convergence:** see [`.agent/convergence/2026-06-05-production-readiness.md`](.agent/convergence/2026-06-05-production-readiness.md) for the full production-readiness verdict (✅ READY TO MERGE), operator checklist, legacy-cutover status, post-merge smoke path, and merge strategy.
 
@@ -13,26 +13,27 @@ _Last updated: 2026-06-05 — Phases 4–5 code-complete on `test/coverage` (HEA
 | **2 — Server-action foundation + portal/admin CRUD + work-order schema deployed** | `lib/actions/{work-orders,projects,invoices,profile}.ts` + tests; admin/projects write-CRUD; portal/settings update form; legacy env cleanup | ✅ Shipped |
 | **3 — Stripe-hosted invoicing + work-order UI end-to-end + observability** | `lib/stripe.ts`, `/api/webhooks/stripe`, portal/admin `tickets` UIs, work-order Resend notifications, Datadog log drain | ✅ Shipped (live on `https://dobeu.net`, HEAD `4cc72f2`) |
 | **4 — Auth hardening** | Supabase TOTP MFA (admin AAL2 gate), Intercom HMAC identity verification, rate-limit (in-memory accepted-risk) | ✅ **Code complete** (`test/coverage`, commits `1652f00`→`487fded`) |
-| **5 — Polish** | Desktop Lighthouse ≥90, CI runs tests, a11y on ticket UIs, dead-code cleanup, drop `profiles.is_admin`, ticket E2E | ✅ **Code complete** (`test/coverage`, through `6e2b013`) — see "Pending operator actions" |
+| **5 — Polish** | Desktop Lighthouse ≥90, CI runs tests, a11y on ticket UIs, dead-code cleanup, drop `profiles.is_admin`, ticket E2E | ✅ **Shipped** — `profiles.is_admin` **dropped on live** (`ipmjokuezeuukhrilduq`, verified 2026-06-16) |
 
 ## Pending before production cutover (not code blockers)
 
 These do not block the `test/coverage` → `main` merge; they gate full production cutover. Full detail + exact URLs/commands in the convergence doc.
 
-1. **Apply `20260616000000_phase5_drop_is_admin.sql` to live Vercel Supabase** — committed but **not yet applied** (`pnpm supabase db push` or run the `alter table` in Studio). Idempotent, backward-safe; clears schema drift.
-2. **Provision `INTERCOM_IDENTITY_VERIFICATION_SECRET`** in Vercel + enable Identity Verification in the Intercom workspace with the same secret.
+1. ~~**Apply `20260616000000_phase5_drop_is_admin.sql` to live Vercel Supabase**~~ — **done** (manual SQL + script verify: `is_admin column present: NO`).
+2. **Provision `INTERCOM_IDENTITY_VERIFICATION_SECRET`** in Vercel + enable Identity Verification in the Intercom workspace with the same secret (JWT path via `INTERCOM_API_SECRET` is live; legacy HMAC optional).
 3. **Verify the Stripe webhook endpoint** (`/api/webhooks/stripe` subscribed to `invoice.paid`/`invoice.payment_failed`/`invoice.finalized`; signing secret matches `STRIPE_WEBHOOK_SECRET`).
 4. **Resend DKIM/SPF** verified for `dobeu.net`; **Vercel ↔ GitHub** re-linked for auto-deploy.
-5. **Legacy `db-dobeutech-unified` cutover** — not started; gated on the user filling `.agent/migration/inventory.md` Findings. Target user data is empty today, so nothing depends on it pre-merge.
+5. **Legacy `db-dobeutech-unified` cutover** — Task Group C started; runbook at `.agent/migration/cutover-execute.md`, quick inventory prompt at `.agent/migration/RUN-INVENTORY-NOW.md`. **Blocked on** filling `.agent/migration/inventory.md` Findings. Target user data is empty today.
 
 _Informational:_ mobile landing Lighthouse Performance ≈ 80 (target 90) is a deferred, non-gating follow-up (rationale in the convergence doc §7)._
 
 ## Database state (Vercel Supabase)
 
-Per `.agent/migration/vercel-supabase-state.md` (verified 2026-06-04):
+Per `.agent/migration/vercel-supabase-state.md` (verified 2026-06-16):
 
 - `20260521000000_initial_schema.sql` — **applied**
 - `20260605000000_phase1_reconciliation.sql` — **applied**
+- `20260616000000_phase5_drop_is_admin.sql` — **applied** (`profiles.is_admin` absent)
 - Tables present: `bookings`, `invoices`, `leads`, `page_events`, `profiles`, `project_files`, `projects`, `work_orders`, `work_order_attachments`
 - `messages` dropped (Intercom owns chat)
 - `invoices.hosted_invoice_url` column present (target of Phase 3 Stripe wiring)

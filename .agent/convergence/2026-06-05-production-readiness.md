@@ -42,7 +42,7 @@ Phases 0–3 were already live (HEAD `4cc72f2`). This session landed Phases **4 
 
 ### Phase 5 — Hygiene, a11y, perf, E2E
 - **Dead-export removal** (one micro-commit each, verified zero non-test importers): `identify` (`02369c0`), `logApolloActivity` (`9a4564d`), `isSupabaseConfigured` (`e82bb9c`), internal `STRIPE_API_VERSION` (`9126def`).
-- **`profiles.is_admin` drop:** migration `20260616000000_phase5_drop_is_admin.sql` authored + types regenerated. Commit `67cced5`. **(Apply to live DB still pending — see §3.1.)**
+- **`profiles.is_admin` drop:** migration `20260616000000_phase5_drop_is_admin.sql` authored + types regenerated. Commit `67cced5`. **Applied on live Vercel Supabase** (`ipmjokuezeuukhrilduq`, verified 2026-06-16 — see §3.1 ✅).
 - **Docs:** CI-runs-tests correction, `INTERCOM_IDENTITY_VERIFICATION_SECRET` env row, `.cmd` keep-list, `analytics-server` dangling reference dropped, `is_admin` "dropped" note. Commit `e9a2266`. `.cmd` trimmed to `start-dev.cmd` + `deploy-vercel.cmd`.
 - **E2E:** `e2e/tickets.spec.ts` — client ticket submit→list journey (skips cleanly when Supabase env is empty). Commit `11385be`.
 - **A11y:** keyboard + ARIA fixes on ticket UIs (dialog roles, focus management, accessible names, focus rings). Commit `7864198`.
@@ -54,18 +54,11 @@ Phases 0–3 were already live (HEAD `4cc72f2`). This session landed Phases **4 
 
 These are **not** repository changes. Numbered in recommended order.
 
-### 3.1 Apply the `is_admin` drop migration to live Supabase — **highest priority**
-The committed migration must be executed against the Vercel-managed target to clear schema drift.
+### 3.1 Apply the `is_admin` drop migration to live Supabase — ✅ **complete (2026-06-16)**
+Applied on Vercel Marketplace Supabase `ipmjokuezeuukhrilduq` (operator manual SQL + agent read-only verify).
 
-- **Option A (CLI, if linked):**
-  ```bash
-  pnpm supabase db push
-  ```
-- **Option B (Supabase Studio):** open the target project → SQL Editor → run:
-  ```sql
-  alter table public.profiles drop column if exists is_admin;
-  ```
-- **Verify:** `select column_name from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='is_admin';` → returns **0 rows**.
+- **Verify command:** `node .agent/scripts/apply-phase5-migration.mjs` → `is_admin column present: NO`
+- **SQL verify:** `select column_name from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='is_admin';` → **0 rows**
 
 ### 3.2 Provision Intercom Identity Verification
 1. Vercel → Project → Settings → Environment Variables: add `INTERCOM_IDENTITY_VERIFICATION_SECRET` (server-only, all environments) and redeploy.
@@ -84,18 +77,19 @@ The committed migration must be executed against the Vercel-managed target to cl
 ### 3.5 Re-link Vercel ↔ GitHub
 - Vercel → Project → Settings → Git → confirm the GitHub connection so `main` auto-deploys post-merge. Reconnect if the integration shows detached.
 
-> **Top 3 by leverage:** (1) apply the `is_admin` drop migration (§3.1), (2) provision the Intercom HMAC secret in Vercel + Intercom (§3.2), (3) verify the Stripe webhook endpoint + signing-secret match (§3.3).
+> **Top 3 by leverage:** (1) ~~apply the `is_admin` drop migration (§3.1)~~ ✅, (2) provision the Intercom HMAC secret in Vercel + Intercom (§3.2), (3) verify the Stripe webhook endpoint + signing-secret match (§3.3).
 
 ---
 
 ## 4. Legacy cutover status + when to run
 
-**Status: not started — deliberately deferred, gated on the user.** This is by design, not an omission.
+**Status: Task Group C started — inventory blocked on user.** Cutover runbooks authored; mapping SQL pending Findings.
 
-- The target Vercel Supabase has **empty user data**; the live app reads/writes the target already. There is no data dependency forcing the cutover before merge.
-- The cutover is **blocked on Task C1**: the user must run the read-only inventory queries in `.agent/migration/inventory.md` (§1–§8) and paste raw output into its **Findings** section. The Findings block is currently **unfilled**. Mapping SQL must not be authored from memory.
-- **When to run:** any time after merge, on the user's clock. Sequence (per plan Task Group C / PRODUCTION-PLAN §6.3): fill Findings → agent authors `restore-staging.sql` + `mapping.sql` → operator freezes writes (disable Calendly webhook + `/api/lead` maintenance) → `pg_dump` legacy → restore into `legacy_import` → run mapping SQL → scripted `auth.admin.createUser` loop for users → copy storage objects → run pre-cutover parity gates → (env swap if needed) → re-enable writes → 24h watch → 7-day legacy read-only soak → retire `db-dobeutech-unified`.
-- **`is_admin` interaction:** `mapping.sql` must omit `is_admin` from the `profiles` insert (column is being dropped). With the target empty today, applying the §3.1 drop now is safe and does not conflict with a later cutover.
+- The target Vercel Supabase has **empty user data**; the live app reads/writes the target already.
+- **Quick start:** `.agent/migration/RUN-INVENTORY-NOW.md` (3 highest-value SQL queries). Full runbook: `.agent/migration/inventory.md`. Execute path: `.agent/migration/cutover-execute.md`.
+- The cutover is **blocked on Task C1**: paste raw output into `inventory.md` **Findings** (currently **unfilled**). No `LEGACY_DATABASE_URL` in local `.env.local` — automated inventory not attempted.
+- **When to run:** on the operator's clock. Sequence: fill Findings → agent authors `restore-staging.sql` + `mapping.sql` → execute per `cutover-execute.md` → 7-day legacy read-only soak.
+- **`is_admin` interaction:** §3.1 complete — `mapping.sql` must omit `is_admin` from `profiles` insert.
 
 ---
 
