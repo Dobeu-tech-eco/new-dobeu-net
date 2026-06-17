@@ -59,7 +59,44 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
    pnpm supabase db push
    ```
 4. Enable **Email auth** in Supabase Dashboard → Authentication → Providers.
-5. **Authentication → URL Configuration** (project `ipmjokuezeuukhrilduq`):
+5. **Custom SMTP (Resend) for magic-link auth** — required for cutover testing at volume.
+   Magic links are sent by **Supabase Auth**, not the Next.js app. `RESEND_API_KEY` in Vercel
+   only powers lead/work-order emails via `lib/resend.ts`; you must wire Resend into Supabase
+   separately.
+
+   In [Supabase Dashboard](https://supabase.com/dashboard/project/ipmjokuezeuukhrilduq/auth/smtp)
+   → **Authentication** → **Email** → **SMTP Settings**:
+
+   | Field | Value |
+   | ----- | ----- |
+   | Enable custom SMTP | On |
+   | Host | `smtp.resend.com` |
+   | Port | `465` (TLS) — or `587` (STARTTLS) |
+   | Username | `resend` |
+   | Password | Your Resend API key (same secret as Vercel `RESEND_API_KEY`; paste in Dashboard only — never commit) |
+   | Sender email | `hello@dobeu.net` (or your verified `RESEND_FROM_EMAIL`) |
+   | Sender name | `Dobeu Tech Solutions` |
+
+   Resend docs: [Send with Supabase SMTP](https://resend.com/docs/send-with-supabase-smtp).
+   Domain `dobeu.net` must be verified in Resend before auth mail delivers reliably.
+
+6. **Raise Auth rate limits** (project `ipmjokuezeuukhrilduq`) — Dashboard →
+   **Authentication** → **Rate Limits**:
+
+   | Limit | Built-in SMTP default | After custom SMTP | Suggested for cutover testing |
+   | ----- | --------------------- | ----------------- | ----------------------------- |
+   | Email sent (project/hour) | ~2/h (very low) | 30/h until you raise it | **100–500/h** during soak |
+   | OTP / magic link (project/hour) | — | Customizable | **30–60/h** |
+   | OTP per-user cooldown | ~60s | Customizable | Keep **60s** (matches `/login` client cooldown) |
+
+   "Email rate limit exceeded" on `/login` is a **Supabase 429**, not the app's `/api/lead`
+   limiter. Fixing redirect URLs alone does not change this.
+
+   Management API (optional): `PATCH https://api.supabase.com/v1/projects/ipmjokuezeuukhrilduq/config/auth`
+   with `rate_limit_email_sent`, `rate_limit_otp`, etc. — see
+   [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limits).
+
+7. **Authentication → URL Configuration** (project `ipmjokuezeuukhrilduq`):
    - **Site URL:** `https://dobeu.net`
    - **Redirect URLs** (add each line):
      - `https://dobeu.net/**`
@@ -70,6 +107,15 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
    If Site URL is still `http://localhost:3000`, magic links fall back to localhost even when
    requested from production. After saving, request a **new** magic link (old emails keep the
    stale `redirect_to`).
+
+**Dashboard vs automatic**
+
+| Item | Where it lives | Operator action? |
+| ---- | -------------- | ------------------ |
+| Magic-link send + rate limits | Supabase Auth (`/auth/v1/otp`) | **Yes** — SMTP + Rate Limits in Dashboard |
+| Lead / work-order email | Next.js + `RESEND_API_KEY` | Already in Vercel env (no Supabase step) |
+| `/login` double-submit guard | `app/login/LoginForm.tsx` | **Automatic** after deploy (60s client cooldown) |
+| Redirect URLs / Site URL | Supabase Auth URL config | **Yes** — one-time Dashboard setup |
 
 ---
 

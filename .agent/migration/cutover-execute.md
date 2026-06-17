@@ -38,6 +38,7 @@ row/storage copy — no full dump/restore cycle.
 | 0.3 | Review filled Findings + agent `mapping.sql` for surprises | Operator + agent |
 | 0.4 | Communicate to clients: passwords do not migrate; magic-link re-auth after cutover | Operator |
 | 0.5 | Stripe webhook + Resend DKIM verified (see `.agent/ops/stripe-webhook-status.md`) | Operator |
+| 0.6 | Supabase Auth → **SMTP Settings** (Resend) + **Rate Limits** raised for magic-link testing (`docs/DEPLOYMENT.md` §Phase 2 steps 5–6, project `ipmjokuezeuukhrilduq`) | Operator |
 
 ---
 
