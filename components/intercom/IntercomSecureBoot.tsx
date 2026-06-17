@@ -3,24 +3,12 @@
 import * as React from "react";
 import { initIntercom, initIntercomSecure } from "@/lib/intercom";
 
-const CONSENT_KEY = "dobeu-analytics-consent";
-
 /**
  * Boots Intercom Secure Messenger with a server-signed JWT after analytics consent.
- * Fetches a visitor or authenticated-user token from /api/intercom/jwt.
  */
-export function IntercomSecureBoot() {
-  const [consent, setConsent] = React.useState<boolean | null>(null);
-
+export function IntercomSecureBoot({ enabled }: { enabled: boolean }) {
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(CONSENT_KEY);
-    if (stored === "granted") setConsent(true);
-    else if (stored === "denied") setConsent(false);
-  }, []);
-
-  React.useEffect(() => {
-    if (consent !== true) return;
+    if (!enabled) return;
 
     let cancelled = false;
     (async () => {
@@ -42,7 +30,7 @@ export function IntercomSecureBoot() {
     return () => {
       cancelled = true;
     };
-  }, [consent]);
+  }, [enabled]);
 
   return null;
 }
