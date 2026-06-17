@@ -12,7 +12,7 @@ const STATS = [
 const QUOTES = [
   {
     quote:
-      "He shipped our internal agent in a week — what our last vendor couldn't do in three months. The portal, the docs, the handoff: all of it just worked.",
+      "He shipped our internal agent in a week — what our last vendor couldn&apos;t do in three months. The portal, the docs, the handoff: all of it just worked.",
     author: "Operations Lead",
     org: "Logistics SaaS, NYC",
   },
@@ -64,9 +64,10 @@ export function Proof() {
               transition={{ duration: 0.4, delay: i * 0.1 }}
               className="rounded-xl border border-border bg-card p-6 md:p-8"
             >
-              <p className="text-base md:text-lg leading-relaxed text-foreground">
-                “{q.quote}”
-              </p>
+              <p
+                className="text-base md:text-lg leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: `“${q.quote}”` }}
+              />
               <footer className="mt-4 text-sm text-muted-foreground">
                 — {q.author}, {q.org}
               </footer>

@@ -50,7 +50,9 @@ const h = vi.hoisted(() => {
     if (resendConfig.mode === "reject") throw new Error("resend down");
     return { id: "email_1" };
   });
-  const ResendCtor = vi.fn(function () { return { emails: { send: emailsSend } }; });
+  const ResendCtor = vi.fn(function () {
+    return { emails: { send: emailsSend } };
+  });
 
   return {
     supaConfig,

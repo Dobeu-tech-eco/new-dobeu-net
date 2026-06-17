@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processLead } from "@/lib/leads";
+import { createAdminClient } from "@/lib/supabase/server";
 import {
   isCalendlyWebhookConfigured,
   verifyCalendlySignature,
@@ -21,9 +22,23 @@ export const dynamic = "force-dynamic";
  *     `invitee.created` event via Calendly's API.
  */
 export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const requestId = request.headers.get("calendly-request-id") ?? crypto.randomUUID();
+  console.log(
+    JSON.stringify({
+      msg: "calendly_webhook_received",
+      request_id: requestId,
+      ts: new Date().toISOString()
+    })
+  );
+
   if (!isCalendlyWebhookConfigured()) {
-    // Inert until configured — mirrors the rest of the env-gated pipeline.
-    console.warn("[/api/webhooks/calendly] CALENDLY_WEBHOOK_SIGNING_KEY unset — ignoring webhook");
+    console.warn(
+      JSON.stringify({
+        msg: "calendly_webhook_not_configured",
+        request_id: requestId
+      })
+    );
     return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
   }
 
@@ -62,6 +77,34 @@ export async function POST(request: Request) {
     utm: utmFromTracking(p.tracking),
     referrer: p.scheduled_event?.uri ?? null
   });
+
+  // Keep the bookings table in sync so admin booking views are populated.
+  if (p.scheduled_event?.start_time) {
+    try {
+      const supabase = createAdminClient();
+      await supabase.from("bookings").insert({
+        lead_id: leadId,
+        email: p.email,
+        name: p.name ?? null,
+        scheduled_at: p.scheduled_event.start_time,
+        meeting_url: p.scheduled_event.uri ?? null,
+        notes: p.scheduled_event.name ?? null,
+        status: "scheduled"
+      });
+    } catch (error) {
+      console.warn("[/api/webhooks/calendly] booking mirror insert failed", error);
+    }
+  }
+
+  console.log(
+    JSON.stringify({
+      msg: "calendly_webhook_complete",
+      request_id: requestId,
+      event_type: evt.event,
+      lead_id: leadId,
+      duration_ms: Date.now() - startedAt
+    })
+  );
 
   return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
 }

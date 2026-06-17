@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { AdminQuoteForm } from "@/components/admin/AdminQuoteForm";
 import { AdminStatusButtons } from "@/components/admin/AdminStatusButtons";
 import { AdminMarkPaidButton } from "@/components/admin/AdminMarkPaidButton";
-import { AdminCreateInvoiceButton } from "@/components/admin/AdminCreateInvoiceButton";
 
 export const dynamic = "force-dynamic";
 
@@ -172,20 +171,6 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
             Quoted {ticket.quoted_at ? new Date(ticket.quoted_at).toLocaleString() : "—"}. Waiting on
             client acceptance.
           </p>
-        </section>
-      )}
-
-      {ticket.status === "accepted" && !ticket.invoice_id && ticket.quoted_amount_cents && (
-        <section className="rounded-lg border border-accent/30 bg-accent/5 p-5 space-y-3">
-          <h2 className="font-semibold">Bill this work order</h2>
-          <p className="text-sm text-muted-foreground">
-            The client accepted the quote. Issue a Stripe hosted invoice — the client gets a
-            payment link by email and can pay it from their portal.
-          </p>
-          <AdminCreateInvoiceButton
-            workOrderId={ticket.id}
-            amountCents={ticket.quoted_amount_cents}
-          />
         </section>
       )}
 
