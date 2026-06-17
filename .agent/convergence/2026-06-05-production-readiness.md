@@ -83,13 +83,18 @@ Applied on Vercel Marketplace Supabase `ipmjokuezeuukhrilduq` (operator manual S
 
 ## 4. Legacy cutover status + when to run
 
-**Status: Task Group C started — inventory blocked on user.** Cutover runbooks authored; mapping SQL pending Findings.
+**Status: Task Group C complete — cutover path decided (2026-06-17).** NO data
+migration; see [`.agent/migration/cutover-decision.md`](../migration/cutover-decision.md).
 
-- The target Vercel Supabase has **empty user data**; the live app reads/writes the target already.
-- **Quick start:** `.agent/migration/RUN-INVENTORY-NOW.md` (3 highest-value SQL queries). Full runbook: `.agent/migration/inventory.md`. Execute path: `.agent/migration/cutover-execute.md`.
-- The cutover is **blocked on Task C1**: paste raw output into `inventory.md` **Findings** (currently **unfilled**). No `LEGACY_DATABASE_URL` in local `.env.local` — automated inventory not attempted.
-- **When to run:** on the operator's clock. Sequence: fill Findings → agent authors `restore-staging.sql` + `mapping.sql` → execute per `cutover-execute.md` → 7-day legacy read-only soak.
-- **`is_admin` interaction:** §3.1 complete — `mapping.sql` must omit `is_admin` from `profiles` insert.
+- The target Vercel Supabase is **authoritative**; live app already reads/writes it.
+- **Inventory:** sufficient — `client_files` = 0, `contact_submissions` = 0, no
+  v3 `leads`/`bookings`/`invoices` on legacy, `auth.users` = 3.
+- **`mapping.sql`:** NO-OP for public tables. Optional auth pre-seed:
+  `import-auth-users.mjs` (operator provides credentials; not run in CI).
+- **When to retire legacy:** after post-merge smoke (`scripts/post-merge-smoke.md`)
+  + 7-day read-only soak. Legacy can be paused for dobeu.net v3 — no portal rows
+  to lose.
+- **`is_admin` interaction:** §3.1 complete — N/A for NO-OP mapping.
 
 ---
 
@@ -139,5 +144,5 @@ Mobile landing Lighthouse Performance sits at **≈ 80** vs the **90** target; d
 
 - Commits A–F present on `test/coverage` (`1652f00` → `6e2b013`); HEAD matches.
 - Artifacts confirmed on disk: `lib/intercom-hmac.ts`, `components/portal/Mfa{Enroll,Status,StepUp}.tsx`, `e2e/tickets.spec.ts`, `supabase/migrations/20260616000000_phase5_drop_is_admin.sql`.
-- `.agent/migration/inventory.md` present; **Findings unfilled** (cutover not started).
+- `.agent/migration/inventory.md` Findings sufficient for cutover (2026-06-17); decision in `cutover-decision.md`.
 - Run `pnpm verify` (type-check + lint + test:ci + build) before opening the PR to confirm the green snapshot at merge time.

@@ -238,10 +238,11 @@ secrets or implementation details that aren't relevant to the public repo.
 
 ## Findings (fill in)
 
-**Inventory status (2026-06-16):** partial — §1–§3 verified via Supabase SQL
-Editor screenshots on `db-dobeutech-unified`. §4–§8 still pending; run
-[`.agent/migration/inventory-followup.sql`](inventory-followup.sql) and paste
-results below.
+**Inventory status (2026-06-17):** sufficient for cutover decision — §1–§3 +
+§8 + bonus existence + `client_files` count verified via Supabase SQL Editor
+screenshots on `db-dobeutech-unified`. §4–§7 + structure dump still pending
+(optional for NO-OP data cutover; see
+[`.agent/migration/cutover-decision.md`](cutover-decision.md)).
 
 ### §1 — public tables
 
@@ -309,6 +310,72 @@ select count(*) from public.contact_submissions;
 **Confirmed:** no `public.leads` or `public.dobeu_net_leads` on legacy;
 `contact_submissions` exists but is **empty**.
 
+### §3b — `client_files` exact count
+
+```sql
+select count(*) from public.client_files;
+```
+
+```text
+ count
+-------
+     0
+```
+
+**Confirmed:** `client_files` table exists (see bonus § below) but has **0 rows**.
+No storage object copy required for portal files.
+
+### §8 — `auth.users` count (`inventory-followup.sql` §8)
+
+```sql
+select count(*) as auth_users_count from auth.users;
+```
+
+```text
+ auth_users_count
+------------------
+                3
+```
+
+**Confirmed:** three legacy auth accounts — the only meaningful user data on
+legacy for dobeu.net v3 cutover. Passwords are not portable; app is magic-link
+only (see `cutover-decision.md`).
+
+### Bonus — v3 target table existence on legacy (`inventory-followup.sql` bonus)
+
+14-row query (`to_regclass('public.' || table_name)`). Screenshot showed 6 of
+14; remaining 8 **not visible** (operator did not scroll).
+
+| table_name | exists_on_legacy | status |
+|---|---|---|
+| bookings | false | **confirmed** (screenshot) |
+| client_files | true | **confirmed** (screenshot) |
+| contact_submissions | true | **confirmed** (screenshot + §3) |
+| invoices | false | **confirmed** (screenshot) |
+| leads | false | **confirmed** (screenshot; consistent with §3) |
+| messages | true | **confirmed** (screenshot; v3 dropped — Intercom) |
+| page_events | — | **unknown** (not in screenshot) |
+| profiles | — | **unknown** |
+| project_files | — | **unknown** |
+| projects | — | **unknown** |
+| purchases | — | **unknown** |
+| services | — | **unknown** |
+| users | — | **unknown** |
+| work_orders | — | **unknown** |
+
+Re-run the bonus query in Studio if any unknown row blocks a future scope change:
+
+```sql
+select t.table_name,
+       to_regclass('public.' || t.table_name) is not null as exists_on_legacy
+from (values
+  ('profiles'), ('projects'), ('project_files'), ('invoices'), ('leads'),
+  ('bookings'), ('page_events'), ('work_orders'), ('client_files'),
+  ('contact_submissions'), ('users'), ('messages'), ('services'), ('purchases')
+) as t(table_name)
+order by t.table_name;
+```
+
 ### §4 — full column schema
 
 ```text
@@ -333,10 +400,10 @@ select count(*) from public.contact_submissions;
 <paste output>
 ```
 
-### §8 — `legacy-schema.sql` produced? (Y/N)
+### §9 — `legacy-schema.sql` produced? (Y/N)
 
 ```text
-<Y or N + path if produced>
+N — not produced; optional for NO-OP data cutover (see cutover-decision.md).
 ```
 
 ### Notes / surprises (anything that doesn't match the production plan's assumed legacy shape)
@@ -347,27 +414,26 @@ select count(*) from public.contact_submissions;
 - Top row volume is composio_tools (3072 rows) — platform tooling, not portal data.
 - Lead pipeline source tables: only contact_submissions exists; 0 rows. No legacy
   leads or dobeu_net_leads tables.
-- CHAT-TRANSCRIPT-2026-05-21 listed projects, messages, services, purchases,
-  client_files, contact_submissions, audit_logs, rate_limits, newsletter_* —
-  some may be among the 24 unscrolled table names; follow-up SQL required.
-- Cutover should be SELECTIVE (portal-relevant tables only), not full pg_dump —
-  see cutover-execute.md and mapping.sql draft.
+- Portal file data: client_files exists but count = 0; no project_files on legacy
+  (bonus query not scrolled — likely false).
+- v3 invoices, leads, bookings do NOT exist on legacy (confirmed).
+- messages exists on legacy but v3 dropped messages (Intercom owns chat).
+- auth.users = 3 — only user accounts worth considering for optional import.
+- Cutover decision (2026-06-17): NO data migration for public tables; optional
+  minimal auth seeding only — see cutover-decision.md.
 ```
 
 ---
 
 ## Next step
 
-Once the [Findings](#findings-fill-in) section is filled in, the parent
-agent will:
+Findings are **sufficient for cutover** (2026-06-17). See
+[`.agent/migration/cutover-decision.md`](cutover-decision.md) for the chosen
+path. Operator actions:
 
-1. Author the staging-schema restore SQL (legacy dump → `legacy_import.*`
-   on the target) per production-plan §6.3 step 3.
-2. Author the per-table mapping SQL (`insert into public.X select ... from
-   legacy_import.Y` with the transforms from §6.2 of the production plan,
-   plus dedupe-by-email on leads).
-3. Walk the auth-user import via Supabase Admin API
-   (`auth.admin.createUser`) separately — `auth.users` cannot be bulk-inserted
-   directly.
-4. Sequence the storage object copy (legacy `project-files` →
-   target `project-files`).
+1. List the 3 legacy auth emails (SQL in `cutover-decision.md`) and decide
+   whether to pre-seed target via optional `import-auth-users.mjs` or let
+   users magic-link on first visit.
+2. Run post-merge smoke (`scripts/post-merge-smoke.md`).
+3. Pause/retire `db-dobeutech-unified` after 7-day read-only soak (no data
+   rollback needed — target already authoritative).

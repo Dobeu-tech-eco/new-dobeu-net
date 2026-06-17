@@ -1,6 +1,6 @@
 # dobeu.net v3 — Status
 
-_Last updated: 2026-06-16 — Phases 4–5 shipped on `main`; Phase 5 migration applied on live Vercel Supabase._
+_Last updated: 2026-06-17 — Phases 4–5 shipped on `main`; legacy cutover path decided (NO-OP data)._
 
 > **Convergence:** see [`.agent/convergence/2026-06-05-production-readiness.md`](.agent/convergence/2026-06-05-production-readiness.md) for the full production-readiness verdict (✅ READY TO MERGE), operator checklist, legacy-cutover status, post-merge smoke path, and merge strategy.
 
@@ -23,7 +23,7 @@ These do not block the `test/coverage` → `main` merge; they gate full producti
 2. **Provision `INTERCOM_IDENTITY_VERIFICATION_SECRET`** in Vercel + enable Identity Verification in the Intercom workspace with the same secret (JWT path via `INTERCOM_API_SECRET` is live; legacy HMAC optional).
 3. **Verify the Stripe webhook endpoint** (`/api/webhooks/stripe` subscribed to `invoice.paid`/`invoice.payment_failed`/`invoice.finalized`; signing secret matches `STRIPE_WEBHOOK_SECRET`).
 4. **Resend DKIM/SPF** verified for `dobeu.net`; **Vercel ↔ GitHub** re-linked for auto-deploy.
-5. **Legacy `db-dobeutech-unified` cutover** — Task Group C in progress; inventory **partial** (§1–§3 in `.agent/migration/inventory.md`, 2026-06-16). Next: operator runs `.agent/migration/inventory-followup.sql`. Draft `mapping.sql` + revised selective cutover in `cutover-execute.md`. Target user data is empty today.
+5. **Legacy `db-dobeutech-unified` cutover** — **decided (2026-06-17):** NO data migration; Vercel Supabase authoritative. Inventory complete for cutover (`inventory.md` §1–§3, §8, bonus). See `.agent/migration/cutover-decision.md`. Optional: pre-seed 3 auth users via `import-auth-users.mjs`. Retire legacy after smoke + 7-day soak.
 
 _Informational:_ mobile landing Lighthouse Performance ≈ 80 (target 90) is a deferred, non-gating follow-up (rationale in the convergence doc §7)._
 
@@ -39,7 +39,7 @@ Per `.agent/migration/vercel-supabase-state.md` (verified 2026-06-16):
 - `invoices.hosted_invoice_url` column present (target of Phase 3 Stripe wiring)
 - Storage buckets: `project-files`, `work-order-attachments`
 
-> **Legacy `db-dobeutech-unified` cutover:** inventory partial (30 platform tables; `contact_submissions` empty; no legacy `leads`). Selective migration strategy — see `.agent/migration/cutover-execute.md`. Target Vercel Supabase is **empty user data** today; nothing to roll back.
+> **Legacy `db-dobeutech-unified` cutover:** **NO-OP data migration** (2026-06-17). Zero portal rows on legacy; 3 `auth.users` only. `mapping.sql` marked NO-OP. Optional auth pre-seed: `import-auth-users.mjs`. Decision: `.agent/migration/cutover-decision.md`.
 
 ## Phase 2 — what shipped in this commit
 
@@ -92,7 +92,7 @@ Hard blockers before Phase 3 can start:
 | Wire Resend admin notification on `submitWorkOrder` | ⏳ Phase 3 (TODO marker in action) |
 | Datadog log drain hookup (Vercel → Datadog) | ⏳ Phase 3 |
 | Intercom HMAC server-side signing (Phase 4) | ⚠️ HMAC secret not yet provisioned |
-| Legacy `db-dobeutech-unified` data cutover | 🟡 Inventory partial; follow-up SQL + mapping draft ready |
+| Legacy `db-dobeutech-unified` data cutover | ✅ **Decided** — NO-OP data; see `cutover-decision.md` |
 
 ## Remaining Phases (4 + 5 + legacy cutover + close-out)
 

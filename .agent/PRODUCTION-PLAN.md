@@ -149,6 +149,12 @@ Effort key: **S** ≈ ≤0.5 day, **M** ≈ 0.5–1.5 days, **L** ≈ 2–4 days
 
 ## 6. Database migration strategy (Design Task A)
 
+> **Update (2026-06-17):** Inventory on `db-dobeutech-unified` is complete for
+> cutover. **Revised decision:** NO public data migration — zero portal rows,
+> absent v3 tables, 3 `auth.users` only. Vercel Supabase is already live.
+> See `.agent/migration/cutover-decision.md`. The one-shot dump/restore plan
+> below remains historical context if scope changes.
+
 **Recommendation: one-shot dump + restore with brief downtime (option a).** Rationale: single operator, low write volume, presumably <10k rows total. A dual-write window or watermark sync adds code and reconciliation complexity that this scale doesn't justify, and the only live writer is `processLead()` plus the Calendly webhook — both pausable for a short maintenance window. Legacy stays **read-only and live for 7 days** as the rollback.
 
 ### 6.1 Inventory step
