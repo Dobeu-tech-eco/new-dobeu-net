@@ -41,4 +41,4 @@ Copy `.env.example` → `.env.local`. All third-party integrations (Supabase, St
 - **Supabase local stack requires Docker** — `pnpm supabase start` won't work without Docker installed. This is only needed if you're testing auth/portal/admin flows against a real database.
 - **The lead API (`POST /api/lead`)** returns `{"ok":true,"lead_id":null}` when Supabase isn't configured — this is expected graceful degradation, not an error.
 - **CSP headers** — when adding third-party scripts/embeds, add domains to the CSP arrays in `next.config.ts` or they'll be blocked at runtime.
-- **Lead schema is shared** — `lib/lead-schema.ts` exports the Zod schema used by both the API route and its tests. Keep in sync.
+- **Resend mock in tests** — `vi.fn()` mocks used as constructors (e.g. Resend) must use `function` keyword, not arrow functions. Vitest 4.x enforces this.
