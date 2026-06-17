@@ -1,4 +1,4 @@
-## 2025-01-20 - Fix rate-limit bypass via IP spoofing
-**Vulnerability:** The rate limiter in `/api/lead` was using the first (leftmost) IP address from the `X-Forwarded-For` header. Because the leftmost IP can be easily set by the client before the request reaches the trusted proxy, an attacker could spoof it to continually bypass the rate limits.
-**Learning:** Always use the rightmost IP in the `X-Forwarded-For` chain if the infrastructure only appends one trusted IP at the edge, to ensure the rate limit keys off the true client IP.
-**Prevention:** Extract the true client IP using the rightmost element in the `X-Forwarded-For` list instead of the leftmost.
+## 2023-10-24 - [IP Spoofing via X-Forwarded-For Header]
+**Vulnerability:** The application was extracting the client IP address from the *leftmost* part of the `X-Forwarded-For` header for rate limiting. This is a critical security risk because a malicious client can easily spoof the leftmost IP address by injecting their own `X-Forwarded-For` header, bypassing the rate limiter.
+**Learning:** The leftmost IP address in `X-Forwarded-For` is untrusted because it originates from the client.
+**Prevention:** Always extract the client IP address from the *rightmost* part of the `X-Forwarded-For` header (after splitting by commas and trimming whitespace), as this value is appended by the last trusted proxy (e.g., Vercel) and cannot be spoofed by the client.

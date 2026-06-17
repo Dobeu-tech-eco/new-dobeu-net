@@ -16,8 +16,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const parts = request.headers.get("x-forwarded-for")?.split(",") ?? [];
-  const ip = parts[parts.length - 1]?.trim() || "unknown";
+  // Use the rightmost IP address to prevent IP spoofing vulnerabilities.
+  // The rightmost IP is appended by the last trusted proxy (e.g., Vercel).
+  const xForwardedFor = request.headers.get("x-forwarded-for");
+  const ip = xForwardedFor ? xForwardedFor.split(",").pop()?.trim() ?? "unknown" : "unknown";
   const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
   if (rl.limited) {
     return NextResponse.json(
