@@ -1,4 +1,4 @@
-## 2024-10-25 - [Prevent Open Redirects]
-**Vulnerability:** The application was vulnerable to open redirects when using the `next` parameter to redirect users after authentication. The `next` parameter was not properly validated to ensure it was a local path before being used to construct a `new URL()` object. This could allow an attacker to craft a malicious URL (e.g., `//evil.com`) that would redirect the user to a phishing site after logging in.
-**Learning:** Always validate that redirect targets provided via URL parameters are local paths (e.g., `next.startsWith("/") && !next.startsWith("//")`) before using them in a redirect response. Do not trust user input for redirect URLs.
-**Prevention:** Implement a strict validation check for the `next` parameter to ensure it is a safe local path before constructing the redirect URL.
+## 2025-05-29 - Open Redirect in Auth Callback
+**Vulnerability:** The `/auth/callback` route used the `next` query parameter directly in a `new URL(next, url.origin)` call without validation, allowing attackers to redirect users to malicious sites after successful authentication via `next=http://evil.com`.
+**Learning:** `new URL(path, base)` will ignore the `base` if the `path` is an absolute URL, leading to Open Redirect vulnerabilities if user input is used for `path`.
+**Prevention:** Always sanitize and validate redirect URLs derived from query parameters. Ensure they are relative paths by checking `startsWith("/")` and explicitly rejecting protocol-relative URLs (`startsWith("//")`).
