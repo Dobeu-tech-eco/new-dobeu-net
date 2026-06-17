@@ -23,9 +23,7 @@ pnpm test                      # vitest (watch)
 pnpm test:ci                   # vitest run (one-shot)
 pnpm test:e2e                  # playwright   (pnpm test:e2e:ui for UI mode)
 pnpm verify                    # type-check && lint && test:ci && build -- run before merging to main
-                               # CI (.github/workflows/ci.yml) runs install + type-check + lint + build
-                               # but does NOT run tests. Local `pnpm verify` adds test:ci, so it is
-                               # strictly stricter than CI -- a green CI ≠ green tests.
+                               # CI (.github/workflows/ci.yml) runs install + type-check + lint + test:ci + build.
 ```
 
 Supabase (local stack via Docker):
@@ -39,20 +37,20 @@ pnpm db:types                  # regenerate lib/database.types.ts from local sch
 ## Testing
 - **Vitest** — `vitest.config.ts`, tests colocated as `*.test.ts(x)` under `app/` and `lib/`. Run a single file: `pnpm test:ci -- lib/leads.test.ts`. Focus by name: `pnpm test:ci -- -t "processLead"`.
 - **Playwright** — `playwright.config.ts` + `e2e/*`. Smoke-only today. Run with `pnpm test:e2e` (or `pnpm test:e2e:ui` for UI mode).
-- CI does **not** run tests — `pnpm verify` is the only place tests gate a merge locally.
+- CI runs `pnpm test:ci` in `.github/workflows/ci.yml` alongside type-check, lint, and build.
 
 ## Build verification
 
 `next.config.ts` sets `typescript.ignoreBuildErrors: false` and `eslint.ignoreDuringBuilds: false` -- **the build is a real verifier now**. A green `pnpm build` means the code typechecks and lints.
 
-For a full pre-merge check, run `pnpm verify` (`type-check && lint && test:ci && build`), because CI currently runs install + type-check + lint + build, but does not run tests.
+For a full pre-merge check, run `pnpm verify` (`type-check && lint && test:ci && build`), which mirrors CI locally.
 
 ## Architecture
 
 ### Three-surface app, one Next.js project
 - **`app/` (root)** -- public marketing landing, composed from `components/landing/*` (Hero, Services, FAQ, LeadForm, lightbox-based booking/Typeform tabs).
 - **`app/portal/*`** -- authenticated client area (projects, files, invoices, messages, settings). Requires a logged-in Supabase user.
-- **`app/admin/*`** -- admin-only dashboards. **App-layer gated** in `app/admin/layout.tsx` by `isAdminEmail(user.email)` (from `lib/utils.ts`, backed by the `ADMIN_EMAILS` env var). Most admin pages read through `createAdminClient()` (service role), so **RLS is not the active enforcement layer for admin reads today** — the `ADMIN_EMAILS` check is. The DB also has `profiles.is_admin` + admin-oriented RLS policies, but don't assume `ADMIN_EMAILS` and `profiles.is_admin` stay in sync.
+- **`app/admin/*`** -- admin-only dashboards. **App-layer gated** in `app/admin/layout.tsx` by `isAdminEmail(user.email)` (from `lib/utils.ts`, backed by the `ADMIN_EMAILS` env var). Most admin pages read through `createAdminClient()` (service role), so **RLS is not the active enforcement layer for admin reads today** — the `ADMIN_EMAILS` check is.
 
 ### Supabase access pattern (three clients -- pick deliberately)
 - `lib/supabase/client.ts` -- browser client.
@@ -63,17 +61,17 @@ For a full pre-merge check, run `pnpm verify` (`type-check && lint && test:ci &&
 All `/admin/*` and `/api/lead` use `export const dynamic = "force-dynamic"` because they read per-request auth/cookies and must never be statically pre-rendered.
 
 ### Database & RLS
-Single migration `supabase/migrations/20260521000000_initial_schema.sql` defines: `profiles`, `projects`, `project_files`, `invoices`, `messages`, `leads`, `bookings`, `page_events`. **RLS is enabled on every table** -- users see only their own rows, admins (`profiles.is_admin`) see all. A `handle_new_user` trigger auto-creates a `profiles` row on signup. `lib/database.types.ts` is generated, not hand-edited -- regenerate with `pnpm db:types`.
+Single migration `supabase/migrations/20260521000000_initial_schema.sql` defines: `profiles`, `projects`, `project_files`, `invoices`, `messages`, `leads`, `bookings`, `page_events`. **RLS is enabled on every table** — users see only their own rows; admin reads use `createAdminClient()` (service role). The `profiles.is_admin` column was dropped in `20260616000000_phase5_drop_is_admin.sql`; `ADMIN_EMAILS` is the sole admin gate. A `handle_new_user` trigger auto-creates a `profiles` row on signup. `lib/database.types.ts` is generated, not hand-edited — regenerate with `pnpm db:types`.
 
 ### Lead pipeline (`lib/leads.ts` -> `processLead()`)
 The fan-out lives in `lib/leads.ts` so every lead entry point shares one code path. Each step is best-effort / non-fatal so one failure never drops the lead: (1) insert into Supabase `leads` via admin client -> (2) upsert Apollo contact (`lib/apollo.ts`) -> (3) write Apollo id back -> (4) Customer.io identify + `lead_captured` event (`lib/customerio.ts`) -> (5) Resend confirmation to lead + notification to admin.
 
 Entry points that call `processLead()`:
-- **`app/api/lead/route.ts`** -- public `POST` (the landing-page form). Zod-validated, in-memory per-IP rate limit (5/min) -- replace with Upstash for real production.
+- **`app/api/lead/route.ts`** -- public `POST` (the landing-page form). Zod-validated, in-memory per-IP rate limit (5/min). Upstash Redis is the documented production upgrade path; in-memory is an accepted risk until traffic warrants the swap.
 - **`app/api/webhooks/calendly/route.ts`** -- Calendly `invitee.created` webhook. Verifies the `Calendly-Webhook-Signature` HMAC (`lib/calendly.ts`) before trusting the payload; gated on `CALENDLY_WEBHOOK_SIGNING_KEY` (returns 503 / never accepts unsigned calls when unset). This is where a booking actually becomes a lead -- the client-side Calendly embed only exposes URIs, not email/name.
 
 ### Client-side analytics fan-out (`lib/analytics.ts`)
-`"use client"` module. One `track()`/`identify()` call dispatches to PostHog + Mixpanel + GA4 (gtag) + GTM dataLayer. **Consent-gated**: `initAnalytics(consent)` no-ops until the user consents (cookie-consent banner). Each provider is independently feature-flagged by the presence of its `NEXT_PUBLIC_*` env key. (The README references a `lib/analytics-server.ts` for sensitive server events -- not yet present.) Datadog RUM/Logs (`lib/datadog.ts`) and Intercom (`lib/intercom.ts`) wire in via `components/analytics-provider.tsx` / `app/layout.tsx`.
+`"use client"` module. One `track()` call dispatches to PostHog + Mixpanel + GA4 (gtag) + GTM dataLayer. **Consent-gated**: `initAnalytics(consent)` no-ops until the user consents (cookie-consent banner). Each provider is independently feature-flagged by the presence of its `NEXT_PUBLIC_*` env key. Datadog RUM/Logs (`lib/datadog.ts`) and Intercom (`lib/intercom.ts`) wire in via `components/analytics-provider.tsx` / `app/layout.tsx`.
 
 ### Security headers / CSP
 `next.config.ts` builds a strict Content-Security-Policy plus HSTS, X-Frame-Options, etc., applied to all routes. **When adding any third-party script, embed, or API host, add its domains to the relevant CSP array** (`script`, `connect`, `frame`, `font`, `style`) or it will be blocked at runtime. CSP arrays are intentionally split line-per-entry so git keeps treating the file as text.
@@ -106,6 +104,7 @@ Entry points that call `processLead()`:
 | `CUSTOMERIO_SITE_ID`, `CUSTOMERIO_API_KEY` | Customer.io identify + `lead_captured`. |
 | `RESEND_API_KEY` | Confirmation + admin-notification emails. |
 | `STRIPE_SECRET_KEY` | Invoice/payment surfaces. |
+| `INTERCOM_IDENTITY_VERIFICATION_SECRET` | Server-side HMAC for Intercom Identity Verification (`lib/intercom-hmac.ts`). Unset → Intercom boots unverified. Must also be set in the Intercom workspace dashboard. |
 | `NEXT_PUBLIC_*` (PostHog, Mixpanel, GA4, GTM, Intercom, Datadog) | Per-provider client-side analytics — feature-flagged by presence. |
 
 ## Quality standards
@@ -123,13 +122,15 @@ Entry points that call `processLead()`:
 - Env: run `vercel env pull .env.local` (Vercel-managed Supabase + analytics envs auto-fill). `NEXT_PUBLIC_*` keys are client-exposed; everything else (`VERCEL_SUPABASE_SERVICE_ROLE_KEY`, `APOLLO_API_KEY`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, etc.) is server-only.
 
 ## Deployment
-Vercel (`vercel.json`, `docs/DEPLOYMENT.md`). Root has ~15+ untracked `*.cmd` operator scripts — convenience only, nothing in the app depends on them. Don't add new ones for work `git` already does. Two worth knowing:
-- `push-vercel-lockfile-fix.cmd` / `fix-lockfile-and-deploy.cmd` — when Vercel build fails because `pnpm-lock.yaml` is out of sync with `package.json`.
-- `push-csp-fix.cmd` — canned commit/push for CSP tweaks (common after adding a new third-party host).
+Vercel (`vercel.json`, `docs/DEPLOYMENT.md`). Root has two operator `.cmd` scripts — convenience only, nothing in the app depends on them:
+- `start-dev.cmd` — local dev server shortcut.
+- `deploy-vercel.cmd` — production deploy shortcut.
+
+Don't add new `.cmd` wrappers for work `git` already does.
 
 ## Untracked working-tree noise
 A few patterns show up regularly in `git status` and are **not** project artifacts you should commit or "clean up" without checking:
 
-- `.reports/` -- output dir for analysis tooling (e.g. `dead-code-analysis.md`). Treat as scratch; not currently in `.gitignore`.
+- `.reports/` -- output dir for analysis tooling (e.g. `dead-code-analysis.md`). Treat as scratch; not currently in `.gitignore`. Re-run `pnpm dlx knip` + `pnpm dlx ts-prune` at HEAD before acting on stale reports.
 - `_tmp_16_<hash>` files in the repo root -- ephemeral tool/agent scratch files. Safe to delete locally; don't commit.
-- New `*.cmd` files appearing untracked -- usually one-shot operator scripts (see Deployment above). Confirm intent before deleting; otherwise leave alone.
+- New `*.cmd` files appearing untracked -- usually one-shot operator scripts. Confirm intent before deleting; the keep-list is `start-dev.cmd` and `deploy-vercel.cmd` only.
