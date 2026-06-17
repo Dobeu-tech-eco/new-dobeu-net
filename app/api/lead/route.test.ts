@@ -10,19 +10,14 @@ import { processLead } from "@/lib/leads";
 
 const mockedProcessLead = vi.mocked(processLead);
 
-function makeRequest(
-  body: unknown,
-  ip = "1.1.1.1",
-  rawBody?: string,
-  extraHeaders: Record<string, string> = {}
-): Request {
+function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string, realIp?: string): Request {
   return new Request("http://localhost/api/lead", {
     method: "POST",
     body: rawBody ?? JSON.stringify(body),
     headers: {
       "content-type": "application/json",
       "x-forwarded-for": ip,
-      ...extraHeaders,
+      ...(realIp ? { "x-real-ip": realIp } : {}),
     },
   });
 }
@@ -104,17 +99,25 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead).toHaveBeenCalledTimes(5);
   });
 
-  it("extracts the real IP correctly to prevent spoofing bypass", async () => {
-    // Attackers might send a forged IP first. We should parse the rightmost IP
-    // (appended by the proxy) to track the true client, not the forged one.
-    const spoofedIpHeader = "fake-ip, 203.0.113.100";
+  it("prevents rate limit bypass via x-forwarded-for spoofing by using the rightmost IP", async () => {
+    // 5 valid requests from legitimate IP 203.0.113.1
     for (let i = 0; i < 5; i++) {
-      const res = await POST(makeRequest({ email: "spoofer@f.com" }, spoofedIpHeader));
+      const res = await POST(makeRequest({ email: "a@b.com" }, "203.0.113.1"));
       expect(res.status).toBe(200);
     }
-    // The 6th request with the same true IP (but a different fake-ip) should be blocked.
-    const diffFakeHeader = "different-fake, 203.0.113.100";
-    const sixth = await POST(makeRequest({ email: "spoofer@f.com" }, diffFakeHeader));
-    expect(sixth.status).toBe(429);
+    // 6th request tries to bypass by prepending a spoofed IP
+    const spoofedRes = await POST(makeRequest({ email: "a@b.com" }, "1.2.3.4, 203.0.113.1"));
+    expect(spoofedRes.status).toBe(429);
+  });
+
+  it("prioritizes x-real-ip over x-forwarded-for if both are present", async () => {
+    // 5 requests using x-real-ip
+    for (let i = 0; i < 5; i++) {
+      const res = await POST(makeRequest({ email: "a@b.com" }, "spoofed.ip.here", undefined, "203.0.113.5"));
+      expect(res.status).toBe(200);
+    }
+    // 6th request with same x-real-ip should be blocked, ignoring x-forwarded-for
+    const res = await POST(makeRequest({ email: "a@b.com" }, "different.ip.here", undefined, "203.0.113.5"));
+    expect(res.status).toBe(429);
   });
 });

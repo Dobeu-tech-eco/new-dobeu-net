@@ -16,10 +16,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  // Lightweight rate-limit by IP (5/min). In production, prefer Upstash Ratelimit.
-  const ip = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "unknown";
-  if (await isRateLimited(ip)) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  // SECURITY: Prioritize x-real-ip to prevent spoofing. If using x-forwarded-for, take the rightmost IP
+  // as the leftmost IP can be easily spoofed by the client, allowing rate limit bypass.
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const ip = request.headers.get("x-real-ip") ?? (forwardedFor ? forwardedFor.split(",").pop()?.trim() : "unknown") ?? "unknown";
+  const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
+  if (rl.limited) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "X-RateLimit-Backend": rl.backend } });
   }
 
   let body: unknown;
