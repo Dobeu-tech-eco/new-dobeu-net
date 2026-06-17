@@ -2,8 +2,8 @@
  * Unified analytics fan-out. Every event call goes here and gets dispatched
  * to PostHog (product) + Mixpanel (funnel) + GA4 (acquisition) + dataLayer (GTM).
  *
- * Server-only fanout for sensitive events (bookings, payments) lives at
- * lib/analytics-server.ts to keep keys off the client.
+ * Sensitive server-side events (bookings, payments) are not tracked here;
+ * add a dedicated server module if that becomes necessary.
  */
 "use client";
 
@@ -56,23 +56,6 @@ export function initAnalytics(consent: boolean): void {
 export function setAnalyticsConsent(consent: boolean): void {
   consentGranted = consent;
   if (consent) initAnalytics(true);
-}
-
-export function identify(userId: string, traits: EventProps = {}): void {
-  if (typeof window === "undefined" || !consentGranted) return;
-  try {
-    if (process.env.NEXT_PUBLIC_POSTHOG_KEY) posthog.identify(userId, traits);
-    if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) {
-      mixpanel.identify(userId);
-      mixpanel.people.set(traits);
-    }
-    if (typeof window.gtag === "function") {
-      window.gtag("set", "user_properties", traits);
-    }
-    pushToDataLayer({ event: "identify", user_id: userId, ...traits });
-  } catch (e) {
-    console.warn("[analytics.identify] failed", e);
-  }
 }
 
 export function track(eventName: string, props: EventProps = {}): void {
