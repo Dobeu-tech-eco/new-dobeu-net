@@ -43,8 +43,13 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
+  // ⚡ Bolt: Memoize context value to prevent unnecessary re-renders
+  // of all consuming components (Hero, Nav, etc.) when the lightbox
+  // internal state (isOpen, tab) changes.
+  const value = React.useMemo(() => ({ open, close }), [open, close]);
+
   return (
-    <Ctx.Provider value={{ open, close }}>
+    <Ctx.Provider value={value}>
       {children}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
