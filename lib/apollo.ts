@@ -1,6 +1,6 @@
 /**
  * Apollo.io API wrapper — server-only.
- * Used by /api/lead and /api/book to upsert contacts and log activities.
+ * Used by /api/lead to upsert contacts.
  *
  * Apollo docs: https://docs.apollo.io/reference
  */
@@ -119,36 +119,6 @@ function apolloRequest(path: string, method: string, body?: unknown): Promise<Re
     },
     body: body ? JSON.stringify(body) : undefined
   });
-}
-
-/**
- * Log a custom activity on an Apollo contact (e.g., "booked discovery call").
- */
-export async function logApolloActivity(
-  contactId: string,
-  note: string,
-  activityType = "note"
-): Promise<ApolloApiResult> {
-  try {
-    const res = await fetch(`${APOLLO_BASE}/notes`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Api-Key": apolloKey()
-      },
-      body: JSON.stringify({
-        contact_id: contactId,
-        note: { content: note, type: activityType }
-      })
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      return { ok: false, error: `Apollo activity failed: ${res.status} ${text}` };
-    }
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
-  }
 }
 
 function splitDisplayName(name?: string): { first_name?: string; last_name?: string } {

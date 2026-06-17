@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { upsertApolloContact, logApolloActivity } from "@/lib/apollo";
+import { upsertApolloContact } from "@/lib/apollo";
 
 function jsonResponse(data: unknown, ok = true, status = 200): Response {
   return {
@@ -123,56 +123,5 @@ describe("upsertApolloContact", () => {
     const result = await upsertApolloContact(input);
     expect(result.ok).toBe(true);
     expect(result.contact_id).toBeUndefined();
-  });
-});
-
-describe("logApolloActivity", () => {
-  it("returns ok:false when APOLLO_API_KEY is missing (not configured)", async () => {
-    delete process.env.APOLLO_API_KEY;
-    const result = await logApolloActivity("c_1", "booked call");
-    expect(result.ok).toBe(false);
-    expect(result.error).toBe("APOLLO_API_KEY missing");
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("posts to the notes endpoint with the right body and default activity type", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({}));
-
-    const result = await logApolloActivity("c_1", "booked discovery call");
-
-    expect(result.ok).toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, opts] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://api.apollo.io/api/v1/notes");
-    expect(opts.method).toBe("POST");
-    expect(opts.headers["X-Api-Key"]).toBe("test-apollo-key");
-    expect(opts.headers["Content-Type"]).toBe("application/json");
-
-    const body = JSON.parse(opts.body);
-    expect(body).toEqual({
-      contact_id: "c_1",
-      note: { content: "booked discovery call", type: "note" }
-    });
-  });
-
-  it("uses a custom activity type when provided", async () => {
-    fetchMock.mockResolvedValue(jsonResponse({}));
-    await logApolloActivity("c_1", "called", "call");
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.note.type).toBe("call");
-  });
-
-  it("returns ok:false with an error message on a non-2xx response", async () => {
-    fetchMock.mockResolvedValue(errorResponse(500, "boom"));
-    const result = await logApolloActivity("c_1", "note");
-    expect(result.ok).toBe(false);
-    expect(result.error).toBe("Apollo activity failed: 500 boom");
-  });
-
-  it("returns ok:false when fetch throws (network error)", async () => {
-    fetchMock.mockRejectedValue(new Error("timeout"));
-    const result = await logApolloActivity("c_1", "note");
-    expect(result.ok).toBe(false);
-    expect(result.error).toBe("timeout");
   });
 });
