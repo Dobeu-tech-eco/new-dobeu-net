@@ -3,20 +3,21 @@ import { z } from "zod";
 import { processLead } from "@/lib/leads";
 
 const LeadSchema = z.object({
-  email: z.string().email(),
-  name: z.string().optional().nullable(),
-  company: z.string().optional().nullable(),
+  email: z.string().email().max(255),
+  name: z.string().max(255).optional().nullable(),
+  company: z.string().max(255).optional().nullable(),
   message: z.string().max(2000).optional().nullable(),
   source: z.enum(["book", "form", "email", "typeform", "other"]).default("other"),
-  utm: z.record(z.string()).default({}),
-  referrer: z.string().optional().nullable()
+  utm: z.record(z.string().max(255)).default({}),
+  referrer: z.string().max(255).optional().nullable()
 });
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const ip = getClientIp(request);
+  // Lightweight rate-limit by IP (5/min). In production, prefer Upstash Ratelimit.
+  const ip = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "unknown";
   if (await isRateLimited(ip)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -69,6 +70,11 @@ async function isRateLimited(ip: string): Promise<boolean> {
     return !success;
   }
   const now = Date.now();
+
+  if (ipBuckets.size > 10000) {
+    ipBuckets.clear();
+  }
+
   const b = ipBuckets.get(ip);
   if (!b || b.resetAt < now) {
     ipBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });

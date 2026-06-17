@@ -12,7 +12,7 @@ const STATS = [
 const QUOTES = [
   {
     quote:
-      "He shipped our internal agent in a week — what our last vendor couldn&apos;t do in three months. The portal, the docs, the handoff: all of it just worked.",
+      "He shipped our internal agent in a week — what our last vendor couldn't do in three months. The portal, the docs, the handoff: all of it just worked.",
     author: "Operations Lead",
     org: "Logistics SaaS, NYC",
   },
