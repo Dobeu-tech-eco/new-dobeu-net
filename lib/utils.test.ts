@@ -9,7 +9,8 @@ import {
   getPosthogHost,
   buildAuthCallbackUrl,
   resolveAuthOrigin,
-  requiresAal2Stepup
+  requiresAal2Stepup,
+  requiresMfaEnrollment
 } from "@/lib/utils";
 
 describe("cn", () => {
@@ -206,5 +207,24 @@ describe("requiresAal2Stepup", () => {
   });
   it("returns false when assurance info is null (fail-open for shape, gate handles network errors separately)", () => {
     expect(requiresAal2Stepup(null)).toBe(false);
+  });
+});
+
+describe("requiresMfaEnrollment", () => {
+  it("never forces enrollment for non-admins (keeps /portal reachable, no loop)", () => {
+    expect(requiresMfaEnrollment({ currentLevel: "aal1", nextLevel: "aal1" }, false)).toBe(false);
+    expect(requiresMfaEnrollment(null, false)).toBe(false);
+  });
+  it("forces an unenrolled admin (aal1/aal1) to enroll", () => {
+    expect(requiresMfaEnrollment({ currentLevel: "aal1", nextLevel: "aal1" }, true)).toBe(true);
+  });
+  it("forces an admin with a factor but only an aal1 session (not yet stepped up)", () => {
+    expect(requiresMfaEnrollment({ currentLevel: "aal1", nextLevel: "aal2" }, true)).toBe(true);
+  });
+  it("allows an admin whose session already satisfied aal2", () => {
+    expect(requiresMfaEnrollment({ currentLevel: "aal2", nextLevel: "aal2" }, true)).toBe(false);
+  });
+  it("fails CLOSED for an admin with indeterminate assurance (null)", () => {
+    expect(requiresMfaEnrollment(null, true)).toBe(true);
   });
 });
