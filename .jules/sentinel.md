@@ -1,4 +1,4 @@
-## 2024-05-24 - Open Redirect in Auth Callback
-**Vulnerability:** Open redirect vulnerability in /auth/callback when using the next parameter.
-**Learning:** User input used in redirections must be validated to ensure it targets local paths. Failing to do so exposes the app to phishing and token leakage.
-**Prevention:** Always validate that the target is a local path (e.g., next.startsWith("/") && !next.startsWith("//")) before passing it to new URL() or a redirect response.
+## 2024-06-14 - Fix Open Redirect in Auth Callback
+**Vulnerability:** The `next` parameter in the authentication callback (`app/auth/callback/route.ts`) was used in a redirect response (`new URL(next, url.origin)`) without validation. Because `new URL()` behavior with a base URL is such that an absolute URL (like `https://evil.com` or `//evil.com`) overrides the base URL, this allowed an open redirect vulnerability. An attacker could craft a malicious login link that redirects the user to a phishing site after successful authentication.
+**Learning:** Using untrusted input from query parameters directly in redirect responses or `new URL()` constructs without validation is dangerous. The `new URL(path, base)` function does not guarantee that the resulting URL is relative to the `base` if the `path` happens to be absolute or protocol-relative.
+**Prevention:** Always validate that redirect targets based on user input (like a `next` parameter) are safe, local relative paths. This can be done by ensuring the path starts with `/` and does not start with `//` before passing it to `new URL()` or a redirect response.
