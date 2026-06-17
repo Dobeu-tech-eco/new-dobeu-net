@@ -35,44 +35,36 @@ import type Stripe from "stripe";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ADMIN_NOTIFY_TO = (): string =>
-  process.env.RESEND_REPLY_TO ?? "jeremyw@dobeu.net";
-
-interface InvoiceRow {
-  id: string;
-  project_id: string;
-  amount_cents: number;
-  currency: string | null;
-  status: string;
-}
-
-export async function POST(request: Request): Promise<NextResponse> {
-  const startedAt = Date.now();
-  const requestId = request.headers.get("stripe-request-id") ?? crypto.randomUUID();
-
-  console.log(
-    JSON.stringify({
-      msg: "stripe_webhook_received",
-      request_id: requestId,
-      ts: new Date().toISOString()
-    })
-  );
+/**
+ * Stripe webhook receiver. Verifies the `Stripe-Signature` HMAC before
+ * trusting any payload. Subscribes (via the Stripe dashboard or the
+ * Composio Stripe connector) to at minimum:
+ *   - invoice.paid
+ *   - invoice.payment_failed
+ *   - invoice.marked_uncollectible
+ *   - invoice.finalized
+ *
+ * Mirrors /api/webhooks/calendly's posture: returns 503 when env unset so
+ * Stripe stops retrying instead of silently accepting unsigned calls.
+ */
+export async function POST(request: Request) {
+  if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
+    console.warn(
+      "[/api/webhooks/stripe] STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET unset — ignoring webhook",
+    );
+    return NextResponse.json(
+      { ok: false, error: "not_configured" },
+      { status: 503 },
+    );
+  }
 
   const rawBody = await request.text();
-  const sig = request.headers.get("stripe-signature");
-
-  let event: Stripe.Event;
-  try {
-    event = verifyWebhookSignature(rawBody, sig);
-  } catch (e) {
-    console.warn(
-      JSON.stringify({
-        msg: "stripe_webhook_invalid_signature",
-        request_id: requestId,
-        error: e instanceof Error ? e.message : String(e)
-      })
+  const evt = verifyWebhook(rawBody, request.headers.get("stripe-signature"));
+  if (!evt) {
+    return NextResponse.json(
+      { ok: false, error: "invalid_signature" },
+      { status: 401 },
     );
-    return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 400 });
   }
 
   if (rememberStripeEvent(event.id)) {
@@ -168,20 +160,13 @@ export async function POST(request: Request): Promise<NextResponse> {
         break;
     }
   } catch (e) {
-    console.error(
-      JSON.stringify({
-        msg: "stripe_webhook_handler_error",
-        request_id: requestId,
-        event_id: event.id,
-        event_type: event.type,
-        error: e instanceof Error ? e.message : String(e)
-      })
+    console.error("[/api/webhooks/stripe] handler error", e);
+    // Returning 500 prompts Stripe to retry; that's the right call for transient
+    // Supabase failures. Signature already verified by this point.
+    return NextResponse.json(
+      { ok: false, error: "handler_error" },
+      { status: 500 },
     );
-    // Removing the event from the dedupe set lets Stripe retry. Errors are
-    // worth retrying (transient DB, transient Resend) far more often than
-    // they aren't.
-    forgetStripeEvent(event.id);
-    return NextResponse.json({ ok: false, error: "handler_error" }, { status: 500 });
   }
 
   console.log(
@@ -197,28 +182,15 @@ export async function POST(request: Request): Promise<NextResponse> {
   return NextResponse.json({ received: true });
 }
 
-async function notifyInvoicePaid(
-  admin: ReturnType<typeof createAdminClient>,
-  stripeInv: Stripe.Invoice,
-  row: InvoiceRow | null
-): Promise<void> {
-  if (!row) return;
-  const recipient = stripeInv.customer_email ?? null;
-  if (!recipient) return;
-  try {
-    const tpl = invoicePaidToClient({
-      invoice: {
-        id: row.id,
-        amount_cents: row.amount_cents,
-        currency: row.currency ?? "USD"
-      },
-      description: stripeInv.description ?? null
-    });
-    await sendEmail({ to: recipient, subject: tpl.subject, text: tpl.text, html: tpl.html });
-  } catch (e) {
-    console.warn("[stripe webhook] invoice.paid email failed (non-fatal):", e);
-  }
-  void admin; // reserved for future per-project owner lookup
+async function updateInvoiceStatus(
+  invoice: Stripe.Invoice,
+  status: "paid" | "overdue",
+) {
+  if (!invoice.id) return;
+  const supa = createAdminClient();
+  const patch: { status: "paid" | "overdue"; paid_at?: string } = { status };
+  if (status === "paid") patch.paid_at = new Date().toISOString();
+  await supa.from("invoices").update(patch).eq("stripe_invoice_id", invoice.id);
 }
 
 async function notifyInvoiceFailed(

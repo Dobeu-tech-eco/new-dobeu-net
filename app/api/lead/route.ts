@@ -1,27 +1,25 @@
 import { NextResponse } from "next/server";
-import { createHash } from "node:crypto";
 import { z } from "zod";
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 import { processLead } from "@/lib/leads";
 
 const LeadSchema = z.object({
-  email: z.string().email(),
-  name: z.string().optional().nullable(),
-  company: z.string().optional().nullable(),
+  email: z.string().email().max(255),
+  name: z.string().max(255).optional().nullable(),
+  company: z.string().max(255).optional().nullable(),
   message: z.string().max(2000).optional().nullable(),
   source: z.enum(["book", "form", "email", "typeform", "other"]).default("other"),
-  utm: z.record(z.string()).default({}),
-  referrer: z.string().optional().nullable()
+  utm: z.record(z.string().max(255)).default({}),
+  referrer: z.string().max(255).optional().nullable()
 });
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const ip = getClientIp(request);
-  if (await isRateLimited(ip)) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  const ip = request.headers.get("x-real-ip") ?? request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "unknown";
+  const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
+  if (rl.limited) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "X-RateLimit-Backend": rl.backend } });
   }
 
   let body: unknown;
@@ -55,6 +53,7 @@ export async function POST(request: Request) {
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 5;
+const MAX_BUCKETS = 10000;
 const ipBuckets = new Map<string, { count: number; resetAt: number }>();
 const upstashReady =
   Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
@@ -72,6 +71,11 @@ async function isRateLimited(ip: string): Promise<boolean> {
     return !success;
   }
   const now = Date.now();
+
+  if (ipBuckets.size > 10000) {
+    ipBuckets.clear();
+  }
+
   const b = ipBuckets.get(ip);
   if (!b || b.resetAt < now) {
     ipBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
@@ -89,8 +93,8 @@ function hashIp(ip: string): string {
 }
 
 function getClientIp(request: Request): string {
-  const firstForwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  if (firstForwarded) return firstForwarded;
   const realIp = request.headers.get("x-real-ip")?.trim();
-  return realIp || "unknown";
+  if (realIp) return realIp;
+  const lastForwarded = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
+  return lastForwarded || "unknown";
 }

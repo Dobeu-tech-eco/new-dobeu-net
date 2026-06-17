@@ -1,3 +1,3 @@
-## 2026-05-22 - [Lazy Loading Hidden Third-Party Embeds]
-**Learning:** Heavy third-party integrations like Calendly (`react-calendly`) and Typeform (`@typeform/embed-react`) were being statically imported and eagerly loaded on the main landing page, even though they were hidden inside a Dialog (lightbox) and Tabs components that the user might never open. Statically importing these inflates the First Load JS size.
-**Action:** When heavy third-party components are conditionally rendered or hidden behind UI interactions (like modals, lightboxes, or non-default tabs), always use `next/dynamic` to lazy load them. This defers downloading their JavaScript payload until the user actually interacts with that specific UI element, significantly reducing the initial bundle size.
+## 2025-01-20 - Memoizing Context Values
+**Learning:** In React, passing inline object literals (like `value={{ open, close }}`) to Context Providers causes the context value to fail reference equality checks on every render. This forces all consumers of the context to re-render, even if the actual data hasn't changed.
+**Action:** Always wrap context values in `React.useMemo` if they are derived from multiple values or objects, to prevent unnecessary re-renders in consumers.

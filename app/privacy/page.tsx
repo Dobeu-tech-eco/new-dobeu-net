@@ -21,9 +21,8 @@ export default function PrivacyPage() {
           <em>Last updated: May 21, 2026.</em>
         </p>
         <p>
-          Dobeu Tech Solutions LLC (&ldquo;Dobeu&rdquo;, &ldquo;we&rdquo;)
-          operates dobeu.net. This page describes what data we collect, why, and
-          how to opt out.
+          Dobeu Tech Solutions LLC (&ldquo;Dobeu&rdquo;, &ldquo;we&rdquo;) operates dobeu.net. This page describes what data
+          we collect, why, and how to opt out.
         </p>
 
         <h2>What we collect</h2>

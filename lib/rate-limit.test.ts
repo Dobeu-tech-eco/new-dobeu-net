@@ -46,8 +46,11 @@ describe("checkRateLimit (Upstash backend)", () => {
   });
 
   it("uses the upstash pipeline INCR result", async () => {
-    global.fetch = vi.fn(async () =>
-      new Response(JSON.stringify([{ result: 2 }, { result: 1 }]), { status: 200 })
+    global.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify([{ result: 2 }, { result: 1 }]), {
+          status: 200,
+        }),
     ) as typeof fetch;
 
     const r = await checkRateLimit("k", { windowSec: 60, max: 5 });
@@ -57,8 +60,13 @@ describe("checkRateLimit (Upstash backend)", () => {
   });
 
   it("falls back to memory on Upstash HTTP error", async () => {
-    global.fetch = vi.fn(async () => new Response("boom", { status: 500 })) as typeof fetch;
-    const r = await checkRateLimit(`k:${Math.random()}`, { windowSec: 60, max: 1 });
+    global.fetch = vi.fn(
+      async () => new Response("boom", { status: 500 }),
+    ) as typeof fetch;
+    const r = await checkRateLimit(`k:${Math.random()}`, {
+      windowSec: 60,
+      max: 1,
+    });
     expect(r.backend).toBe("memory");
   });
 });

@@ -76,17 +76,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link
               key={item.href}
               href={item.href}
+              title={item.label}
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
+              aria-label={item.label}
+              title={item.label}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">{item.label}</span>
             </Link>
           ))}
           <Link
             href="/portal"
+            title="Portal view"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
+            aria-label="Portal view"
+            title="Portal view"
           >
-            <LayoutDashboard className="h-4 w-4" /> <span className="hidden sm:inline">Portal view</span>
+            <LayoutDashboard className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Portal view</span>
           </Link>
           <LogoutButton />
         </nav>

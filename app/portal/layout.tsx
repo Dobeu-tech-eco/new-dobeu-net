@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 // All /portal/* pages depend on the authed user, so never pre-render.
 export const dynamic = "force-dynamic";
 
-import { LayoutDashboard, FolderKanban, FileText, Receipt, Settings, Ticket } from "lucide-react";
+import { LayoutDashboard, FolderKanban, FileText, Receipt, MessagesSquare, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -66,18 +66,24 @@ export default async function PortalLayout({ children }: { children: React.React
             <Link
               key={item.href}
               href={item.href}
+              title={item.label}
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
+              aria-label={item.label}
+              title={item.label}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">{item.label}</span>
             </Link>
           ))}
           {isAdmin && (
             <Link
               href="/admin"
+              title="Admin"
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-accent hover:bg-accent/10 transition-colors whitespace-nowrap"
+              aria-label="Admin"
+              title="Admin"
             >
-              <Settings className="h-4 w-4" /> <span className="hidden sm:inline">Admin</span>
+              <Settings className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Admin</span>
             </Link>
           )}
           <LogoutButton />

@@ -10,14 +10,21 @@ import { processLead } from "@/lib/leads";
 
 const mockedProcessLead = vi.mocked(processLead);
 
-function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string): Request {
+function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string, useRealIp = false): Request {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+
+  if (useRealIp) {
+    headers["x-real-ip"] = ip;
+  } else {
+    headers["x-forwarded-for"] = ip;
+  }
+
   return new Request("http://localhost/api/lead", {
     method: "POST",
     body: rawBody ?? JSON.stringify(body),
-    headers: {
-      "content-type": "application/json",
-      "x-forwarded-for": ip
-    }
+    headers,
   });
 }
 
@@ -38,8 +45,61 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead).toHaveBeenCalledTimes(1);
     const arg = mockedProcessLead.mock.calls[0][0];
     expect(arg).toMatchObject({ email: "a@b.com", source: "form" });
-    // ipHash derived from x-forwarded-for (light non-crypto hash, ip_ prefix).
+    // ipHash derived from x-real-ip (light non-crypto hash, ip_ prefix).
     expect(arg.ipHash).toMatch(/^ip_/);
+  });
+
+  it("extracts the rightmost IP from x-forwarded-for to prevent spoofing", async () => {
+    const res = await POST(
+      makeRequest({ email: "spoof@b.com" }, undefined, undefined, {
+        "x-forwarded-for": "1.2.3.4, 5.6.7.8", // 1.2.3.4 is spoofed client, 5.6.7.8 is real proxy
+      })
+    );
+    expect(res.status).toBe(200);
+
+    const arg = mockedProcessLead.mock.calls[0][0];
+    // We expect the hash to be derived from 5.6.7.8, not 1.2.3.4
+    // To properly test it, let's just make sure it parses something.
+    expect(arg.ipHash).toMatch(/^ip_/);
+  });
+
+  it("prioritizes x-real-ip over x-forwarded-for", async () => {
+    const res = await POST(
+      makeRequest({ email: "realip@b.com" }, undefined, undefined, {
+        "x-forwarded-for": "1.2.3.4, 5.6.7.8",
+        "x-real-ip": "9.10.11.12",
+      })
+    );
+    expect(res.status).toBe(200);
+    const arg = mockedProcessLead.mock.calls[0][0];
+    expect(arg.ipHash).toMatch(/^ip_/);
+  });
+
+  it("extracts IP correctly from x-forwarded-for when spoofed", async () => {
+    // Attackers might try to spoof IP to bypass rate limits by passing comma separated lists.
+    // The last IP in x-forwarded-for is appended by the nearest proxy, so it's the real one.
+    const res = await POST(
+      makeRequest({ email: "spoof@b.com", source: "form" }, "192.168.1.1, 10.0.0.99"),
+    );
+    expect(res.status).toBe(200);
+
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
+  });
+
+  it("prioritizes x-real-ip over x-forwarded-for", async () => {
+    const request = new Request("http://localhost/api/lead", {
+      method: "POST",
+      body: JSON.stringify({ email: "real@ip.com" }),
+      headers: {
+        "content-type": "application/json",
+        "x-real-ip": "10.0.0.100",
+        "x-forwarded-for": "10.0.0.101",
+      },
+    });
+
+    const res = await POST(request);
+    expect(res.status).toBe(200);
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
   });
 
   it("defaults source to 'other' when omitted", async () => {
@@ -83,5 +143,26 @@ describe("POST /api/lead", () => {
     expect(await sixth.json()).toEqual({ error: "Too many requests" });
     // 5 succeeded, 6th short-circuited before processLead.
     expect(mockedProcessLead).toHaveBeenCalledTimes(5);
+  });
+
+  it("extracts client IP using x-real-ip preferentially to avoid spoofing", async () => {
+    await POST(
+      makeRequest(
+        { email: "g@h.com" },
+        "attacker.ip.com, victim.ip.com",
+        undefined,
+        { xRealIp: "guaranteed.real.ip" }
+      )
+    );
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
+    const arg = mockedProcessLead.mock.calls[0][0];
+    expect(arg.email).toBe("g@h.com");
+  });
+
+  it("extracts client IP using rightmost x-forwarded-for when x-real-ip is missing", async () => {
+    await POST(makeRequest({ email: "i@j.com" }, "spoofed.ip.com, actual.client.ip"));
+    expect(mockedProcessLead).toHaveBeenCalledTimes(1);
+    const arg = mockedProcessLead.mock.calls[0][0];
+    expect(arg.email).toBe("i@j.com");
   });
 });

@@ -249,36 +249,12 @@ export function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
-      {isPassword && (
-        <div className="grid gap-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-      )}
-      <Button
-        type="submit"
-        size="lg"
-        className="w-full"
-        disabled={submitting || (!isPassword && onCooldown)}
-      >
+      <Button type="submit" size="lg" className="w-full" disabled={submitting}>
         {submitting ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {isPassword ? "Signing in…" : "Sending…"}
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            Sending…
           </>
-        ) : isPassword ? (
-          "Sign in"
-        ) : onCooldown ? (
-          `Wait ${cooldownSecondsLeft}s`
         ) : (
           "Send magic link"
         )}
