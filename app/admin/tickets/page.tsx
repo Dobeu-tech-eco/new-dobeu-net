@@ -96,14 +96,27 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
+            <caption className="sr-only">All client work-order tickets</caption>
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="p-3">Title</th>
-                <th className="p-3">Service</th>
-                <th className="p-3">Owner</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Quote</th>
-                <th className="p-3">Opened</th>
+                <th scope="col" className="p-3">
+                  Title
+                </th>
+                <th scope="col" className="p-3">
+                  Service
+                </th>
+                <th scope="col" className="p-3">
+                  Owner
+                </th>
+                <th scope="col" className="p-3">
+                  Status
+                </th>
+                <th scope="col" className="p-3">
+                  Quote
+                </th>
+                <th scope="col" className="p-3">
+                  Opened
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -112,7 +125,7 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
                   <td className="p-3">
                     <Link
                       href={`/admin/tickets/${t.id}`}
-                      className="font-semibold underline-offset-4 hover:underline"
+                      className="font-semibold underline-offset-4 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       {t.title}
                     </Link>
@@ -122,7 +135,9 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
                     {t.created_by.slice(0, 8)}…
                   </td>
                   <td className="p-3">
-                    <Badge tone={statusTone(t.status as WorkOrderStatus)}>{t.status}</Badge>
+                    <Badge tone={statusTone(t.status as WorkOrderStatus)} aria-label={`Status: ${t.status.replace(/_/g, " ")}`}>
+                      {t.status.replace(/_/g, " ")}
+                    </Badge>
                   </td>
                   <td className="p-3">
                     {t.quoted_amount_cents
@@ -170,8 +185,9 @@ function FilterRow<T extends string>({
           <Link
             key={o}
             href={href}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-full border px-3 py-1 text-xs",
+              "rounded-full border px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               active
                 ? "border-accent bg-accent/10 text-accent font-semibold"
                 : "border-border text-muted-foreground hover:bg-muted"

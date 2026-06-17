@@ -21,11 +21,22 @@ export function AdminMarkPaidButton({ invoiceId }: { invoiceId: string }) {
 
   return (
     <div className="space-y-2">
-      <Button variant="ghost" size="sm" onClick={onClick} disabled={pending}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onClick}
+        disabled={pending}
+        aria-busy={pending}
+        aria-describedby={error ? `mark-paid-error-${invoiceId}` : undefined}
+      >
         {pending ? "Marking…" : "Mark paid manually"}
       </Button>
       {error && (
-        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-sm text-destructive">
+        <p
+          id={`mark-paid-error-${invoiceId}`}
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-sm text-destructive"
+        >
           {error}
         </p>
       )}

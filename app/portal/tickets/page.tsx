@@ -83,13 +83,24 @@ export default async function TicketsPage() {
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
+            <caption className="sr-only">Your work-order tickets</caption>
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="p-3">Title</th>
-                <th className="p-3">Service</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Quote</th>
-                <th className="p-3">Opened</th>
+                <th scope="col" className="p-3">
+                  Title
+                </th>
+                <th scope="col" className="p-3">
+                  Service
+                </th>
+                <th scope="col" className="p-3">
+                  Status
+                </th>
+                <th scope="col" className="p-3">
+                  Quote
+                </th>
+                <th scope="col" className="p-3">
+                  Opened
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -98,7 +109,7 @@ export default async function TicketsPage() {
                   <td className="p-3">
                     <Link
                       href={`/portal/tickets/${t.id}`}
-                      className="font-semibold underline-offset-4 hover:underline"
+                      className="font-semibold underline-offset-4 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       {t.title}
                     </Link>
@@ -107,7 +118,9 @@ export default async function TicketsPage() {
                     {SERVICE_LABELS[t.service_type] ?? t.service_type}
                   </td>
                   <td className="p-3">
-                    <Badge tone={statusTone(t.status as WorkOrderStatus)}>{t.status}</Badge>
+                    <Badge tone={statusTone(t.status as WorkOrderStatus)} aria-label={`Status: ${t.status.replace(/_/g, " ")}`}>
+                      {t.status.replace(/_/g, " ")}
+                    </Badge>
                   </td>
                   <td className="p-3">
                     {t.quoted_amount_cents

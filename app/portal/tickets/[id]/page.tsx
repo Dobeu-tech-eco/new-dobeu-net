@@ -90,7 +90,10 @@ export default async function TicketDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <nav className="text-sm text-muted-foreground">
-        <Link href="/portal/tickets" className="hover:underline">
+        <Link
+          href="/portal/tickets"
+          className="hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           ← All tickets
         </Link>
       </nav>
@@ -98,8 +101,11 @@ export default async function TicketDetailPage({ params }: PageProps) {
       <header className="space-y-3">
         <div className="flex items-center gap-3">
           <h1 className="font-display text-3xl font-bold tracking-tight">{ticket.title}</h1>
-          <Badge tone={ticket.status === "open" || ticket.status === "quoted" ? "amber" : "indigo"}>
-            {ticket.status}
+          <Badge
+            tone={ticket.status === "open" || ticket.status === "quoted" ? "amber" : "indigo"}
+            aria-label={`Status: ${ticket.status.replace(/_/g, " ")}`}
+          >
+            {ticket.status.replace(/_/g, " ")}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -128,9 +134,10 @@ export default async function TicketDetailPage({ params }: PageProps) {
                     href={a.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="underline-offset-4 hover:underline"
+                    className="underline-offset-4 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     {a.filename}
+                    <span className="sr-only"> (opens in new tab)</span>
                   </a>
                 ) : (
                   <span className="text-muted-foreground">{a.filename}</span>
@@ -153,7 +160,7 @@ export default async function TicketDetailPage({ params }: PageProps) {
           <p className="text-sm text-muted-foreground mb-4">
             Accepting locks in the work and issues a Stripe invoice you can pay online.
           </p>
-          <AcceptQuoteForm ticketId={ticket.id} />
+          <AcceptQuoteForm ticketId={ticket.id} amountCents={ticket.quoted_amount_cents} />
         </section>
       )}
 
@@ -162,12 +169,15 @@ export default async function TicketDetailPage({ params }: PageProps) {
           <h2 className="font-semibold">Invoice</h2>
           <p className="text-sm">
             {formatCurrency(invoice.amount_cents)} ·{" "}
-            <Badge tone={invoice.status === "paid" ? "neutral" : "amber"}>{invoice.status}</Badge>
+            <Badge tone={invoice.status === "paid" ? "neutral" : "amber"} aria-label={`Invoice status: ${invoice.status}`}>
+              {invoice.status}
+            </Badge>
           </p>
           {invoice.hosted_invoice_url && (
             <Button asChild size="sm">
               <a href={invoice.hosted_invoice_url} target="_blank" rel="noreferrer">
                 Pay invoice →
+                <span className="sr-only"> (opens in new tab)</span>
               </a>
             </Button>
           )}

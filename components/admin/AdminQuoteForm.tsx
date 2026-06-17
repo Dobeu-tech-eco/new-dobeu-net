@@ -39,11 +39,14 @@ export function AdminQuoteForm({ ticketId }: { ticketId: string }) {
         />
       </div>
       {error && (
-        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-sm text-destructive"
+        >
           {error}
         </p>
       )}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} aria-busy={pending}>
         {pending ? "Sending…" : "Send quote to client"}
       </Button>
     </form>

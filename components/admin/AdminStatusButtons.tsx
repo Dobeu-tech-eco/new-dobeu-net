@@ -49,7 +49,7 @@ export function AdminStatusButtons({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Ticket status transitions">
         {options.map((o) => (
           <Button
             key={o.value}
@@ -57,13 +57,17 @@ export function AdminStatusButtons({
             size="sm"
             onClick={() => onClick(o.value)}
             disabled={pending}
+            aria-busy={pending}
           >
             {o.label}
           </Button>
         ))}
       </div>
       {error && (
-        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-sm text-destructive"
+        >
           {error}
         </p>
       )}
