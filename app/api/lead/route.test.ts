@@ -16,7 +16,7 @@ function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string): Request {
     body: rawBody ?? JSON.stringify(body),
     headers: {
       "content-type": "application/json",
-      "x-forwarded-for": ip
+      "x-real-ip": ip
     }
   });
 }
@@ -38,8 +38,21 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead).toHaveBeenCalledTimes(1);
     const arg = mockedProcessLead.mock.calls[0][0];
     expect(arg).toMatchObject({ email: "a@b.com", source: "form" });
-    // ipHash derived from x-forwarded-for (light non-crypto hash, ip_ prefix).
+    // ipHash derived from x-real-ip / x-forwarded-for (light non-crypto hash, ip_ prefix).
     expect(arg.ipHash).toMatch(/^ip_/);
+  });
+
+  it("prioritizes x-real-ip over x-forwarded-for and takes rightmost IP for x-forwarded-for", async () => {
+    const res = await POST(new Request("http://localhost/api/lead", {
+      method: "POST",
+      body: JSON.stringify({ email: "x@y.com" }),
+      headers: { "x-forwarded-for": "1.1.1.1, 2.2.2.2" }
+    }));
+    expect(res.status).toBe(200);
+    // ip_ prefix + 16 chars hex of rightmost IP 2.2.2.2
+    const { createHash } = await import("node:crypto");
+    const hash2222 = createHash("sha256").update("2.2.2.2").digest("hex").slice(0, 16);
+    expect(mockedProcessLead.mock.calls[0][0].ipHash).toBe("ip_" + hash2222);
   });
 
   it("defaults source to 'other' when omitted", async () => {

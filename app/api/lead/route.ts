@@ -89,8 +89,8 @@ function hashIp(ip: string): string {
 }
 
 function getClientIp(request: Request): string {
-  const firstForwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  if (firstForwarded) return firstForwarded;
   const realIp = request.headers.get("x-real-ip")?.trim();
-  return realIp || "unknown";
+  if (realIp) return realIp;
+  const lastForwarded = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
+  return lastForwarded || "unknown";
 }
