@@ -5,17 +5,11 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
-// Lazy load heavy form/booking components to reduce initial bundle size
-const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm), {
-  loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
-});
-const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab), {
-  loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
-});
-const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab), {
-  loading: () => <div className="flex h-[400px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>,
-});
+import dynamic from "next/dynamic";
+// Lazily load heavy form tabs to reduce First Load JS by ~200kB
+const LeadForm = dynamic(() => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm));
+const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
+const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
 
 type Tab = "book" | "form" | "email";
 
