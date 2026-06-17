@@ -9,8 +9,8 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   let next = url.searchParams.get("next") ?? "/portal";
 
-  // Security: Prevent Open Redirect
-  if (!next.startsWith("/") || next.startsWith("//")) {
+  // Prevent open redirect vulnerabilities
+  if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
     next = "/portal";
   }
 
