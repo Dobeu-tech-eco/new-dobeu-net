@@ -94,8 +94,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             aria-label="Portal view"
             title="Portal view"
           >
-            <LayoutDashboard className="h-4 w-4" aria-hidden="true" />{" "}
-            <span className="hidden sm:inline">Portal view</span>
+            <LayoutDashboard className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Portal view</span>
           </Link>
           <LogoutButton />
         </nav>
