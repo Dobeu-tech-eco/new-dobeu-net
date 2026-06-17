@@ -39,6 +39,24 @@ row/storage copy — no full dump/restore cycle.
 | 0.4 | Communicate to clients: passwords do not migrate; magic-link re-auth after cutover | Operator |
 | 0.5 | Stripe webhook + Resend DKIM verified (see `.agent/ops/stripe-webhook-status.md`) | Operator |
 | 0.6 | Supabase Auth → **SMTP Settings** (Resend) + **Rate Limits** raised for magic-link testing (`docs/DEPLOYMENT.md` §Phase 2 steps 5–6, project `ipmjokuezeuukhrilduq`) | Operator |
+| 0.7 | Supabase Auth → **URL Configuration**: Site URL = `https://dobeu.net` + Redirect URLs allowlist (`docs/DEPLOYMENT.md` §Phase 2 step 7) | Operator |
+
+### Auth troubleshooting (cutover)
+
+Symptom → fix for magic-link / sign-in problems during cutover:
+
+| Symptom | Root cause | Fix |
+|---------|-----------|-----|
+| Link lands on `http://localhost:3000/?code=…` | Supabase **Site URL** still localhost (code appended to Site URL because `redirect_to` not allowlisted) | Set Site URL = `https://dobeu.net` + add Redirect URLs (`docs/DEPLOYMENT.md` step 7); request a **fresh** link |
+| Link lands on `https://dobeu.net/?code=…` (root) | `redirect_to` not in allowlist, but Site URL host is correct | App self-heals: middleware forwards `?code=` → `/auth/callback`. Still add the allowlist entry |
+| "Email rate limit exceeded" on `/login` | Supabase Auth 429 (built-in SMTP ~2/h) | Wire Resend SMTP + raise rate limits (steps 5–6) |
+| Email never arrives | SMTP/DKIM not configured | Verify `dobeu.net` in Resend; wire Supabase SMTP |
+| Need to sign in **without** email entirely | Magic-link/SMTP broken mid-cutover | Operator: `node scripts/set-user-password.mjs <email>` → user signs in via `/login` "password instead" toggle |
+
+> The code-level redirect fix (magic links target `https://dobeu.net/auth/callback`), the
+> defensive `?code=` forwarder, and the password fallback all ship in the app — but the **Site URL
+> + Redirect URLs allowlist** is operator-only Dashboard config and is the single most common
+> cause of the localhost redirect.
 
 ---
 

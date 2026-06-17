@@ -1064,3 +1064,32 @@ Each row maps a task group to an independent agent. See the design doc §7 for t
 **3. Type consistency** — `requiresAal2Stepup({ currentLevel, nextLevel })` signature identical in A1 (def), A2 (use), design §4.1, §9. `intercomUserHash(userId: string): string | undefined` identical in B1 (def), B2 (use), design §4.2, §9. `IntercomIdentify` `user_hash?: string` prop matches the verified component signature. `formatCurrency(cents)` matches `lib/utils.ts`. Migration filename `20260616000000_phase5_drop_is_admin.sql` consistent between E2 and H. ✔
 
 **4. Cross-group file-collision check** — `app/admin/layout.tsx` (A5 + B2): B2 sequenced wave 2. `lib/utils.ts` (A1 + E1): E defers. `lib/database.types.ts` (E2 + C): single-writer rule. `CLAUDE.md` (B3 + D1 + E4): single-owner (E). All collisions resolved in Group H, no two wave-1 agents share a file. ✔
+
+---
+
+## Addendum — Post-merge auth hardening (2026-06-17)
+
+After the `test/coverage` → `main` merge (PR #80) shipped to production, magic-link sign-in on
+`https://dobeu.net` redirected users to `http://localhost:3000/?code=…`. Root cause was two-layered:
+
+1. **Code (fixed + now deployed):** `LoginForm` originally derived `emailRedirectTo` from the live
+   browser origin without forcing the production custom domain. Commits `d2e29ec` (redirect fix via
+   `buildAuthCallbackUrl` / `resolveAuthOrigin`) and `e44cfd1` (60s double-submit guard) fixed this
+   but **had not been deployed** — the live Vercel build predated both commits.
+2. **Supabase config (operator-only):** A `?code=` on the **root** path (not `/auth/callback`) is the
+   signature of Supabase appending the code to the **Site URL** because the requested `redirect_to`
+   wasn't in the **Redirect URLs allowlist**. If Site URL is localhost, the link lands on localhost.
+
+**Shipped in this round (app-side, automatic after deploy):**
+- **Defensive `?code=` forwarder** in `lib/supabase/middleware.ts` — any stray auth code on a
+  non-`/auth/callback` path is 307-redirected to `/auth/callback` (preserves `next`). Self-heals the
+  Site-URL-root fallback (same host). Tested in `lib/supabase/middleware.test.ts`.
+- **Password sign-in fallback** on `/login` (`app/login/LoginForm.tsx` "Sign in with a password
+  instead" toggle → `signInWithPassword`) for cutover when email is down.
+- **`scripts/set-user-password.mjs`** — operator service-role script to set/create a password with
+  **no email round-trip** (password from env or prompt; never CLI arg / git).
+
+**Operator must still set in Supabase Dashboard (project `ipmjokuezeuukhrilduq`):** Site URL =
+`https://dobeu.net`, Redirect URLs allowlist, Resend SMTP, raised rate limits, and enable the
+Email+Password provider for the fallback. See `docs/DEPLOYMENT.md` Phase 2 steps 7–9 and
+`.agent/migration/cutover-execute.md` → "Auth troubleshooting (cutover)".

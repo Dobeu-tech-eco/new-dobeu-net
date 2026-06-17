@@ -108,6 +108,32 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
    requested from production. After saving, request a **new** magic link (old emails keep the
    stale `redirect_to`).
 
+   **Why `?code=` lands on `http://localhost:3000/` (root, not `/auth/callback`):** that is the
+   signature of Supabase appending the auth code to the **Site URL** because the requested
+   `redirect_to` (`https://dobeu.net/auth/callback`) was **not in the Redirect URLs allowlist**.
+   Fix = set Site URL to `https://dobeu.net` **and** add the redirect URLs above, then request a
+   fresh link. The app now also self-heals (see "defensive `?code=` forwarder" below).
+
+8. **Defensive `?code=` forwarder (automatic, no Dashboard step).** `middleware.ts`
+   (`lib/supabase/middleware.ts`) detects a stray `?code=` on any non-`/auth/callback` path and
+   307-redirects it to `/auth/callback` (preserving `next`). So even if Supabase falls back to the
+   Site URL root, the session still gets exchanged — as long as the Site URL host is correct
+   (`https://dobeu.net`, not localhost). It cannot rescue a cross-host fallback to `localhost`;
+   that still requires the Site URL fix above.
+
+9. **Password fallback (cutover escape hatch).** Email is not the only sign-in path:
+   - **`/login`** has a **"Sign in with a password instead"** toggle
+     (`app/login/LoginForm.tsx` → `supabase.auth.signInWithPassword`).
+   - To set a password **without any email round-trip**, an operator runs the service-role script:
+     ```bash
+     vercel env pull .env.local           # gets VERCEL_SUPABASE_SERVICE_ROLE_KEY + URL
+     NEW_USER_PASSWORD='…' node scripts/set-user-password.mjs you@dobeu.net           # existing user
+     NEW_USER_PASSWORD='…' node scripts/set-user-password.mjs you@dobeu.net --create  # new user
+     ```
+     The script reads the password from env or an interactive prompt (never a CLI arg / git).
+     Enable **Email + Password** provider in Supabase Dashboard → Authentication → Providers for
+     this path to work.
+
 **Dashboard vs automatic**
 
 | Item | Where it lives | Operator action? |
@@ -116,6 +142,9 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
 | Lead / work-order email | Next.js + `RESEND_API_KEY` | Already in Vercel env (no Supabase step) |
 | `/login` double-submit guard | `app/login/LoginForm.tsx` | **Automatic** after deploy (60s client cooldown) |
 | Redirect URLs / Site URL | Supabase Auth URL config | **Yes** — one-time Dashboard setup |
+| Stray `?code=` → `/auth/callback` rescue | `lib/supabase/middleware.ts` | **Automatic** after deploy |
+| Password sign-in toggle | `app/login/LoginForm.tsx` | **Automatic** after deploy (enable Password provider) |
+| Set password without email | `scripts/set-user-password.mjs` | **Yes** — operator runs with service-role key |
 
 ---
 

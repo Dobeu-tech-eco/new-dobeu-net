@@ -44,12 +44,16 @@ function isAuthRateLimitError(err: unknown): boolean {
   return normalized.includes("rate limit") || normalized.includes("429");
 }
 
+type AuthMode = "magic" | "password";
+
 export function LoginForm() {
   const searchParams = useSearchParams();
   const nextPath = sanitizeNextPath(searchParams.get("next"), "/portal");
   const errorParam = searchParams.get("error");
   const inFlightRef = React.useRef(false);
+  const [mode, setMode] = React.useState<AuthMode>("magic");
   const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [sent, setSent] = React.useState(false);
   const [cooldownUntil, setCooldownUntil] = React.useState(0);
@@ -145,9 +149,43 @@ export function LoginForm() {
     }
   }
 
+  async function signInWithPassword(targetEmail: string, targetPassword: string) {
+    const normalizedEmail = targetEmail.trim();
+    if (!normalizedEmail || !targetPassword) {
+      toast.error("Email and password required.");
+      return;
+    }
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    setSubmitting(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password: targetPassword,
+      });
+      if (error) throw error;
+
+      track("login_password_success", { destination: nextPath });
+      // Full navigation so the freshly-set auth cookies are seen by middleware.
+      window.location.assign(nextPath);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Invalid email or password.",
+      );
+    } finally {
+      inFlightRef.current = false;
+      setSubmitting(false);
+    }
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    await sendMagicLink(email);
+    if (mode === "password") {
+      await signInWithPassword(email, password);
+    } else {
+      await sendMagicLink(email);
+    }
   }
 
   if (sent) {
@@ -193,6 +231,8 @@ export function LoginForm() {
     );
   }
 
+  const isPassword = mode === "password";
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid gap-2">
@@ -209,23 +249,50 @@ export function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
+      {isPassword && (
+        <div className="grid gap-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+      )}
       <Button
         type="submit"
         size="lg"
         className="w-full"
-        disabled={submitting || onCooldown}
+        disabled={submitting || (!isPassword && onCooldown)}
       >
         {submitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending…
+            {isPassword ? "Signing in…" : "Sending…"}
           </>
+        ) : isPassword ? (
+          "Sign in"
         ) : onCooldown ? (
           `Wait ${cooldownSecondsLeft}s`
         ) : (
           "Send magic link"
         )}
       </Button>
+      <button
+        type="button"
+        className="block w-full text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
+        onClick={() => {
+          setMode(isPassword ? "magic" : "password");
+          setPassword("");
+        }}
+      >
+        {isPassword ? "Use a magic link instead" : "Sign in with a password instead"}
+      </button>
     </form>
   );
 }

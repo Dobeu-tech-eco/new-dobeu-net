@@ -29,6 +29,11 @@ curl -sS -o /dev/null -w "%{http_code}\n" "$BASE/portal/settings/mfa"
 
 # Stripe webhook rejects unsigned POST
 curl -sS -o /dev/null -w "%{http_code}\n" -X POST "$BASE/api/webhooks/stripe" -H "Content-Type: application/json" -d "{}"
+
+# Auth callback handles a (bogus) code → redirects to /login with error (route is live)
+curl -sS -o /dev/null -w "%{http_code} %{redirect_url}\n" "$BASE/auth/callback?code=bogus&next=%2Fportal"
+# Defensive forwarder: stray ?code= on root → 307 to /auth/callback
+curl -sS -o /dev/null -w "%{http_code} %{redirect_url}\n" "$BASE/?code=bogus"
 ```
 
 | Check | Expected |
@@ -40,6 +45,8 @@ curl -sS -o /dev/null -w "%{http_code}\n" -X POST "$BASE/api/webhooks/stripe" -H
 | `GET /admin/tickets` | 307/302 → login |
 | `GET /portal/settings/mfa` | 307/302 or 200 if session cookie present |
 | `POST /api/webhooks/stripe` (no signature) | 400 |
+| `GET /auth/callback?code=bogus` | 307 → `https://dobeu.net/login?error=auth_callback_failed` |
+| `GET /?code=bogus` | 307 → `https://dobeu.net/auth/callback?code=bogus` (forwarder) |
 
 PowerShell (Windows):
 
@@ -58,7 +65,12 @@ Invoke-WebRequest -Uri "$Base/api/webhooks/stripe" -Method POST -Body "{}" -Cont
 Use a **$1.00 live** invoice for the final payment check (or Stripe test mode on a preview only if keys are test).
 
 1. **Client — submit ticket**  
-   - Sign in at `/login` (magic link).  
+   - Sign in at `/login` (magic link). If magic-link email is broken during cutover, use the
+     **"Sign in with a password instead"** toggle; set a password first with
+     `node scripts/set-user-password.mjs <email>` (see `docs/DEPLOYMENT.md` Phase 2 step 9).
+   - If a magic link drops you on `https://dobeu.net/?code=…` (root), the middleware forwarder
+     should bounce you to `/auth/callback` and complete login. Landing on `localhost` instead
+     means Supabase **Site URL** is still localhost — fix it in the Dashboard (step 7).  
    - `/portal/tickets` → **New ticket** → choose service type, title, notes; attach a small file if the form allows.  
    - Submit; confirm the ticket appears in the list and detail page loads.
 

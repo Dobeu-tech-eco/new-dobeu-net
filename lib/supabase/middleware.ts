@@ -15,6 +15,19 @@ export async function updateSession(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY;
   const path = request.nextUrl.pathname;
 
+  // Defensive auth-code rescue: Supabase appends the PKCE `?code=` to its
+  // configured Site URL when the requested `redirect_to` isn't in the Redirect
+  // URLs allowlist. That drops the user on `/?code=...` (or any non-callback
+  // path) instead of `/auth/callback`, so the session is never exchanged.
+  // Forward any stray `code` to the real callback (preserving `next`) so auth
+  // completes even if the Supabase dashboard allowlist is misconfigured.
+  const strayCode = request.nextUrl.searchParams.get("code");
+  if (strayCode && path !== "/auth/callback") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    return NextResponse.redirect(url);
+  }
+
   // Bail gracefully if Supabase isn't configured yet
   if (!supabaseUrl || !supabaseAnonKey) {
     if (path.startsWith("/portal") || path.startsWith("/admin")) {
