@@ -81,7 +81,8 @@ export default async function PortalLayout({ children }: { children: React.React
               aria-label="Admin"
               title="Admin"
             >
-              <Settings className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Admin</span>
+              <Settings className="h-4 w-4" aria-hidden="true" />{" "}
+              <span className="hidden sm:inline">Admin</span>
             </Link>
           )}
           <LogoutButton />
