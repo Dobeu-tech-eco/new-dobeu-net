@@ -1,3 +1,3 @@
-## 2025-01-20 - Memoizing Context Values
-**Learning:** In React, passing inline object literals (like `value={{ open, close }}`) to Context Providers causes the context value to fail reference equality checks on every render. This forces all consumers of the context to re-render, even if the actual data hasn't changed.
-**Action:** Always wrap context values in `React.useMemo` if they are derived from multiple values or objects, to prevent unnecessary re-renders in consumers.
+## 2024-05-28 - Next.js Modal Third-Party Payload Optimization
+**Learning:** Heavy third-party React libraries (like `react-calendly` and `@typeform/embed-react`) imported synchronously into Modal/Dialog components are included in the initial page bundle even if the modal isn't opened immediately, significantly bloating the First Load JS for landing pages.
+**Action:** Always use `next/dynamic` to code-split and lazily load these heavy components only when the modal is opened, which in this codebase reduced the root page First Load JS by over 50% (from ~420kB to ~199kB).
