@@ -24,7 +24,10 @@ function makeRequest(body: unknown, ip = "1.1.1.1", rawBody?: string, useRealIp 
   return new Request("http://localhost/api/lead", {
     method: "POST",
     body: rawBody ?? JSON.stringify(body),
-    headers,
+    headers: {
+      "content-type": "application/json",
+      "x-real-ip": ip,
+    },
   });
 }
 
