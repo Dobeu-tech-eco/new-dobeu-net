@@ -79,6 +79,27 @@ Hard blockers before Phase 3 can start:
 | Intercom HMAC server-side signing (Phase 4) | ⚠️ HMAC secret not yet provisioned |
 | Legacy `db-dobeutech-unified` data cutover | 🛑 Gated on inventory; deliberately not started this commit |
 
+## Remaining Phases (4 + 5 + legacy cutover + close-out)
+
+> Phase 3 has since shipped and is **live on `https://dobeu.net`** (HEAD `4cc72f2`):
+> `lib/stripe.ts`, `/api/webhooks/stripe`, `profiles.stripe_customer_id`,
+> Resend wire-up, `/portal/tickets` + `/admin/tickets`, admin invoices write
+> surface. Two stale notes corrected during the remaining-phases review:
+> **CI already runs `pnpm test:ci`** (`.github/workflows/ci.yml`), and the
+> Intercom `user_hash` plumbing already exists end-to-end (only server-side
+> HMAC signing + the env var are missing).
+
+Design + plan for everything after Phase 3 now live in:
+
+- **Design:** [`docs/superpowers/specs/2026-06-05-remaining-phases-design.md`](docs/superpowers/specs/2026-06-05-remaining-phases-design.md) — current-state audit, three sequencing approaches (recommends **B: parallel streams**), Phase 4 (TOTP MFA + Intercom HMAC) architecture, legacy-cutover design, Phase 5 scope, parallel-execution map, decision gates, success criteria.
+- **Plan:** [`docs/superpowers/plans/2026-06-05-remaining-phases.md`](docs/superpowers/plans/2026-06-05-remaining-phases.md) — bite-sized, TDD, exact-path task groups A–H (MFA, Intercom HMAC, legacy cutover, CI/E2E, dead-code/hygiene, a11y/perf, operational close-out, parallel dispatch map).
+
+**Headline:** ~3–4 days of agent work (4 parallel wave-1 agents) + the user's
+inventory/cutover window. Only blocking human action: running the read-only
+inventory queries in `.agent/migration/inventory.md`. Decision gates are
+defaulted (drop `is_admin` now, keep `start-dev`/`deploy-vercel` `.cmd`s,
+rate-limit accepted-risk, drop dangling `analytics-server` reference).
+
 ## Verification
 
 All five gates green at end of Phase 2:
