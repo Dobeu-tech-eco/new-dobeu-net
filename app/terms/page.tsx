@@ -50,9 +50,9 @@ export default function TermsPage() {
 
         <h2>Limitation of liability</h2>
         <p>
-          The site is provided &ldquo;as is&rdquo;. To the maximum extent
-          allowed by law, Dobeu Tech Solutions is not liable for indirect,
-          incidental, or consequential damages arising from use of the site.
+          The site is provided &ldquo;as is&rdquo;. To the maximum extent allowed by law, Dobeu Tech Solutions
+          is not liable for indirect, incidental, or consequential damages arising from use of the
+          site.
         </p>
 
         <h2>Changes</h2>
