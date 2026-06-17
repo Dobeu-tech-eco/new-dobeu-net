@@ -48,7 +48,7 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead).toHaveBeenCalledTimes(1);
     const arg = mockedProcessLead.mock.calls[0][0];
     expect(arg).toMatchObject({ email: "a@b.com", source: "form" });
-    // ipHash derived from x-real-ip (light non-crypto hash, ip_ prefix).
+    // ipHash derived from x-real-ip/x-forwarded-for (light non-crypto hash, ip_ prefix).
     expect(arg.ipHash).toMatch(/^ip_/);
   });
 
