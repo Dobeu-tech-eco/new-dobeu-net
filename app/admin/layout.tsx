@@ -15,7 +15,7 @@ import {
   Ticket
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/utils";
+import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
@@ -44,8 +44,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/portal?error=not_authorized");
   }
 
+  // MFA is mandatory for admins. Defense-in-depth: middleware already enforces
+  // this on every /admin/* request, but enforce here too since admin pages read
+  // via service role. An admin without an AAL2-capable session (unenrolled or
+  // not yet stepped up) is redirected to enroll/verify — never just nagged.
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  const needsEnroll = aal?.nextLevel !== "aal2"; // no verified factor yet
+  const assurance = aal ?? null;
+  if (requiresMfaEnrollment(assurance, true) || requiresAal2Stepup(assurance)) {
+    redirect("/portal/settings/mfa?next=/admin");
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -96,21 +103,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </nav>
       </aside>
       <div className="flex-1 min-w-0">
-        <main className="p-4 md:p-8 max-w-6xl">
-          {needsEnroll && (
-            <div
-              role="status"
-              className="mb-6 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
-            >
-              Two-factor authentication isn&apos;t enabled.{" "}
-              <Link href="/portal/settings" className="font-medium underline">
-                Enable it now
-              </Link>{" "}
-              to secure admin access.
-            </div>
-          )}
-          {children}
-        </main>
+        <main className="p-4 md:p-8 max-w-6xl">{children}</main>
       </div>
     </div>
   );

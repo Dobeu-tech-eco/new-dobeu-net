@@ -1,33 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
+import { EditUserForm } from "@/components/admin/EditUserForm";
 
 export const dynamic = "force-dynamic";
-
-async function saveProfile(formData: FormData) {
-  "use server";
-  const id = String(formData.get("id") ?? "");
-  if (!id) return;
-  const full_name = (String(formData.get("full_name") ?? "").trim() || null) as
-    | string
-    | null;
-  const company = (String(formData.get("company") ?? "").trim() || null) as
-    | string
-    | null;
-  const is_admin = formData.get("is_admin") === "on";
-
-  const supa = createAdminClient();
-  await supa
-    .from("profiles")
-    .update({ full_name, company, is_admin })
-    .eq("id", id);
-  revalidatePath(`/admin/users/${id}`);
-  revalidatePath("/admin/users");
-}
 
 export default async function AdminUserDetailPage({
   params,
@@ -40,9 +17,7 @@ export default async function AdminUserDetailPage({
   const [profileRes, projectsRes, leadsRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select(
-        "id,full_name,company,apollo_contact_id,is_admin,created_at,updated_at,avatar_url",
-      )
+      .select("id,full_name,company,apollo_contact_id,created_at,updated_at,avatar_url")
       .eq("id", id)
       .single(),
     supabase
@@ -82,44 +57,14 @@ export default async function AdminUserDetailPage({
         </p>
       </div>
 
-      <section className="rounded-xl border border-border bg-card p-6">
-        <h2 className="font-display text-xl font-semibold mb-4">
-          Edit profile
-        </h2>
-        <form action={saveProfile} className="space-y-4 max-w-lg">
-          <input type="hidden" name="id" value={profile.id} />
-          <div className="grid gap-2">
-            <Label htmlFor="full_name">Full name</Label>
-            <Input
-              id="full_name"
-              name="full_name"
-              defaultValue={profile.full_name ?? ""}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="company">Company</Label>
-            <Input
-              id="company"
-              name="company"
-              defaultValue={profile.company ?? ""}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="is_admin"
-              defaultChecked={profile.is_admin}
-              className="h-4 w-4 rounded border-border"
-            />
-            <span>
-              Admin{" "}
-              <span className="text-muted-foreground">
-                (grants /admin access)
-              </span>
-            </span>
-          </label>
-          <Button type="submit">Save</Button>
-        </form>
+      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <h2 className="font-display text-xl font-semibold">Edit profile</h2>
+        <EditUserForm
+          user={{ id: profile.id, full_name: profile.full_name, company: profile.company }}
+        />
+        <p className="text-xs text-muted-foreground">
+          Admin access is governed by the <code>ADMIN_EMAILS</code> env var, not this page.
+        </p>
       </section>
 
       <section>
@@ -151,9 +96,6 @@ export default async function AdminUserDetailPage({
           </ul>
         )}
       </section>
-    </div>
-  );
-}
 
       {linkedLeads.length > 0 && (
         <section>

@@ -8,8 +8,8 @@ vi.mock("@supabase/ssr", () => ({
   createBrowserClient: createBrowserClientMock
 }));
 
-const URL_KEY = "NEXT_PUBLIC_SUPABASE_URL";
-const ANON_KEY = "NEXT_PUBLIC_SUPABASE_ANON_KEY";
+const URL_KEY = "NEXT_PUBLIC_VERCEL_SUPABASE_URL";
+const ANON_KEY = "NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY";
 
 function clearEnv() {
   delete process.env[URL_KEY];
@@ -28,32 +28,6 @@ beforeEach(() => {
 
 afterEach(() => {
   clearEnv();
-});
-
-describe("isSupabaseConfigured", () => {
-  it("returns false when both env vars are absent", async () => {
-    const { isSupabaseConfigured } = await freshImport();
-    expect(isSupabaseConfigured()).toBe(false);
-  });
-
-  it("returns false when only the url is present", async () => {
-    process.env[URL_KEY] = "https://proj.supabase.co";
-    const { isSupabaseConfigured } = await freshImport();
-    expect(isSupabaseConfigured()).toBe(false);
-  });
-
-  it("returns false when only the anon key is present", async () => {
-    process.env[ANON_KEY] = "anon-key";
-    const { isSupabaseConfigured } = await freshImport();
-    expect(isSupabaseConfigured()).toBe(false);
-  });
-
-  it("returns true when both env vars are present", async () => {
-    process.env[URL_KEY] = "https://proj.supabase.co";
-    process.env[ANON_KEY] = "anon-key";
-    const { isSupabaseConfigured } = await freshImport();
-    expect(isSupabaseConfigured()).toBe(true);
-  });
 });
 
 describe("createClient", () => {

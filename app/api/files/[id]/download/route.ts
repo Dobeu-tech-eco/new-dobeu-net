@@ -1,36 +1,32 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, AuthError } from "@/lib/actions/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const SIGNED_URL_TTL_SECONDS = 60;
+
 /**
- * Authenticated file download.
- *
- * Both the portal "Files" list and the per-project file list POST here. We:
- *   1. Look up the project_files row via the RLS-bound server client. RLS
- *      already scopes to the owner (or admin), so a 404 here means "you can't
- *      see this file" without leaking whether it exists.
- *   2. Create a 60s signed URL against the `project-files` bucket (also
- *      RLS-protected per the migration's storage policies).
- *   3. 303 redirect to the signed URL.
- *
- * Form posts (not GET) so a leaked log line never lands on a usable URL.
+ * Authenticated file download. POST from the portal "Files" / per-project forms;
+ * GET for direct links (emails / future admin tools). Both share one path:
+ *   1. Assert an authenticated user (requireUser) — anonymous callers get a clean
+ *      401 instead of an RLS-masked 404.
+ *   2. Look up the project_files row via the RLS-bound client (RLS scopes to
+ *      owner/admin; a missing/unauthorized id 404s without leaking existence).
+ *   3. Issue a 60s signed URL against the `project-files` bucket and 303-redirect.
  */
-async function issueSignedUrl(id: string, origin: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.redirect(new URL(`/login?next=/portal/files`, origin));
+async function issueSignedUrl(id: string) {
+  let supabase;
+  try {
+    ({ supabase } = await requireUser());
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    throw error;
   }
 
-export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
   if (!id) return NextResponse.json({ error: "Missing file id" }, { status: 400 });
-
-  const supabase = await createClient();
 
   const { data: file, error: fileError } = await supabase
     .from("project_files")
@@ -50,22 +46,16 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: "Could not create download URL" }, { status: 500 });
   }
 
-  return NextResponse.redirect(signed.data.signedUrl, 303);
+  return NextResponse.redirect(signed.signedUrl, 303);
 }
 
-export async function POST(
-  request: Request,
-  ctx: { params: Promise<{ id: string }> },
-) {
+export async function POST(_request: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  return issueSignedUrl(id, new URL(request.url).origin);
+  return issueSignedUrl(id);
 }
 
 // Allow GET too for direct links from emails / future admin tools — same auth check.
-export async function GET(
-  request: Request,
-  ctx: { params: Promise<{ id: string }> },
-) {
+export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  return issueSignedUrl(id, new URL(request.url).origin);
+  return issueSignedUrl(id);
 }

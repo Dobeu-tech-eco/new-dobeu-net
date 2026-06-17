@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
-import { isAdminEmail, requiresAal2Stepup } from "@/lib/utils";
+import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
 
 /**
  * Refresh the Supabase session on every request so server components see fresh auth.
@@ -70,8 +70,17 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Gate /admin — must be authenticated AND email in ADMIN_EMAILS AND (if a
-  // TOTP factor is enrolled) the session must be AAL2.
+  // Gate /admin — must be authenticated AND email in ADMIN_EMAILS AND MFA-satisfied.
+  //
+  // MFA is MANDATORY for admins. Two cases both redirect to the enrollment page:
+  //   1. No verified TOTP factor enrolled → must enroll (requiresMfaEnrollment).
+  //   2. A factor exists but the session is still AAL1 → must step up
+  //      (requiresAal2Stepup). requiresMfaEnrollment already subsumes this for
+  //      admins (currentLevel !== "aal2"), but we OR both for explicitness.
+  //
+  // Redirect-loop safety: the target `/portal/settings/mfa` lives under
+  // `/portal` (gated only on authentication, never on MFA), so the redirected
+  // request never re-enters this `/admin` block. `/portal` MUST stay non-MFA-gated.
   if (path.startsWith("/admin")) {
     if (!user) {
       const url = request.nextUrl.clone();
@@ -85,10 +94,11 @@ export async function updateSession(request: NextRequest) {
       url.searchParams.set("error", "not_authorized");
       return NextResponse.redirect(url);
     }
-    // AAL2 step-up. Fail CLOSED on error (the admin surface is the sensitive one).
+    // MFA enrollment + AAL2 step-up. Fail CLOSED on error (sensitive surface).
     try {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (requiresAal2Stepup(aal ?? null)) {
+      const assurance = aal ?? null;
+      if (requiresMfaEnrollment(assurance, true) || requiresAal2Stepup(assurance)) {
         const url = request.nextUrl.clone();
         url.pathname = "/portal/settings/mfa";
         url.searchParams.set("next", path);

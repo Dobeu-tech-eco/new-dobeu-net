@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { processLead } from "@/lib/leads";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const LeadSchema = z.object({
   email: z.string().email().max(255),
@@ -16,15 +18,19 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  // SECURITY: Prioritize x-real-ip to prevent spoofing. If using x-forwarded-for, take the rightmost IP
-  // as the leftmost IP can be easily spoofed by the client, allowing rate limit bypass.
+  // SECURITY: Prioritize x-real-ip to prevent spoofing. With x-forwarded-for, take the
+  // rightmost IP — the leftmost is client-controlled and would let a caller bypass the limit.
   const forwardedFor = request.headers.get("x-forwarded-for");
-  const ip = request.headers.get("x-real-ip") ?? (forwardedFor ? forwardedFor.split(",").pop()?.trim() : "unknown") ?? "unknown";
+  const ip =
+    request.headers.get("x-real-ip") ??
+    (forwardedFor ? forwardedFor.split(",").pop()?.trim() : "unknown") ??
+    "unknown";
+
   const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
   if (rl.limited) {
     return NextResponse.json(
       { error: "Too many requests" },
-      { status: 429, headers: { "X-RateLimit-Backend": rl.backend } },
+      { status: 429, headers: { "X-RateLimit-Backend": rl.backend } }
     );
   }
 
@@ -55,52 +61,8 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
 }
 
-// ---- helpers ----
-
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 5;
-const MAX_BUCKETS = 10000;
-const ipBuckets = new Map<string, { count: number; resetAt: number }>();
-const upstashReady =
-  Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
-const upstashRatelimit = upstashReady
-  ? new Ratelimit({
-      redis: Redis.fromEnv(),
-      limiter: Ratelimit.slidingWindow(RATE_LIMIT_MAX, "1 m"),
-      prefix: "api:lead"
-    })
-  : null;
-
-async function isRateLimited(ip: string): Promise<boolean> {
-  if (upstashRatelimit) {
-    const { success } = await upstashRatelimit.limit(ip);
-    return !success;
-  }
-  const now = Date.now();
-
-  if (ipBuckets.size > 10000) {
-    ipBuckets.clear();
-  }
-
-  const b = ipBuckets.get(ip);
-  if (!b || b.resetAt < now) {
-    ipBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  if (b.count >= RATE_LIMIT_MAX) return true;
-  b.count += 1;
-  return false;
-}
-
+// Store a one-way digest so raw IPs are never persisted.
 function hashIp(ip: string): string {
-  // Store a one-way digest so raw IPs are never persisted.
   const digest = createHash("sha256").update(ip).digest("hex").slice(0, 16);
   return `ip_${digest}`;
-}
-
-function getClientIp(request: Request): string {
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
-  const lastForwarded = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
-  return lastForwarded || "unknown";
 }

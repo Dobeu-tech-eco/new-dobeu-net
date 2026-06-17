@@ -70,30 +70,38 @@ export interface GetOrCreateCustomerArgs {
  * account (it is by default for modern accounts). If it 404s for legacy
  * accounts, we fall back to `customers.list({ email })`.
  */
-export async function upsertStripeCustomer(
-  input: UpsertCustomerInput,
-): Promise<UpsertCustomerResult> {
+export async function getOrCreateStripeCustomer(
+  args: GetOrCreateCustomerArgs
+): Promise<string> {
+  const { supabaseUserId, email, name } = args;
+  if (!email) throw new Error("getOrCreateStripeCustomer: email is required");
+
+  const supabase = createAdminClient();
+
+  // 1. Cached id on the profile?
+  const { data: profile, error: readErr } = await supabase
+    .from("profiles")
+    .select("id,stripe_customer_id,full_name")
+    .eq("id", supabaseUserId)
+    .single();
+  if (readErr) {
+    throw new Error(`profile lookup failed for ${supabaseUserId}: ${readErr.message}`);
+  }
+  if (profile?.stripe_customer_id) {
+    return profile.stripe_customer_id;
+  }
+
+  const stripe = getStripe();
+  const resolvedName = name ?? profile?.full_name ?? undefined;
+
+  // 2. Search Stripe by email.
+  let existingId: string | undefined;
   try {
     const search = await stripe.customers.search({
-      query: `email:'${input.email.replace(/'/g, "")}'`,
-      limit: 1,
+      query: `email:"${email.replace(/"/g, '\\"')}"`,
+      limit: 1
     });
-    if (search.data.length > 0) {
-      const existing = search.data[0]!;
-      if (input.name || input.metadata) {
-        await stripe.customers.update(existing.id, {
-          ...(input.name ? { name: input.name } : {}),
-          ...(input.metadata ? { metadata: input.metadata } : {}),
-        });
-      }
-      return { ok: true, customerId: existing.id };
-    }
-    const created = await stripe.customers.create({
-      email: input.email,
-      ...(input.name ? { name: input.name } : {}),
-      ...(input.metadata ? { metadata: input.metadata } : {}),
-    });
-    return { ok: true, customerId: created.id };
+    existingId = search.data[0]?.id;
   } catch (e) {
     // Search API may not be enabled on very old accounts; fall back to list.
     console.warn("[stripe] customers.search failed, falling back to list:", (e as Error).message);
@@ -156,40 +164,12 @@ export interface CreatedHostedInvoice {
  * automatically.
  */
 export async function createHostedInvoice(
-  input: CreateHostedInvoiceInput,
-): Promise<CreateHostedInvoiceResult> {
-  try {
-    if (!isStripeConfigured()) return { ok: false, error: "not_configured" };
-    const stripe = getStripe();
-    const currency = (input.currency ?? "usd").toLowerCase();
-    const dueDays = input.dueDays ?? 14;
-
-    const invoice = await stripe.invoices.create({
-      customer: input.customerId,
-      collection_method: "send_invoice",
-      days_until_due: dueDays,
-      ...(input.description ? { description: input.description } : {}),
-      ...(input.metadata ? { metadata: input.metadata } : {}),
-    });
-
-    await stripe.invoiceItems.create({
-      customer: input.customerId,
-      invoice: invoice.id,
-      amount: input.amountCents,
-      currency,
-      ...(input.description ? { description: input.description } : {}),
-    });
-
-    const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
-
-    return {
-      ok: true,
-      invoiceId: finalized.id,
-      hostedUrl: finalized.hosted_invoice_url ?? null,
-      status: finalized.status ?? undefined,
-    };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  args: CreateHostedInvoiceArgs
+): Promise<CreatedHostedInvoice> {
+  const { customerId, amountCents, description, currency = "usd", metadata, daysUntilDue = 30 } = args;
+  if (!customerId) throw new Error("createHostedInvoice: customerId required");
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    throw new Error("createHostedInvoice: amountCents must be a positive integer");
   }
   const stripe = getStripe();
 
@@ -238,20 +218,16 @@ export async function createHostedInvoice(
  * `rawBody` MUST be the raw request body (not parsed JSON), otherwise the
  * HMAC will not match.
  */
-export function verifyWebhook(
-  rawBody: string,
-  signatureHeader: string | null,
-): Stripe.Event | null {
+export function verifyWebhookSignature(
+  rawBody: string | Buffer,
+  signatureHeader: string | null
+): Stripe.Event {
+  if (!signatureHeader) {
+    throw new Error("missing stripe-signature header");
+  }
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret || !signatureHeader) return null;
-  try {
-    return getStripe().webhooks.constructEvent(
-      rawBody,
-      signatureHeader,
-      secret,
-    );
-  } catch {
-    return null;
+  if (!secret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET unset — cannot verify webhook");
   }
   const stripe = getStripe();
   return stripe.webhooks.constructEvent(rawBody, signatureHeader, secret);
