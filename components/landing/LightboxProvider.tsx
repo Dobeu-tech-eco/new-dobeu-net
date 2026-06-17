@@ -11,30 +11,13 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LeadForm } from "@/components/landing/LeadForm";
+import dynamic from "next/dynamic";
 
-// ⚡ Bolt Performance Optimization:
-// Lazy load heavy third-party components (Calendly, Typeform) to reduce the
-// initial JS bundle size since this dialog is only opened on user interaction.
-const LoadingFallback = () => (
-  <div className="flex h-[400px] items-center justify-center">
-    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-  </div>
-);
-
-const BookingTab = dynamic(
-  () => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab),
-  { loading: LoadingFallback }
-);
-
-const TypeformTab = dynamic(
-  () => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab),
-  { loading: LoadingFallback }
-);
-
-const LeadForm = dynamic(
-  () => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm),
-  { loading: LoadingFallback }
-);
+// ⚡ Bolt: Dynamically import heavy third-party modal components (Calendly & Typeform)
+// This reduces the initial First Load JS size by only loading them when a user opens the modal.
+const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
+const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
 
 type Tab = "book" | "form" | "email";
 

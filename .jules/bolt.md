@@ -1,3 +1,5 @@
-## 2026-05-21 - [Heavy Component Lazy Loading]
-**Learning:** Initial JS bundle sizes can be significantly improved by lazy loading heavy 3rd-party components (like Calendly or Typeform embed widgets) inside conditional or hidden components (like Radix UI Dialog or Tabs).
-**Action:** When implementing any modal or hidden tab interface containing large dependencies, explicitly split those components out using `next/dynamic` and add a visual fallback.
+## 2026-05-22 - Dynamic Imports for Heavy Third-Party Modals
+
+**Learning:** When heavy third-party components (like Typeform or Calendly embeds) are placed inside hidden modals (like Dialogs/Tabs) they are still loaded in the initial JS bundle, increasing the First Load JS size unnecessarily.
+
+**Action:** Wrap these heavy, conditionally-rendered third-party component imports in `next/dynamic` so they are lazy-loaded only when the user clicks to open the modal/tab. This drastically reduces the initial JS footprint.
