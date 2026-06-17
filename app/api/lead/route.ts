@@ -16,10 +16,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-real-ip") ?? request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "unknown";
-  const rl = await checkRateLimit(`lead:${ip}`, { windowSec: 60, max: 5 });
-  if (rl.limited) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "X-RateLimit-Backend": rl.backend } });
+  // Lightweight rate-limit by IP (5/min). In production, prefer Upstash Ratelimit.
+  const ip = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "unknown";
+  if (await isRateLimited(ip)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   let body: unknown;
@@ -72,16 +72,8 @@ async function isRateLimited(ip: string): Promise<boolean> {
   }
   const now = Date.now();
 
-  // Prevent memory exhaustion DoS from spoofed IPs
-  if (ipBuckets.size > MAX_BUCKETS) {
-    for (const [key, value] of ipBuckets.entries()) {
-      if (value.resetAt < now) {
-        ipBuckets.delete(key);
-      }
-    }
-    if (ipBuckets.size > MAX_BUCKETS) {
-      ipBuckets.clear();
-    }
+  if (ipBuckets.size > 10000) {
+    ipBuckets.clear();
   }
 
   const b = ipBuckets.get(ip);
