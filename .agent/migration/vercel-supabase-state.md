@@ -88,3 +88,16 @@
 - Applied at: 2026-06-17T02:53:40.419Z (automated apply via `apply-phase5-migration.mjs --apply`)
 - Re-verified: 2026-06-16 — operator manual SQL in Supabase Studio + `node .agent/scripts/apply-phase5-migration.mjs` → `is_admin column present: NO`
 - `profiles` columns: `id`, `full_name`, `company`, `avatar_url`, `apollo_contact_id`, `created_at`, `updated_at`, `stripe_customer_id`
+
+## Live schema repair (2026-06-17)
+
+Migration: `supabase/migrations/20260617000000_live_schema_repair.sql` (operator copy: `.agent/migration/live-schema-repair.sql`).
+
+Targets: `profiles.updated_at`, `profiles.stripe_customer_id`, `public.projects` table + RLS/triggers, optional `project_files` FK repair.
+
+- Inspected via `node .agent/scripts/apply-live-schema-repair.mjs` — **all targets already present** (no `--apply` needed)
+- `profiles.updated_at`: **YES**
+- `profiles.stripe_customer_id`: **YES**
+- `public.projects` table: **YES**
+- `project_files` → `projects` FK: **YES**
+- Verified at: 2026-06-17

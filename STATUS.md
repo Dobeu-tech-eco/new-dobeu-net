@@ -1,6 +1,6 @@
 # dobeu.net v3 — Status
 
-_Last updated: 2026-06-17 — Phases 4–5 shipped on `main`; legacy cutover path decided (NO-OP data)._
+_Last updated: 2026-06-17 — Phases 4–5 shipped on `main`; live schema repair migration added; legacy cutover path decided (NO-OP data)._
 
 > **Convergence:** see [`.agent/convergence/2026-06-05-production-readiness.md`](.agent/convergence/2026-06-05-production-readiness.md) for the full production-readiness verdict (✅ READY TO MERGE), operator checklist, legacy-cutover status, post-merge smoke path, and merge strategy.
 
@@ -29,11 +29,12 @@ _Informational:_ mobile landing Lighthouse Performance ≈ 80 (target 90) is a d
 
 ## Database state (Vercel Supabase)
 
-Per `.agent/migration/vercel-supabase-state.md` (verified 2026-06-16):
+Per `.agent/migration/vercel-supabase-state.md` (verified 2026-06-17):
 
 - `20260521000000_initial_schema.sql` — **applied**
 - `20260605000000_phase1_reconciliation.sql` — **applied**
 - `20260616000000_phase5_drop_is_admin.sql` — **applied** (`profiles.is_admin` absent)
+- `20260617000000_live_schema_repair.sql` — **idempotent repair** for reported drift (`profiles.updated_at`, `profiles.stripe_customer_id`, `public.projects`); inspected 2026-06-17 — targets already present on live; operator copy at `.agent/migration/live-schema-repair.sql`
 - Tables present: `bookings`, `invoices`, `leads`, `page_events`, `profiles`, `project_files`, `projects`, `work_orders`, `work_order_attachments`
 - `messages` dropped (Intercom owns chat)
 - `invoices.hosted_invoice_url` column present (target of Phase 3 Stripe wiring)
