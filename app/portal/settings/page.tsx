@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/portal/SettingsForm";
+import { MfaStatus } from "@/components/portal/MfaStatus";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -44,6 +45,15 @@ export default async function SettingsPage() {
         <p className="text-xs text-muted-foreground">
           Phone is collected for the future ticketing flow but isn&apos;t yet stored on your profile.
         </p>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <h2 className="font-semibold">Two-factor authentication</h2>
+        <p className="text-sm text-muted-foreground">
+          Required to access the admin area. Adds a one-time code from your authenticator app on top
+          of magic-link sign-in.
+        </p>
+        <MfaStatus />
       </section>
     </div>
   );
