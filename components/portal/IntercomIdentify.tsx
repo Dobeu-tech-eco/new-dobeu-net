@@ -9,16 +9,9 @@ import { identifyIntercom } from "@/lib/intercom";
  * Mounted from server layouts that already resolved the Supabase user
  * (`app/portal/layout.tsx`, `app/admin/layout.tsx`). Renders nothing.
  *
- * Consent gating: `lib/intercom.ts#initIntercom` already no-ops until the
- * cookie-consent banner has been accepted (it returns early if Intercom
- * isn't configured + booted). The boot itself is wired in
- * `components/analytics-provider.tsx`. So this component is safe to mount
- * unconditionally — if the user hasn't consented, the SDK isn't loaded and
- * `identifyIntercom` short-circuits.
- *
- * Identity verification (HMAC `user_hash`) is recommended for production —
- * pipe it in from the server when `INTERCOM_IDENTITY_VERIFICATION_SECRET`
- * is set.
+ * Consent gating: Intercom boots via `IntercomSecureBoot` in
+ * `components/analytics-provider.tsx` after cookie consent. This component
+ * re-identifies with the server-signed JWT plus profile fields.
  */
 export interface IntercomIdentifyProps {
   user_id: string;
@@ -26,7 +19,8 @@ export interface IntercomIdentifyProps {
   name?: string;
   /** ISO string (e.g. Supabase `user.created_at`). Converted to Unix seconds. */
   created_at?: string;
-  user_hash?: string;
+  /** Server-signed JWT for Intercom Secure Messenger. */
+  intercom_user_jwt?: string;
 }
 
 export function IntercomIdentify({
@@ -34,7 +28,7 @@ export function IntercomIdentify({
   email,
   name,
   created_at,
-  user_hash
+  intercom_user_jwt
 }: IntercomIdentifyProps) {
   React.useEffect(() => {
     identifyIntercom({
@@ -42,9 +36,9 @@ export function IntercomIdentify({
       email,
       name,
       created_at: created_at ? Math.floor(new Date(created_at).getTime() / 1000) : undefined,
-      user_hash
+      intercom_user_jwt
     });
-  }, [user_id, email, name, created_at, user_hash]);
+  }, [user_id, email, name, created_at, intercom_user_jwt]);
 
   return null;
 }

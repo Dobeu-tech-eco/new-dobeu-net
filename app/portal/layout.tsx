@@ -12,7 +12,7 @@ import { LogoutButton } from "@/components/portal/LogoutButton";
 import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
 import { isAdminEmail } from "@/lib/utils";
 import { intercomNameFromUser } from "@/lib/intercom";
-import { intercomUserHash } from "@/lib/intercom-hmac";
+import { createIntercomUserJwt } from "@/lib/intercom-jwt";
 
 // `Messages` nav was dropped along with the `messages` table (Phase 1
 // reconciliation -- Intercom owns chat now). `Tickets` landed in Phase 3
@@ -45,7 +45,12 @@ export default async function PortalLayout({ children }: { children: React.React
         email={user.email ?? undefined}
         name={intercomNameFromUser(user)}
         created_at={user.created_at}
-        user_hash={intercomUserHash(user.id)}
+        intercom_user_jwt={createIntercomUserJwt({
+          user_id: user.id,
+          email: user.email ?? undefined,
+          name: intercomNameFromUser(user),
+          created_at: Math.floor(new Date(user.created_at).getTime() / 1000)
+        })}
       />
       {/* Sidebar */}
       <aside className="md:w-64 md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card/40">

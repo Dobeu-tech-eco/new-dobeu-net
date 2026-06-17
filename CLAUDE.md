@@ -104,7 +104,8 @@ Entry points that call `processLead()`:
 | `CUSTOMERIO_SITE_ID`, `CUSTOMERIO_API_KEY` | Customer.io identify + `lead_captured`. |
 | `RESEND_API_KEY` | Confirmation + admin-notification emails. |
 | `STRIPE_SECRET_KEY` | Invoice/payment surfaces. |
-| `INTERCOM_IDENTITY_VERIFICATION_SECRET` | Server-side HMAC for Intercom Identity Verification (`lib/intercom-hmac.ts`). Unset → Intercom boots unverified. Must also be set in the Intercom workspace dashboard. |
+| `INTERCOM_API_SECRET` | Server-side JWT signing for Intercom Secure Messenger (`lib/intercom-jwt.ts`, `/api/intercom/jwt`). Unset → anonymous legacy boot. |
+| `INTERCOM_IDENTITY_VERIFICATION_SECRET` | Legacy HMAC (`lib/intercom-hmac.ts`); superseded by `INTERCOM_API_SECRET` when JWT is enabled. |
 | `NEXT_PUBLIC_*` (PostHog, Mixpanel, GA4, GTM, Intercom, Datadog) | Per-provider client-side analytics — feature-flagged by presence. |
 
 ## Quality standards

@@ -7,7 +7,7 @@ import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { initAnalytics, pageView, setAnalyticsConsent } from "@/lib/analytics";
 import { initDatadog } from "@/lib/datadog";
-import { initIntercom } from "@/lib/intercom";
+import { IntercomSecureBoot } from "@/components/intercom/IntercomSecureBoot";
 
 const CONSENT_KEY = "dobeu-analytics-consent";
 
@@ -38,7 +38,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     if (consent !== true) return;
     initAnalytics(true);
     initDatadog();
-    initIntercom();
   }, [consent]);
 
   // Fire pageview on navigation
@@ -82,6 +81,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       )}
 
       {children}
+      <IntercomSecureBoot />
       {consent === true && (
         <>
           <VercelAnalytics />
