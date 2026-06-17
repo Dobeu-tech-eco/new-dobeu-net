@@ -1,3 +1,3 @@
-## 2024-05-24 - Lightbox Bundle Size Optimization
-**Learning:** The LightboxProvider on the marketing page imports heavy components (like react-calendly in BookingTab and @typeform/embed-react in TypeformTab) synchronously. Since the lightbox is conditionally rendered and initially hidden, this bloats the initial bundle size of the homepage (first load JS was 420 kB).
-**Action:** Use Next.js `dynamic` imports for components inside the LightboxProvider. This splits the heavy dependencies out of the main page bundle, deferring their load until the user opens the lightbox. This simple change halved the first load JS on `/` from 420 kB to 199 kB.
+## 2025-01-20 - Memoizing Context Values
+**Learning:** In React, passing inline object literals (like `value={{ open, close }}`) to Context Providers causes the context value to fail reference equality checks on every render. This forces all consumers of the context to re-render, even if the actual data hasn't changed.
+**Action:** Always wrap context values in `React.useMemo` if they are derived from multiple values or objects, to prevent unnecessary re-renders in consumers.
