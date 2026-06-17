@@ -1,3 +1,3 @@
-## 2024-05-24 - Dynamic imports for LightboxProvider tabs
-**Learning:** Next.js First Load JS was high for the main landing page because LightboxProvider imported heavy components (LeadForm, BookingTab with calendly script, TypeformTab with embed script) directly.
-**Action:** Used `next/dynamic` to dynamically import `LeadForm`, `BookingTab`, and `TypeformTab` in `LightboxProvider.tsx`. This delays loading the associated third-party scripts (calendly, typeform) and form code until the modal is actually opened, dropping the First Load JS for `/` from 400+ KB down to 199 KB.
+## 2024-06-25 - Modal Component Lazy Loading
+**Learning:** Components rendered inside UI Modals/Lightboxes that pull in heavy external dependencies (e.g., forms, date pickers) can significantly bloat the First Load JS if eagerly imported. By lazy loading them using `next/dynamic` with `ssr: false`, we saw a massive 52% bundle size reduction on the homepage because these elements are strictly client-side and only activated via user interaction.
+**Action:** Next time an application has heavy client-side only modal components, evaluate if they can be dynamically imported to improve initial page load times.
