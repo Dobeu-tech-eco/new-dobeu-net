@@ -3,35 +3,37 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { LeadForm } from "@/components/landing/LeadForm";
-import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
 
-// Lazy load heavy third-party embeds (Calendly and Typeform)
-// since they are hidden behind a Dialog and only needed on interaction.
-// This significantly reduces the initial JavaScript bundle size.
+// ⚡ Bolt Performance Optimization:
+// Lazy load heavy third-party components (Calendly, Typeform) to reduce the
+// initial JS bundle size since this dialog is only opened on user interaction.
+const LoadingFallback = () => (
+  <div className="flex h-[400px] items-center justify-center">
+    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+  </div>
+);
+
 const BookingTab = dynamic(
   () => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab),
-  {
-    loading: () => (
-      <div className="h-[680px] w-full flex items-center justify-center border border-border rounded-xl bg-muted/20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    ),
-  }
+  { loading: LoadingFallback }
 );
 
 const TypeformTab = dynamic(
   () => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab),
-  {
-    loading: () => (
-      <div className="h-[560px] w-full flex items-center justify-center border border-border rounded-lg bg-muted/20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    ),
-  }
+  { loading: LoadingFallback }
+);
+
+const LeadForm = dynamic(
+  () => import("@/components/landing/LeadForm").then((mod) => mod.LeadForm),
+  { loading: LoadingFallback }
 );
 
 type Tab = "book" | "form" | "email";

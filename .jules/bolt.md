@@ -1,3 +1,3 @@
-## 2025-01-20 - Lazy load heavy third-party components hidden inside dialogs
-**Learning:** Third-party components like Calendly (`react-calendly`) and Typeform (`@typeform/embed-react`) add significant weight to the initial JS bundle. When these components are hidden behind user interactions, such as inside a Radix UI Dialog or Tabs component (like `LightboxProvider`), Next.js statically includes them by default, unnecessarily bloating the First Load JS for visitors who never click the CTA.
-**Action:** Always use `next/dynamic` to conditionally lazy-load heavy third-party components that are not visible on initial load. Add a lightweight loading state (e.g., a skeleton with a spinner) to ensure the UI remains smooth when the user eventually interacts with it.
+## 2026-05-21 - [Heavy Component Lazy Loading]
+**Learning:** Initial JS bundle sizes can be significantly improved by lazy loading heavy 3rd-party components (like Calendly or Typeform embed widgets) inside conditional or hidden components (like Radix UI Dialog or Tabs).
+**Action:** When implementing any modal or hidden tab interface containing large dependencies, explicitly split those components out using `next/dynamic` and add a visual fallback.
