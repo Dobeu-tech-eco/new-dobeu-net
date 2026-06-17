@@ -1,4 +1,4 @@
-## 2026-06-17 - IP Spoofing Prevention
-**Vulnerability:** IP spoofing in rate limiting logic by reading the leftmost IP from `x-forwarded-for`.
-**Learning:** When determining client IPs (e.g., for rate limiting on Vercel), always prioritize the guaranteed `x-real-ip` header. If forced to parse `x-forwarded-for`, use the rightmost IP to prevent IP spoofing, but be cautious as taking the rightmost IP can introduce DoS risks in multi-proxy architectures.
-**Prevention:** Use `x-real-ip` first, then fallback to `x-forwarded-for`'s rightmost IP using `.pop()`.
+## 2026-06-12 - Open Redirect via `next` URL Parameter
+**Vulnerability:** The application was passing the `next` query parameter directly to `new URL(next, origin)` inside the auth callback redirect response. A malicious attacker could craft a login URL with `?next=//evil.com` or `?next=https://evil.com` that would bypass the origin and redirect authenticated users to an external malicious site.
+**Learning:** `new URL(path, base)` will ignore the `base` if the `path` is an absolute URL (like `https://evil.com`) or a protocol-relative URL (like `//evil.com`).
+**Prevention:** Always validate that redirect targets derived from user input are local paths. Use `next.startsWith("/") && !next.startsWith("//")` to ensure the redirect is strictly relative to the current origin.
