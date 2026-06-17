@@ -72,8 +72,16 @@ async function isRateLimited(ip: string): Promise<boolean> {
   }
   const now = Date.now();
 
-  if (ipBuckets.size > 10000) {
-    ipBuckets.clear();
+  // Prevent memory exhaustion DoS from spoofed IPs
+  if (ipBuckets.size > MAX_BUCKETS) {
+    for (const [key, value] of ipBuckets.entries()) {
+      if (value.resetAt < now) {
+        ipBuckets.delete(key);
+      }
+    }
+    if (ipBuckets.size > MAX_BUCKETS) {
+      ipBuckets.clear();
+    }
   }
 
   const b = ipBuckets.get(ip);

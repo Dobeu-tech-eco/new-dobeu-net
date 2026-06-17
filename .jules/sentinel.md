@@ -1,4 +1,4 @@
-## 2024-05-25 - Removed unnecessary dangerouslySetInnerHTML
-**Vulnerability:** Use of `dangerouslySetInnerHTML` for simple text rendering (with HTML entities).
-**Learning:** Even for static hardcoded strings, `dangerouslySetInnerHTML` creates unnecessary risk if those strings are ever migrated to dynamic sources (like a CMS) in the future.
-**Prevention:** Always use standard React text interpolation (`{string}`) which safely escapes content automatically. Only use `dangerouslySetInnerHTML` when absolutely required for rendering complex HTML, and sanitize it first.
+## 2025-02-14 - Fix Unbounded Rate Limiting Map Memory Exhaustion DoS
+**Vulnerability:** The in-memory Map (`ipBuckets`) used for IP rate limiting in `app/api/lead/route.ts` grew unbounded. A malicious actor could spoof `x-forwarded-for` IPs to exhaust server memory and cause a DoS attack.
+**Learning:** In-memory Maps or objects used for caching, rate limiting, or state tracking without upper bounds or cleanup mechanisms are a significant DoS risk.
+**Prevention:** Always implement an explicit size limit and cleanup strategy (like evicting expired items or clearing the structure) when using in-memory data structures for tracking untrusted inputs.
