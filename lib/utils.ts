@@ -12,10 +12,7 @@ export function cn(...inputs: ClassValue[]): string {
  * Type-safe env reader. Throws at boot if a required server-side env is missing.
  * Pass `required: false` for optional vars.
  */
-export function env(
-  key: string,
-  opts: { required?: boolean } = { required: true },
-): string {
+export function env(key: string, opts: { required?: boolean } = { required: true }): string {
   const value = process.env[key];
   if ((!value || value.length === 0) && opts.required !== false) {
     if (typeof window === "undefined") {
@@ -26,15 +23,48 @@ export function env(
 }
 
 /**
- * Is the current viewer an admin? Checks email against ADMIN_EMAILS env list.
+ * Resolve the canonical site URL.
+ *
+ * Why this exists: Vercel inlines `""` (empty string) at build time for
+ * env vars marked "sensitive", which silently bypasses `??` (which only
+ * catches `null`/`undefined`) and either emits `localhost` in sitemap/robots
+ * or throws on `new URL("")` in metadataBase. Every caller MUST go through
+ * this helper instead of reading `NEXT_PUBLIC_SITE_URL` directly.
  */
-export function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  const list = (process.env.ADMIN_EMAILS ?? "")
+export function getSiteUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  return raw && raw.length > 0 ? raw : "https://dobeu.net";
+}
+
+/**
+ * Resolve the PostHog host with the same empty-string guard. Vercel's
+ * sensitive-env inlining can also injected `""` here, which would otherwise
+ * point the client at an unreachable origin.
+ */
+export function getPosthogHost(): string {
+  const raw = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim();
+  return raw && raw.length > 0 ? raw : "https://us.i.posthog.com";
+}
+
+/**
+ * Parse the `ADMIN_EMAILS` env var into a normalized lowercase allowlist.
+ * Exported so middleware and server actions never reparse this themselves.
+ */
+export function parseAdminEmails(): readonly string[] {
+  return (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  return list.includes(email.toLowerCase());
+}
+
+/**
+ * Is the current viewer an admin? Checks email against ADMIN_EMAILS env list.
+ * SINGLE SOURCE OF TRUTH for admin gate decisions across the app
+ * (middleware + admin layout + future server actions).
+ */
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return parseAdminEmails().includes(email.toLowerCase());
 }
 
 /**
@@ -45,27 +75,16 @@ export function formatCurrency(cents: number, currency = "USD"): string {
     style: "currency",
     currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(cents / 100);
 }
 
 /**
  * Extract UTM params and referrer from a URL — used by lead capture.
  */
-export function captureAcquisition(
-  searchParams: URLSearchParams,
-  referrer = "",
-): Record<string, string> {
+export function captureAcquisition(searchParams: URLSearchParams, referrer = ""): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const key of [
-    "utm_source",
-    "utm_medium",
-    "utm_campaign",
-    "utm_term",
-    "utm_content",
-    "gclid",
-    "fbclid",
-  ]) {
+  for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"]) {
     const v = searchParams.get(key);
     if (v) out[key] = v;
   }
@@ -74,7 +93,27 @@ export function captureAcquisition(
 }
 
 /**
- * Sleep helper for retry loops.
+ * Keep redirect targets on-site to prevent open-redirect abuse.
+ * Accept only absolute-path URLs like `/portal` and normalize malformed values.
  */
-export const sleep = (ms: number): Promise<void> =>
-  new Promise((r) => setTimeout(r, ms));
+export function sanitizeNextPath(nextPath: string | null | undefined, fallback = "/portal"): string {
+  if (!nextPath) return fallback;
+  if (!nextPath.startsWith("/") || nextPath.startsWith("//")) return fallback;
+  return nextPath;
+}
+
+/**
+ * Decide whether the current session must complete an AAL2 (TOTP) step-up.
+ * Input is the shape returned by `supabase.auth.mfa.getAuthenticatorAssuranceLevel()`.
+ * - nextLevel 'aal2' + currentLevel not 'aal2' → a factor exists but the
+ *   session hasn't satisfied it → step-up required.
+ * - No factor enrolled (currentLevel === nextLevel === 'aal1') → bootstrap,
+ *   no step-up (the admin can still reach /admin to enroll; layout nags).
+ */
+export function requiresAal2Stepup(
+  aal: { currentLevel: string | null; nextLevel: string | null } | null
+): boolean {
+  if (!aal) return false;
+  return aal.nextLevel === "aal2" && aal.currentLevel !== "aal2";
+}
+

@@ -23,9 +23,20 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Track funnel events
+  // Track funnel events. `booking_started` is the GTM trigger (#13) that
+  // GA4 generate-lead funnels watch — first contact with the Calendly profile
+  // counts as "started." The existing PostHog/Mixpanel `calendly_*` events stay
+  // alongside it for finer-grained funnel analysis.
   useCalendlyEventListener({
-    onProfilePageViewed: () => track("calendly_profile_viewed"),
+    onProfilePageViewed: () => {
+      track("calendly_profile_viewed");
+      // The PROFILE_PAGE_VIEWED payload is empty, so we attribute booking_started
+      // to the Calendly URL we asked the InlineWidget to render.
+      track("booking_started", {
+        source: "calendly",
+        booking_uri: calendlyUrl ?? ""
+      });
+    },
     onEventTypeViewed: () => track("calendly_event_type_viewed"),
     onDateAndTimeSelected: () => track("calendly_date_selected"),
     onEventScheduled: (e) => {
@@ -33,6 +44,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
         source: "calendly",
         event_uri: e.data.payload.event.uri,
         invitee_uri: e.data.payload.invitee.uri,
+        booking_uri: e.data.payload.event.uri
       });
       // NOTE: Calendly's client-side scheduled-event payload only exposes the
       // invitee/event *URIs*, not the invitee email or name. Mirroring the booking
@@ -42,7 +54,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
       // the booking itself is already captured by Calendly and our analytics event.
       // Close the lightbox after a beat so the confirmation screen flashes briefly.
       setTimeout(onClose, 1500);
-    },
+    }
   });
 
   if (!calendlyUrl) {
@@ -53,8 +65,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
           <div className="space-y-1">
             <p className="font-semibold text-sm">Calendly not yet wired.</p>
             <p className="text-xs text-muted-foreground">
-              Drop your details and I&apos;ll send time options within a few
-              hours.
+              Drop your details and I&apos;ll send time options within a few hours.
             </p>
           </div>
         </div>
@@ -70,7 +81,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
     textColor: mounted && resolvedTheme === "dark" ? "FAFAFC" : "1A1A2E",
     hideEventTypeDetails: false,
     hideLandingPageDetails: false,
-    hideGdprBanner: true,
+    hideGdprBanner: true
   };
 
   return (

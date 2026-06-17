@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { SettingsForm } from "@/components/portal/SettingsForm";
+import { MfaStatus } from "@/components/portal/MfaStatus";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
   const {
-    data: { user },
+    data: { user }
   } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
@@ -15,33 +17,43 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6 max-w-xl">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          Settings
-        </h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground mt-1">
+          Update your profile. Email is set by your magic-link account.
+        </p>
       </header>
 
-      <section className="rounded-xl border border-border bg-card p-6 space-y-3">
+      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
         <h2 className="font-semibold">Account</h2>
-        <dl className="space-y-2 text-sm">
+        <dl className="space-y-1 text-sm">
           <Row label="Email" value={user?.email ?? "—"} />
-          <Row label="Name" value={profile?.full_name ?? "—"} />
-          <Row label="Company" value={profile?.company ?? "—"} />
           <Row
             label="Last sign-in"
-            value={
-              user?.last_sign_in_at
-                ? new Date(user.last_sign_in_at).toLocaleString()
-                : "—"
-            }
+            value={user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : "—"}
           />
         </dl>
-        <p className="text-xs text-muted-foreground pt-2">
-          Editing profile fields is coming in v2. For now, email{" "}
-          <a href="mailto:jeremyw@dobeu.net" className="underline">
-            jeremyw@dobeu.net
-          </a>{" "}
-          to update.
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <h2 className="font-semibold">Profile</h2>
+        <SettingsForm
+          initial={{
+            full_name: profile?.full_name ?? "",
+            company: profile?.company ?? ""
+          }}
+        />
+        <p className="text-xs text-muted-foreground">
+          Phone is collected for the future ticketing flow but isn&apos;t yet stored on your profile.
         </p>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <h2 className="font-semibold">Two-factor authentication</h2>
+        <p className="text-sm text-muted-foreground">
+          Required to access the admin area. Adds a one-time code from your authenticator app on top
+          of magic-link sign-in.
+        </p>
+        <MfaStatus />
       </section>
     </div>
   );

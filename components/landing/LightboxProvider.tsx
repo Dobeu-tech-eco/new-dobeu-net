@@ -1,22 +1,23 @@
 "use client";
 
 import * as React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { LeadForm } from "@/components/landing/LeadForm";
 import dynamic from "next/dynamic";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-// ⚡ Bolt: Lazy load heavy third-party embeds (Calendly & Typeform)
-// to reduce the initial JS bundle size of the landing page.
-// Expected impact: ~19kB reduction in First Load JS.
-const BookingTab = dynamic(() => import("@/components/landing/BookingTab").then((mod) => mod.BookingTab));
-const TypeformTab = dynamic(() => import("@/components/landing/TypeformTab").then((mod) => mod.TypeformTab));
+const LeadForm = dynamic(
+  () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
+  { loading: () => <p className="text-sm text-muted-foreground py-4">Loading form…</p> }
+);
+
+const BookingTab = dynamic(
+  () => import("@/components/landing/BookingTab").then((m) => m.BookingTab),
+  { ssr: false, loading: () => <p className="text-sm text-muted-foreground py-4">Loading scheduler…</p> }
+);
+const TypeformTab = dynamic(
+  () => import("@/components/landing/TypeformTab").then((m) => m.TypeformTab),
+  { ssr: false, loading: () => <p className="text-sm text-muted-foreground py-4">Loading form…</p> }
+);
 
 type Tab = "book" | "form" | "email";
 
@@ -29,8 +30,7 @@ const Ctx = React.createContext<LightboxCtx | null>(null);
 
 export function useLightbox(): LightboxCtx {
   const ctx = React.useContext(Ctx);
-  if (!ctx)
-    throw new Error("useLightbox must be used inside <LightboxProvider>");
+  if (!ctx) throw new Error("useLightbox must be used inside <LightboxProvider>");
   return ctx;
 }
 
@@ -52,20 +52,13 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="gradient-text">
-              Let&apos;s talk about your project
-            </DialogTitle>
+            <DialogTitle className="gradient-text">Let&apos;s talk about your project</DialogTitle>
             <DialogDescription>
-              Three ways in — book a call, send the details, or just drop your
-              email. Whichever fits.
+              Three ways in — book a call, send the details, or just drop your email. Whichever fits.
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs
-            value={tab}
-            onValueChange={(v) => setTab(v as Tab)}
-            className="mt-2"
-          >
+          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-2">
             <TabsList>
               <TabsTrigger value="book">Book a call</TabsTrigger>
               <TabsTrigger value="form">Tell me more</TabsTrigger>

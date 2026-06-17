@@ -1,0 +1,13 @@
+feat(p3): stripe-hosted invoicing + work-order UI end-to-end + resend wire-up + observability
+
+- Add profiles.stripe_customer_id (lazy-created via getOrCreateStripeCustomer)
+- lib/stripe.ts (singleton client, customer mapping, hosted invoice creation, signature verification)
+- /api/webhooks/stripe handler (invoice.paid/payment_failed/finalized/voided -> local invoices status mirror)
+- Wire createInvoice + acceptWorkOrderQuote actions to real Stripe API
+- lib/resend-templates.ts (7 brand-aligned templates), wire all // PHASE 3: TODOs in work-orders.ts
+- Client portal /portal/tickets (list, create dialog with file uploads, detail with accept-quote)
+- Admin /admin/tickets (list with filters, detail with quote form + status transitions + Stripe invoice creation)
+- Admin /admin/invoices write surface (New Invoice dialog, mark-paid-manually escape hatch)
+- Datadog Vercel Log Drain setup doc
+- Structured webhook logging (stripe / calendly / typeform)
+- CSP: add m.stripe.network to connect-src (js.stripe.com/hooks.stripe.com already allowed)

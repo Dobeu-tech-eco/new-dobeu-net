@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { href: "#work", label: "Work" },
   { href: "#how", label: "How" },
   { href: "#about", label: "About" },
-  { href: "#faq", label: "FAQ" },
+  { href: "#faq", label: "FAQ" }
 ];
 
 export function SiteNav() {
@@ -26,14 +26,11 @@ export function SiteNav() {
           aria-label="Primary"
           className="container flex h-16 items-center justify-between gap-4"
         >
-          <Link
-            href="/"
-            className="flex items-center gap-2"
-            aria-label="Dobeu home"
-          >
+          <Link href="/" className="flex items-center gap-2" aria-label="Dobeu home">
             <DobeuMark className="h-8 w-8" />
-            <span className="font-display text-xl font-bold tracking-tight lowercase">
-              dobeu
+            <span className="font-display text-xl tracking-tight lowercase leading-none">
+              <span className="font-extrabold text-[hsl(var(--brand-indigo-slate))]">dobeu</span>
+              <span className="font-medium text-muted-foreground">.net</span>
             </span>
           </Link>
 
@@ -58,11 +55,7 @@ export function SiteNav() {
             >
               Log in
             </Link>
-            <Button
-              onClick={() => open("book")}
-              size="default"
-              className="hidden sm:inline-flex"
-            >
+            <Button onClick={() => open("book")} size="default" className="hidden sm:inline-flex">
               Book a call
             </Button>
             <button
@@ -72,11 +65,7 @@ export function SiteNav() {
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen((v) => !v)}
             >
-              {mobileOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </nav>

@@ -49,7 +49,12 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? `Request failed (${res.status})`);
       }
+      // Keep `lead_captured` for backwards-compat with PostHog/Mixpanel funnels.
       track("lead_captured", { source, has_message: !!payload.message });
+      track("lead_submitted", {
+        source,
+        has_message: !!payload.message
+      });
       setSubmitted(true);
       toast.success("Got it. I'll reply within 24 hours.");
       onSuccess?.();

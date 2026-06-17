@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/analytics";
+import { sanitizeNextPath } from "@/lib/utils";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/portal";
+  const nextPath = sanitizeNextPath(searchParams.get("next"), "/portal");
   const errorParam = searchParams.get("error");
   const [submitting, setSubmitting] = React.useState(false);
   const [sent, setSent] = React.useState(false);

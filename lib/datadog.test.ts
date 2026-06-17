@@ -6,11 +6,11 @@ const rumMock = {
   init: vi.fn(),
   setUser: vi.fn(),
   addAction: vi.fn(),
-  addError: vi.fn(),
+  addError: vi.fn()
 };
 const logsMock = {
   init: vi.fn(),
-  setUser: vi.fn(),
+  setUser: vi.fn()
 };
 
 vi.mock("@datadog/browser-rum", () => ({ datadogRum: rumMock }));
@@ -96,8 +96,8 @@ describe("initDatadog", () => {
         applicationId: "app-123",
         clientToken: "token-456",
         site: "datadoghq.com",
-        service: "dobeu-net",
-      }),
+        service: "dobeu-net"
+      })
     );
   });
 
@@ -131,16 +131,8 @@ describe("ddIdentify", () => {
     const { initDatadog, ddIdentify } = await freshImport();
     initDatadog();
     ddIdentify({ id: "u1", email: "a@b.com", name: "Tester" });
-    expect(rumMock.setUser).toHaveBeenCalledWith({
-      id: "u1",
-      email: "a@b.com",
-      name: "Tester",
-    });
-    expect(logsMock.setUser).toHaveBeenCalledWith({
-      id: "u1",
-      email: "a@b.com",
-      name: "Tester",
-    });
+    expect(rumMock.setUser).toHaveBeenCalledWith({ id: "u1", email: "a@b.com", name: "Tester" });
+    expect(logsMock.setUser).toHaveBeenCalledWith({ id: "u1", email: "a@b.com", name: "Tester" });
   });
 });
 
@@ -156,9 +148,7 @@ describe("ddAction", () => {
     const { initDatadog, ddAction } = await freshImport();
     initDatadog();
     ddAction("booking_scheduled", { plan: "pro" });
-    expect(rumMock.addAction).toHaveBeenCalledWith("booking_scheduled", {
-      plan: "pro",
-    });
+    expect(rumMock.addAction).toHaveBeenCalledWith("booking_scheduled", { plan: "pro" });
   });
 
   it("defaults context to an empty object", async () => {

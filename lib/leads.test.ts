@@ -4,18 +4,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 // All mutable state + vi.fn()s live inside vi.hoisted so they exist before the
 // hoisted vi.mock factories run.
 const h = vi.hoisted(() => {
-  const supaConfig: {
-    insert: "success" | "error" | "throw";
-    insertId: string | null;
-  } = {
+  const supaConfig: { insert: "success" | "error" | "throw"; insertId: string | null } = {
     insert: "success",
-    insertId: "lead_1",
+    insertId: "lead_1"
   };
   const apolloConfig: { mode: "ok" | "fail" | "throw" } = { mode: "ok" };
   const cioConfig: { configured: boolean; idOk: boolean; trackOk: boolean } = {
     configured: true,
     idOk: true,
-    trackOk: true,
+    trackOk: true
   };
   const resendConfig: { mode: "ok" | "reject" } = { mode: "ok" };
 
@@ -29,37 +26,24 @@ const h = vi.hoisted(() => {
           select: vi.fn(() => ({
             single: vi.fn(() =>
               supaConfig.insert === "error"
-                ? Promise.resolve({
-                    data: null,
-                    error: new Error("insert failed"),
-                  })
-                : Promise.resolve({
-                    data: { id: supaConfig.insertId },
-                    error: null,
-                  }),
-            ),
-          })),
+                ? Promise.resolve({ data: null, error: new Error("insert failed") })
+                : Promise.resolve({ data: { id: supaConfig.insertId }, error: null })
+            )
+          }))
         })),
-        update: vi.fn(() => ({ eq: updateEq })),
-      })),
+        update: vi.fn(() => ({ eq: updateEq }))
+      }))
     };
   });
 
   const upsertApolloContact = vi.fn(async () => {
     if (apolloConfig.mode === "throw") throw new Error("apollo blew up");
-    if (apolloConfig.mode === "fail")
-      return { ok: false, error: "bad request" };
+    if (apolloConfig.mode === "fail") return { ok: false, error: "bad request" };
     return { ok: true, contact_id: "apollo_1" };
   });
 
-  const cioIdentify = vi.fn(async () => ({
-    ok: cioConfig.idOk,
-    error: cioConfig.idOk ? undefined : "id err",
-  }));
-  const cioTrack = vi.fn(async () => ({
-    ok: cioConfig.trackOk,
-    error: cioConfig.trackOk ? undefined : "track err",
-  }));
+  const cioIdentify = vi.fn(async () => ({ ok: cioConfig.idOk, error: cioConfig.idOk ? undefined : "id err" }));
+  const cioTrack = vi.fn(async () => ({ ok: cioConfig.trackOk, error: cioConfig.trackOk ? undefined : "track err" }));
   const isCustomerIoConfigured = vi.fn(() => cioConfig.configured);
 
   const emailsSend = vi.fn(async () => {
@@ -82,7 +66,7 @@ const h = vi.hoisted(() => {
     cioTrack,
     isCustomerIoConfigured,
     emailsSend,
-    ResendCtor,
+    ResendCtor
   };
 });
 
@@ -97,20 +81,19 @@ const {
   cioIdentify,
   cioTrack,
   emailsSend,
-  ResendCtor,
+  ResendCtor
 } = h;
 
 vi.mock("@/lib/supabase/server", () => ({
-  createAdminClient: () => h.createAdminClient(),
+  createAdminClient: () => h.createAdminClient()
 }));
 vi.mock("@/lib/apollo", () => ({
-  upsertApolloContact: (...args: unknown[]) =>
-    h.upsertApolloContact(...(args as [])),
+  upsertApolloContact: (...args: unknown[]) => h.upsertApolloContact(...(args as []))
 }));
 vi.mock("@/lib/customerio", () => ({
   cioIdentify: (...a: unknown[]) => h.cioIdentify(...(a as [])),
   cioTrack: (...a: unknown[]) => h.cioTrack(...(a as [])),
-  isCustomerIoConfigured: () => h.isCustomerIoConfigured(),
+  isCustomerIoConfigured: () => h.isCustomerIoConfigured()
 }));
 vi.mock("resend", () => ({ Resend: h.ResendCtor }));
 
@@ -124,7 +107,7 @@ const baseInput = {
   source: "form" as const,
   utm: { utm_source: "google", utm_medium: "cpc", utm_campaign: "spring" },
   referrer: "https://ref.example",
-  ipHash: "hash123",
+  ipHash: "hash123"
 };
 
 beforeEach(() => {
@@ -165,8 +148,8 @@ describe("processLead — happy path", () => {
         first_name: "Jane",
         last_name: "Doe",
         organization_name: "Acme",
-        label_names: ["dobeu.net-form", "utm_source-google"],
-      }),
+        label_names: ["dobeu.net-form", "utm_source-google"]
+      })
     );
 
     // Backfill apollo id onto the lead row
@@ -174,16 +157,10 @@ describe("processLead — happy path", () => {
 
     // Customer.io identify + track
     expect(cioIdentify).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: "a@b.com",
-        attributes: expect.objectContaining({
-          apollo_contact_id: "apollo_1",
-          supabase_lead_id: "lead_1",
-        }),
-      }),
+      expect.objectContaining({ email: "a@b.com", attributes: expect.objectContaining({ apollo_contact_id: "apollo_1", supabase_lead_id: "lead_1" }) })
     );
     expect(cioTrack).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "a@b.com", name: "lead_captured" }),
+      expect.objectContaining({ email: "a@b.com", name: "lead_captured" })
     );
 
     // Both Resend emails sent
@@ -201,15 +178,11 @@ describe("processLead — happy path", () => {
         insert: vi.fn((arg: Record<string, unknown>) => {
           insertArg = arg;
           return {
-            select: vi.fn(() => ({
-              single: vi.fn(() =>
-                Promise.resolve({ data: { id: "lead_1" }, error: null }),
-              ),
-            })),
+            select: vi.fn(() => ({ single: vi.fn(() => Promise.resolve({ data: { id: "lead_1" }, error: null })) }))
           };
         }),
-        update: vi.fn(() => ({ eq: updateEq })),
-      })),
+        update: vi.fn(() => ({ eq: updateEq }))
+      }))
     }));
 
     await processLead(baseInput);
@@ -222,13 +195,9 @@ describe("processLead — happy path", () => {
       utm_source: "google",
       utm_medium: "cpc",
       utm_campaign: "spring",
-      referrer: "https://ref.example",
+      referrer: "https://ref.example"
     });
-    expect(insertArg!.raw_payload).toMatchObject({
-      message: "hello",
-      ip_hash: "hash123",
-      utm_source: "google",
-    });
+    expect(insertArg!.raw_payload).toMatchObject({ message: "hello", ip_hash: "hash123", utm_source: "google" });
   });
 });
 
@@ -254,7 +223,7 @@ describe("processLead — Supabase failures stay non-fatal", () => {
     supaConfig.insert = "throw";
 
     await expect(processLead(baseInput)).resolves.toEqual(
-      expect.objectContaining({ leadId: null, apolloContactId: "apollo_1" }),
+      expect.objectContaining({ leadId: null, apolloContactId: "apollo_1" })
     );
     expect(emailsSend).toHaveBeenCalledTimes(2);
 
@@ -324,10 +293,7 @@ describe("processLead — collaborator throws are swallowed", () => {
     resendConfig.mode = "reject";
 
     await expect(processLead(baseInput)).resolves.toEqual(
-      expect.objectContaining({
-        leadId: "lead_1",
-        apolloContactId: "apollo_1",
-      }),
+      expect.objectContaining({ leadId: "lead_1", apolloContactId: "apollo_1" })
     );
 
     errSpy.mockRestore();
@@ -339,7 +305,7 @@ describe("processLead — collaborator throws are swallowed", () => {
     cioConfig.trackOk = false;
 
     await expect(processLead(baseInput)).resolves.toEqual(
-      expect.objectContaining({ leadId: "lead_1" }),
+      expect.objectContaining({ leadId: "lead_1" })
     );
 
     warnSpy.mockRestore();
@@ -349,7 +315,7 @@ describe("processLead — collaborator throws are swallowed", () => {
 describe("escapeHtml", () => {
   it("escapes &, <, >, double-quote and single-quote", () => {
     expect(escapeHtml(`<a href="x" data='y'>Tom & Jerry</a>`)).toBe(
-      "&lt;a href=&quot;x&quot; data=&#39;y&#39;&gt;Tom &amp; Jerry&lt;/a&gt;",
+      "&lt;a href=&quot;x&quot; data=&#39;y&#39;&gt;Tom &amp; Jerry&lt;/a&gt;"
     );
   });
   it("coerces non-string input to string before escaping", () => {

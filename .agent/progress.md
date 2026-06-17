@@ -62,3 +62,48 @@
 2. `cd new-dobeu-net && pnpm install`
 3. `pnpm dev` — verify it boots
 4. Walk through the Pending list above
+
+---
+
+## 2026-05-23 — GTM container setup + integration
+
+### Done
+- Discovered existing Web container `GTM-M97GN5T7` (containerId 233159875) under "Dobeu Tech Solutions" account (6320247522). Workspace 3 was the active default.
+- Enabled 18 additional built-in variables (Click {Element,Classes,Id,Target,Url,Text}, Form {Element,Classes,Id,Target,Url,Text}, Scroll Depth Threshold/Units, History Source / New|Old History Fragment|State) on top of the existing 5 (Page URL, Page Hostname, Page Path, Referrer, Event).
+- Created 7 custom dataLayer variables: `DLV - user_id`, `lead_email`, `lead_name`, `cta_label`, `cta_location`, `booking_uri`, `current_url` (IDs 4–10).
+- Created 5 triggers (IDs 11–15): `CE - lead_submitted`, `CE - cta_click`, `CE - booking_started`, `Scroll - 25/50/75/90`, `Click - Outbound link` (Just Links with RE2-safe CSS-selector exclusion of dobeu.net + internal links).
+- Created 6 GA4 tags (IDs 16–21), each consent-gated on `analytics_storage` and **paused** with placeholder Measurement ID `G-XXXXXXXXXX`:
+  - `GA4 - Configuration` (googtag) → All Pages
+  - `GA4 - lead_submitted` → trigger 11 (event: `generate_lead`)
+  - `GA4 - cta_click` → trigger 12
+  - `GA4 - booking_started` → trigger 13
+  - `GA4 - scroll` → trigger 14
+  - `GA4 - outbound_click` → trigger 15 (event: `click` with `outbound=true`)
+- Pre-existing `Home` HTML tag (Apollo website-tracker) preserved and continues to fire on All Pages.
+- Published as **container version 3** ("Initial Dobeu.net v3 setup") — workspace 3 is now the live version.
+
+### Wired into the Next.js codebase
+- `app/layout.tsx` — added GTM noscript `<iframe>` fallback inside `<body>`, gated on `NEXT_PUBLIC_GTM_ID`.
+- `.env.local` + `.env.example` — set `NEXT_PUBLIC_GTM_ID=GTM-M97GN5T7` with a header comment explaining the paused tag state.
+- `components/landing/LeadForm.tsx` — adds a second `track("lead_submitted", { lead_email, lead_name, source, has_message })` call alongside the existing `lead_captured` (kept for PostHog/Mixpanel funnel backwards-compat).
+- `components/landing/Hero.tsx` + `FinalCTA.tsx` — both CTA buttons now wrap the lightbox-open via `trackAndOpen(target, label)`, which pushes `cta_click` with `cta_label`, `cta_location: hero|final_cta`, `target`.
+- `components/landing/BookingTab.tsx` — `onProfilePageViewed` now also pushes `booking_started` with `booking_uri = NEXT_PUBLIC_CALENDLY_URL`; `onEventScheduled` adds `booking_uri` to the existing `booking_scheduled` event. Existing `calendly_*` funnel events untouched.
+
+### Verification
+- `./node_modules/.bin/tsc --noEmit` — green for everything I touched (Services.tsx has pre-existing errors unrelated to GTM and outside this session's scope).
+- Live browser validation via Playwright MCP against the published container:
+  - `GET https://www.googletagmanager.com/gtm.js?id=GTM-M97GN5T7` → **200**.
+  - `window.google_tag_manager["GTM-M97GN5T7"]` defined → container code executed in a real browser.
+  - All 3 custom events (`lead_submitted`, `cta_click`, `booking_started`) received `gtm.uniqueEventId` from the container → triggers are listening.
+  - Scroll Depth trigger auto-fired all 4 thresholds (25/50/75/90) on the test viewport.
+  - Apollo website-tracker tag fired its payload (`assets.apollo.io/.../tracker.iife.js → 200`) → All Pages trigger still works.
+  - No GA4 beacons (correct — all 6 GA4 tags are paused with placeholder G-XXXXXXXXXX).
+  - Screenshot saved at `gtm-test-aboutblank.png`.
+
+### Pending / next steps
+1. **Plug in real GA4 Measurement ID** — set `NEXT_PUBLIC_GA4_MEASUREMENT_ID` in `.env.local` + Vercel, then update tags 16–21 in GTM workspace 3 (replace `G-XXXXXXXXXX`, set `paused: false`) and publish a new container version. The gtm-mcp-server `gtm_tag` `action: update` works for this; or do it in the Tag Manager UI.
+2. Once GA4 is live, **mark `generate_lead` as a conversion** in GA4 (Admin → Events → Mark as conversion). Same for `cta_click` if Jeremy treats it as a KPI.
+3. Add the `lead_capture_failed` path to GTM if you want failed-submission visibility (not configured yet; only `lead_submitted` is wired).
+4. **Local smoke test on Windows**: `pnpm dev` and click each CTA / submit the form / open the Calendly lightbox; open DevTools console and watch `window.dataLayer` populate. The sandbox here could not run `pnpm dev` (SWC binary platform mismatch), so the browser-side wiring needs a real Windows boot before merge.
+5. `public/gtm-test.html` is a self-contained harness for ad-hoc container testing — keep it (it's `noindex`) or move under `.agent/` if you'd rather it not ship.
+

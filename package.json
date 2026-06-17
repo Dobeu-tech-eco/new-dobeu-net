@@ -16,15 +16,14 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
-    "verify": "pnpm type-check && pnpm lint && pnpm test:ci && pnpm build"
+    "build:strict": "node scripts/strict-build.mjs",
+    "verify": "pnpm type-check && pnpm lint && pnpm test:ci && pnpm build:strict"
   },
   "dependencies": {
     "@datadog/browser-logs": "5.35.1",
     "@datadog/browser-rum": "5.35.1",
     "@hookform/resolvers": "^3.10.0",
     "@intercom/messenger-js-sdk": "^0.0.18",
-    "@vercel/analytics": "^1.4.1",
-    "@vercel/speed-insights": "^1.1.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-avatar": "^1.1.3",
     "@radix-ui/react-dialog": "^1.1.6",
@@ -44,6 +43,10 @@
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-table": "^8.20.6",
     "@typeform/embed-react": "^4.11.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
+    "@vercel/analytics": "^1.4.1",
+    "@vercel/speed-insights": "^1.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -70,13 +73,16 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^22.10.5",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.4.2",
     "eslint": "^9.18.0",
     "eslint-config-next": "^15.5.4",
     "jsdom": "^25.0.1",
+    "pg": "^8.21.0",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
@@ -86,7 +92,7 @@
     "vitest": "^4.1.7"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
-  "packageManager": "pnpm@11.1.3"
+  "packageManager": "pnpm@10.34.1"
 }

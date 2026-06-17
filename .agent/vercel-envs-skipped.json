@@ -1,0 +1,37 @@
+﻿[
+    {
+        "key":  "NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY",
+        "id":  "doHNvJ0FA8eO4dH8",
+        "reason":  "Marketplace-managed (integration-store-secret); will be re-provisioned by Vercel Supabase integration. Flip via dashboard if needed."
+    },
+    {
+        "key":  "NEXT_PUBLIC_VERCEL_SUPABASE_PUBLISHABLE_KEY",
+        "id":  "H1WhqkTFRi3FcLIY",
+        "reason":  "Marketplace-managed (integration-store-secret); will be re-provisioned by Vercel Supabase integration. Flip via dashboard if needed."
+    },
+    {
+        "key":  "NEXT_PUBLIC_VERCEL_SUPABASE_URL",
+        "id":  "A4dTt2uScW4kPM51",
+        "reason":  "Marketplace-managed (integration-store-secret); will be re-provisioned by Vercel Supabase integration. Flip via dashboard if needed."
+    },
+    {
+        "key":  "NEXT_PUBLIC_DATADOG_APPLICATION_ID",
+        "id":  "qttfRnFNJc02jFNT",
+        "reason":  "empty string in .env.local (needs manual intervention)"
+    },
+    {
+        "key":  "NEXT_PUBLIC_SITE_URL",
+        "id":  "ggmtx1F4zncoAW3G",
+        "reason":  "localhost value in .env.local (dev-only); skipped -- getSiteUrl()/etc. fallbacks now handle the empty-string inline"
+    },
+    {
+        "key":  "NEXT_PUBLIC_SUPABASE_URL",
+        "id":  "WrkwMm8aajZRWApv",
+        "reason":  "absent from .env.local (needs manual intervention)"
+    },
+    {
+        "key":  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "id":  "VXLs5PvShR2vpH4h",
+        "reason":  "absent from .env.local (needs manual intervention)"
+    }
+]

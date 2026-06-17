@@ -41,16 +41,18 @@ git push -u origin main
 
 ---
 
-## Phase 2 — Provision Supabase
+## Phase 2 — Provision Supabase (via the Vercel Marketplace)
 
-1. Go to https://supabase.com/dashboard → Create new project.
-   - Project name: `dobeu-net-v3`
-   - Region: `us-east-1` (matches Vercel `iad1`)
-   - Database password: generate + store in 1Password
-2. Once provisioned, copy from **Settings → API**:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public key` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role secret` → `SUPABASE_SERVICE_ROLE_KEY`
+Supabase is provisioned through the Vercel Marketplace integration, which auto-injects the env vars into every environment (Production / Preview / Development).
+
+1. In the Vercel project → **Storage** → click **Connect Database** → choose **Supabase**. Vercel will provision (or link) the Supabase project and inject these env vars automatically:
+   - `VERCEL_SUPABASE_URL` (server-only)
+   - `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY` (browser-exposed)
+   - `NEXT_PUBLIC_VERCEL_SUPABASE_PUBLISHABLE_KEY`
+   - `VERCEL_SUPABASE_SERVICE_ROLE_KEY` (server-only, bypasses RLS)
+   - `VERCEL_SUPABASE_JWT_SECRET`
+   - `VERCEL_POSTGRES_*` (direct DB connection variants)
+2. **Add one extra env var manually**: `NEXT_PUBLIC_VERCEL_SUPABASE_URL` (mirror of `VERCEL_SUPABASE_URL`) — the Marketplace integration does not ship a `NEXT_PUBLIC_` prefix on the URL, but the browser client needs it. Mark it Production + Preview + Development.
 3. Apply migrations:
    ```bash
    pnpm supabase link --project-ref <your-ref>

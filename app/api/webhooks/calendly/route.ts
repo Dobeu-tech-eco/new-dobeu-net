@@ -5,7 +5,7 @@ import {
   isCalendlyWebhookConfigured,
   verifyCalendlySignature,
   utmFromTracking,
-  type CalendlyWebhookEvent,
+  type CalendlyWebhookEvent
 } from "@/lib/calendly";
 
 export const runtime = "nodejs";
@@ -22,40 +22,39 @@ export const dynamic = "force-dynamic";
  *     `invitee.created` event via Calendly's API.
  */
 export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const requestId = request.headers.get("calendly-request-id") ?? crypto.randomUUID();
+  console.log(
+    JSON.stringify({
+      msg: "calendly_webhook_received",
+      request_id: requestId,
+      ts: new Date().toISOString()
+    })
+  );
+
   if (!isCalendlyWebhookConfigured()) {
-    // Inert until configured — mirrors the rest of the env-gated pipeline.
     console.warn(
-      "[/api/webhooks/calendly] CALENDLY_WEBHOOK_SIGNING_KEY unset — ignoring webhook",
+      JSON.stringify({
+        msg: "calendly_webhook_not_configured",
+        request_id: requestId
+      })
     );
-    return NextResponse.json(
-      { ok: false, error: "not_configured" },
-      { status: 503 },
-    );
+    return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
   }
 
   // Must read the raw body for signature verification (parsing first would break it).
   const rawBody = await request.text();
   const signingKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY!;
-  const valid = verifyCalendlySignature(
-    rawBody,
-    request.headers.get("Calendly-Webhook-Signature"),
-    signingKey,
-  );
+  const valid = verifyCalendlySignature(rawBody, request.headers.get("Calendly-Webhook-Signature"), signingKey);
   if (!valid) {
-    return NextResponse.json(
-      { ok: false, error: "invalid_signature" },
-      { status: 401 },
-    );
+    return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
   }
 
   let evt: CalendlyWebhookEvent;
   try {
     evt = JSON.parse(rawBody) as CalendlyWebhookEvent;
   } catch {
-    return NextResponse.json(
-      { ok: false, error: "invalid_json" },
-      { status: 400 },
-    );
+    return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
   }
 
   // Only act on new bookings; ack everything else so Calendly stops retrying.
@@ -66,9 +65,7 @@ export async function POST(request: Request) {
   const p = evt.payload ?? {};
   if (!p.email) {
     // No email = nothing to upsert. Ack so Calendly doesn't retry a doomed event.
-    console.warn(
-      "[/api/webhooks/calendly] invitee.created without email — acking",
-    );
+    console.warn("[/api/webhooks/calendly] invitee.created without email — acking");
     return NextResponse.json({ ok: true, skipped: "no_email" });
   }
 
@@ -76,48 +73,38 @@ export async function POST(request: Request) {
     email: p.email,
     name: p.name ?? null,
     source: "book",
-    message: p.scheduled_event?.name
-      ? `Booked: ${p.scheduled_event.name}`
-      : null,
+    message: p.scheduled_event?.name ? `Booked: ${p.scheduled_event.name}` : null,
     utm: utmFromTracking(p.tracking),
-    referrer: p.scheduled_event?.uri ?? null,
+    referrer: p.scheduled_event?.uri ?? null
   });
 
-  // Mirror the booking into our bookings table so /admin/bookings + the
-  // overview tile show real data. Best-effort — never fail the webhook.
-  let bookingId: string | null = null;
+  // Keep the bookings table in sync so admin booking views are populated.
   if (p.scheduled_event?.start_time) {
     try {
-      const supa = createAdminClient();
-      const { data } = await supa
-        .from("bookings")
-        .insert({
-          lead_id: leadId,
-          email: p.email,
-          name: p.name ?? null,
-          scheduled_at: p.scheduled_event.start_time,
-          meeting_url:
-            p.scheduled_event.location?.join_url ??
-            p.scheduled_event.uri ??
-            null,
-          notes: p.scheduled_event.name ?? null,
-          status: "scheduled",
-        })
-        .select("id")
-        .single();
-      bookingId = data?.id ?? null;
-    } catch (e) {
-      console.error(
-        "[/api/webhooks/calendly] booking upsert failed (non-fatal)",
-        e,
-      );
+      const supabase = createAdminClient();
+      await supabase.from("bookings").insert({
+        lead_id: leadId,
+        email: p.email,
+        name: p.name ?? null,
+        scheduled_at: p.scheduled_event.start_time,
+        meeting_url: p.scheduled_event.uri ?? null,
+        notes: p.scheduled_event.name ?? null,
+        status: "scheduled"
+      });
+    } catch (error) {
+      console.warn("[/api/webhooks/calendly] booking mirror insert failed", error);
     }
   }
 
-  return NextResponse.json({
-    ok: true,
-    lead_id: leadId,
-    apollo_contact_id: apolloContactId,
-    booking_id: bookingId,
-  });
+  console.log(
+    JSON.stringify({
+      msg: "calendly_webhook_complete",
+      request_id: requestId,
+      event_type: evt.event,
+      lead_id: leadId,
+      duration_ms: Date.now() - startedAt
+    })
+  );
+
+  return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
 }

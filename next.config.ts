@@ -20,7 +20,7 @@ const csp = {
     "https://www.datadoghq-browser-agent.com",
     "https://va.vercel-scripts.com",
     "https://widget.intercom.io",
-    "https://js.intercomcdn.com",
+    "https://js.intercomcdn.com"
   ],
   connect: [
     "'self'",
@@ -34,6 +34,7 @@ const csp = {
     "https://*.google-analytics.com",
     "https://*.analytics.google.com",
     "https://api.stripe.com",
+    "https://m.stripe.network",
     "https://api.apollo.io",
     "https://*.typeform.com",
     "https://api.calendly.com",
@@ -44,11 +45,17 @@ const csp = {
     "https://*.browser-intake-us5-datadoghq.com",
     "https://vitals.vercel-insights.com",
     "https://vercel.live",
+    "https://api.intercom.io",
     "https://api-iam.intercom.io",
     "https://api-iam.eu.intercom.io",
+    "https://api-ping.intercom.io",
     "https://nexus-websocket-a.intercom.io",
+    "https://nexus-websocket-b.intercom.io",
+    "https://nexus-europe-websocket.intercom.io",
     "wss://nexus-websocket-a.intercom.io",
+    "wss://nexus-websocket-b.intercom.io",
     "https://uploads.intercomcdn.com",
+    "https://uploads.intercomusercontent.com"
   ],
   img: ["'self'", "data:", "blob:", "https:"],
   font: [
@@ -56,13 +63,14 @@ const csp = {
     "https://fonts.gstatic.com",
     "data:",
     "https://js.intercomcdn.com",
+    "https://fonts.intercomcdn.com"
   ],
   style: [
     "'self'",
     "'unsafe-inline'",
     "https://fonts.googleapis.com",
     "https://embed.typeform.com",
-    "https://assets.calendly.com",
+    "https://assets.calendly.com"
   ],
   // frame-src: typeform's embed iframe is hosted on form.typeform.com (not
   // embed.typeform.com — that's just the SDK loader). Wildcard covers both.
@@ -76,8 +84,8 @@ const csp = {
     "https://*.calendly.com",
     "https://*.intercom.io",
     "https://*.intercom.com",
-    "https://*.intercomcdn.com",
-  ],
+    "https://*.intercomcdn.com"
+  ]
 };
 
 const ContentSecurityPolicy = [
@@ -94,23 +102,17 @@ const ContentSecurityPolicy = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "upgrade-insecure-requests",
+  "upgrade-insecure-requests"
 ].join("; ");
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: ContentSecurityPolicy },
-  {
-    key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains; preload",
-  },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "origin-when-cross-origin" },
-  {
-    key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
-  },
-  { key: "X-DNS-Prefetch-Control", value: "on" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "X-DNS-Prefetch-Control", value: "on" }
 ];
 
 const nextConfig: NextConfig = {
@@ -120,37 +122,32 @@ const nextConfig: NextConfig = {
   // here should block the build rather than ship silently. (Was temporarily
   // disabled during Phase-1 launch.)
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: false
   },
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: false
   },
   experimental: {
-    optimizePackageImports: [
-      "lucide-react",
-      "motion",
-      "@radix-ui/react-dialog",
-      "@radix-ui/react-tabs",
-    ],
+    optimizePackageImports: ["lucide-react", "motion", "@radix-ui/react-dialog", "@radix-ui/react-tabs"]
   },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "**.supabase.co" },
-      { protocol: "https", hostname: "images.unsplash.com" },
-    ],
+      { protocol: "https", hostname: "images.unsplash.com" }
+    ]
   },
   async headers() {
     return [
       {
         source: "/(.*)",
-        headers: securityHeaders,
-      },
+        headers: securityHeaders
+      }
     ];
   },
   async redirects() {
     return [{ source: "/home", destination: "/", permanent: true }];
-  },
+  }
 };
 
 export default nextConfig;
