@@ -93,11 +93,6 @@ export function captureAcquisition(searchParams: URLSearchParams, referrer = "")
 }
 
 /**
- * Sleep helper for retry loops.
- */
-export const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
-
-/**
  * Keep redirect targets on-site to prevent open-redirect abuse.
  * Accept only absolute-path URLs like `/portal` and normalize malformed values.
  */
@@ -121,3 +116,4 @@ export function requiresAal2Stepup(
   if (!aal) return false;
   return aal.nextLevel === "aal2" && aal.currentLevel !== "aal2";
 }
+
