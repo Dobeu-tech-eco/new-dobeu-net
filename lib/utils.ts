@@ -129,41 +129,18 @@ export function sanitizeNextPath(nextPath: string | null | undefined, fallback =
   return nextPath;
 }
 
-/** Assurance-level shape returned by `supabase.auth.mfa.getAuthenticatorAssuranceLevel()`. */
-export type AssuranceLevel = { currentLevel: string | null; nextLevel: string | null } | null;
-
 /**
  * Decide whether the current session must complete an AAL2 (TOTP) step-up.
+ * Input is the shape returned by `supabase.auth.mfa.getAuthenticatorAssuranceLevel()`.
  * - nextLevel 'aal2' + currentLevel not 'aal2' → a factor exists but the
  *   session hasn't satisfied it → step-up required.
- * - No factor enrolled (currentLevel === nextLevel === 'aal1') → not a step-up
- *   case (that's handled by `requiresMfaEnrollment` for admins).
+ * - No factor enrolled (currentLevel === nextLevel === 'aal1') → bootstrap,
+ *   no step-up (the admin can still reach /admin to enroll; layout nags).
  */
-export function requiresAal2Stepup(aal: AssuranceLevel): boolean {
+export function requiresAal2Stepup(
+  aal: { currentLevel: string | null; nextLevel: string | null } | null
+): boolean {
   if (!aal) return false;
   return aal.nextLevel === "aal2" && aal.currentLevel !== "aal2";
-}
-
-/**
- * Decide whether the caller must be FORCED to enroll a TOTP factor before
- * reaching the admin surface. MFA is MANDATORY for admins: an admin with no
- * verified factor (so the session can never reach AAL2) is redirected to
- * `/portal/settings/mfa` to enroll — a soft banner is not sufficient.
- *
- * - Non-admins are never forced to enroll (returns false) — keeps `/portal`
- *   reachable and prevents redirect loops (the enrollment page lives under
- *   `/portal`, which must never be MFA-gated).
- * - Admins with no AAL2-capable session (`currentLevel !== "aal2"`, which
- *   covers the unenrolled aal1/aal1 case) must enroll.
- * - Fail CLOSED on a null/unknown assurance shape: an admin with indeterminate
- *   MFA state is treated as needing enrollment (the admin surface is sensitive).
- *
- * NOTE: this is intentionally satisfied by the SAME redirect target as
- * `requiresAal2Stepup`, so middleware can OR the two conditions together.
- */
-export function requiresMfaEnrollment(aal: AssuranceLevel, isAdmin: boolean): boolean {
-  if (!isAdmin) return false;
-  if (!aal) return true; // fail closed: indeterminate MFA state for an admin
-  return aal.currentLevel !== "aal2";
 }
 

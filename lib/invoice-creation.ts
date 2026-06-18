@@ -35,12 +35,7 @@ export type InvoiceCreationResult =
 
 export interface CreateInvoiceForUserInput {
   user_id: string;
-  /**
-   * Optional. Work-order invoices may have no project yet — in that case the
-   * row is owned via `invoices.user_id` (= the work order's `created_by`) so
-   * RLS still lets the client see + pay it.
-   */
-  project_id?: string | null;
+  project_id: string;
   amount_cents: number;
   currency: string;
   description?: string | null;
@@ -95,7 +90,7 @@ export async function createInvoiceForUser(
       description: input.description ?? undefined,
       metadata: {
         supabase_user_id: input.user_id,
-        project_id: input.project_id ?? undefined,
+        project_id: input.project_id,
         work_order_id: input.work_order_id
       }
     });
@@ -108,25 +103,16 @@ export async function createInvoiceForUser(
 
   // Persist local row regardless (NULL stripe_invoice_id is the visible
   // signal of a Stripe failure to the admin).
-  //
-  // `user_id` is ALWAYS populated so the new RLS branch (user_id = auth.uid())
-  // makes the invoice visible to the client even when `project_id` is NULL.
-  // Cast: `invoices.user_id` / nullable `project_id` land in lib/database.types.ts
-  // via the central `pnpm db:types` regen (migration 20260618000000) — until
-  // then the generated types are stale, so we cast the insert payload.
-  const invoiceRow = {
-    project_id: input.project_id ?? null,
-    user_id: input.user_id,
-    amount_cents: input.amount_cents,
-    currency: input.currency,
-    status: "open" as const,
-    stripe_invoice_id: stripeInvoiceId,
-    hosted_invoice_url: hostedInvoiceUrl
-  };
   const { data, error } = await admin
     .from("invoices")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .insert(invoiceRow as any)
+    .insert({
+      project_id: input.project_id,
+      amount_cents: input.amount_cents,
+      currency: input.currency,
+      status: "open",
+      stripe_invoice_id: stripeInvoiceId,
+      hosted_invoice_url: hostedInvoiceUrl
+    })
     .select("id")
     .single();
 

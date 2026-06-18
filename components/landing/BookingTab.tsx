@@ -43,7 +43,8 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
       track("booking_scheduled", {
         source: "calendly",
         event_uri: e.data.payload.event.uri,
-        invitee_uri: e.data.payload.invitee.uri
+        invitee_uri: e.data.payload.invitee.uri,
+        booking_uri: e.data.payload.event.uri
       });
       // NOTE: Calendly's client-side scheduled-event payload only exposes the
       // invitee/event *URIs*, not the invitee email or name. Mirroring the booking

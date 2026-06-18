@@ -11,11 +11,9 @@ describe("agent gating", () => {
   });
 
   afterEach(() => {
-    if (originalComposio !== undefined)
-      process.env.COMPOSIO_API_KEY = originalComposio;
+    if (originalComposio !== undefined) process.env.COMPOSIO_API_KEY = originalComposio;
     else delete process.env.COMPOSIO_API_KEY;
-    if (originalAnthropic !== undefined)
-      process.env.ANTHROPIC_API_KEY = originalAnthropic;
+    if (originalAnthropic !== undefined) process.env.ANTHROPIC_API_KEY = originalAnthropic;
     else delete process.env.ANTHROPIC_API_KEY;
   });
 
@@ -40,7 +38,6 @@ describe("agent gating", () => {
     // In this test environment the SDKs are intentionally not installed yet,
     // so the dynamic import inside runAgent will fail and return this error.
     expect(r.ok).toBe(false);
-    if (!r.ok)
-      expect(["sdk_not_installed", "session_create_failed"]).toContain(r.error);
+    if (!r.ok) expect(["sdk_not_installed", "session_create_failed"]).toContain(r.error);
   });
 });

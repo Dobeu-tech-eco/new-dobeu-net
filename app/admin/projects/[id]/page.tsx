@@ -4,7 +4,6 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { EditProjectForm } from "@/components/admin/EditProjectForm";
 import { DeleteProjectButton } from "@/components/admin/DeleteProjectButton";
-import { DeliverableUpload } from "@/components/admin/DeliverableUpload";
 
 export default async function AdminProjectDetailPage({
   params
@@ -58,15 +57,6 @@ export default async function AdminProjectDetailPage({
             total_cents: project.total_cents
           }}
         />
-      </section>
-
-      <section className="rounded-lg border border-border bg-card p-6">
-        <h2 className="font-display text-xl font-semibold mb-1">Upload deliverable</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Files are stored privately in the <code>project-files</code> bucket and become visible to
-          the project owner in their portal.
-        </p>
-        <DeliverableUpload projectId={project.id} />
       </section>
 
       <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
