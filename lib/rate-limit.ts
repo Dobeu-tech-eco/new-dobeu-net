@@ -29,15 +29,10 @@ interface CheckOptions {
 const ipBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function isUpstashConfigured(): boolean {
-  return Boolean(
-    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
-  );
+  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 }
 
-export async function checkRateLimit(
-  key: string,
-  opts: CheckOptions,
-): Promise<CheckResult> {
+export async function checkRateLimit(key: string, opts: CheckOptions): Promise<CheckResult> {
   if (isUpstashConfigured()) {
     try {
       const count = await incrWithExpire(key, opts.windowSec);
@@ -59,20 +54,19 @@ async function incrWithExpire(key: string, windowSec: number): Promise<number> {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
     body: JSON.stringify([
       ["INCR", key],
-      ["EXPIRE", key, String(windowSec), "NX"],
+      ["EXPIRE", key, String(windowSec), "NX"]
     ]),
-    cache: "no-store",
+    cache: "no-store"
   });
   if (!res.ok) throw new Error(`Upstash HTTP ${res.status}`);
   const data = (await res.json()) as Array<{ result?: number; error?: string }>;
   const incr = data[0];
   if (incr?.error) throw new Error(incr.error);
-  if (typeof incr?.result !== "number")
-    throw new Error("Upstash returned non-numeric INCR");
+  if (typeof incr?.result !== "number") throw new Error("Upstash returned non-numeric INCR");
   return incr.result;
 }
 

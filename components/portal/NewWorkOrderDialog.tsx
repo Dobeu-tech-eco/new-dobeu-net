@@ -13,10 +13,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { submitWorkOrder, finalizeWorkOrderAttachment } from "@/lib/actions/work-orders";
-import { createClient } from "@/lib/supabase/client";
-
-const WO_BUCKET = "work-order-attachments";
+import { submitWorkOrder } from "@/lib/actions/work-orders";
 
 const SERVICE_TYPES = [
   { value: "logo", label: "Logo / brand mark" },
@@ -90,48 +87,8 @@ export function NewWorkOrderDialog() {
         setError(result.error);
         return;
       }
-
-      // Upload bytes to each signed URL, THEN finalize the attachment row so a
-      // failed PUT never leaves a dangling row whose signed-download link 404s.
-      const targets = result.data.uploadTargets;
-      if (targets.length > 0) {
-        const supabase = createClient();
-        const failures: string[] = [];
-        for (const t of targets) {
-          const file = files.find((f) => f.name === t.filename && f.size === t.size_bytes);
-          if (!file) {
-            failures.push(t.filename);
-            continue;
-          }
-          const { error: uploadErr } = await supabase.storage
-            .from(WO_BUCKET)
-            .uploadToSignedUrl(t.storage_path, t.token, file, {
-              contentType: t.mime_type || "application/octet-stream"
-            });
-          if (uploadErr) {
-            failures.push(t.filename);
-            continue;
-          }
-          const fin = await finalizeWorkOrderAttachment({
-            work_order_id: result.data.id,
-            storage_path: t.storage_path,
-            filename: t.filename,
-            mime_type: t.mime_type,
-            size_bytes: t.size_bytes
-          });
-          if (!fin.ok) failures.push(t.filename);
-        }
-        if (failures.length > 0) {
-          // The ticket itself was created — surface partial-upload failures
-          // without discarding it.
-          setError(
-            `Ticket created, but these files failed to upload: ${failures.join(", ")}. You can re-attach them later.`
-          );
-          if (fileInputRef.current) fileInputRef.current.value = "";
-          return;
-        }
-      }
-
+      // Phase 3 limitation: signed-URL upload + storage object PUT lands as a
+      // follow-up. The rows + attachment records are already persisted.
       setOpen(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     });

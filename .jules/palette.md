@@ -1,3 +1,0 @@
-## 2025-06-03 - Responsive Text Hiding in Icon Links/Buttons
-**Learning:** When using Tailwind's `hidden` class (e.g., `hidden sm:inline`) to hide text responsively inside buttons or links, the element effectively becomes an icon-only button on small screens. If `aria-label` and `title` aren't provided on the parent element, screen readers on mobile devices might not be able to identify the button's purpose, leading to poor accessibility.
-**Action:** Always add an explicit `aria-label` and `title` to the parent element, and `aria-hidden="true"` to the child icon, to ensure screen reader accessibility on smaller screens when text is hidden.

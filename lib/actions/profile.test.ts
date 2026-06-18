@@ -56,18 +56,11 @@ describe("updateProfile", () => {
     expect(h.state.capturedPatch).toEqual({ full_name: "Jane Doe", company: "Acme" });
   });
 
-  it("persists phone now that the profiles column exists", async () => {
+  it("returns unstored_phone since profiles has no phone column", async () => {
     const { updateProfile } = await import("@/lib/actions/profile");
     const result = await updateProfile({ full_name: "Jane", phone: "+1-555-1111" });
     expect(result.ok).toBe(true);
-    expect(h.state.capturedPatch).toEqual({ full_name: "Jane", phone: "+1-555-1111" });
-  });
-
-  it("persists notify_email: false (boolean, not truthiness)", async () => {
-    const { updateProfile } = await import("@/lib/actions/profile");
-    const result = await updateProfile({ notify_email: false });
-    expect(result.ok).toBe(true);
-    expect(h.state.capturedPatch).toEqual({ notify_email: false });
+    if (result.ok) expect(result.data.unstored_phone).toBe("+1-555-1111");
   });
 
   it("blocks unauthenticated callers", async () => {

@@ -18,14 +18,6 @@
  *
  * 2026-06-15 (Phase 3): synced with `20260615000000_phase3_stripe_customer_id.sql`
  *   - added `profiles.stripe_customer_id` (lazy-created on first invoice)
- *
- * 2026-06-18 (gap-closure): synced with `20260618000000_workorder_invoice_linkage.sql`
- *   + `20260618000100_profiles_prefs_phone.sql`
- *   - `invoices.project_id` now NULLABLE; added `invoices.user_id` (direct owner
- *     so a project-less work-order invoice is still visible/payable via RLS)
- *   - added work-order lifecycle timestamps:
- *     `work_orders.{in_progress_at,delivered_at,closed_at,cancelled_at}`
- *   - added `profiles.phone` + `profiles.notify_email`
  */
 
 export type Json =
@@ -65,8 +57,6 @@ export interface Database {
           avatar_url: string | null;
           apollo_contact_id: string | null;
           stripe_customer_id: string | null;
-          phone: string | null;
-          notify_email: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -123,8 +113,7 @@ export interface Database {
       invoices: {
         Row: {
           id: string;
-          project_id: string | null;
-          user_id: string | null;
+          project_id: string;
           amount_cents: number;
           currency: string;
           status: "open" | "paid" | "void" | "overdue";
@@ -136,6 +125,7 @@ export interface Database {
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["invoices"]["Row"]> & {
+          project_id: string;
           amount_cents: number;
         };
         Update: Partial<Database["public"]["Tables"]["invoices"]["Row"]>;
@@ -217,10 +207,6 @@ export interface Database {
           quoted_amount_cents: number | null;
           quoted_at: string | null;
           accepted_at: string | null;
-          in_progress_at: string | null;
-          delivered_at: string | null;
-          closed_at: string | null;
-          cancelled_at: string | null;
           invoice_id: string | null;
           created_at: string;
           updated_at: string;
