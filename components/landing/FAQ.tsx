@@ -38,7 +38,7 @@ const FAQS = [
   },
   {
     q: "Why &quot;dobeu&quot;?",
-    a: "A small Slovenian island where I spent a summer figuring out what I wanted to build. The two overlapping circles in the mark are two ideas merging — with an amber crescent at the intersection where the work happens.",
+    a: "Two readings at once. Say it out loud — it&apos;s my last initial, W, spelled phonetically (&quot;dub-el-u&quot;). It&apos;s also &quot;Do Be You&quot;: we handle the technical backend so you get to be you — focused on running your business, not wrangling your stack. The two overlapping circles in the mark are those two meanings merging, with an amber crescent at the intersection where the work happens.",
   },
 ];
 
