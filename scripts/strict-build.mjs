@@ -12,7 +12,7 @@ import { spawn } from "node:child_process";
 
 const BLOCKED_PATTERNS = [
   /Detected "engines"/,
-  // /currently disables static generation/
+  /currently disables static generation/
 ];
 
 const child = spawn("next", ["build"], {
