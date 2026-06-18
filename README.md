@@ -8,7 +8,7 @@ Stack:        Next.js 15 (App Router) · TypeScript · Tailwind · shadcn/ui · 
 Backend:      Supabase (Auth + Postgres + Storage + RLS)
 Booking:      Apollo Meetings (with custom Google-Calendar fallback)
 Lead capture: Apollo upsert + Typeform + Supabase + Resend confirmation
-Analytics:    PostHog + Mixpanel + GA4 + GTM (consent-gated)
+Analytics:    Vercel Analytics + Speed Insights + PostHog + Mixpanel + GA4 + GTM (consent-gated)
 Payments:     Stripe Checkout + webhooks → Supabase
 Hosting:      Vercel
 ```
@@ -50,6 +50,7 @@ Required environment variables (see `.env.example` for the full list):
 | `NEXT_PUBLIC_MIXPANEL_TOKEN` | Funnel analytics | |
 | `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | Acquisition | `G-XXXXXXX` |
 | `NEXT_PUBLIC_GTM_ID` | Tag orchestration | `GTM-XXXXXX` |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Lead API rate limiting | Auto-provision with the Upstash Marketplace integration. Missing locally falls back to in-memory limiting. |
 | `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Invoices | |
 | `STRIPE_WEBHOOK_SECRET` | `/api/webhooks/stripe` | |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `RESEND_REPLY_TO` | Transactional email | |
