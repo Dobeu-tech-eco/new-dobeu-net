@@ -5,13 +5,19 @@ import { Bot, Code2, Palette, LineChart, MessageCircleQuestion } from "lucide-re
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { cn } from "@/lib/utils";
 
-const SERVICES = [
+interface ServiceItem {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  tag?: string;
+}
+
+const SERVICES: ServiceItem[] = [
   {
     icon: Bot,
     title: "AI agents & automation",
     description:
-      "Claude + Composio + MCP integrations. Workflows that take work off your plate — from triage to fulfillment.",
-    tag: "Most asked for"
+      "Claude + Composio + MCP integrations. Workflows that take work off your plate — from triage to fulfillment."
   },
   {
     icon: Code2,
@@ -42,11 +48,14 @@ export function Services() {
             id="work-heading"
             className="font-display text-3xl md:text-5xl font-bold tracking-tight"
           >
-            Four things, done well.
+            Four things, done well — built on partnership.
           </h2>
           <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-            Most engagements are a mix of these. Pick what you need — I&apos;ll tell you honestly if
-            it&apos;s a fit.
+            Most engagements blend a few of these. What you&apos;re really hiring, though,
+            isn&apos;t a checklist — it&apos;s a partner. I take on a small number of clients
+            at a time, transfer everything I build into your hands, and stay on as a long-term
+            IT advisor well past launch. If we&apos;re a fit, I&apos;ll say so honestly — and
+            if not, I&apos;ll tell you that too.
           </p>
         </div>
 

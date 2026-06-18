@@ -1,0 +1,832 @@
+{
+  "envs": [
+    {
+      "type": "plain",
+      "value": "https://dobeu.net",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "m1BemKWHbeXjXXLl",
+      "key": "NEXT_PUBLIC_SITE_URL",
+      "createdAt": 1780603425324,
+      "updatedAt": 1780603425324,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "pk_live_51SLycuE3mTl1yIUcED2d12fLYCKenVLwWwwypftqQ82OEETYnx60JhInWJBzytN5T5Lj4bNTbYkwHz5tW1cgKPsz002HEnAb09",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "CS5JZUfNle2mfP2n",
+      "key": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+      "createdAt": 1780603401439,
+      "updatedAt": 1780603401439,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "GTM-M97GN5T7",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "Ngr6d1RieVZ8hJbH",
+      "key": "NEXT_PUBLIC_GTM_ID",
+      "createdAt": 1780603399554,
+      "updatedAt": 1780603399554,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "G-6MX5G49Z0R",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "bN2Okmq111Em6gxy",
+      "key": "NEXT_PUBLIC_GA4_MEASUREMENT_ID",
+      "createdAt": 1780603397722,
+      "updatedAt": 1780603397722,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "f5596f8dbfc32267e58b767dd1ede3ea",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "x6ybOmdzZjsl4sTg",
+      "key": "NEXT_PUBLIC_MIXPANEL_TOKEN",
+      "createdAt": 1780603395917,
+      "updatedAt": 1780603395917,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "https://us.i.posthog.com",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "Jwk6xKA7yFBsp0Oc",
+      "key": "NEXT_PUBLIC_POSTHOG_HOST",
+      "createdAt": 1780603394043,
+      "updatedAt": 1780603394043,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "phx_OQASZbC7EwKrUY9HRVQfQSDWIj00gbxhMOOmYNLmlFK2t60",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "TFNatG5bnegcNF4d",
+      "key": "NEXT_PUBLIC_POSTHOG_KEY",
+      "createdAt": 1780603392172,
+      "updatedAt": 1780603392172,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "RK40Nx8H",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "0Xa8opeiIYQGFiPc",
+      "key": "NEXT_PUBLIC_TYPEFORM_FORM_ID",
+      "createdAt": 1780603390333,
+      "updatedAt": 1780603390333,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "https://calendly.com/jeremyw-dobeu-r_el",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "VP3n5bHtrpywo0Ro",
+      "key": "NEXT_PUBLIC_CALENDLY_URL",
+      "createdAt": 1780603388485,
+      "updatedAt": 1780603388485,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "Dobeu Tech Solutions",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "R8arqkh647wRGBWQ",
+      "key": "NEXT_PUBLIC_SITE_NAME",
+      "createdAt": 1780603386692,
+      "updatedAt": 1780603386692,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "dobeu-net",
+      "target": [
+        "preview",
+        "production"
+      ],
+      "configurationId": null,
+      "id": "pLgpHgFuU9fxMqk0",
+      "key": "NEXT_PUBLIC_DATADOG_SERVICE",
+      "createdAt": 1780603384838,
+      "updatedAt": 1780603384838,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "datadoghq.com",
+      "target": [
+        "preview",
+        "production"
+      ],
+      "configurationId": null,
+      "id": "vHjIp1OmVShI1vcZ",
+      "key": "NEXT_PUBLIC_DATADOG_SITE",
+      "createdAt": 1780603382993,
+      "updatedAt": 1780603382993,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "puba21a9d877451b5ad06ec480b33172739",
+      "target": [
+        "preview",
+        "production"
+      ],
+      "configurationId": null,
+      "id": "NQIcPsT7RgdwaJ2C",
+      "key": "NEXT_PUBLIC_DATADOG_CLIENT_TOKEN",
+      "createdAt": 1780603380982,
+      "updatedAt": 1780603380982,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "development",
+      "target": [
+        "preview",
+        "production"
+      ],
+      "configurationId": null,
+      "id": "PsZuyoO0xsyuzmw6",
+      "key": "NEXT_PUBLIC_DATADOG_ENV",
+      "createdAt": 1780603379030,
+      "updatedAt": 1780603379030,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "plain",
+      "value": "xu0gfiqb",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "NCZc6xJqa8N8wVNk",
+      "key": "NEXT_PUBLIC_INTERCOM_APP_ID",
+      "createdAt": 1780591266162,
+      "updatedAt": 1780591266162,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "doHNvJ0FA8eO4dH8",
+      "key": "NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "1jZ9lwrS8JVTuoSF",
+      "key": "VERCEL_SUPABASE_SERVICE_ROLE_KEY",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "FuRkAUzvbLqcwXRX",
+      "key": "VERCEL_POSTGRES_DATABASE",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "zEtFR0KJaQ0ATgSC",
+      "key": "VERCEL_SUPABASE_JWT_SECRET",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "jm7oPl85DMgzjvzL",
+      "key": "VERCEL_POSTGRES_PRISMA_URL",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "AtCAAFg1YSB05IvE",
+      "key": "VERCEL_POSTGRES_PASSWORD",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "wISU2XfdJ1KUUS6x",
+      "key": "VERCEL_POSTGRES_URL",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "H1WhqkTFRi3FcLIY",
+      "key": "NEXT_PUBLIC_VERCEL_SUPABASE_PUBLISHABLE_KEY",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "tn07J4yq08DDaIn9",
+      "key": "VERCEL_POSTGRES_USER",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "cM2M567OZqjDtndm",
+      "key": "VERCEL_POSTGRES_HOST",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "gG1cvso9HztNjVn0",
+      "key": "VERCEL_SUPABASE_URL",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "A4dTt2uScW4kPM51",
+      "key": "NEXT_PUBLIC_VERCEL_SUPABASE_URL",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "2rGpsRz4DAnoNKgs",
+      "key": "VERCEL_POSTGRES_URL_NON_POOLING",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "kje0bJxBrC5B58ob",
+      "key": "VERCEL_SUPABASE_PUBLISHABLE_KEY",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "WezofeMnlJ7UzJgr",
+      "key": "VERCEL_SUPABASE_ANON_KEY",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "value": "",
+      "type": "sensitive",
+      "contentHint": {
+        "type": "integration-store-secret",
+        "storeId": "store_D2cI49mx0125wsZY",
+        "integrationId": "oac_VqOgBHqhEoFTPzGkPd7L0iH6",
+        "integrationProductId": "iap_zhE90cEUeefrTQf8",
+        "integrationConfigurationId": "icfg_g3tgNdGsZbLEQo22l762d5TY"
+      },
+      "target": [
+        "production",
+        "preview"
+      ],
+      "id": "AND74kNHbyCJp0RO",
+      "key": "VERCEL_SUPABASE_SECRET_KEY",
+      "configurationId": null,
+      "createdAt": 1780587352258,
+      "updatedAt": 1780587352258,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview",
+        "production"
+      ],
+      "configurationId": null,
+      "customEnvironmentIds": [],
+      "id": "qttfRnFNJc02jFNT",
+      "key": "NEXT_PUBLIC_DATADOG_APPLICATION_ID",
+      "createdAt": 1779421474439,
+      "updatedAt": 1779421474439,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "ADMIN_EMAILS",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "7PtL1PpFVOFRb5ux",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "WrkwMm8aajZRWApv",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "VXLs5PvShR2vpH4h",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "SUPABASE_SERVICE_ROLE_KEY",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "xw7p4da4oBKqFZkF",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "APOLLO_API_KEY",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "FtI0hMZSCKDEROa7",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "STRIPE_SECRET_KEY",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "hryn8aXJBvFirzzD",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "STRIPE_WEBHOOK_SECRET",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "erqqj6ItxoKULcy1",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "RESEND_API_KEY",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "jNVWFgmoSjNN2rzK",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "RESEND_FROM_EMAIL",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "Dq0WBixxXmt9pRKr",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    },
+    {
+      "type": "sensitive",
+      "key": "RESEND_REPLY_TO",
+      "value": "",
+      "target": [
+        "production",
+        "preview"
+      ],
+      "configurationId": null,
+      "createdAt": 1779421096154,
+      "updatedAt": 1779421096154,
+      "createdBy": "5DgWxN2bRuk2geMYDMA0u7ZS",
+      "updatedBy": null,
+      "id": "czJtdvbEvzelSxCt",
+      "decrypted": false,
+      "lastEditedByDisplayName": "Dobeu Tech Solutions LLC"
+    }
+  ],
+  "hiddenProductionEnvCount": 0
+}

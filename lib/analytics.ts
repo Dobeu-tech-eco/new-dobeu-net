@@ -2,17 +2,19 @@
  * Unified analytics fan-out. Every event call goes here and gets dispatched
  * to PostHog (product) + Mixpanel (funnel) + GA4 (acquisition) + dataLayer (GTM).
  *
- * Server-only fanout for sensitive events (bookings, payments) lives at
- * lib/analytics-server.ts to keep keys off the client.
+ * Sensitive server-side events (bookings, payments) are not tracked here;
+ * add a dedicated server module if that becomes necessary.
  */
 "use client";
 
 import posthog from "posthog-js";
 import mixpanel from "mixpanel-browser";
+import { getPosthogHost } from "@/lib/utils";
 
 type EventProps = Record<string, string | number | boolean | null | undefined>;
 
 let initialized = false;
+let consentGranted = false;
 
 export function initAnalytics(consent: boolean): void {
   if (typeof window === "undefined" || initialized) return;
@@ -23,7 +25,7 @@ export function initAnalytics(consent: boolean): void {
   // ---- PostHog ----
   if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
+      api_host: getPosthogHost(),
       capture_pageview: true,
       capture_pageleave: true,
       autocapture: false,
@@ -48,27 +50,16 @@ export function initAnalytics(consent: boolean): void {
   // ---- GA4 (via gtag) and GTM are loaded via <Script> in app/layout.tsx ----
 
   initialized = true;
+  consentGranted = true;
 }
 
-export function identify(userId: string, traits: EventProps = {}): void {
-  if (typeof window === "undefined") return;
-  try {
-    if (process.env.NEXT_PUBLIC_POSTHOG_KEY) posthog.identify(userId, traits);
-    if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) {
-      mixpanel.identify(userId);
-      mixpanel.people.set(traits);
-    }
-    if (typeof window.gtag === "function") {
-      window.gtag("set", "user_properties", traits);
-    }
-    pushToDataLayer({ event: "identify", user_id: userId, ...traits });
-  } catch (e) {
-    console.warn("[analytics.identify] failed", e);
-  }
+export function setAnalyticsConsent(consent: boolean): void {
+  consentGranted = consent;
+  if (consent) initAnalytics(true);
 }
 
 export function track(eventName: string, props: EventProps = {}): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !consentGranted) return;
   try {
     if (process.env.NEXT_PUBLIC_POSTHOG_KEY) posthog.capture(eventName, props);
     if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) mixpanel.track(eventName, props);
@@ -86,7 +77,7 @@ export function pageView(path: string): void {
 }
 
 function pushToDataLayer(payload: Record<string, unknown>): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !consentGranted) return;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push(payload);
 }

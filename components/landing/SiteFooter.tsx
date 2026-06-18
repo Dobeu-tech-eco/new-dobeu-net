@@ -10,7 +10,9 @@ export function SiteFooter() {
           <div className="flex items-start gap-3 max-w-sm">
             <DobeuMark className="h-10 w-10 shrink-0" />
             <div>
-              <p className="font-display text-lg font-bold lowercase">dobeu tech solutions</p>
+              <p className="font-display text-lg font-extrabold lowercase text-[hsl(var(--brand-indigo-slate))]">
+                dobeu tech solutions
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Ship the agent. Ship the app. Ship the brand. One operator, modern stack.
               </p>

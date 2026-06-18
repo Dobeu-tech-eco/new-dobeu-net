@@ -2,11 +2,18 @@ import { createAdminClient } from "@/lib/supabase/server";
 
 export default async function AdminBookingsPage() {
   const supabase = createAdminClient();
-  const { data: bookings } = await supabase
+  const { data: bookings, error } = await supabase
     .from("bookings")
     .select("*")
     .order("scheduled_at", { ascending: false })
     .limit(100);
+
+  // Schema is now unified — surface bookings errors honestly instead of
+  // masking them behind a fallback read against the leads table.
+  if (error) {
+    console.error("[admin/bookings] supabase error:", error.message ?? error);
+  }
+  const rows = bookings ?? [];
 
   return (
     <div className="space-y-6">
@@ -15,14 +22,19 @@ export default async function AdminBookingsPage() {
         <p className="text-muted-foreground mt-1">Discovery calls scheduled via the landing lightbox.</p>
       </header>
 
-      {!bookings || bookings.length === 0 ? (
+      {error ? (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          Couldn&rsquo;t load bookings. Check Supabase connectivity — see server logs for details.
+        </p>
+      ) : null}
+
+      {rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          No bookings yet. Verify Apollo Meetings is wired (NEXT_PUBLIC_APOLLO_MEETINGS_URL) or the
-          custom availability flow is enabled.
+          No bookings yet. As soon as someone books through Calendly, they appear here.
         </p>
       ) : (
         <ul className="rounded-lg border border-border divide-y divide-border">
-          {bookings.map((b) => (
+          {rows.map((b) => (
             <li key={b.id} className="p-4 flex justify-between items-start">
               <div>
                 <p className="font-semibold">{b.name ?? b.email}</p>

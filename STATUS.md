@@ -1,134 +1,129 @@
-# dobeu.net v3 — Status as of 2026-05-21 22:46
+# dobeu.net v3 — Status
 
-## ✅ Done (everything heavy)
+_Last updated: 2026-06-17 — Phases 4–5 shipped on `main`; live schema repair migration added; legacy cutover path decided (NO-OP data)._
 
-| | |
+> **Convergence:** see [`.agent/convergence/2026-06-05-production-readiness.md`](.agent/convergence/2026-06-05-production-readiness.md) for the full production-readiness verdict (✅ READY TO MERGE), operator checklist, legacy-cutover status, post-merge smoke path, and merge strategy.
+
+## Phase tracker (vs `.agent/PRODUCTION-PLAN.md`)
+
+| Phase | Scope | Status |
+|---|---|---|
+| **0 — Launch** | Stack, brand v2, landing, portal/admin scaffolds, lead pipeline, analytics fan-out, security headers, magic-link auth, deploy to Vercel | ✅ Shipped (commits up to `2a80db8`) |
+| **1 — P0 + DB reconciliation** | `NEXT_PUBLIC_SITE_URL` guard, lead-table probe drop, intercom/admin-email dedup, draft reconciliation migration | ✅ Shipped (commit `9ceefa2`) — migration applied to Vercel Supabase in Phase 2 |
+| **2 — Server-action foundation + portal/admin CRUD + work-order schema deployed** | `lib/actions/{work-orders,projects,invoices,profile}.ts` + tests; admin/projects write-CRUD; portal/settings update form; legacy env cleanup | ✅ Shipped |
+| **3 — Stripe-hosted invoicing + work-order UI end-to-end + observability** | `lib/stripe.ts`, `/api/webhooks/stripe`, portal/admin `tickets` UIs, work-order Resend notifications, Datadog log drain | ✅ Shipped (live on `https://dobeu.net`, HEAD `4cc72f2`) |
+| **4 — Auth hardening** | Supabase TOTP MFA (admin AAL2 gate), Intercom HMAC identity verification, rate-limit (in-memory accepted-risk) | ✅ **Code complete** (`test/coverage`, commits `1652f00`→`487fded`) |
+| **5 — Polish** | Desktop Lighthouse ≥90, CI runs tests, a11y on ticket UIs, dead-code cleanup, drop `profiles.is_admin`, ticket E2E | ✅ **Shipped** — `profiles.is_admin` **dropped on live** (`ipmjokuezeuukhrilduq`, verified 2026-06-16) |
+
+## Pending before production cutover (not code blockers)
+
+These do not block the `test/coverage` → `main` merge; they gate full production cutover. Full detail + exact URLs/commands in the convergence doc.
+
+1. ~~**Apply `20260616000000_phase5_drop_is_admin.sql` to live Vercel Supabase**~~ — **done** (manual SQL + script verify: `is_admin column present: NO`).
+2. **Provision `INTERCOM_IDENTITY_VERIFICATION_SECRET`** in Vercel + enable Identity Verification in the Intercom workspace with the same secret (JWT path via `INTERCOM_API_SECRET` is live; legacy HMAC optional).
+3. **Verify the Stripe webhook endpoint** (`/api/webhooks/stripe` subscribed to `invoice.paid`/`invoice.payment_failed`/`invoice.finalized`; signing secret matches `STRIPE_WEBHOOK_SECRET`).
+4. **Resend DKIM/SPF** verified for `dobeu.net`; **Vercel ↔ GitHub** re-linked for auto-deploy.
+5. **Legacy `db-dobeutech-unified` cutover** — **decided (2026-06-17):** NO data migration; Vercel Supabase authoritative. Inventory complete for cutover (`inventory.md` §1–§3, §8, bonus). See `.agent/migration/cutover-decision.md`. Optional: pre-seed 3 auth users via `import-auth-users.mjs`. Retire legacy after smoke + 7-day soak.
+
+_Informational:_ mobile landing Lighthouse Performance ≈ 80 (target 90) is a deferred, non-gating follow-up (rationale in the convergence doc §7)._
+
+## Database state (Vercel Supabase)
+
+Per `.agent/migration/vercel-supabase-state.md` (verified 2026-06-17):
+
+- `20260521000000_initial_schema.sql` — **applied**
+- `20260605000000_phase1_reconciliation.sql` — **applied**
+- `20260616000000_phase5_drop_is_admin.sql` — **applied** (`profiles.is_admin` absent)
+- `20260617000000_live_schema_repair.sql` — **idempotent repair** for reported drift (`profiles.updated_at`, `profiles.stripe_customer_id`, `public.projects`); inspected 2026-06-17 — targets already present on live; operator copy at `.agent/migration/live-schema-repair.sql`
+- Tables present: `bookings`, `invoices`, `leads`, `page_events`, `profiles`, `project_files`, `projects`, `work_orders`, `work_order_attachments`
+- `messages` dropped (Intercom owns chat)
+- `invoices.hosted_invoice_url` column present (target of Phase 3 Stripe wiring)
+- Storage buckets: `project-files`, `work-order-attachments`
+
+> **Legacy `db-dobeutech-unified` cutover:** **NO-OP data migration** (2026-06-17). Zero portal rows on legacy; 3 `auth.users` only. `mapping.sql` marked NO-OP. Optional auth pre-seed: `import-auth-users.mjs`. Decision: `.agent/migration/cutover-decision.md`.
+
+## Phase 2 — what shipped in this commit
+
+### Server-action foundation (`lib/actions/`)
+
+- `auth.ts` — `requireUser()` / `requireAdmin()` shared guards.
+- `work-orders.ts` — `submitWorkOrder`, `quoteWorkOrder`, `acceptWorkOrderQuote`, `updateWorkOrderStatus`. Functional + tested; UI wires up in Phase 3.
+- `projects.ts` — `createProject`, `updateProject`, `deleteProject` (admin CRUD).
+- `invoices.ts` — `createInvoice`, `markInvoicePaidManually` (DB-only; Stripe in Phase 3).
+- `profile.ts` — `updateProfile` (cookie-bound client; RLS enforces ownership).
+
+All actions return discriminated `{ ok: true, data } | { ok: false, error }`. Test coverage in matching `*.test.ts` files. Notification fan-out and Stripe wiring are marked with `PHASE 3:` comments — not silent stubs.
+
+### UI write surfaces
+
+- `app/admin/projects/page.tsx` — adds "New project" dialog + per-row "Edit" link.
+- `app/admin/projects/[id]/page.tsx` — edit form + Danger Zone delete.
+- `app/portal/settings/page.tsx` — convert read-only display to profile update form.
+- `components/admin/{NewProjectDialog,EditProjectForm,DeleteProjectButton}.tsx`
+- `components/portal/SettingsForm.tsx`
+
+### Hygiene
+
+- Deleted legacy Vercel envs `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` (zero refs in repo). Documented in `.agent/vercel-envs-cleanup.md`.
+- Deleted redundant root `.cmd` operator scripts: `push-csp-fix.cmd`, `push-vercel-lockfile-fix.cmd`, `fix-lockfile-and-deploy.cmd`, `ship-everything.cmd`.
+
+### Required code surgery (necessary side-effect of the reconciliation migration)
+
+The reconciliation migration dropped `public.messages`. To keep the portal from runtime-failing:
+- Deleted `app/portal/messages/page.tsx`.
+- Removed the "Messages" nav item from `app/portal/layout.tsx`.
+- Removed the unread-messages tile from `app/portal/page.tsx` dashboard.
+- Updated `lib/database.types.ts` (drop `messages`, add `work_orders` + `work_order_attachments`, add `invoices.hosted_invoice_url`).
+
+A "Tickets" nav entry replaces Messages in Phase 3 when the work-order UI ships.
+
+## Phase 3 readiness checklist
+
+Hard blockers before Phase 3 can start:
+
+| Item | State |
 |---|---|
-| **Stack scaffolded** | Next.js 15.5.18 + TypeScript + Tailwind + shadcn/ui + Framer Motion |
-| **Brand v2 tokens** | Indigo `#6B5CE7` + Amber `#F4A261` + Ink `#1A1A2E` + Paper `#FAFAFC`, Nunito + Quicksand via `next/font` |
-| **Themes** | Light / Dark / System via `next-themes` (verified — toggle hydrates correctly) |
-| **Landing page** | Hero, Services (4 tiles + "Something else"), HowItWorks, Proof, Founder, FAQ + JSON-LD, FinalCTA, sticky mobile CTA, footer — all rendering at `localhost:3000` |
-| **Calendly lightbox** | `react-calendly` InlineWidget pointed at your existing `https://calendly.com/jeremyw-dobeu-r_el` (free tier). Fires `calendly_*` funnel events. Mirrors bookings to `/api/lead`. CSP allows Calendly origins. **Verified open + iframe loads** |
-| **Hydration** | Fixed — removed `useSearchParams` (was forcing a stuck Suspense in Next 15.5 streaming) + switched dev off Turbopack |
-| **Auth + portal + admin** | All routes scaffolded — `/login` magic-link, `/portal/*`, `/admin/*` gated by `ADMIN_EMAILS=jeremyw@dobeu.net`, middleware bails gracefully when Supabase env vars are missing |
-| **`/api/lead` endpoint** | Lead fan-out: Supabase insert → Apollo contact upsert → Customer.io identify + `lead_captured` event → Resend confirmation email → admin notification. IP rate-limit 5/min. |
-| **Customer.io wired** | `lib/customerio.ts` server-side wrapper. Every lead identifies the contact + fires `lead_captured` event → kicks off your Customer.io welcome sequence |
-| **Apollo wired** | Server-side `lib/apollo.ts` upserts contact on every lead with UTM labels |
-| **Analytics fan-out** | PostHog + Mixpanel + GA4 + GTM with consent-gated banner |
-| **SEO** | sitemap.ts, robots.ts (allows GPTBot/ClaudeBot/PerplexityBot), opengraph-image.tsx (edge runtime gradient), llms.txt, FAQPage + Organization JSON-LD |
-| **Privacy + Terms pages** | Rendered |
-| **Vercel security headers** | CSP allows Stripe, Calendly, Typeform, Apollo, Supabase, PostHog, Mixpanel, GA4, GTM; HSTS, X-Frame-Options=DENY, etc. |
-| **GitHub repo** | `https://github.com/dobeutech/new-dobeu-net` — initial scaffold + hydration fixes pushed (commits `41d64a0`, `38e7e67`). Latest Customer.io commit `eda378e` committed locally, needs `git push`. |
-| **pnpm 11 migration** | `pnpm-workspace.yaml` allowBuilds for sharp/esbuild/core-js/protobufjs/unrs-resolver. Postinstall scripts ran. |
-| **CVE-2025-66478** | Patched — next bumped from 15.1.4 → ^15.5.4 |
-| **Supabase identified** | `db-dobeutech-unified` (project ref `qdwvcrmdqweojverdmmz`) — already has projects/services/messages/contact_submissions/client_files tables from the old site. Will reuse existing schema instead of creating duplicates. |
+| `STRIPE_SECRET_KEY` (live) | ✅ set in `.env.local` and Vercel (already used by lead capture path) |
+| `STRIPE_WEBHOOK_SECRET` | ✅ set (`whsec_*`) — used by `/api/webhooks/stripe` (to be authored) |
+| Stripe customer mapping for portal users | ⚠️ not designed yet — needs decision on `profiles.stripe_customer_id` vs lazy creation |
+| `RESEND_API_KEY` + verified sending domain DKIM/SPF for `dobeu.net` | ✅ key set; **verify DKIM/SPF before relying on quote/status emails at volume** |
+| `lib/stripe.ts` server client | ⏳ Phase 3 |
+| `/api/webhooks/stripe` handler + signature verification | ⏳ Phase 3 |
+| Work-order UI (`/portal/tickets`, `/admin/tickets`) | ⏳ Phase 3 |
+| Wire Resend admin notification on `submitWorkOrder` | ⏳ Phase 3 (TODO marker in action) |
+| Datadog log drain hookup (Vercel → Datadog) | ⏳ Phase 3 |
+| Intercom HMAC server-side signing (Phase 4) | ⚠️ HMAC secret not yet provisioned |
+| Legacy `db-dobeutech-unified` data cutover | ✅ **Decided** — NO-OP data; see `cutover-decision.md` |
 
-## ⏳ Remaining (4 things — ~20 min total)
+## Remaining Phases (4 + 5 + legacy cutover + close-out)
 
-### 1. Push the latest commit (10 seconds)
+> Phase 3 has since shipped and is **live on `https://dobeu.net`** (HEAD `4cc72f2`):
+> `lib/stripe.ts`, `/api/webhooks/stripe`, `profiles.stripe_customer_id`,
+> Resend wire-up, `/portal/tickets` + `/admin/tickets`, admin invoices write
+> surface. Two stale notes corrected during the remaining-phases review:
+> **CI already runs `pnpm test:ci`** (`.github/workflows/ci.yml`), and the
+> Intercom `user_hash` plumbing already exists end-to-end (only server-side
+> HMAC signing + the env var are missing).
 
-```powershell
-cd C:\Users\jswil\repos\new-dobeu-net
-git push
-```
+Design + plan for everything after Phase 3 now live in:
 
-This pushes commit `eda378e` (Customer.io integration) to `dobeutech/new-dobeu-net`.
+- **Design:** [`docs/superpowers/specs/2026-06-05-remaining-phases-design.md`](docs/superpowers/specs/2026-06-05-remaining-phases-design.md) — current-state audit, three sequencing approaches (recommends **B: parallel streams**), Phase 4 (TOTP MFA + Intercom HMAC) architecture, legacy-cutover design, Phase 5 scope, parallel-execution map, decision gates, success criteria.
+- **Plan:** [`docs/superpowers/plans/2026-06-05-remaining-phases.md`](docs/superpowers/plans/2026-06-05-remaining-phases.md) — bite-sized, TDD, exact-path task groups A–H (MFA, Intercom HMAC, legacy cutover, CI/E2E, dead-code/hygiene, a11y/perf, operational close-out, parallel dispatch map).
 
-### 2. Create the Vercel project linked to the repo (5 min)
+**Headline:** ~3–4 days of agent work (4 parallel wave-1 agents) + the user's
+inventory/cutover window. Only blocking human action: running the read-only
+inventory queries in `.agent/migration/inventory.md`. Decision gates are
+defaulted (drop `is_admin` now, keep `start-dev`/`deploy-vercel` `.cmd`s,
+rate-limit accepted-risk, drop dangling `analytics-server` reference).
 
-Easiest: in your browser open https://vercel.com/new and click **Import** on the `dobeutech/new-dobeu-net` repo. Vercel auto-detects Next.js. Hit **Deploy**.
+## Verification
 
-Or via CLI from the project root:
-```powershell
-cd C:\Users\jswil\repos\new-dobeu-net
-npx vercel@latest link --yes --scope dobeutechnology
-npx vercel@latest deploy --scope dobeutechnology
-```
-
-### 3. Set Vercel env vars (5 min)
-
-In the Vercel project settings → Environment Variables, add (mark as "Production, Preview, Development"):
-
-| Key | Value |
-|---|---|
-| `NEXT_PUBLIC_SITE_URL` | `https://new-dobeu-net.vercel.app` (or the actual URL Vercel assigns) |
-| `NEXT_PUBLIC_CALENDLY_URL` | `https://calendly.com/jeremyw-dobeu-r_el` |
-| `ADMIN_EMAILS` | `jeremyw@dobeu.net` |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://qdwvcrmdqweojverdmmz.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkd3Zjcm1kcXdlb2p2ZXJkbW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MzM3MTUsImV4cCI6MjA5MTAwOTcxNX0.dm1jVqqyQ44j3-Ckr2-NQ7ZsA_6wRUCnaE1Gl0Rr2g4` |
-| `SUPABASE_SERVICE_ROLE_KEY` | (grab from Supabase dashboard → API settings → service_role secret) |
-| `APOLLO_API_KEY` | (your Apollo key) |
-| `RESEND_API_KEY` | (your Resend key) |
-| `RESEND_FROM_EMAIL` | `hello@dobeu.net` |
-| `RESEND_REPLY_TO` | `jeremyw@dobeu.net` |
-| `CUSTOMERIO_SITE_ID` | (your Customer.io site id) |
-| `CUSTOMERIO_API_KEY` | (your Customer.io API key) |
-| `NEXT_PUBLIC_POSTHOG_KEY` | (optional, your PostHog key) |
-| `NEXT_PUBLIC_MIXPANEL_TOKEN` | (optional) |
-| `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | (optional, `G-...`) |
-| `NEXT_PUBLIC_GTM_ID` | (optional, `GTM-...`) |
-| `STRIPE_SECRET_KEY` | (when you wire portal payments) |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | (when you wire portal payments) |
-
-Then click **Redeploy** so Vercel picks them up.
-
-### 4. DNS cutover (when you're ready)
-
-Once `*.vercel.app` looks good:
-1. In Vercel project → Domains → Add `dobeu.net` + `www.dobeu.net`
-2. Update Cloudflare DNS records as Vercel instructs (apex → `76.76.21.21`, www → `cname.vercel-dns.com`)
-3. ~5 min propagation, then `https://dobeu.net` is live on the new stack
-
-## Quick-test checklist on the preview URL
-
-- [ ] Hero loads with both CTAs visible
-- [ ] "Book a call" opens lightbox → Calendly widget renders (themed light/dark)
-- [ ] Submit a real test booking on Calendly → confirm Apollo gets the contact + Customer.io fires `lead_captured`
-- [ ] Theme toggle cycles Light/Dark/System and persists across reloads
-- [ ] FAQ accordion expands
-- [ ] Lighthouse mobile: Perf ≥90, A11y ≥95, BP ≥90, SEO ≥95
-- [ ] `/login` magic-link sends an email
-- [ ] `/portal` redirects to login if not authed
-- [ ] `/admin` redirects to `/portal?error=not_authorized` if email ≠ `jeremyw@dobeu.net`
-
-## What was hard
-
-- **pnpm 11 migration** — config moved from `package.json` `"pnpm": {}` to `pnpm-workspace.yaml` `onlyBuiltDependencies` / `allowBuilds`. Initial install failed; fixed.
-- **Hydration mismatch** — `useSearchParams` inside `<Suspense>` boundary streamed but never resolved B:1→S:1 in Next 15.5 + Turbopack streaming. Rewrote AnalyticsProvider to read `window.location.search` directly. Switched dev off Turbopack for stability.
-- **Vercel UI Deploy button** — clicked via MCP but didn't fire; UI form has React-controlled state that needed manual focus. Worked around with CLI but CLI hit 2FA gate. Recommend manual UI deploy from your browser.
-
-## Files added/changed this session
+All five gates green at end of Phase 2:
 
 ```
-new-dobeu-net/
-├─ BRAINSTORM.md, PLAN.md, README.md, STATUS.md (this file)
-├─ .env.local, .env.example
-├─ package.json, tsconfig.json, next.config.ts, tailwind.config.ts, postcss.config.mjs, vercel.json
-├─ pnpm-workspace.yaml (pnpm 11 allowBuilds)
-├─ middleware.ts (auth gating)
-├─ app/
-│  ├─ layout.tsx, page.tsx, globals.css (Dobeu v2 tokens)
-│  ├─ login/, auth/callback/, portal/(7 routes), admin/(7 routes)
-│  ├─ api/lead/route.ts (Supabase + Apollo + Customer.io + Resend fan-out)
-│  ├─ sitemap.ts, robots.ts, opengraph-image.tsx
-│  └─ privacy/, terms/
-├─ components/
-│  ├─ brand/DobeuMark.tsx
-│  ├─ landing/ (Hero, Services, HowItWorks, Proof, Founder, FAQ, FinalCTA, SiteNav, SiteFooter, StickyMobileCTA, LightboxProvider, BookingTab, TypeformTab, LeadForm)
-│  ├─ portal/LogoutButton.tsx
-│  ├─ theme-provider.tsx, theme-toggle.tsx, analytics-provider.tsx
-│  └─ ui/ (button, dialog, tabs, input, label, accordion, dropdown-menu)
-├─ lib/
-│  ├─ supabase/ (client, server, middleware, admin)
-│  ├─ analytics.ts (PostHog + Mixpanel + GA4 + GTM fan-out)
-│  ├─ apollo.ts (server-side upsert)
-│  ├─ customerio.ts (server-side identify + track)
-│  ├─ utils.ts, database.types.ts
-├─ supabase/migrations/20260521000000_initial_schema.sql (NOT applied — db-dobeutech-unified already has equivalent tables)
-├─ public/llms.txt
-├─ docs/DEPLOYMENT.md, FIX-INSTALL.md, tracking-plan.md
-├─ start-dev.cmd, init-github.cmd, deploy-vercel.cmd, commit-fixes.cmd, commit-push.cmd
-└─ .agent/progress.md, state.json, tasks.json
+pnpm install        # baseline
+pnpm type-check     # ✅
+pnpm lint           # ✅ no warnings
+pnpm test:ci        # ✅ 178 tests across 18 files (51 new in lib/actions/)
+pnpm build          # ✅ + strict-build (no blocked warnings)
 ```
-
-98 files total. Local dev verified working at http://localhost:3000.

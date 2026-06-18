@@ -40,8 +40,8 @@ Required environment variables (see `.env.example` for the full list):
 
 | Variable | Required for | Notes |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Everything | From Supabase project settings |
-| `SUPABASE_SERVICE_ROLE_KEY` | Lead API, webhooks | **Server only** — never expose |
+| `NEXT_PUBLIC_VERCEL_SUPABASE_URL` / `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY` | Everything | Auto-provisioned by the Vercel Marketplace Supabase integration. The URL alias must be added manually because Vercel ships it server-only by default. |
+| `VERCEL_SUPABASE_SERVICE_ROLE_KEY` | Lead API, webhooks, admin reads | **Server only** — never expose. Auto-provisioned by the Marketplace integration. |
 | `ADMIN_EMAILS` | `/admin` gating | Comma-separated. v1 default: `jeremyw@dobeu.net` |
 | `APOLLO_API_KEY` | Lead capture, contact upsert | Server only |
 | `NEXT_PUBLIC_APOLLO_MEETINGS_URL` | Booking lightbox | Apollo Meetings hosted URL. Leave blank for fallback flow |

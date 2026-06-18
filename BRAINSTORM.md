@@ -23,23 +23,23 @@ dobeu.net v3 is a **lead-generation funnel with a lightweight client portal**. N
 
 ## 3. Decisions captured
 
-| Decision | Choice | Why |
-|---|---|---|
-| Framework | **Next.js 15 (App Router, RSC)** | Best SEO, server components, image optimization, edge runtime, ISR. Vercel-native. |
-| UI | Tailwind 3 + shadcn/ui (Radix) + Framer Motion (`motion/react`) | Matches design system token model; shadcn ports cleanly from old repo. |
-| Auth | **Supabase Auth (email magic-link)** | No Auth0 cost. Email-only sign-up per the spec. Supabase already in use. |
-| DB | **Supabase Postgres + RLS** | Replaces Auth0+Supabase split — one provider, one bill. RLS for portal isolation. |
-| Booking | **Calendly free tier** (existing account at jeremyw@dobeu.net, URL `https://calendly.com/jeremyw-dobeu-r_el`) | Apollo doesn't expose a public Meetings API. Calendly free tier covers 1 event type at $0/mo. Embeds inline via `react-calendly`. Bookings still mirror to Apollo via `/api/lead`. |
-| Lead capture | **Apollo (auto-upsert) + Typeform (qualified intake) + Supabase (raw)** | Triple write so we never lose a lead. Apollo is the system of record. |
-| Analytics | **PostHog (primary, product) + Mixpanel (funnel) + GA4 (acquisition) + GTM (tag orchestration)** | PostHog for session replay + feature flags + experiments. Mixpanel for funnel reports. GA4 for paid attribution. GTM as the bus. |
-| Payments | **Stripe Checkout + Stripe webhooks → Supabase** | Already integrated in old site; reuse the patterns. |
-| Email | **Resend** (transactional) + **Customer.io** (lifecycle, if quota permits) | Already in Dobeu Eco stack; cheap and reliable. |
-| Hosting | **Vercel** (preview → DNS cutover) | Confirmed by Jeremy. Existing Vercel project on `dobeu.net`. |
-| Repo | New repo `dobeutech/new-dobeu-net` (or rename existing to `dobeu-net` and force-push fresh main) | Decision deferred — see Open Questions. |
-| Design tokens | Consume `@dobeu/tokens` CSS vars + Tailwind config from the design system monorepo | Single source of truth; no hardcoded hex. |
-| Themes | next-themes — Light / Dark / System | Dark surface `#1A1A2E`, light surface `#FAFAFC`, both indigo+amber accent. |
-| Type | **Nunito** (primary) + **Quicksand** (display fallback) + system mono (code) | Per design system spec. Hosted via `next/font` for perf. |
-| i18n | **Deferred to v2.** Single-language (en) for v1. | Old site had EN/ES/FR — but routing complexity isn't worth it for a lead-gen page until we have proven demand outside EN. |
+| Decision      | Choice                                                                                                        | Why                                                                                                                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework     | **Next.js 15 (App Router, RSC)**                                                                              | Best SEO, server components, image optimization, edge runtime, ISR. Vercel-native.                                                                                                 |
+| UI            | Tailwind 3 + shadcn/ui (Radix) + Framer Motion (`motion/react`)                                               | Matches design system token model; shadcn ports cleanly from old repo.                                                                                                             |
+| Auth          | **Supabase Auth (email magic-link)**                                                                          | No Auth0 cost. Email-only sign-up per the spec. Supabase already in use.                                                                                                           |
+| DB            | **Supabase Postgres + RLS**                                                                                   | Replaces Auth0+Supabase split — one provider, one bill. RLS for portal isolation.                                                                                                  |
+| Booking       | **Calendly free tier** (existing account at jeremyw@dobeu.net, URL `https://calendly.com/jeremyw-dobeu-r_el`) | Apollo doesn't expose a public Meetings API. Calendly free tier covers 1 event type at $0/mo. Embeds inline via `react-calendly`. Bookings still mirror to Apollo via `/api/lead`. |
+| Lead capture  | **Apollo (auto-upsert) + Typeform (qualified intake) + Supabase (raw)**                                       | Triple write so we never lose a lead. Apollo is the system of record.                                                                                                              |
+| Analytics     | **PostHog (primary, product) + Mixpanel (funnel) + GA4 (acquisition) + GTM (tag orchestration)**              | PostHog for session replay + feature flags + experiments. Mixpanel for funnel reports. GA4 for paid attribution. GTM as the bus.                                                   |
+| Payments      | **Stripe Checkout + Stripe webhooks → Supabase**                                                              | Already integrated in old site; reuse the patterns.                                                                                                                                |
+| Email         | **Resend** (transactional) + **Customer.io** (lifecycle, if quota permits)                                    | Already in Dobeu Eco stack; cheap and reliable.                                                                                                                                    |
+| Hosting       | **Vercel** (preview → DNS cutover)                                                                            | Confirmed by Jeremy. Existing Vercel project on `dobeu.net`.                                                                                                                       |
+| Repo          | New repo `dobeutech/new-dobeu-net` (or rename existing to `dobeu-net` and force-push fresh main)              | Decision deferred — see Open Questions.                                                                                                                                            |
+| Design tokens | Consume `@dobeu/tokens` CSS vars + Tailwind config from the design system monorepo                            | Single source of truth; no hardcoded hex.                                                                                                                                          |
+| Themes        | next-themes — Light / Dark / System                                                                           | Dark surface `#1A1A2E`, light surface `#FAFAFC`, both indigo+amber accent.                                                                                                         |
+| Type          | **Nunito** (primary) + **Quicksand** (display fallback) + system mono (code)                                  | Per design system spec. Hosted via `next/font` for perf.                                                                                                                           |
+| i18n          | **Deferred to v2.** Single-language (en) for v1.                                                              | Old site had EN/ES/FR — but routing complexity isn't worth it for a lead-gen page until we have proven demand outside EN.                                                          |
 
 ## 4. The page
 
@@ -134,22 +134,22 @@ Heavy use of shadcn `<DataTable>` + Tanstack Table for the list views.
 
 ## 7. Tech stack & cost
 
-| Layer | Service | Cost |
-|---|---|---|
-| Hosting | Vercel | $0–20/mo (Hobby or existing Pro) |
-| Auth + DB + Storage | Supabase | Free tier likely sufficient |
-| Booking | Apollo Meetings | Included in existing Apollo plan |
-| Lead enrichment | Apollo | Included |
-| Lead form | Typeform | Existing plan |
-| Email — transactional | Resend | Free 100/day; $20/mo at scale |
-| Email — lifecycle | Customer.io | Existing plan |
-| Analytics | PostHog | Free up to 1M events/mo |
-| Analytics | Mixpanel | Free up to 100k MTU |
-| Analytics | GA4 | Free |
-| Analytics | GTM | Free |
-| Payments | Stripe | 2.9% + 30¢ per transaction (no monthly) |
-| Domain | Existing dobeu.net | Existing |
-| **New recurring cost** | **$0** | **All within existing plans** |
+| Layer                  | Service            | Cost                                    |
+| ---------------------- | ------------------ | --------------------------------------- |
+| Hosting                | Vercel             | $0–20/mo (Hobby or existing Pro)        |
+| Auth + DB + Storage    | Supabase           | Free tier likely sufficient             |
+| Booking                | Apollo Meetings    | Included in existing Apollo plan        |
+| Lead enrichment        | Apollo             | Included                                |
+| Lead form              | Typeform           | Existing plan                           |
+| Email — transactional  | Resend             | Free 100/day; $20/mo at scale           |
+| Email — lifecycle      | Customer.io        | Existing plan                           |
+| Analytics              | PostHog            | Free up to 1M events/mo                 |
+| Analytics              | Mixpanel           | Free up to 100k MTU                     |
+| Analytics              | GA4                | Free                                    |
+| Analytics              | GTM                | Free                                    |
+| Payments               | Stripe             | 2.9% + 30¢ per transaction (no monthly) |
+| Domain                 | Existing dobeu.net | Existing                                |
+| **New recurring cost** | **$0**             | **All within existing plans**           |
 
 ## 8. Data model (Supabase)
 
@@ -181,6 +181,7 @@ page_events         id, session_id, user_id (nullable), event_name, properties (
 ```
 
 RLS rules:
+
 - `profiles`: user can read+update own row; admin reads all.
 - `projects`/`project_files`/`invoices`/`messages`: user reads where `owner_user_id = auth.uid()`; admin reads all.
 - `leads`/`bookings`/`page_events`: insert from anon (with rate limit), read admin-only.
@@ -212,6 +213,7 @@ Lead books call →
 ## 10. Theme & visual direction
 
 **Light mode (default for marketing — bright, confident)**
+
 - Surface: `#FAFAFC`
 - Text: `#1A1A2E`
 - Brand: `#6B5CE7` (indigo)
@@ -219,6 +221,7 @@ Lead books call →
 - Subtle gradient hero: `linear-gradient(135deg, indigo-100 0%, paper-50 60%, amber-100 100%)`
 
 **Dark mode (default for portal — focused, easy on eyes)**
+
 - Surface: `#1A1A2E`
 - Text: `#FAFAFC`
 - Brand: same indigo
@@ -228,6 +231,7 @@ Lead books call →
 **System** — follows OS preference. Persists choice via next-themes localStorage.
 
 **Type scale** (Nunito):
+
 - Display (hero): 64/72/80 (mobile/tablet/desktop)
 - H1: 40/48/56
 - H2: 32/36/40
@@ -269,12 +273,12 @@ Lead books call →
 
 ## 14. Open questions / risks
 
-1. **Repo strategy.** New repo `dobeutech/new-dobeu-net` is cleanest; force-pushing fresh main to `dobeutech/digital-wharf-dynamics` keeps the existing GitHub→Vercel link but loses history. *Default to new repo unless Jeremy prefers the in-place rewrite.*
-2. **Apollo Meetings embeddability.** Some Apollo plans expose Meetings as an embeddable widget; others as a hosted URL only. Need to verify against Jeremy's actual plan before committing. *Fallback: custom availability picker writing to Supabase + Google Calendar via OAuth (no monthly cost either).*
-3. **Existing Vercel project.** The current `dobeu.net` Vercel project is connected to `dobeutech/digital-wharf-dynamics`. Switching to a new repo means creating a new Vercel project and moving the domain. ~10 min of downtime worst case if we mess up — *we'll have the new build green on `*.vercel.app` first so DNS swap is instant.*
-4. **Auth0 → Supabase migration of existing users.** The current site uses Auth0. Any existing client users will need to re-verify via magic link. *Acceptable: it's a small user base; we'll email them a heads-up before cutover.*
+1. **Repo strategy.** New repo `dobeutech/new-dobeu-net` is cleanest; force-pushing fresh main to `dobeutech/digital-wharf-dynamics` keeps the existing GitHub→Vercel link but loses history. _Default to new repo unless Jeremy prefers the in-place rewrite._
+2. **Apollo Meetings embeddability.** Some Apollo plans expose Meetings as an embeddable widget; others as a hosted URL only. Need to verify against Jeremy's actual plan before committing. _Fallback: custom availability picker writing to Supabase + Google Calendar via OAuth (no monthly cost either)._
+3. **Existing Vercel project.** The current `dobeu.net` Vercel project is connected to `dobeutech/digital-wharf-dynamics`. Switching to a new repo means creating a new Vercel project and moving the domain. ~10 min of downtime worst case if we mess up — _we'll have the new build green on `_.vercel.app` first so DNS swap is instant.\*
+4. **Auth0 → Supabase migration of existing users.** The current site uses Auth0. Any existing client users will need to re-verify via magic link. _Acceptable: it's a small user base; we'll email them a heads-up before cutover._
 5. **Stripe customer portability.** Existing Stripe customers stay in the same Stripe account; no migration needed. Webhook URLs need to be re-pointed at the new Vercel deployment.
-6. **CSP + cookie consent.** Multiple analytics tags need explicit CSP allowances and a GDPR-compliant consent banner. *Will use the cookie-consent component pattern from the old repo, retuned for the new stack.*
+6. **CSP + cookie consent.** Multiple analytics tags need explicit CSP allowances and a GDPR-compliant consent banner. _Will use the cookie-consent component pattern from the old repo, retuned for the new stack._
 
 ## 15. Next step
 

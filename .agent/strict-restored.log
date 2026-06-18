@@ -1,0 +1,64 @@
+[WARN] Unsupported engine: wanted: {"node":"20.x"} (current: {"node":"v24.15.0","pnpm":"11.1.3"})
+$ node scripts/strict-build.mjs
+   Γû▓ Next.js 15.5.18
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ┬╖ optimizePackageImports
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ Γ£ô Compiled successfully in 6.9s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/12) ...
+   Generating static pages (3/12) 
+   Generating static pages (6/12) 
+   Generating static pages (9/12) 
+ Γ£ô Generating static pages (12/12)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+Γöî Γùï /                                    48.9 kB         400 kB
+Γö£ Γùï /_not-found                            994 B         103 kB
+Γö£ ╞Æ /admin                                 174 B         103 kB
+Γö£ ╞Æ /admin/analytics                       174 B         103 kB
+Γö£ ╞Æ /admin/bookings                        174 B         103 kB
+Γö£ ╞Æ /admin/invoices                        174 B         103 kB
+Γö£ ╞Æ /admin/leads                           174 B         103 kB
+Γö£ ╞Æ /admin/projects                        180 B         106 kB
+Γö£ ╞Æ /admin/users                           180 B         106 kB
+Γö£ ╞Æ /admin/users/[id]                      180 B         106 kB
+Γö£ ╞Æ /api/files/[id]/download               174 B         103 kB
+Γö£ ╞Æ /api/lead                              174 B         103 kB
+Γö£ ╞Æ /api/typeform/webhook                  174 B         103 kB
+Γö£ ╞Æ /api/webhooks/calendly                 174 B         103 kB
+Γö£ Γùï /apple-icon.png                          0 B            0 B
+Γö£ ╞Æ /auth/callback                         174 B         103 kB
+Γö£ Γùï /icon.svg                                0 B            0 B
+Γö£ ╞Æ /login                                3.2 kB         374 kB
+Γö£ Γùï /opengraph-image                       174 B         103 kB
+Γö£ ╞Æ /portal                                180 B         106 kB
+Γö£ ╞Æ /portal/files                          174 B         103 kB
+Γö£ ╞Æ /portal/invoices                       174 B         103 kB
+Γö£ ╞Æ /portal/messages                       174 B         103 kB
+Γö£ ╞Æ /portal/projects                       180 B         106 kB
+Γö£ ╞Æ /portal/projects/[id]                  180 B         106 kB
+Γö£ ╞Æ /portal/settings                       174 B         103 kB
+Γö£ Γùï /privacy                               211 B         352 kB
+Γö£ Γùï /robots.txt                            174 B         103 kB
+Γö£ Γùï /sitemap.xml                           174 B         103 kB
+Γöö Γùï /terms                                 211 B         352 kB
++ First Load JS shared by all             102 kB
+  Γö£ chunks/280f5279-4aceb0b3a9684a59.js  54.2 kB
+  Γö£ chunks/711-1203b5d90100ae37.js       46.1 kB
+  Γöö other shared chunks (total)          2.06 kB
+
+
+╞Æ Middleware                             88.5 kB
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
+[strict-build] No blocked warnings detected.

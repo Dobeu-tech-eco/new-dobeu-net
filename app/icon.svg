@@ -1,16 +1,10 @@
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dobeu mark">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" role="img" aria-label="dobeu symbol">
   <defs>
-    <linearGradient id="indigo" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6B5CE7" />
-      <stop offset="100%" stop-color="#4A3FA8" />
-    </linearGradient>
-    <mask id="crescent">
-      <rect width="64" height="64" fill="black" />
-      <circle cx="24" cy="32" r="18" fill="white" />
-      <circle cx="40" cy="32" r="18" fill="black" />
-    </mask>
+    <mask id="cutA" maskUnits="userSpaceOnUse" x="0" y="0" width="500" height="500"><rect width="500" height="500" fill="#fff"></rect><circle cx="315" cy="235" r="78" fill="#000"></circle></mask>
+    <mask id="cutC1" maskUnits="userSpaceOnUse" x="0" y="0" width="500" height="500"><rect width="500" height="500" fill="#fff"></rect><circle cx="175" cy="248" r="122" fill="#000"></circle></mask>
+    <mask id="cutC1A" maskUnits="userSpaceOnUse" x="0" y="0" width="500" height="500"><rect width="500" height="500" fill="#fff"></rect><circle cx="175" cy="248" r="122" fill="#000"></circle><circle cx="315" cy="235" r="78" fill="#000"></circle></mask>
   </defs>
-  <circle cx="24" cy="32" r="18" fill="url(#indigo)" opacity="0.95" />
-  <circle cx="40" cy="32" r="18" fill="#6B5CE7" opacity="0.85" />
-  <rect width="64" height="64" fill="#F4A261" mask="url(#crescent)" />
+  <circle cx="322" cy="258" r="105" fill="#4A3FA8" mask="url(#cutC1A)"></circle>
+  <circle cx="175" cy="248" r="122" fill="#6B5CE7" mask="url(#cutA)"></circle>
+  <circle cx="315" cy="235" r="78" fill="#F4A261" mask="url(#cutC1)"></circle>
 </svg>

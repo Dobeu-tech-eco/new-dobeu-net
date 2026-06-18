@@ -5,6 +5,20 @@ backed by `dobeutech/digital-wharf-dynamics`).
 
 ---
 
+## Phase 0 — Enable Claude GitHub automation
+
+1. Install the Claude GitHub App for the `Dobeu-tech-eco` organization (or this repository only).
+2. Add the repository (or organization) Actions secret:
+   - `CLAUDE_CODE_OAUTH_TOKEN`
+3. Claude workflows are configured in:
+   - `.github/workflows/claude.yml`
+   - `.github/workflows/claude-code-review.yml`
+4. Open a PR to test:
+   - mention `@claude` in a PR comment, or
+   - rely on `Claude Code Review` running on PR `opened/synchronize/ready_for_review/reopened`.
+
+---
+
 ## Phase 1 — Push to GitHub
 
 ```bash
@@ -27,24 +41,110 @@ git push -u origin main
 
 ---
 
-## Phase 2 — Provision Supabase
+## Phase 2 — Provision Supabase (via the Vercel Marketplace)
 
-1. Go to https://supabase.com/dashboard → Create new project.
-   - Project name: `dobeu-net-v3`
-   - Region: `us-east-1` (matches Vercel `iad1`)
-   - Database password: generate + store in 1Password
-2. Once provisioned, copy from **Settings → API**:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public key` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role secret` → `SUPABASE_SERVICE_ROLE_KEY`
+Supabase is provisioned through the Vercel Marketplace integration, which auto-injects the env vars into every environment (Production / Preview / Development).
+
+1. In the Vercel project → **Storage** → click **Connect Database** → choose **Supabase**. Vercel will provision (or link) the Supabase project and inject these env vars automatically:
+   - `VERCEL_SUPABASE_URL` (server-only)
+   - `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY` (browser-exposed)
+   - `NEXT_PUBLIC_VERCEL_SUPABASE_PUBLISHABLE_KEY`
+   - `VERCEL_SUPABASE_SERVICE_ROLE_KEY` (server-only, bypasses RLS)
+   - `VERCEL_SUPABASE_JWT_SECRET`
+   - `VERCEL_POSTGRES_*` (direct DB connection variants)
+2. **Add one extra env var manually**: `NEXT_PUBLIC_VERCEL_SUPABASE_URL` (mirror of `VERCEL_SUPABASE_URL`) — the Marketplace integration does not ship a `NEXT_PUBLIC_` prefix on the URL, but the browser client needs it. Mark it Production + Preview + Development.
 3. Apply migrations:
    ```bash
    pnpm supabase link --project-ref <your-ref>
    pnpm supabase db push
    ```
 4. Enable **Email auth** in Supabase Dashboard → Authentication → Providers.
-5. Set redirect allowlist: `https://dobeu.net/auth/callback`, `https://*.vercel.app/auth/callback`,
-   `http://localhost:3000/auth/callback`.
+5. **Custom SMTP (Resend) for magic-link auth** — required for cutover testing at volume.
+   Magic links are sent by **Supabase Auth**, not the Next.js app. `RESEND_API_KEY` in Vercel
+   only powers lead/work-order emails via `lib/resend.ts`; you must wire Resend into Supabase
+   separately.
+
+   In [Supabase Dashboard](https://supabase.com/dashboard/project/ipmjokuezeuukhrilduq/auth/smtp)
+   → **Authentication** → **Email** → **SMTP Settings**:
+
+   | Field | Value |
+   | ----- | ----- |
+   | Enable custom SMTP | On |
+   | Host | `smtp.resend.com` |
+   | Port | `465` (TLS) — or `587` (STARTTLS) |
+   | Username | `resend` |
+   | Password | Your Resend API key (same secret as Vercel `RESEND_API_KEY`; paste in Dashboard only — never commit) |
+   | Sender email | `hello@dobeu.net` (or your verified `RESEND_FROM_EMAIL`) |
+   | Sender name | `Dobeu Tech Solutions` |
+
+   Resend docs: [Send with Supabase SMTP](https://resend.com/docs/send-with-supabase-smtp).
+   Domain `dobeu.net` must be verified in Resend before auth mail delivers reliably.
+
+6. **Raise Auth rate limits** (project `ipmjokuezeuukhrilduq`) — Dashboard →
+   **Authentication** → **Rate Limits**:
+
+   | Limit | Built-in SMTP default | After custom SMTP | Suggested for cutover testing |
+   | ----- | --------------------- | ----------------- | ----------------------------- |
+   | Email sent (project/hour) | ~2/h (very low) | 30/h until you raise it | **100–500/h** during soak |
+   | OTP / magic link (project/hour) | — | Customizable | **30–60/h** |
+   | OTP per-user cooldown | ~60s | Customizable | Keep **60s** (matches `/login` client cooldown) |
+
+   "Email rate limit exceeded" on `/login` is a **Supabase 429**, not the app's `/api/lead`
+   limiter. Fixing redirect URLs alone does not change this.
+
+   Management API (optional): `PATCH https://api.supabase.com/v1/projects/ipmjokuezeuukhrilduq/config/auth`
+   with `rate_limit_email_sent`, `rate_limit_otp`, etc. — see
+   [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limits).
+
+7. **Authentication → URL Configuration** (project `ipmjokuezeuukhrilduq`):
+   - **Site URL:** `https://dobeu.net`
+   - **Redirect URLs** (add each line):
+     - `https://dobeu.net/**`
+     - `https://dobeu.net/auth/callback`
+     - `https://*.vercel.app/**`
+     - `http://localhost:3000/**`
+     - `http://localhost:3000/auth/callback`
+   If Site URL is still `http://localhost:3000`, magic links fall back to localhost even when
+   requested from production. After saving, request a **new** magic link (old emails keep the
+   stale `redirect_to`).
+
+   **Why `?code=` lands on `http://localhost:3000/` (root, not `/auth/callback`):** that is the
+   signature of Supabase appending the auth code to the **Site URL** because the requested
+   `redirect_to` (`https://dobeu.net/auth/callback`) was **not in the Redirect URLs allowlist**.
+   Fix = set Site URL to `https://dobeu.net` **and** add the redirect URLs above, then request a
+   fresh link. The app now also self-heals (see "defensive `?code=` forwarder" below).
+
+8. **Defensive `?code=` forwarder (automatic, no Dashboard step).** `middleware.ts`
+   (`lib/supabase/middleware.ts`) detects a stray `?code=` on any non-`/auth/callback` path and
+   307-redirects it to `/auth/callback` (preserving `next`). So even if Supabase falls back to the
+   Site URL root, the session still gets exchanged — as long as the Site URL host is correct
+   (`https://dobeu.net`, not localhost). It cannot rescue a cross-host fallback to `localhost`;
+   that still requires the Site URL fix above.
+
+9. **Password fallback (cutover escape hatch).** Email is not the only sign-in path:
+   - **`/login`** has a **"Sign in with a password instead"** toggle
+     (`app/login/LoginForm.tsx` → `supabase.auth.signInWithPassword`).
+   - To set a password **without any email round-trip**, an operator runs the service-role script:
+     ```bash
+     vercel env pull .env.local           # gets VERCEL_SUPABASE_SERVICE_ROLE_KEY + URL
+     NEW_USER_PASSWORD='…' node scripts/set-user-password.mjs you@dobeu.net           # existing user
+     NEW_USER_PASSWORD='…' node scripts/set-user-password.mjs you@dobeu.net --create  # new user
+     ```
+     The script reads the password from env or an interactive prompt (never a CLI arg / git).
+     Enable **Email + Password** provider in Supabase Dashboard → Authentication → Providers for
+     this path to work.
+
+**Dashboard vs automatic**
+
+| Item | Where it lives | Operator action? |
+| ---- | -------------- | ------------------ |
+| Magic-link send + rate limits | Supabase Auth (`/auth/v1/otp`) | **Yes** — SMTP + Rate Limits in Dashboard |
+| Lead / work-order email | Next.js + `RESEND_API_KEY` | Already in Vercel env (no Supabase step) |
+| `/login` double-submit guard | `app/login/LoginForm.tsx` | **Automatic** after deploy (60s client cooldown) |
+| Redirect URLs / Site URL | Supabase Auth URL config | **Yes** — one-time Dashboard setup |
+| Stray `?code=` → `/auth/callback` rescue | `lib/supabase/middleware.ts` | **Automatic** after deploy |
+| Password sign-in toggle | `app/login/LoginForm.tsx` | **Automatic** after deploy (enable Password provider) |
+| Set password without email | `scripts/set-user-password.mjs` | **Yes** — operator runs with service-role key |
 
 ---
 
@@ -97,6 +197,7 @@ Before touching DNS, walk every flow on the `*.vercel.app` preview:
 1. Pause auto-deploys on the old `digital-wharf-dynamics` Vercel project (or whichever host serves it now).
 2. Keep the old Netlify/Vercel site running for **7 days** in case rollback is needed.
 3. Email existing client users a heads-up:
+
    ```
    Subject: We've rebuilt dobeu.net — re-verify with this magic link
 
@@ -107,6 +208,7 @@ Before touching DNS, walk every flow on the `*.vercel.app` preview:
 
    — Jeremy
    ```
+
 4. After 7-day soak: archive the old repo, downgrade or delete the old hosting project.
 
 ---
@@ -124,11 +226,11 @@ If anything goes wrong post-cutover:
 
 ## Webhooks to update on cutover
 
-| Service | New URL |
-|---|---|
-| Stripe | `https://dobeu.net/api/webhooks/stripe` |
-| Apollo | `https://dobeu.net/api/webhooks/apollo` |
-| Resend | `https://dobeu.net/api/webhooks/resend` |
+| Service     | New URL                                     |
+| ----------- | ------------------------------------------- |
+| Stripe      | `https://dobeu.net/api/webhooks/stripe`     |
+| Apollo      | `https://dobeu.net/api/webhooks/apollo`     |
+| Resend      | `https://dobeu.net/api/webhooks/resend`     |
 | Customer.io | `https://dobeu.net/api/webhooks/customerio` |
 
 Each webhook secret should be rotated on cutover and stored in Vercel env vars.

@@ -10,20 +10,21 @@
 
 ## 0. Session metadata
 
-| Field | Value |
-|---|---|
-| Date | 2026-05-21 |
-| Operator | Jeremy Williams (`jeremyw@dobeu.net`) |
-| Project root | `C:\Users\jswil\repos\new-dobeu-net` |
-| Target domain | `dobeu.net` (currently served by `dobeutech/digital-wharf-dynamics` on Vercel) |
-| Brand | Dobeu Design System v2 — Indigo `#6B5CE7` + Amber `#F4A261` on Ink `#1A1A2E` / Paper `#FAFAFC`, Nunito + Quicksand |
-| Outcome | Phase 1 (scaffold) complete; local dev verified; GitHub repo created and pushed; Vercel deploy + DNS cutover left to operator |
+| Field         | Value                                                                                                                         |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Date          | 2026-05-21                                                                                                                    |
+| Operator      | Jeremy Williams (`jeremyw@dobeu.net`)                                                                                         |
+| Project root  | `C:\Users\jswil\repos\new-dobeu-net`                                                                                          |
+| Target domain | `dobeu.net` (currently served by `dobeutech/digital-wharf-dynamics` on Vercel)                                                |
+| Brand         | Dobeu Design System v2 — Indigo `#6B5CE7` + Amber `#F4A261` on Ink `#1A1A2E` / Paper `#FAFAFC`, Nunito + Quicksand            |
+| Outcome       | Phase 1 (scaffold) complete; local dev verified; GitHub repo created and pushed; Vercel deploy + DNS cutover left to operator |
 
 ---
 
 ## 1. Original task (user, opening message)
 
 Jeremy asked Claude to:
+
 - Recreate and reimagine the dobeu.net landing page on a clean stack.
 - Replace the existing React+Vite SPA at `dobeutech/digital-wharf-dynamics`.
 - Follow Dobeu Design System v2.
@@ -36,6 +37,7 @@ Jeremy asked Claude to:
 - Build inside `/new-dobeu-net/` and host on Vercel, same as the current site.
 
 Constraints he set:
+
 - "USE ALL CONNECTIONS AT YOUR DISPOSAL — I SHOULD NOT HAVE TO LOGIN TO ANYTHING."
 - Follow `superpowers:brainstorming`, then `superpowers:writing-plans` and propose for approval before writing code.
 - Use `superpowers:subagent-driven-development` + `composio-fullstack-pipeline` to ship to production.
@@ -51,13 +53,15 @@ Claude asked four clarifying questions before any code:
 1. **Stack** → Jeremy: **Next.js 15 + App Router**.
 2. **Primary CTA** → Jeremy: **All three progressive** (Book / Typeform / Email).
 3. **Portal scope** → Jeremy: **Minimal v1** — projects, files, invoices, messages.
-4. **Offerings** → Jeremy: All four (AI agents & automation, Full-stack web apps, Brand & design systems, Marketing & growth engineering) plus: *"Other items you can use prior conversations to deduce I don't want to overcomplicate stick to few key items than an option to connect for more indepth projects."*
+4. **Offerings** → Jeremy: All four (AI agents & automation, Full-stack web apps, Brand & design systems, Marketing & growth engineering) plus: _"Other items you can use prior conversations to deduce I don't want to overcomplicate stick to few key items than an option to connect for more indepth projects."_
 
 Two follow-up questions:
-- **Calendar tool** → Jeremy: *"Can't apollo do this? i'd rather not pay for Cal.com if not then use Custom I don't want a monthly cost."*
+
+- **Calendar tool** → Jeremy: _"Can't apollo do this? i'd rather not pay for Cal.com if not then use Custom I don't want a monthly cost."_
 - **Deploy plan** → Jeremy: **Build in `new-dobeu-net` repo → Vercel preview → DNS cutover.**
 
 Three more:
+
 - **Repo strategy** → New repo `dobeutech/new-dobeu-net`.
 - **Apollo Meetings embeddability** → Verify in Phase 1 first.
 - **ADMIN_EMAILS** → Jeremy added `jeremyw@dobeu.net` (Claude noted to keep this separate from his personal `jswilliamstu@gmail.com` Google OAuth identity).
@@ -67,12 +71,14 @@ Three more:
 ## 3. Discovery (Claude)
 
 Claude inspected:
+
 - `C:\Users\jswil\dobeu-eco\figma-design\dobeu-design-system\` — token JSON, theme JSON, CSS-vars, design spec.
 - The OneDrive Design-System folder containing the Dobeu eco logo set.
 - The auto-memory file for prior Dobeu context.
 - The `new-dobeu-net` folder (empty).
 
 Confirmed brand v2 palette and type:
+
 - Indigo 500 `#6B5CE7`, Indigo 700 `#4A3FA8`
 - Amber 500 `#F4A261`
 - Ink 900 `#1A1A2E`, Paper 50 `#FAFAFC`
@@ -106,6 +112,7 @@ Jeremy approved: **"Approved — start Phase 1"**.
 Claude wrote ~80 files in one continuous burst — full layout below in section 11.
 
 Key choices captured during the scaffold:
+
 - `next/font/google` for Nunito + Quicksand with CSS variables.
 - `next-themes` with `defaultTheme="system"`.
 - shadcn-style primitives inlined (Button, Dialog, Tabs, Input, Label, DropdownMenu, Accordion).
@@ -120,24 +127,30 @@ Key choices captured during the scaffold:
 ## 6. Tooling problems Claude hit (and the fixes)
 
 ### 6.1 pnpm 9.15 install corruption
+
 First `pnpm install` failed with:
+
 ```
 ERR_PNPM_JSON_PARSE Unexpected end of JSON input while parsing empty string
 in C:\Users\jswil\repos\new-dobeu-net\node_modules\acorn-jsx\package.json
 ```
+
 This is a known intermittent pnpm 9 issue on Windows (Defender real-time scan interrupts the cache write).
 
 Fix: bumped `packageManager` pin to `pnpm@11.1.3`, instructed `pnpm store prune`, clean reinstall.
 
 ### 6.2 Next.js CVE-2025-66478
+
 `pnpm install` flagged `next@15.1.4` for a published CVE.
 
 Fix: bumped `next` and `eslint-config-next` from `15.1.4` to `^15.5.4`.
 
 ### 6.3 pnpm 11 config migration
+
 pnpm 11 no longer reads `"pnpm": { "onlyBuiltDependencies": [...] }` from `package.json`. It expects the same keys in `pnpm-workspace.yaml`. After the move, pnpm tried to be helpful by writing an `allowBuilds:` template into `pnpm-workspace.yaml` with literal placeholders `set this to true or false` — invalid YAML that broke later runs.
 
 Fix:
+
 ```yaml
 # pnpm-workspace.yaml
 allowBuilds:
@@ -153,7 +166,9 @@ allowBuilds:
 After this fix, postinstall scripts ran cleanly: `core-js`, `esbuild`, `protobufjs`, `unrs-resolver`, `sharp` all built their native artifacts and the dev server came up.
 
 ### 6.4 Hydration mismatch (critical)
+
 The landing page rendered server-side but never hydrated. React fiber was missing from every button. Diagnostic via Claude-in-Chrome MCP showed:
+
 - `hasReactFiber: false`
 - `onClickAttached: false`
 - `body[0]` was `<div hidden id="B:0">…</div>` — React's streaming Suspense placeholder
@@ -162,11 +177,13 @@ The landing page rendered server-side but never hydrated. React fiber was missin
 Root cause: `AnalyticsProvider` used `useSearchParams`, which forces the consuming subtree into a `<Suspense>` boundary in Next 15.5. In `next dev --turbo`, that streaming Suspense boundary stalled on the first render and never resolved, leaving the entire app hidden.
 
 Fix:
+
 - Rewrote `AnalyticsProvider` to read `window.location.search` directly inside `useEffect` (client-only) — no `useSearchParams`, no Suspense requirement.
 - Dropped the top-level `<Suspense>` wrapper in `app/layout.tsx`.
 - Switched dev script from `next dev --turbo` to plain `next dev` for stability while the Turbopack streaming bug shakes out.
 
 After the fix, Claude verified via Chrome MCP:
+
 - `hydrated: true`
 - `hasOnClick: true`
 - "Book a call" button opens the lightbox dialog with title "Let's talk about your project"
@@ -174,9 +191,11 @@ After the fix, Claude verified via Chrome MCP:
 - Theme toggle button is hydrated, background color in dark mode resolves to `rgb(26, 26, 46)` = `#1A1A2E`.
 
 ### 6.5 Apollo Meetings → Calendly pivot
+
 Claude checked Apollo's tool surface via Composio search. Apollo's public API does **not** expose meetings. Composio search instead surfaced Calendly tools — and the connection check showed Jeremy's Calendly was already active at `jeremyw@dobeu.net` with scheduling URL `https://calendly.com/jeremyw-dobeu-r_el`. Calendly's free tier covers 1 event type at $0/month.
 
 Pivot:
+
 - `components/landing/BookingTab.tsx` rewritten to use `react-calendly`'s `InlineWidget`.
 - Themed against active light/dark mode (Dobeu palette).
 - `useCalendlyEventListener` fires `calendly_profile_viewed` → `calendly_event_type_viewed` → `calendly_date_selected` → `booking_scheduled` events.
@@ -188,7 +207,9 @@ Pivot:
 ## 7. GitHub + Vercel handoff
 
 ### 7.1 GitHub
+
 Claude wrote `init-github.cmd` and Jeremy ran it via File Explorer double-click. Result:
+
 ```
 ✓ Created repository dobeutech/new-dobeu-net on github.com
   https://github.com/dobeutech/new-dobeu-net
@@ -199,17 +220,20 @@ Writing objects: 100% (122/122), 173.25 KiB | 6.42 MiB/s, done.
 ```
 
 Subsequent commits:
+
 - `41d64a0` — initial scaffold (Phase 1 complete)
 - `38e7e67` — hydration fix + pnpm 11 + Calendly wiring
 - `eda378e` — Customer.io connector wired into lead pipeline (local, pending push)
 
 ### 7.2 Supabase
+
 Claude discovered the existing Supabase project `db-dobeutech-unified` (ref `qdwvcrmdqweojverdmmz`) already contains tables from the old site: `projects`, `messages`, `services`, `purchases`, `client_files`, `contact_submissions`, `audit_logs`, `rate_limits`, `newsletter_*`. Decision: **reuse** the existing schema; the `supabase/migrations/20260521000000_initial_schema.sql` in the repo is preserved for reference but not applied. Future PRs will alias to existing tables or add only truly new ones (`bookings`, `page_events`) in a `dobeu_net_` prefix.
 
 Supabase URL: `https://qdwvcrmdqweojverdmmz.supabase.co`
 Publishable key prefix: `sb_publishable_3EjmcRlVqnKaWdW...` (full anon key documented in `STATUS.md`).
 
 ### 7.3 Vercel
+
 Vercel auth (device code) was completed via Chrome MCP. The Vercel UI "Deploy" button click via MCP didn't fire (React-controlled form state), and the CLI hit a GitHub 2FA gate during repo discovery. Jeremy bypassed 2FA manually. Deploy was handed off to Jeremy with `STATUS.md` containing the exact recipe.
 
 ---
@@ -223,6 +247,7 @@ Added `lib/customerio.ts` with `cioIdentify` and `cioTrack` using basic-auth (`C
 ## 9. Typeform AI prompt
 
 Jeremy opened Typeform's AI generator and asked for a prompt aligned to Dobeu's brand. Claude provided a paste-ready prompt that produces a 7-question lead-qualification form:
+
 - Welcome screen with "Let's talk about your project."
 - Q1 name (short text)
 - Q2 work email (validated)
@@ -233,6 +258,7 @@ Jeremy opened Typeform's AI generator and asked for a prompt aligned to Dobeu's 
 - Q7 anything else (long text, optional)
 
 Two thank-you screens with Logic Jump:
+
 - Qualified → Calendly link
 - Just exploring → dobeu.net.
 
@@ -258,6 +284,7 @@ mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN, {
 ```
 
 Env var:
+
 ```
 NEXT_PUBLIC_MIXPANEL_TOKEN=f5596f8dbfc32267e58b767dd1ede3ea
 ```
@@ -312,17 +339,17 @@ new-dobeu-net/
 
 ## 12. Verification log
 
-| Check | Result | Method |
-|---|---|---|
-| Dev server boots | ✅ Next.js 15.5.18 ready in 1.7s, port 3000 | start-dev.cmd output |
-| All postinstall scripts ran | ✅ core-js, esbuild, protobufjs, sharp, unrs-resolver | dev server log |
-| Page renders server-side | ✅ Full accessibility tree (sticky nav, hero, services, how, proof, founder, FAQ, CTA, footer, cookie banner) | Chrome MCP `read_page` |
-| React hydration | ✅ Buttons have React fibers + onClick handlers | Chrome MCP `javascript_exec` introspecting `__reactFiber*` |
-| Cookie banner accepts | ✅ Dismisses on click | scripted click via JS dispatchEvent |
-| Lightbox opens | ✅ Dialog with title "Let's talk about your project" + Calendly iframe loaded | scripted click + DOM scan |
-| Theme | ✅ Dark mode active, bg = `rgb(26, 26, 46)` = `#1A1A2E` | computed style |
-| Console errors | ⚠️ Only Chrome-extension noise ("asynchronous response by returning true") — not from Next/React | read_console_messages |
-| Lighthouse | ⏳ Deferred to post-Vercel-deploy | Will run on `*.vercel.app` preview |
+| Check                       | Result                                                                                                        | Method                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Dev server boots            | ✅ Next.js 15.5.18 ready in 1.7s, port 3000                                                                   | start-dev.cmd output                                       |
+| All postinstall scripts ran | ✅ core-js, esbuild, protobufjs, sharp, unrs-resolver                                                         | dev server log                                             |
+| Page renders server-side    | ✅ Full accessibility tree (sticky nav, hero, services, how, proof, founder, FAQ, CTA, footer, cookie banner) | Chrome MCP `read_page`                                     |
+| React hydration             | ✅ Buttons have React fibers + onClick handlers                                                               | Chrome MCP `javascript_exec` introspecting `__reactFiber*` |
+| Cookie banner accepts       | ✅ Dismisses on click                                                                                         | scripted click via JS dispatchEvent                        |
+| Lightbox opens              | ✅ Dialog with title "Let's talk about your project" + Calendly iframe loaded                                 | scripted click + DOM scan                                  |
+| Theme                       | ✅ Dark mode active, bg = `rgb(26, 26, 46)` = `#1A1A2E`                                                       | computed style                                             |
+| Console errors              | ⚠️ Only Chrome-extension noise ("asynchronous response by returning true") — not from Next/React              | read_console_messages                                      |
+| Lighthouse                  | ⏳ Deferred to post-Vercel-deploy                                                                             | Will run on `*.vercel.app` preview                         |
 
 ---
 
@@ -354,16 +381,16 @@ new-dobeu-net/
 
 ## 15. Open follow-ups (post-launch, not blocking)
 
-| ID | Item | Owner | Notes |
-|---|---|---|---|
-| F-101 | Apply `bookings` and `page_events` tables to `db-dobeutech-unified` under `dobeu_net_` prefix | Jeremy | Schema lives in `supabase/migrations/` — split out the truly new tables. |
-| F-102 | Schedule daily 8am ET PostHog → Slack digest of yesterday's leads + bookings + paid invoices | Claude | Via `scheduled-tasks` MCP once site is live. |
-| F-103 | Wire 5-email post-lead Customer.io nurture sequence (separate from Resend welcome) | Jeremy | Trigger: `lead_captured` event with `source = book OR form OR email`. |
-| F-104 | First A/B test: hero headline variant via PostHog feature flag | Jeremy | Flag `hero-headline-variant`. Min sample 200/variant. Goal metric `lead_captured` rate. |
-| F-105 | Programmatic SEO pages for `dobeu.net/<service>/<city>` | Jeremy | Use marketing-skills:programmatic-seo with the existing services + 25 target US metros. |
-| F-106 | Linear DTS-XXXX issue tracking the v3 cutover end-to-end | Jeremy | Will be created on first non-trivial bug after launch. |
+| ID    | Item                                                                                          | Owner  | Notes                                                                                   |
+| ----- | --------------------------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------- |
+| F-101 | Apply `bookings` and `page_events` tables to `db-dobeutech-unified` under `dobeu_net_` prefix | Jeremy | Schema lives in `supabase/migrations/` — split out the truly new tables.                |
+| F-102 | Schedule daily 8am ET PostHog → Slack digest of yesterday's leads + bookings + paid invoices  | Claude | Via `scheduled-tasks` MCP once site is live.                                            |
+| F-103 | Wire 5-email post-lead Customer.io nurture sequence (separate from Resend welcome)            | Jeremy | Trigger: `lead_captured` event with `source = book OR form OR email`.                   |
+| F-104 | First A/B test: hero headline variant via PostHog feature flag                                | Jeremy | Flag `hero-headline-variant`. Min sample 200/variant. Goal metric `lead_captured` rate. |
+| F-105 | Programmatic SEO pages for `dobeu.net/<service>/<city>`                                       | Jeremy | Use marketing-skills:programmatic-seo with the existing services + 25 target US metros. |
+| F-106 | Linear DTS-XXXX issue tracking the v3 cutover end-to-end                                      | Jeremy | Will be created on first non-trivial bug after launch.                                  |
 
 ---
 
-*End of session transcript. Saved at*
+_End of session transcript. Saved at_
 `C:\Users\jswil\repos\new-dobeu-net\docs\CHAT-TRANSCRIPT-2026-05-21.md`

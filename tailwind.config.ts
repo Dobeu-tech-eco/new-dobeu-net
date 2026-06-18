@@ -24,7 +24,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-nunito)", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["var(--font-quicksand)", "var(--font-nunito)", "ui-sans-serif", "sans-serif"],
+        display: ["var(--font-nunito)", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"]
       },
       colors: {
@@ -40,7 +40,8 @@ const config: Config = {
             600: "#5A4DD4",
             700: "#4A3FA8",
             800: "#3A327F",
-            900: "#2B2660"
+            900: "#2B2660",
+            slate: "#5A4FAB" /* v2 wordmark + light-mode heading color */
           },
           amber: {
             500: "#F4A261",
@@ -55,8 +56,12 @@ const config: Config = {
             50: "#FAFAFC",
             100: "#F2F3F7",
             200: "#E5E7EE"
+          },
+          cream: {
+            50: "#FFF8F0" /* v2 light-mode secondary surface */
           }
         },
+        "fg-heading": "hsl(var(--fg-heading))",
         // Semantic tokens — always prefer these in components
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -97,7 +102,8 @@ const config: Config = {
         DEFAULT: "var(--radius-md)",
         md: "var(--radius-md)",
         lg: "var(--radius-lg)",
-        xl: "var(--radius-xl)"
+        xl: "var(--radius-xl)",
+        pill: "var(--radius-pill)"
       },
       boxShadow: {
         glow: "0 0 40px -10px hsl(var(--primary) / 0.5)",

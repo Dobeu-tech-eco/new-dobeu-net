@@ -4,9 +4,15 @@ import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
+import { track } from "@/lib/analytics";
 
 export function FinalCTA() {
   const { open } = useLightbox();
+
+  function trackAndOpen(target: "book" | "form" | "email", label: string) {
+    track("cta_click", { cta_label: label, cta_location: "final_cta", target });
+    open(target);
+  }
 
   return (
     <section aria-labelledby="cta-heading" className="py-20 md:py-28">
@@ -30,13 +36,17 @@ export function FinalCTA() {
             ship what you&apos;re trying to ship.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="xl" onClick={() => open("book")} className="w-full sm:w-auto">
+            <Button
+              size="xl"
+              onClick={() => trackAndOpen("book", "Book a call")}
+              className="w-full sm:w-auto"
+            >
               Book a call <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
             <Button
               size="xl"
               variant="outline"
-              onClick={() => open("email")}
+              onClick={() => trackAndOpen("email", "Or just send your email")}
               className="w-full sm:w-auto"
             >
               Or just send your email

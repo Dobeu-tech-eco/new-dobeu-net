@@ -1,5 +1,7 @@
 export default function AdminAnalyticsPage() {
-  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.posthog.com";
+  // Empty-string-safe (Vercel inlines `""` for sensitive-typed envs at build).
+  const raw = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim();
+  const posthogHost = raw && raw.length > 0 ? raw : "https://us.posthog.com";
 
   return (
     <div className="space-y-6">

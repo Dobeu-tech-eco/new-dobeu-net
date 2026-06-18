@@ -1,6 +1,6 @@
 /**
  * Apollo.io API wrapper — server-only.
- * Used by /api/lead and /api/book to upsert contacts and log activities.
+ * Used by /api/lead to upsert contacts.
  *
  * Apollo docs: https://docs.apollo.io/reference
  */
@@ -51,15 +51,14 @@ export async function upsertApolloContact(input: ApolloContactInput): Promise<Ap
       label_names: input.label_names
     };
 
-    const res = await fetch(`${APOLLO_BASE}/contacts`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-        "X-Api-Key": apolloKey()
-      },
-      body: JSON.stringify(body)
-    });
+    const existing = await findApolloContactByEmail(input.email);
+    if (existing?.id) {
+      // Best-effort patch to avoid duplicate contacts when this email already exists.
+      await patchApolloContact(existing.id, body);
+      return { ok: true, contact_id: existing.id, raw: existing };
+    }
+
+    const res = await apolloRequest("/contacts", "POST", body);
 
     if (!res.ok) {
       const text = await res.text();
@@ -73,34 +72,53 @@ export async function upsertApolloContact(input: ApolloContactInput): Promise<Ap
   }
 }
 
-/**
- * Log a custom activity on an Apollo contact (e.g., "booked discovery call").
- */
-export async function logApolloActivity(
-  contactId: string,
-  note: string,
-  activityType = "note"
-): Promise<ApolloApiResult> {
-  try {
-    const res = await fetch(`${APOLLO_BASE}/notes`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Api-Key": apolloKey()
-      },
-      body: JSON.stringify({
-        contact_id: contactId,
-        note: { content: note, type: activityType }
-      })
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      return { ok: false, error: `Apollo activity failed: ${res.status} ${text}` };
+interface ApolloContactSearchResult {
+  id?: string;
+}
+
+async function findApolloContactByEmail(email: string): Promise<ApolloContactSearchResult | null> {
+  const candidates = ["/contacts/search", "/mixed_people/search"];
+  for (const endpoint of candidates) {
+    try {
+      const res = await apolloRequest(endpoint, "POST", { q_keywords: email, page: 1, per_page: 1 });
+      if (!res.ok) continue;
+      const data = (await res.json()) as {
+        contacts?: Array<{ id?: string; email?: string }>;
+        people?: Array<{ id?: string; email?: string }>;
+      };
+      const match =
+        data.contacts?.find((c) => c.email?.toLowerCase() === email.toLowerCase()) ??
+        data.people?.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+      if (match?.id) return { id: match.id };
+    } catch {
+      // Non-fatal; we'll fall back to create.
     }
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
+  return null;
+}
+
+async function patchApolloContact(contactId: string, payload: Record<string, unknown>): Promise<void> {
+  const candidates = [`/contacts/${contactId}`, `/contacts/${contactId}/update`];
+  for (const endpoint of candidates) {
+    try {
+      const res = await apolloRequest(endpoint, "PATCH", payload);
+      if (res.ok) return;
+    } catch {
+      // keep trying
+    }
+  }
+}
+
+function apolloRequest(path: string, method: string, body?: unknown): Promise<Response> {
+  return fetch(`${APOLLO_BASE}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      "X-Api-Key": apolloKey()
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
 }
 
 function splitDisplayName(name?: string): { first_name?: string; last_name?: string } {

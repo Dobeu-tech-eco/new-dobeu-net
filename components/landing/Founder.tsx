@@ -7,12 +7,16 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 const REASONS = [
   "You talk to the person doing the work — no account managers between you and the build.",
   "Decisions get made in hours, not weeks. No agency layers, no rebrand committees.",
-  "Modern stack from day one. Nothing you&apos;ll have to rewrite in 18 months."
+  "Modern stack from day one. Nothing you&apos;ll have to rewrite in 18 months.",
 ];
 
 export function Founder() {
   return (
-    <section id="about" aria-labelledby="about-heading" className="py-20 md:py-28 bg-secondary/40">
+    <section
+      id="about"
+      aria-labelledby="about-heading"
+      className="py-20 md:py-28 bg-secondary/40"
+    >
       <div className="container max-w-5xl">
         <div className="grid md:grid-cols-[1fr_2fr] gap-8 md:gap-12 items-start">
           {/* Mark + visual */}
@@ -40,9 +44,10 @@ export function Founder() {
               Why one person, not an agency?
             </h2>
             <p className="text-base md:text-lg text-muted-foreground mb-6 leading-relaxed">
-              I&apos;m Jeremy Williams. I&apos;ve been shipping software since 2019 — for logistics
-              operators, fintechs, ops teams, and a handful of founders building things that didn&apos;t
-              exist yet. Dobeu Tech Solutions is the practice; everything ships under it.
+              I&apos;m Jeremy Williams. I&apos;ve been shipping software since
+              2019 — for logistics operators, fintechs, ops teams, and a handful
+              of founders building things that didn&apos;t exist yet. Dobeu Tech
+              Solutions is the practice; everything ships under it.
             </p>
             <ul className="space-y-3 mb-6">
               {REASONS.map((r) => (

@@ -11,18 +11,23 @@ import {
   Receipt,
   Inbox,
   CalendarCheck,
-  BarChart3
+  BarChart3,
+  Ticket
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/utils";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
+import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
+import { intercomNameFromUser } from "@/lib/intercom";
+import { createIntercomUserJwt } from "@/lib/intercom-jwt";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
+  { href: "/admin/tickets", label: "Tickets", icon: Ticket },
   { href: "/admin/invoices", label: "Invoices", icon: Receipt },
   { href: "/admin/leads", label: "Leads", icon: Inbox },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
@@ -39,8 +44,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/portal?error=not_authorized");
   }
 
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const needsEnroll = aal?.nextLevel !== "aal2"; // no verified factor yet
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      <IntercomIdentify
+        user_id={user.id}
+        email={user.email ?? undefined}
+        name={intercomNameFromUser(user)}
+        created_at={user.created_at}
+        intercom_user_jwt={createIntercomUserJwt({
+          user_id: user.id,
+          email: user.email ?? undefined,
+          name: intercomNameFromUser(user),
+          created_at: Math.floor(new Date(user.created_at).getTime() / 1000)
+        })}
+      />
       <aside className="md:w-64 md:min-h-screen border-b md:border-b-0 md:border-r border-accent/40 bg-card/60">
         <div className="p-4 flex items-center justify-between">
           <Link href="/admin" className="flex items-center gap-2">
@@ -72,7 +92,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </nav>
       </aside>
       <div className="flex-1 min-w-0">
-        <main className="p-4 md:p-8 max-w-6xl">{children}</main>
+        <main className="p-4 md:p-8 max-w-6xl">
+          {needsEnroll && (
+            <div
+              role="status"
+              className="mb-6 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
+            >
+              Two-factor authentication isn&apos;t enabled.{" "}
+              <Link href="/portal/settings" className="font-medium underline">
+                Enable it now
+              </Link>{" "}
+              to secure admin access.
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

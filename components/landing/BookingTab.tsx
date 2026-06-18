@@ -23,16 +23,28 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Track funnel events
+  // Track funnel events. `booking_started` is the GTM trigger (#13) that
+  // GA4 generate-lead funnels watch — first contact with the Calendly profile
+  // counts as "started." The existing PostHog/Mixpanel `calendly_*` events stay
+  // alongside it for finer-grained funnel analysis.
   useCalendlyEventListener({
-    onProfilePageViewed: () => track("calendly_profile_viewed"),
+    onProfilePageViewed: () => {
+      track("calendly_profile_viewed");
+      // The PROFILE_PAGE_VIEWED payload is empty, so we attribute booking_started
+      // to the Calendly URL we asked the InlineWidget to render.
+      track("booking_started", {
+        source: "calendly",
+        booking_uri: calendlyUrl ?? ""
+      });
+    },
     onEventTypeViewed: () => track("calendly_event_type_viewed"),
     onDateAndTimeSelected: () => track("calendly_date_selected"),
     onEventScheduled: (e) => {
       track("booking_scheduled", {
         source: "calendly",
         event_uri: e.data.payload.event.uri,
-        invitee_uri: e.data.payload.invitee.uri
+        invitee_uri: e.data.payload.invitee.uri,
+        booking_uri: e.data.payload.event.uri
       });
       // NOTE: Calendly's client-side scheduled-event payload only exposes the
       // invitee/event *URIs*, not the invitee email or name. Mirroring the booking

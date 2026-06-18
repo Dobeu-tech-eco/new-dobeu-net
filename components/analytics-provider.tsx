@@ -3,9 +3,11 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { initAnalytics, pageView } from "@/lib/analytics";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { initAnalytics, pageView, setAnalyticsConsent } from "@/lib/analytics";
 import { initDatadog } from "@/lib/datadog";
-import { initIntercom } from "@/lib/intercom";
+import { IntercomSecureBoot } from "@/components/intercom/IntercomSecureBoot";
 
 const CONSENT_KEY = "dobeu-analytics-consent";
 
@@ -32,11 +34,10 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
   // Init analytics once consent is granted (PostHog/Mixpanel + Datadog RUM+Logs)
   React.useEffect(() => {
-    if (consent === true) {
-      initAnalytics(true);
-      initDatadog();
-      initIntercom();
-    }
+    setAnalyticsConsent(consent === true);
+    if (consent !== true) return;
+    initAnalytics(true);
+    initDatadog();
   }, [consent]);
 
   // Fire pageview on navigation
@@ -52,8 +53,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* GTM — always loads but tags are consent-gated inside GTM */}
-      {gtmId && (
+      {/* GTM + GA are loaded only after explicit consent. */}
+      {consent === true && gtmId && (
         <Script id="gtm-loader" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -64,7 +65,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       )}
 
       {/* GA4 direct (in case GTM not configured) */}
-      {ga4Id && !gtmId && (
+      {consent === true && ga4Id && !gtmId && (
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id}`}
@@ -80,6 +81,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       )}
 
       {children}
+      <IntercomSecureBoot enabled={consent === true} />
+      {consent === true && (
+        <>
+          <VercelAnalytics />
+          <SpeedInsights />
+        </>
+      )}
 
       {/* Cookie consent banner — only shown if consent is unset */}
       {consent === null && (
@@ -93,8 +101,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             Cookies and analytics
           </h3>
           <p id="consent-desc" className="text-xs text-muted-foreground mb-3">
-            We use PostHog, Mixpanel, and Google Analytics to understand how visitors use
-            this site so we can improve it. Nothing is sold; you can opt out anytime.
+            We use PostHog, Mixpanel, Google Analytics/GTM, Datadog, and Intercom only after
+            you opt in. This helps us improve the site and support experience. Nothing is sold;
+            you can opt out anytime.
           </p>
           <div className="flex gap-2">
             <button

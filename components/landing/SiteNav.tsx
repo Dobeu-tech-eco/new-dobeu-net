@@ -28,7 +28,10 @@ export function SiteNav() {
         >
           <Link href="/" className="flex items-center gap-2" aria-label="Dobeu home">
             <DobeuMark className="h-8 w-8" />
-            <span className="font-display text-xl font-bold tracking-tight lowercase">dobeu</span>
+            <span className="font-display text-xl tracking-tight lowercase leading-none">
+              <span className="font-extrabold text-[hsl(var(--brand-indigo-slate))]">dobeu</span>
+              <span className="font-medium text-muted-foreground">.net</span>
+            </span>
           </Link>
 
           <ul className="hidden md:flex items-center gap-1">

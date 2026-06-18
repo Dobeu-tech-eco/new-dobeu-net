@@ -18,7 +18,7 @@
        Ink 900    = #1A1A2E  → hsl(240, 28%, 14%)
        Paper 50   = #FAFAFC  → hsl(240, 22%, 99%) */
 
-    --dobeu-indigo-50:  249 80% 96%;
+    --dobeu-indigo-50: 249 80% 96%;
     --dobeu-indigo-100: 249 78% 92%;
     --dobeu-indigo-200: 249 76% 84%;
     --dobeu-indigo-300: 249 74% 76%;
@@ -35,8 +35,22 @@
     --dobeu-ink-900: 240 28% 14%;
     --dobeu-paper-50: 240 22% 99%;
 
-    /* ---- Light theme (default for marketing) ---- */
-    --background: var(--dobeu-paper-50);
+    /* ---- v2 brand primitives (Design System v2) ---- */
+    /* Indigo Slate #5A4FAB — wordmark color + light-mode heading color */
+    --brand-indigo-slate: 247 38% 49%;
+    /* Cream Soft #FFF8F0 — light-mode secondary surface */
+    --brand-cream-soft: 36 100% 97%;
+    /* Borders */
+    --brand-border-light: 247 60% 92%; /* #E0DFF5 */
+    --brand-border-dark: 245 24% 22%; /* #2A2A45 */
+    /* 10% tints (for badges, pills, soft fills) */
+    --brand-tint-indigo-10: 250 70% 95%; /* #E8E5FA */
+    --brand-tint-amber-10: 30 90% 94%; /* #FEF0E0 */
+    /* Heading-specific foreground (slate by default in light mode) */
+    --fg-heading: var(--brand-indigo-slate);
+
+    /* ---- Light theme (default for dobeu.net) ---- */
+    --background: 0 0% 100%; /* pure white per brand canvas spec */
     --foreground: var(--dobeu-ink-900);
 
     --card: 0 0% 100%;
@@ -48,7 +62,7 @@
     --primary: var(--dobeu-indigo-500);
     --primary-foreground: var(--dobeu-paper-50);
 
-    --secondary: 240 10% 96%;
+    --secondary: var(--brand-cream-soft);
     --secondary-foreground: var(--dobeu-ink-900);
 
     --accent: var(--dobeu-amber-500);
@@ -60,19 +74,23 @@
     --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 10% 90%;
-    --input: 240 10% 90%;
+    --border: var(--brand-border-light);
+    --input: var(--brand-border-light);
     --ring: var(--dobeu-indigo-500);
 
     --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 20px;
+    --radius-md: 12px; /* v2: buttons + inputs land at 12px */
+    --radius-lg: 20px; /* v2: cards land at 20px */
+    --radius-xl: 24px;
+    --radius-pill: 999px;
   }
 
   .dark {
     --background: var(--dobeu-ink-900);
     --foreground: var(--dobeu-paper-50);
+
+    /* Heading slate doesn't read on dark surfaces — fall back to paper */
+    --fg-heading: var(--dobeu-paper-50);
 
     --card: 240 25% 18%;
     --card-foreground: var(--dobeu-paper-50);
@@ -80,13 +98,14 @@
     --popover: 240 25% 16%;
     --popover-foreground: var(--dobeu-paper-50);
 
-    --primary: var(--dobeu-indigo-400);
+    /* v2 CTA-swap rule: in dark mode the primary CTA flips to amber. */
+    --primary: var(--dobeu-amber-500);
     --primary-foreground: var(--dobeu-ink-900);
 
     --secondary: 240 20% 22%;
     --secondary-foreground: var(--dobeu-paper-50);
 
-    --accent: var(--dobeu-amber-500);
+    --accent: var(--dobeu-indigo-400);
     --accent-foreground: var(--dobeu-ink-900);
 
     --muted: 240 20% 22%;
@@ -95,9 +114,9 @@
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 20% 24%;
-    --input: 240 20% 24%;
-    --ring: var(--dobeu-indigo-400);
+    --border: var(--brand-border-dark);
+    --input: var(--brand-border-dark);
+    --ring: var(--dobeu-amber-500);
   }
 }
 
@@ -113,7 +132,10 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1,
+      "ss01" 1;
   }
   /* Focus ring — accent-colored, high contrast */
   :focus-visible {
@@ -143,7 +165,11 @@
     @apply bg-gradient-to-r from-dobeu-indigo-500 to-dobeu-amber-500 bg-clip-text text-transparent;
   }
   .gradient-text-deep {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--accent)) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;

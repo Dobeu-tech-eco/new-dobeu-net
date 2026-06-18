@@ -13,7 +13,23 @@ export default async function AdminOverview() {
   ]);
 
   const recentLeads = leadsRes.data ?? [];
-  const upcomingBookings = bookingsRes.data ?? [];
+  const bookingFallback =
+    !bookingsRes.data
+      ? (
+          await supabase
+            .from("leads")
+            .select("id,email,name,first_seen")
+            .eq("source", "book")
+            .order("first_seen", { ascending: false })
+            .limit(10)
+        ).data?.map((lead) => ({
+          id: lead.id,
+          email: lead.email,
+          name: lead.name,
+          scheduled_at: lead.first_seen
+        })) ?? []
+      : [];
+  const upcomingBookings = bookingsRes.data ?? bookingFallback;
   const openInvoiceTotal = (openInvoicesRes.data ?? []).reduce((sum, i) => sum + i.amount_cents, 0);
   const userCount = usersRes.count ?? 0;
 
@@ -61,7 +77,7 @@ export default async function AdminOverview() {
         <h2 className="font-display text-xl font-semibold mb-3">Upcoming bookings</h2>
         {upcomingBookings.length === 0 ? (
           <p className="text-sm text-muted-foreground rounded-lg border border-dashed border-border p-6 text-center">
-            No upcoming bookings. Verify Apollo Meetings wiring in <code>NEXT_PUBLIC_APOLLO_MEETINGS_URL</code>.
+            No upcoming bookings yet.
           </p>
         ) : (
           <ul className="rounded-lg border border-border divide-y divide-border">
