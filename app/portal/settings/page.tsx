@@ -10,7 +10,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name,company,avatar_url")
+    .select("full_name,company,avatar_url,phone,notify_email")
     .eq("id", user!.id)
     .single();
 
@@ -39,12 +39,11 @@ export default async function SettingsPage() {
         <SettingsForm
           initial={{
             full_name: profile?.full_name ?? "",
-            company: profile?.company ?? ""
+            company: profile?.company ?? "",
+            phone: profile?.phone ?? "",
+            notify_email: profile?.notify_email ?? true
           }}
         />
-        <p className="text-xs text-muted-foreground">
-          Phone is collected for the future ticketing flow but isn&apos;t yet stored on your profile.
-        </p>
       </section>
 
       <section className="rounded-xl border border-border bg-card p-6 space-y-4">
