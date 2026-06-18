@@ -37,6 +37,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: notify vercel
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: Vercel - new-dobeu-net: lint
+
       - name: Unit tests
         run: pnpm test:ci
 
