@@ -10,7 +10,8 @@ import {
   buildAuthCallbackUrl,
   resolveAuthOrigin,
   requiresAal2Stepup,
-  requiresMfaEnrollment
+  requiresMfaEnrollment,
+  sanitizeNextPath
 } from "@/lib/utils";
 
 describe("cn", () => {
@@ -19,6 +20,31 @@ describe("cn", () => {
   });
   it("dedupes conflicting tailwind utilities (last wins)", () => {
     expect(cn("px-2", "px-4")).toBe("px-4");
+  });
+});
+
+describe("sanitizeNextPath", () => {
+  it("allows valid local paths", () => {
+    expect(sanitizeNextPath("/portal")).toBe("/portal");
+    expect(sanitizeNextPath("/admin/users")).toBe("/admin/users");
+    expect(sanitizeNextPath("/")).toBe("/");
+  });
+
+  it("returns fallback for missing or empty paths", () => {
+    expect(sanitizeNextPath(null)).toBe("/portal");
+    expect(sanitizeNextPath(undefined)).toBe("/portal");
+    expect(sanitizeNextPath("")).toBe("/portal");
+    expect(sanitizeNextPath("", "/custom-fallback")).toBe("/custom-fallback");
+  });
+
+  it("blocks non-local paths (missing starting slash)", () => {
+    expect(sanitizeNextPath("https://evil.com")).toBe("/portal");
+    expect(sanitizeNextPath("portal")).toBe("/portal");
+  });
+
+  it("blocks protocol-relative bypasses", () => {
+    expect(sanitizeNextPath("//evil.com")).toBe("/portal");
+    expect(sanitizeNextPath("/\\evil.com")).toBe("/portal");
   });
 });
 
