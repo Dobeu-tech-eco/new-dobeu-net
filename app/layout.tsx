@@ -86,18 +86,62 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AnalyticsProvider>{children}</AnalyticsProvider>
           <Toaster position="bottom-right" theme="system" richColors closeButton />
         </ThemeProvider>
-        {/* JSON-LD Organization schema */}
+        {/* JSON-LD structured data — WebSite + Person + Organization graph
+            WebSite: enables Google Sitelinks Searchbox; provides canonical name + URL signal.
+            Person:  founder knowledge-panel signal; links personal identity to the org.
+            Organization: brand identity, logo, and sameAs backlinks. */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "Dobeu Tech Solutions LLC",
-              url: SITE_URL,
-              logo: `${SITE_URL}/brand/dobeu-horizontal.png`,
-              founder: { "@type": "Person", name: "Jeremy Williams" },
-              sameAs: ["https://www.linkedin.com/in/jeremy-williams"]
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": `${SITE_URL}/#website`,
+                  url: SITE_URL,
+                  name: "Dobeu Tech Solutions",
+                  description:
+                    "Production-grade AI agents, full-stack web apps, brand systems, and growth engineering.",
+                  publisher: { "@id": `${SITE_URL}/#organization` },
+                  potentialAction: {
+                    "@type": "SearchAction",
+                    target: {
+                      "@type": "EntryPoint",
+                      urlTemplate: `${SITE_URL}/?s={search_term_string}`
+                    },
+                    "query-input": "required name=search_term_string"
+                  },
+                  inLanguage: "en-US"
+                },
+                {
+                  "@type": "Person",
+                  "@id": `${SITE_URL}/#person`,
+                  name: "Jeremy Williams",
+                  url: SITE_URL,
+                  jobTitle: "Founder & Principal Engineer",
+                  worksFor: { "@id": `${SITE_URL}/#organization` },
+                  sameAs: [
+                    "https://www.linkedin.com/in/jeremy-williams"
+                  ]
+                },
+                {
+                  "@type": "Organization",
+                  "@id": `${SITE_URL}/#organization`,
+                  name: "Dobeu Tech Solutions LLC",
+                  url: SITE_URL,
+                  logo: {
+                    "@type": "ImageObject",
+                    url: `${SITE_URL}/brand/dobeu-horizontal.png`,
+                    width: 400,
+                    height: 80
+                  },
+                  founder: { "@id": `${SITE_URL}/#person` },
+                  sameAs: [
+                    "https://www.linkedin.com/in/jeremy-williams"
+                  ]
+                }
+              ]
             })
           }}
         />

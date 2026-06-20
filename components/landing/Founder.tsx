@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { Linkedin, ExternalLink } from "lucide-react";
 import { DobeuMark } from "@/components/brand/DobeuMark";
+import { useMotionProps, SCALE_IN, FADE_UP } from "@/hooks/use-motion-props";
 
 const REASONS = [
   "You talk to the person doing the work — no account managers between you and the build.",
@@ -11,6 +12,9 @@ const REASONS = [
 ];
 
 export function Founder() {
+  const mpScale = useMotionProps(SCALE_IN);
+  const mpFadeUp = useMotionProps(FADE_UP);
+
   return (
     <section
       id="about"
@@ -21,9 +25,9 @@ export function Founder() {
         <div className="grid md:grid-cols-[1fr_2fr] gap-8 md:gap-12 items-start">
           {/* Mark + visual */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
+            initial={mpScale.initial}
+            whileInView={mpScale.whileInView}
+            viewport={mpScale.viewport}
             transition={{ duration: 0.5 }}
             className="relative aspect-square w-full max-w-[280px] mx-auto md:mx-0 rounded-2xl bg-card border border-border p-8 flex items-center justify-center shadow-glow"
           >
@@ -32,9 +36,9 @@ export function Founder() {
 
           {/* Bio */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            initial={mpFadeUp.initial}
+            whileInView={mpFadeUp.whileInView}
+            viewport={mpFadeUp.viewport}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <h2

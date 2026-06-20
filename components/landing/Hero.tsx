@@ -5,9 +5,13 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
+import { useMotionProps, FADE_UP, FADE_UP_LG, FADE } from "@/hooks/use-motion-props";
 
 export function Hero() {
   const { open } = useLightbox();
+  const mpFadeUp = useMotionProps(FADE_UP);
+  const mpFadeUpLg = useMotionProps(FADE_UP_LG);
+  const mpFade = useMotionProps(FADE);
 
   // Wraps the lightbox `open` with a GTM-compatible cta_click push.
   // GTM trigger #12 listens for this; DLV - cta_label / cta_location feed it.
@@ -28,8 +32,8 @@ export function Hero() {
 
       <div className="container max-w-5xl text-center">
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={mpFadeUp.initial}
+          animate={mpFadeUp.animate}
           transition={{ duration: 0.5 }}
           className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 backdrop-blur px-4 py-1.5 text-xs font-medium text-muted-foreground mb-6"
         >
@@ -49,8 +53,8 @@ export function Hero() {
         </h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={mpFadeUpLg.initial}
+          animate={mpFadeUpLg.animate}
           transition={{ duration: 0.6, delay: 0.15 }}
           className="mt-6 mx-auto max-w-2xl text-base md:text-lg text-muted-foreground leading-relaxed"
         >
@@ -59,8 +63,8 @@ export function Hero() {
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={mpFadeUpLg.initial}
+          animate={mpFadeUpLg.animate}
           transition={{ duration: 0.6, delay: 0.25 }}
           className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
         >
@@ -82,8 +86,8 @@ export function Hero() {
         </motion.div>
 
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={mpFade.initial}
+          animate={mpFade.animate}
           transition={{ duration: 0.6, delay: 0.45 }}
           className="mt-6 text-xs text-muted-foreground"
         >

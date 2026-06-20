@@ -146,7 +146,16 @@
     background-color: hsl(var(--primary) / 0.25);
     color: hsl(var(--foreground));
   }
-  /* Reduce motion respectfully */
+  /* Reduce motion respectfully — WCAG 2.1 SC 2.3.3
+   *
+   * Two-layer fix:
+   * 1. Kill animation / transition timing for CSS-driven motion.
+   * 2. Force opacity to 1 on any element that uses Framer Motion's inline
+   *    `style="opacity:0"` initial state — without this the element stays
+   *    invisible because JS `animation-duration` collapse happens after the
+   *    initial render flush. The `useMotionProps` hook is the primary fix;
+   *    this CSS rule is a belt-and-suspenders fallback for any missed sites.
+   */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -155,6 +164,11 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
+    }
+    /* Reveal any element whose opacity was set to 0 by a JS animation engine */
+    [style*="opacity: 0"],
+    [style*="opacity:0"] {
+      opacity: 1 !important;
     }
   }
 }
