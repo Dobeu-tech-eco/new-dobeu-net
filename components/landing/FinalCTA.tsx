@@ -5,9 +5,11 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
+import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 
 export function FinalCTA() {
   const { open } = useLightbox();
+  const mp = useMotionProps(FADE_UP);
 
   function trackAndOpen(target: "book" | "form" | "email", label: string) {
     track("cta_click", { cta_label: label, cta_location: "final_cta", target });
@@ -18,9 +20,9 @@ export function FinalCTA() {
     <section aria-labelledby="cta-heading" className="py-20 md:py-28">
       <div className="container max-w-4xl">
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={mp.initial}
+          whileInView={mp.whileInView}
+          viewport={mp.viewport}
           transition={{ duration: 0.5 }}
           className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-accent/10 p-8 md:p-14 text-center"
         >

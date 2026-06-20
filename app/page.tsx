@@ -9,7 +9,6 @@ import { LightboxProvider } from "@/components/landing/LightboxProvider";
 const HowItWorks = dynamic(() =>
   import("@/components/landing/HowItWorks").then((m) => m.HowItWorks)
 );
-const Proof = dynamic(() => import("@/components/landing/Proof").then((m) => m.Proof));
 const Founder = dynamic(() => import("@/components/landing/Founder").then((m) => m.Founder));
 const FAQ = dynamic(() => import("@/components/landing/FAQ").then((m) => m.FAQ));
 const FinalCTA = dynamic(() => import("@/components/landing/FinalCTA").then((m) => m.FinalCTA));
@@ -30,7 +29,6 @@ export default function HomePage() {
         <Hero />
         <Services />
         <HowItWorks />
-        <Proof />
         <Founder />
         <FAQ />
         <FinalCTA />

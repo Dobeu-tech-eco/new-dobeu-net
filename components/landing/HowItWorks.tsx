@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { CalendarCheck, FileText, Rocket } from "lucide-react";
+import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
 
 const STEPS = [
   {
@@ -22,6 +23,8 @@ const STEPS = [
 ];
 
 export function HowItWorks() {
+  const mp = useMotionProps(FADE_UP_LG, "-100px");
+
   return (
     <section
       id="how"
@@ -45,9 +48,9 @@ export function HowItWorks() {
           {STEPS.map((step, i) => (
             <motion.li
               key={step.label}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
+              initial={mp.initial}
+              whileInView={mp.whileInView}
+              viewport={mp.viewport}
               transition={{ duration: 0.4, delay: i * 0.1 }}
               className="relative rounded-xl border border-border bg-card p-6 md:p-8"
             >
