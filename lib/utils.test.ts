@@ -10,7 +10,8 @@ import {
   buildAuthCallbackUrl,
   resolveAuthOrigin,
   requiresAal2Stepup,
-  requiresMfaEnrollment
+  requiresMfaEnrollment,
+  sanitizeNextPath
 } from "@/lib/utils";
 
 describe("cn", () => {
@@ -226,5 +227,15 @@ describe("requiresMfaEnrollment", () => {
   });
   it("fails CLOSED for an admin with indeterminate assurance (null)", () => {
     expect(requiresMfaEnrollment(null, true)).toBe(true);
+  });
+});
+
+describe("sanitizeNextPath", () => {
+  it("sanitizes open-redirect next paths including protocol-relative bypasses", () => {
+    expect(sanitizeNextPath("https://evil.example")).toBe("/portal");
+    expect(sanitizeNextPath("//evil.example")).toBe("/portal");
+    expect(sanitizeNextPath("/\\evil.example")).toBe("/portal");
+    expect(sanitizeNextPath("\\\\evil.example")).toBe("/portal");
+    expect(sanitizeNextPath("/valid/path")).toBe("/valid/path");
   });
 });
