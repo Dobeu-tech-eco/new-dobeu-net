@@ -42,16 +42,19 @@ export function FinalCTA() {
           whileInView={mp.whileInView}
           viewport={mp.viewport}
           transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-accent/10 p-8 md:p-14 text-center shadow-lg hover:shadow-xl transition-shadow duration-300"
+          className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/25 via-card to-accent/20 p-8 md:p-14 text-center shadow-2xl hover:shadow-3xl transition-all duration-300"
         >
-          <div className="absolute inset-0 -z-10 bg-dobeu-mesh opacity-60" aria-hidden="true" />
+          {/* Multi-layer depth effect */}
+          <div className="absolute inset-0 -z-20 bg-gradient-to-t from-primary/5 via-transparent to-transparent opacity-40" aria-hidden="true" />
+          <div className="absolute inset-0 -z-10 bg-dobeu-mesh opacity-80" aria-hidden="true" />
+          <div className="absolute -inset-0.5 -z-30 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl blur-xl" aria-hidden="true" />
           <h2
             id="cta-heading"
-            className="font-display text-3xl md:text-5xl font-bold tracking-tight mb-4"
+            className="font-display text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-foreground"
           >
             Let&apos;s build the thing.
           </h2>
-          <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-8">
+          <p className="text-base md:text-lg text-foreground/70 max-w-xl mx-auto mb-8 font-medium">
             30 minutes. No pitch. We&apos;ll figure out together whether I&apos;m the right person to
             ship what you&apos;re trying to ship.
           </p>
