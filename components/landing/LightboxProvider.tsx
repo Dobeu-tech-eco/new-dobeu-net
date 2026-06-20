@@ -45,8 +45,16 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
+  // ⚡ Bolt: Memoize the context value object to prevent app-wide re-renders.
+  // Since `open` and `close` are stable references (wrapped in useCallback),
+  // without useMemo, a new object reference `{ open, close }` is created
+  // on every render of LightboxProvider (e.g. when `isOpen` or `tab` changes),
+  // causing all components consuming `useLightbox` to unnecessarily re-render.
+  // Impact: Prevents re-renders of SiteNav, Hero, etc., whenever the lightbox opens or changes tabs.
+  const ctxValue = React.useMemo(() => ({ open, close }), [open, close]);
+
   return (
-    <Ctx.Provider value={{ open, close }}>
+    <Ctx.Provider value={ctxValue}>
       {children}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
