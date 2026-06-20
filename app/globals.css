@@ -83,6 +83,9 @@
     --radius-lg: 20px; /* v2: cards land at 20px */
     --radius-xl: 24px;
     --radius-pill: 999px;
+
+    /* Elevated surface — slightly above background, used for cards/dropdowns */
+    --elevated: 0 0% 100%; /* light: same as card */
   }
 
   .dark {
@@ -117,6 +120,9 @@
     --border: var(--brand-border-dark);
     --input: var(--brand-border-dark);
     --ring: var(--dobeu-amber-500);
+
+    /* Elevated surface — dark: #242440 as per Dobeu brand spec */
+    --elevated: 240 25% 18%;
   }
 }
 
@@ -193,5 +199,13 @@
   }
   .skip-link {
     @apply sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-lg;
+  }
+  /* Hide scrollbars on overflow containers (SubBrandsStrip ticker row) */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }
