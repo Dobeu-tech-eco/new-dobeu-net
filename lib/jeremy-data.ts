@@ -26,7 +26,7 @@ export const FOUNDER = {
   tagline: "One operator. AI agents, full-stack apps, brand systems, and growth engineering — shipped.",
   location: "New York City",
   since: "2019",
-  avatar: "/images/jeremy-placeholder.png", // swap for real headshot — see README
+  avatar: "/images/jeremy-williams.jpg",
   linkedin: "https://www.linkedin.com/in/jeremy-williams",
   github: "https://github.com/Dobeu-tech-eco",
   twitter: "https://x.com/dobeutech",
