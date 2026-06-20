@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
+import { useRef } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
@@ -10,6 +11,15 @@ import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 export function FinalCTA() {
   const { open } = useLightbox();
   const mp = useMotionProps(FADE_UP);
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "center center"],
+  });
+
+  // Gradient intensity increases as user scrolls to this section
+  const shadowOpacity = useTransform(scrollYProgress, [0, 1], [0.3, 0.8]);
+  const bgOpacity = useTransform(scrollYProgress, [0, 1], [0.05, 0.15]);
 
   function trackAndOpen(target: "book" | "form" | "email", label: string) {
     track("cta_click", { cta_label: label, cta_location: "final_cta", target });
@@ -17,14 +27,22 @@ export function FinalCTA() {
   }
 
   return (
-    <section aria-labelledby="cta-heading" className="py-20 md:py-28">
+    <section ref={sectionRef} aria-labelledby="cta-heading" className="py-20 md:py-28 relative">
+      {/* Gradient overlay that deepens on scroll */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none rounded-2xl opacity-0"
+        style={{
+          opacity: shadowOpacity,
+          background: "radial-gradient(circle at center, rgba(107, 92, 231, 0.1), transparent 70%)",
+        }}
+      />
       <div className="container max-w-4xl">
         <motion.div
           initial={mp.initial}
           whileInView={mp.whileInView}
           viewport={mp.viewport}
           transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-accent/10 p-8 md:p-14 text-center"
+          className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-accent/10 p-8 md:p-14 text-center shadow-lg hover:shadow-xl transition-shadow duration-300"
         >
           <div className="absolute inset-0 -z-10 bg-dobeu-mesh opacity-60" aria-hidden="true" />
           <h2
