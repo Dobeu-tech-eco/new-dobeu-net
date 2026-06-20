@@ -5,7 +5,7 @@
 # This file exists because Codex CLI resolves codex.yaml by filename.
 
 project:
-  name: dobeu-net
+  name: new-dobeu-net
   description: "Dobeu.net HQ — Next.js 15 App Router marketing site + client portal + admin panel"
   url: https://dobeu.net
   repo: Dobeu-tech-eco/dobeu-net
@@ -73,7 +73,9 @@ branch_architecture:
 
 vercel:
   team_scope: team_8K43hpr1Nzs0UsjjUCGh8OBK
-  project_id: prj_H53tuPNNfVWhm54vkxxvo17CRZDX
+  project_id: prj_gsbOuACbBs2I8M1XSpDcdjoAENdb
+  project_name: new-dobeu-net
+  project_url: https://vercel.com/dobeutechnology/new-dobeu-net/
   cli_flag: "--scope team_8K43hpr1Nzs0UsjjUCGh8OBK"
 
 quality_gates:
