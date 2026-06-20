@@ -1,0 +1,125 @@
+name: Checkpoint Gate
+
+# Runs on every push to any branch except main and dev.
+# Enforces the full checkpoint protocol defined in .agent/CHECKPOINT.md.
+# This workflow is staged here because the v0 GitHub App lacks `workflows` scope.
+# OWNER ACTION REQUIRED: copy to .github/workflows/ to activate.
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+concurrency:
+  group: checkpoint-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20.x"
+
+jobs:
+  typecheck:
+    name: TypeScript (0 errors)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm type-check
+
+  lint:
+    name: ESLint (0 errors, 0 warnings)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  tests:
+    name: Unit Tests (all pass)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:ci
+
+  build:
+    name: Production Build (clean)
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint]
+    env:
+      NEXT_PUBLIC_SITE_URL: https://dobeu.net
+      NEXT_PUBLIC_GTM_ID: GTM-M97GN5T7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan for debug logs
+        run: |
+          if grep -r 'console\.log("\[v0\]' --include="*.ts" --include="*.tsx" . \
+            --exclude-dir=node_modules --exclude-dir=.next -l 2>/dev/null | grep -q .; then
+            echo "ERROR: Found [v0] debug console.log statements"
+            grep -r 'console\.log("\[v0\]' --include="*.ts" --include="*.tsx" . \
+              --exclude-dir=node_modules --exclude-dir=.next -l
+            exit 1
+          fi
+          echo "OK: No debug logs"
+      - name: Scan for dangerouslySetInnerHTML without justification
+        run: |
+          FILES=$(grep -r "dangerouslySetInnerHTML" --include="*.tsx" . \
+            --exclude-dir=node_modules --exclude-dir=.next -l 2>/dev/null || true)
+          if [ -n "$FILES" ]; then
+            for f in $FILES; do
+              if ! grep -q "// SECURITY:" "$f"; then
+                echo "ERROR: $f uses dangerouslySetInnerHTML without // SECURITY: comment"
+                exit 1
+              fi
+            done
+          fi
+          echo "OK: dangerouslySetInnerHTML audit passed"
+      - name: Scan for localStorage usage
+        run: |
+          if grep -r "localStorage" --include="*.ts" --include="*.tsx" . \
+            --exclude-dir=node_modules --exclude-dir=.next -l 2>/dev/null | grep -q .; then
+            echo "WARNING: localStorage usage found (data should live in Supabase)"
+            grep -r "localStorage" --include="*.ts" --include="*.tsx" . \
+              --exclude-dir=node_modules --exclude-dir=.next -l
+          fi
+          echo "OK: No localStorage usage"

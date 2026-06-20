@@ -1,0 +1,126 @@
+---
+description: "Dobeu.net — Universal agent rules for Cursor. Applies to all files in this repo."
+globs: ["**/*.ts", "**/*.tsx", "**/*.css", "**/*.json", "**/*.yaml", "**/*.yml"]
+alwaysApply: true
+---
+
+# Dobeu.net — Cursor Agent Rules
+
+> STOP. Read `CLAUDE.md` in the repo root first. It is the single source of truth.
+> This file exists because Cursor resolves `.cursor/rules/*.mdc` automatically.
+
+## Pre-Session Hook (mandatory before any edit)
+
+```bash
+cat CLAUDE.md                              # read full rulebook
+cat .agent/HANDOFF.md                      # previous agent notes + open items
+cat STATUS.md                              # current phase + blockers
+git fetch --all && git status              # sync before editing
+gh pr list --repo Dobeu-tech-eco/dobeu-net --state open  # audit open PRs
+# then append your session-open note to .agent/HANDOFF.md
+```
+
+## Post-Session Hook (mandatory before closing)
+
+```bash
+pnpm lint && pnpm type-check && pnpm test:ci && pnpm build  # checkpoint gate
+# append session-close note to .agent/HANDOFF.md
+# update STATUS.md
+git add -A && git commit -m "type(scope): description [checkpoint-N]"
+git push origin <feature-branch>  # NEVER push to main or dev directly
+```
+
+## Project Identity
+
+- **Site:** https://dobeu.net | **Repo:** `Dobeu-tech-eco/dobeu-net`
+- **Package manager:** `pnpm` (always — never npm/yarn/bun)
+- **Framework:** Next.js 15 App Router, TypeScript strict, Tailwind CSS v4, shadcn/ui
+- **Vercel scope:** `--scope team_8K43hpr1Nzs0UsjjUCGh8OBK`
+- **main:** production (NEVER delete or push directly)
+- **dev:** staging/preview (NEVER delete or push directly)
+- **Feature branches:** `feature/*`, `fix/*`, `step-*` — branch from dev, PR back to dev
+
+## Code Rules
+
+### TypeScript
+- Strict mode — no `any`, no `@ts-ignore` without justification comment
+- All Supabase mutations via Server Actions in `lib/actions/` — no client-side writes
+- `createClient()` for user-scoped (RLS); `createAdminClient()` for admin ops only (server-only)
+- `export const dynamic = "force-dynamic"` on `/admin/*` and `/api/lead`
+
+### CSS / Tailwind
+- Tailwind v4 syntax: `@theme inline {}`, `@custom-variant dark`
+- `bg-background` must be on `<html>` tag in `app/layout.tsx`
+- No gradients on primary elements — solid colors only
+- No `space-*` classes — use `gap-*`
+- No arbitrary values like `p-[16px]` — use scale `p-4`
+
+### React / Next.js
+- Server components by default; `"use client"` only when truly needed
+- No `useEffect` for data fetching — use RSC or SWR
+- No `localStorage` for data persistence — use Supabase
+- `lazyMotion + domAnimation` from `motion/react` — not full bundle import
+- `useReducedMotion()` on every animated component
+- No `initial={{ opacity: 0 }}` on above-the-fold elements (LCP regression)
+
+### Security
+- No `'unsafe-inline'` in `script-src` CSP (after Step 5)
+- No in-memory rate limiting — use `@upstash/ratelimit` with Upstash Redis
+- No `dangerouslySetInnerHTML` for static strings — use JSX entities
+- Validate `next` redirect param against allowlist before use
+- No hardcoded secrets — use Vercel Vars or Doppler
+
+### Accessibility
+- Skip-to-main-content as first focusable element in every layout
+- `aria-modal="true"` on all dialogs; `aria-current="page"` on active nav links
+- Full-opacity focus rings — not `outline-ring/50`
+- `aria-hidden="true"` on decorative SVGs
+- Run axe-core audit before any accessibility checkpoint passes
+
+## Design System (Brand Tokens)
+
+### Colors — dark default
+```
+Primary:       #6B5CE7  (indigo)
+Accent:        #F4A261  (amber — CTA on dark)
+Dark bg:       #1A1A2E  | Dark elevated: #242440
+Light bg:      #FFFFFF  | Border dark: #2A2A45
+Text:          #FFFFFF / #E0E0E0 / #9A9AB0
+```
+
+### Typography
+- Headings: Nunito ExtraBold 800 (confirm with Jeremy — may stay Geist)
+- Body: Geist Sans | Code: JetBrains Mono | Max 2 families
+
+### Rules
+- NO gradients, NO heavy shadows, NO emoji icons
+- CTA: amber fill on dark, indigo fill on light; ONE primary CTA per screen
+- Max 5 colors per view; WCAG AA contrast required
+
+## Current Critical Blockers (2026-06-19)
+
+| # | Issue | Fix in |
+|---|---|---|
+| B15 | `dev` branch does not exist | Phase 0 |
+| B16 | Duplicate PRs #92, #93, #94 open | Phase 0 |
+| B1 | Layout metadata = "v0 App" in production | Step 1 |
+| B2 | ThemeProvider not mounted — dark mode broken | Step 1 |
+| B3 | AnalyticsProvider not mounted | Step 1 |
+| B4 | Mobile LCP = 4.9s (target ≤2.5s) | Step 2 |
+| B5 | Tailwind v3 package + v4 CSS syntax conflict | Step 1 |
+| B9 | In-memory rate limiter (cold-start reset) | Step 5 |
+
+Full list (B1–B16): `CLAUDE.md` "Known Issues & Active Blockers"
+
+## Available Tools
+
+- **Linear MCP** (46 tools): issues, projects, milestones, sprints
+- **Composio MCP** (100+ apps): GitHub, Vercel, Cloudflare, Doppler, PostHog, Slack, Figma, Datadog, Sentry
+  - Search: `Composio_COMPOSIO_SEARCH_TOOLS`
+  - Execute parallel: `Composio_COMPOSIO_MULTI_EXECUTE_TOOL`
+  - Remote bash: `Composio_COMPOSIO_REMOTE_WORKBENCH`
+- **Stripe MCP** (11 tools): payments, invoices, webhooks
+- **gh CLI**: pre-authenticated GitHub operations
+- **vercel-labs skills** in `.claude/skills/`: deploy, optimize, react patterns, design guidelines
+
+Full inventory: `CLAUDE.md` "Tool Inventory" section

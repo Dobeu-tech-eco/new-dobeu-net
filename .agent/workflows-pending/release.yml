@@ -1,0 +1,148 @@
+name: Production Release
+
+# Triggers after a successful merge to main.
+# Runs post-deploy smoke test, submits sitemap to Google, validates OG cards,
+# and posts a release summary.
+# OWNER ACTION REQUIRED: copy to .github/workflows/ to activate.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  PRODUCTION_URL: https://dobeu.net
+  NODE_VERSION: "20.x"
+
+jobs:
+  # ── Post-deploy smoke test ───────────────────────────────────────────────────
+  smoke-test:
+    name: Production Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Health check — homepage
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.PRODUCTION_URL }})
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: Homepage returned HTTP $STATUS"
+            exit 1
+          fi
+          echo "OK: Homepage returned HTTP 200"
+
+      - name: Health check — robots.txt
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.PRODUCTION_URL }}/robots.txt)
+          echo "robots.txt: HTTP $STATUS"
+
+      - name: Health check — sitemap.xml
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.PRODUCTION_URL }}/sitemap.xml)
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: sitemap.xml returned HTTP $STATUS"
+            exit 1
+          fi
+          echo "OK: sitemap.xml returned HTTP 200"
+
+      - name: Health check — OG image
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.PRODUCTION_URL }}/opengraph-image)
+          echo "OG image: HTTP $STATUS"
+
+      - name: Health check — API lead endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"name":"smoke","email":"smoke@dobeu.net","message":"smoke test"}' \
+            ${{ env.PRODUCTION_URL }}/api/lead)
+          if [ "$STATUS" = "429" ] || [ "$STATUS" = "200" ] || [ "$STATUS" = "201" ]; then
+            echo "OK: /api/lead returned HTTP $STATUS (200/201/429 all acceptable)"
+          else
+            echo "WARN: /api/lead returned HTTP $STATUS"
+          fi
+
+      - name: Verify meta title is not default
+        run: |
+          TITLE=$(curl -s ${{ env.PRODUCTION_URL }} | grep -o '<title>[^<]*</title>' | head -1)
+          if echo "$TITLE" | grep -q "v0 App"; then
+            echo "CRITICAL FAIL: Page title is still 'v0 App' — metadata fix not deployed"
+            exit 1
+          fi
+          echo "OK: Title is: $TITLE"
+
+      - name: Verify dark mode CSS variables present
+        run: |
+          CSS=$(curl -s ${{ env.PRODUCTION_URL }})
+          if echo "$CSS" | grep -q "1A1A2E"; then
+            echo "OK: Brand dark bg token (#1A1A2E) found in page"
+          else
+            echo "WARN: Brand dark bg token not found — check globals.css deployment"
+          fi
+
+  # ── Google Search Console sitemap ping ──────────────────────────────────────
+  sitemap-submit:
+    name: Submit Sitemap to Google
+    runs-on: ubuntu-latest
+    needs: smoke-test
+    steps:
+      - name: Ping Google sitemap
+        run: |
+          curl -s "https://www.google.com/ping?sitemap=${{ env.PRODUCTION_URL }}/sitemap.xml"
+          echo "Sitemap submitted to Google Search Console"
+
+  # ── OG card validation ──────────────────────────────────────────────────────
+  og-validation:
+    name: Validate OG / Social Cards
+    runs-on: ubuntu-latest
+    needs: smoke-test
+    steps:
+      - name: Check OG meta tags
+        run: |
+          HTML=$(curl -s ${{ env.PRODUCTION_URL }})
+          OG_TITLE=$(echo "$HTML" | grep -o 'property="og:title" content="[^"]*"' | head -1)
+          OG_DESC=$(echo "$HTML" | grep -o 'property="og:description" content="[^"]*"' | head -1)
+          OG_IMAGE=$(echo "$HTML" | grep -o 'property="og:image" content="[^"]*"' | head -1)
+          TWITTER_CARD=$(echo "$HTML" | grep -o 'name="twitter:card" content="[^"]*"' | head -1)
+          echo "OG Title:    $OG_TITLE"
+          echo "OG Desc:     $OG_DESC"
+          echo "OG Image:    $OG_IMAGE"
+          echo "Twitter:     $TWITTER_CARD"
+          if [ -z "$OG_TITLE" ]; then
+            echo "FAIL: og:title is missing"
+            exit 1
+          fi
+          if [ -z "$OG_IMAGE" ]; then
+            echo "FAIL: og:image is missing"
+            exit 1
+          fi
+          echo "OK: OG tags present"
+
+  # ── Release summary ──────────────────────────────────────────────────────────
+  release-summary:
+    name: Release Summary
+    runs-on: ubuntu-latest
+    needs: [smoke-test, sitemap-submit, og-validation]
+    if: always()
+    steps:
+      - name: Write summary
+        run: |
+          echo "## Production Release — ${{ env.PRODUCTION_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Smoke Test | ${{ needs.smoke-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sitemap Submit | ${{ needs.sitemap-submit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| OG Validation | ${{ needs.og-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Post-deploy checklist:**" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Verify Google Search Console crawl within 48h" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Check Datadog RUM for error rate spike" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Confirm Stripe webhook delivered in dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Confirm Intercom Identity Verification active" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Test Twitter/LinkedIn OG card manually" >> $GITHUB_STEP_SUMMARY

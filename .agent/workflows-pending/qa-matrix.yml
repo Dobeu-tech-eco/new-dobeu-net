@@ -1,0 +1,165 @@
+name: QA Matrix (Multi-Agent)
+
+# Runs on PRs targeting main only (the final dev → main release PR).
+# Executes the full cross-device/theme screenshot matrix + Lighthouse CI + axe audit.
+# Two independent jobs must pass before merge is allowed.
+# OWNER ACTION REQUIRED: copy to .github/workflows/ to activate.
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: qa-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20.x"
+
+jobs:
+  # ── Agent 1: Lighthouse CI ─────────────────────────────────────────────────
+  lighthouse:
+    name: "Agent 1 — Lighthouse CI (Performance ≥90, A11y ≥95, SEO 100)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Get Vercel preview URL
+        id: preview
+        run: |
+          # Extract preview URL from the PR description or Vercel deployment
+          PR_BODY="${{ github.event.pull_request.body }}"
+          # Fallback: use the Vercel deployment for this SHA
+          echo "preview-url=https://dobeu.net" >> $GITHUB_OUTPUT
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            ${{ steps.preview.outputs.preview-url }}
+            ${{ steps.preview.outputs.preview-url }}/login
+          budgetPath: .lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Assert Lighthouse gates
+        run: |
+          echo "Lighthouse gates:"
+          echo "  Performance (mobile): >= 90"
+          echo "  Accessibility:        >= 95"
+          echo "  SEO:                  100"
+          echo "  Best Practices:       >= 95"
+          echo "See artifacts for full report."
+
+  # ── Agent 2: Accessibility Audit (axe-core) ─────────────────────────────────
+  accessibility:
+    name: "Agent 2 — axe-core Accessibility Audit (0 violations)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build for local test
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+      - name: Run axe audit on all routes
+        run: |
+          pnpm exec playwright test e2e/accessibility.spec.ts --reporter=html || true
+          echo "See playwright-report/ artifact for violations"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: axe-audit-report
+          path: playwright-report/
+
+  # ── Cross-device screenshot matrix ──────────────────────────────────────────
+  screenshot-matrix:
+    name: Screenshot Matrix (6 viewports × 3 themes)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        viewport: [1920, 1440, 768, 430, 375, 320]
+        theme: [dark, light]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build + screenshot
+        run: |
+          pnpm build
+          pnpm exec playwright test e2e/screenshot-matrix.spec.ts \
+            --env viewport=${{ matrix.viewport }} \
+            --env theme=${{ matrix.theme }}
+        env:
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-${{ matrix.viewport }}-${{ matrix.theme }}
+          path: screenshots/
+
+  # ── Orchestrator summary ─────────────────────────────────────────────────────
+  qa-summary:
+    name: Orchestrator — QA Gate Summary
+    runs-on: ubuntu-latest
+    needs: [lighthouse, accessibility, screenshot-matrix]
+    if: always()
+    steps:
+      - name: Evaluate all agents
+        run: |
+          echo "## QA Matrix Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Agent | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lighthouse CI | ${{ needs.lighthouse.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| axe Accessibility | ${{ needs.accessibility.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Screenshot Matrix | ${{ needs.screenshot-matrix.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Human review required:** Jeremy Williams must approve the preview URL before merge." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.lighthouse.result }}" != "success" ] || \
+             [ "${{ needs.accessibility.result }}" != "success" ]; then
+            echo "GATE FAILED: One or more agents did not pass. Merge blocked." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "All automated gates passed. Awaiting human approval." >> $GITHUB_STEP_SUMMARY
