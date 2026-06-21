@@ -155,6 +155,17 @@ describe("buildAuthCallbackUrl", () => {
       "https://dobeu.net/auth/callback?next=%2Fportal",
     );
   });
+
+  it("sanitizes protocol-relative open-redirect bypasses", () => {
+    // @ts-expect-error simulate node
+    delete globalThis.window;
+    expect(buildAuthCallbackUrl("//evil.example")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal",
+    );
+    expect(buildAuthCallbackUrl("/\\evil.example")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal",
+    );
+  });
 });
 
 describe("getPosthogHost", () => {
