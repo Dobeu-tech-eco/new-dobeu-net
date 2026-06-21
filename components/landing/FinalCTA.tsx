@@ -19,7 +19,6 @@ export function FinalCTA() {
 
   // Gradient intensity increases as user scrolls to this section
   const shadowOpacity = useTransform(scrollYProgress, [0, 1], [0.3, 0.8]);
-  const bgOpacity = useTransform(scrollYProgress, [0, 1], [0.05, 0.15]);
 
   function trackAndOpen(target: "book" | "form" | "email", label: string) {
     track("cta_click", { cta_label: label, cta_location: "final_cta", target });

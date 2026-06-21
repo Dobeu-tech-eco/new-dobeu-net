@@ -42,7 +42,10 @@ function readConsent(): ConsentState {
 
 /** Returns true if the browser has sent a Do Not Track signal. */
 function isDNT(): boolean {
-  if (typeof navigator === "undefined") return false;
+  // Guard on `window`, not `navigator`: Node 21+ (the build/runtime) now
+  // defines a global `navigator`, so a navigator-only guard would fall
+  // through to `window.doNotTrack` during SSR and crash the prerender.
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
   return navigator.doNotTrack === "1" || (window as Window & { doNotTrack?: string }).doNotTrack === "yes";
 }
 

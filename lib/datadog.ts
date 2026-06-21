@@ -26,8 +26,13 @@
  * docs/datadog-sourcemaps.md.
  */
 
-import { datadogRum } from "@datadog/browser-rum";
-import { datadogLogs } from "@datadog/browser-logs";
+// Browser-only SDKs — loaded lazily via dynamic import() so they are never
+// evaluated during SSR/prerender (they reference `window` at module scope,
+// which would crash the build with "window is not defined").
+type DatadogRum = typeof import("@datadog/browser-rum")["datadogRum"];
+type DatadogLogs = typeof import("@datadog/browser-logs")["datadogLogs"];
+let datadogRum: DatadogRum | null = null;
+let datadogLogs: DatadogLogs | null = null;
 
 let initialized = false;
 
@@ -65,10 +70,17 @@ export function isDatadogConfigured(): boolean {
  * Initialize Datadog RUM + Logs SDKs. Idempotent. Skips silently if not configured.
  * Should be called once at app boot AFTER user consent.
  */
-export function initDatadog(): void {
+export async function initDatadog(): Promise<void> {
   if (typeof window === "undefined" || initialized) return;
   const config = readEnv();
   if (!config) return;
+
+  const [rumMod, logsMod] = await Promise.all([
+    import("@datadog/browser-rum"),
+    import("@datadog/browser-logs")
+  ]);
+  datadogRum = rumMod.datadogRum;
+  datadogLogs = logsMod.datadogLogs;
 
   // RUM — sessions, performance, errors, user actions
   datadogRum.init({
@@ -114,7 +126,7 @@ export function ddIdentify(user: {
   email?: string;
   name?: string;
 }): void {
-  if (!initialized) return;
+  if (!initialized || !datadogRum || !datadogLogs) return;
   datadogRum.setUser({ id: user.id, email: user.email, name: user.name });
   datadogLogs.setUser({ id: user.id, email: user.email, name: user.name });
 }
@@ -127,7 +139,7 @@ export function ddAction(
   name: string,
   context: Record<string, unknown> = {},
 ): void {
-  if (!initialized) return;
+  if (!initialized || !datadogRum) return;
   datadogRum.addAction(name, context);
 }
 
@@ -138,7 +150,7 @@ export function ddError(
   error: unknown,
   context: Record<string, unknown> = {},
 ): void {
-  if (!initialized) return;
+  if (!initialized || !datadogRum) return;
   const err = error instanceof Error ? error : new Error(String(error));
   datadogRum.addError(err, context);
 }
