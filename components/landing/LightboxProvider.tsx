@@ -45,8 +45,10 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
+  const value = React.useMemo(() => ({ open, close }), [open, close]);
+
   return (
-    <Ctx.Provider value={{ open, close }}>
+    <Ctx.Provider value={value}>
       {children}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
