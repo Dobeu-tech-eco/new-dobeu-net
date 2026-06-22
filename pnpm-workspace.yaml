@@ -1,19 +1,11 @@
-# pnpm 11+ workspace config.
-
-# Force patched versions of transitively-pulled deps flagged by Dependabot.
-# (pnpm 11 reads overrides here, not from package.json's "pnpm" field.)
-overrides:
-  js-cookie: ">=3.0.7"   # high: prototype hijack in assign() (<=3.0.5) via react-cookie-consent
-  postcss: ">=8.5.10"    # XSS in CSS stringify (<8.5.10) via next
-  vite: ">=6.4.2"        # dev-server path traversal (<=6.4.1) via vitest
-  esbuild: ">=0.25.0"    # dev-server request smuggling (<=0.24.2) via vite
-
-# `allowBuilds` is pnpm's per-package opt-in for postinstall scripts.
-allowBuilds:
-  "@vercel/speed-insights": true
-  core-js: true
-  esbuild: true
-  protobufjs: true
-  sharp: true
-  supabase: true
-  unrs-resolver: true
+# pnpm workspace config (compatible with pnpm 10).
+# overrides are defined in package.json under the "pnpm.overrides" field.
+# onlyBuiltDependencies is the pnpm 10 equivalent of allowBuilds.
+onlyBuiltDependencies:
+  - "@vercel/speed-insights"
+  - core-js
+  - esbuild
+  - protobufjs
+  - sharp
+  - supabase
+  - unrs-resolver

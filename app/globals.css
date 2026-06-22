@@ -1,69 +1,115 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
-@import 'shadcn/tailwind.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
+/* ============================================================================
+ * Dobeu Design System v2 — CSS variables
+ * Mirror of @dobeu/tokens (see C:/Users/jswil/dobeu-eco/figma-design/dobeu-design-system/packages/tokens)
+ * Values are HSL components (no hsl() wrapper) so Tailwind's `hsl(var(--x))` works.
+ * Brand colors (indigo) NEVER change across themes. Only accent + active motif shift per property.
+ * ============================================================================ */
 
-@theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-  --font-serif: 'Source Serif 4', 'Source Serif 4 Fallback';
-  /* computed shadow variables below - do not modify */
-  --shadow-2xs: var(--shadow-x) var(--shadow-y) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-xs: var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-sm: var(--shadow-x) var(--shadow-y) calc(var(--shadow-blur) * 1.5) var(--shadow-spread) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-md: calc(var(--shadow-x) * 2) calc(var(--shadow-y) * 2) calc(var(--shadow-blur) * 3) calc(var(--shadow-spread) - 1px) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-lg: calc(var(--shadow-x) * 4) calc(var(--shadow-y) * 4) calc(var(--shadow-blur) * 5) calc(var(--shadow-spread) - 3px) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-xl: calc(var(--shadow-x) * 6) calc(var(--shadow-y) * 6) calc(var(--shadow-blur) * 7) calc(var(--shadow-spread) - 5px) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-2xl: calc(var(--shadow-x) * 8) calc(var(--shadow-y) * 8) calc(max(0px, var(--shadow-blur) * 9 - 8px)) calc(var(--shadow-spread) - 12px) color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 250%), transparent);
-  --shadow: var(--shadow-md);
-  --color-shadow-color: var(--shadow-color);
-  --shadow-opacity: var(--shadow-opacity);
-  --shadow-spread: var(--shadow-spread);
-  --shadow-blur: var(--shadow-blur);
-  --shadow-y: var(--shadow-y);
-  --shadow-x: var(--shadow-x);
-  --color-destructive-foreground: var(--destructive-foreground);
-}
+@layer base {
+  :root {
+    /* ---- Raw Dobeu palette (HSL) ----
+       Indigo 500 = #6B5CE7  → hsl(249, 73%, 63%)
+       Indigo 700 = #4A3FA8  → hsl(247, 46%, 45%)
+       Amber 500  = #F4A261  → hsl(27, 88%, 67%)
+       Ink 900    = #1A1A2E  → hsl(240, 28%, 14%)
+       Paper 50   = #FAFAFC  → hsl(240, 22%, 99%) */
+
+    --dobeu-indigo-50: 249 80% 96%;
+    --dobeu-indigo-100: 249 78% 92%;
+    --dobeu-indigo-200: 249 76% 84%;
+    --dobeu-indigo-300: 249 74% 76%;
+    --dobeu-indigo-400: 249 73% 68%;
+    --dobeu-indigo-500: 249 73% 63%;
+    --dobeu-indigo-600: 248 60% 56%;
+    --dobeu-indigo-700: 247 46% 45%;
+    --dobeu-indigo-800: 246 40% 35%;
+    --dobeu-indigo-900: 245 38% 26%;
+
+    --dobeu-amber-500: 27 88% 67%;
+    --dobeu-amber-600: 22 70% 58%;
+
+    --dobeu-ink-900: 240 28% 14%;
+    --dobeu-paper-50: 240 22% 99%;
+
+    /* ---- v2 brand primitives (Design System v2) ---- */
+    /* Indigo Slate #5A4FAB — wordmark color + light-mode heading color */
+    --brand-indigo-slate: 247 38% 49%;
+    /* Cream Soft #FFF8F0 — light-mode secondary surface */
+    --brand-cream-soft: 36 100% 97%;
+    /* Borders */
+    --brand-border-light: 247 60% 92%; /* #E0DFF5 */
+    --brand-border-dark: 245 24% 22%; /* #2A2A45 */
+    /* 10% tints (for badges, pills, soft fills) */
+    --brand-tint-indigo-10: 250 70% 95%; /* #E8E5FA */
+    --brand-tint-amber-10: 30 90% 94%; /* #FEF0E0 */
+    /* Heading-specific foreground (slate by default in light mode) */
+    --fg-heading: var(--brand-indigo-slate);
+
+    /* ---- Light theme (default for dobeu.net) ---- */
+    --background: 0 0% 100%; /* pure white per brand canvas spec */
+    --foreground: var(--dobeu-ink-900);
+
+    --card: 0 0% 100%;
+    --card-foreground: var(--dobeu-ink-900);
+
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--dobeu-ink-900);
+
+    --primary: var(--dobeu-indigo-500);
+    --primary-foreground: var(--dobeu-paper-50);
+
+    --secondary: var(--brand-cream-soft);
+    --secondary-foreground: var(--dobeu-ink-900);
+
+    --accent: var(--dobeu-amber-500);
+    --accent-foreground: var(--dobeu-ink-900);
+
+    --muted: 240 10% 96%;
+    --muted-foreground: 240 6% 40%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: var(--brand-border-light);
+    --input: var(--brand-border-light);
+    --ring: var(--dobeu-indigo-500);
+
+    --radius-sm: 6px;
+    --radius-md: 12px; /* v2: buttons + inputs land at 12px */
+    --radius-lg: 20px; /* v2: cards land at 20px */
+    --radius-xl: 24px;
+    --radius-pill: 999px;
+
+    /* Elevated surface — slightly above background, used for cards/dropdowns */
+    --elevated: 0 0% 100%; /* light: same as card */
+  }
+
+  .dark {
+    --background: var(--dobeu-ink-900);
+    --foreground: var(--dobeu-paper-50);
+
+    /* Heading slate doesn't read on dark surfaces — fall back to paper */
+    --fg-heading: var(--dobeu-paper-50);
+
+    --card: 240 25% 18%;
+    --card-foreground: var(--dobeu-paper-50);
+
+    --popover: 240 25% 16%;
+    --popover-foreground: var(--dobeu-paper-50);
+
+    /* v2 CTA-swap rule: in dark mode the primary CTA flips to amber. */
+    --primary: var(--dobeu-amber-500);
+    --primary-foreground: var(--dobeu-ink-900);
+
+    --secondary: 240 20% 22%;
+    --secondary-foreground: var(--dobeu-paper-50);
+
+    --accent: var(--dobeu-indigo-400);
+    --accent-foreground: var(--dobeu-ink-900);
 
 :root {
   color-scheme: light;
@@ -150,40 +196,12 @@
   --shadow-color: #000000;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    color-scheme: dark;
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --border: var(--brand-border-dark);
+    --input: var(--brand-border-dark);
+    --ring: var(--dobeu-amber-500);
+
+    /* Elevated surface — dark: #242440 as per Dobeu brand spec */
+    --elevated: 240 25% 18%;
   }
 }
 
@@ -194,7 +212,69 @@
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+  /* Focus ring — accent-colored, high contrast */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  /* Selection */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.25);
+    color: hsl(var(--foreground));
+  }
+  /* Reduce motion respectfully — WCAG 2.1 SC 2.3.3
+   *
+   * Two-layer fix:
+   * 1. Kill animation / transition timing for CSS-driven motion.
+   * 2. Force opacity to 1 on any element that uses Framer Motion's inline
+   *    `style="opacity:0"` initial state — without this the element stays
+   *    invisible because JS `animation-duration` collapse happens after the
+   *    initial render flush. The `useMotionProps` hook is the primary fix;
+   *    this CSS rule is a belt-and-suspenders fallback for any missed sites.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    /* Reveal any element whose opacity was set to 0 by a JS animation engine */
+    [style*="opacity: 0"],
+    [style*="opacity:0"] {
+      opacity: 1 !important;
+    }
+  }
+}
+
+/* ---- Utility extensions ---- */
+@layer utilities {
+  .gradient-text {
+    @apply bg-gradient-to-r from-dobeu-indigo-500 to-dobeu-amber-500 bg-clip-text text-transparent;
+  }
+  .gradient-text-deep {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--accent)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .glass {
+    @apply bg-background/70 backdrop-blur-xl backdrop-saturate-150 border border-border/60;
+  }
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-lg;
+  }
+  /* Hide scrollbars on overflow containers (SubBrandsStrip ticker row) */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Bot, Code2, Palette, LineChart, MessageCircleQuestion } from "lucide-react";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { cn } from "@/lib/utils";
+import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
 
 interface ServiceItem {
   icon: React.ComponentType<{ className?: string }>;
@@ -39,6 +40,7 @@ const SERVICES: ServiceItem[] = [
 
 export function Services() {
   const { open } = useLightbox();
+  const mp = useMotionProps(FADE_UP_LG, "-100px");
 
   return (
     <section id="work" aria-labelledby="work-heading" className="py-20 md:py-28">
@@ -63,9 +65,9 @@ export function Services() {
           {SERVICES.map((s, i) => (
             <motion.article
               key={s.title}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
+              initial={mp.initial}
+              whileInView={mp.whileInView}
+              viewport={mp.viewport}
               transition={{ duration: 0.4, delay: i * 0.05 }}
               className="relative group rounded-xl border border-border bg-card p-6 md:p-8 hover:border-primary/40 hover:shadow-glow transition-all"
             >
@@ -90,9 +92,9 @@ export function Services() {
 
           {/* "Something else" tile spans full width on lg, half on sm */}
           <motion.button
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
+            initial={mp.initial}
+            whileInView={mp.whileInView}
+            viewport={mp.viewport}
             transition={{ duration: 0.4, delay: 0.2 }}
             onClick={() => open("form")}
             className="sm:col-span-2 group rounded-xl border-2 border-dashed border-border hover:border-accent hover:bg-accent/5 p-6 md:p-8 text-left transition-all"

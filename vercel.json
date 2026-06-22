@@ -5,11 +5,13 @@
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install --frozen-lockfile",
   "regions": ["iad1"],
+
   "git": {
     "deploymentEnabled": {
       "main": true
     }
   },
+
   "headers": [
     {
       "source": "/(.*).(jpg|jpeg|png|webp|avif|svg|ico|woff2)",
@@ -17,6 +19,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
         }
       ]
     }

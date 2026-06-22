@@ -21,13 +21,37 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${SITE_URL}/privacy`,
       lastModified: now,
       changeFrequency: "yearly",
-      priority: 0.2,
+      priority: 0.4,
     },
     {
       url: `${SITE_URL}/terms`,
       lastModified: now,
       changeFrequency: "yearly",
-      priority: 0.2,
+      priority: 0.4,
+    },
+    {
+      url: `${SITE_URL}/cookies`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${SITE_URL}/optin/sms`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${SITE_URL}/marketing-opt-out`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${SITE_URL}/repos`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.5,
     },
   ];
 }

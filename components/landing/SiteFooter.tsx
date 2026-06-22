@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 
@@ -10,8 +12,8 @@ export function SiteFooter() {
           <div className="flex items-start gap-3 max-w-sm">
             <DobeuMark className="h-10 w-10 shrink-0" />
             <div>
-              <p className="font-display text-lg font-extrabold lowercase text-[hsl(var(--brand-indigo-slate))]">
-                dobeu tech solutions
+              <p className="font-display text-lg font-extrabold text-[hsl(var(--brand-indigo-slate))]">
+                Dobeu Tech Solutions LLC
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Ship the agent. Ship the app. Ship the brand. One operator, modern stack.
@@ -19,7 +21,7 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <nav className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm" aria-label="Footer">
+          <nav className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm" aria-label="Footer">
             <div>
               <p className="font-semibold mb-2">Site</p>
               <ul className="space-y-1.5 text-muted-foreground">
@@ -27,6 +29,7 @@ export function SiteFooter() {
                 <li><Link href="/#how" className="hover:text-foreground">How it works</Link></li>
                 <li><Link href="/#about" className="hover:text-foreground">About</Link></li>
                 <li><Link href="/#faq" className="hover:text-foreground">FAQ</Link></li>
+                <li><Link href="/repos" className="hover:text-foreground">Repos</Link></li>
               </ul>
             </div>
             <div>
@@ -43,14 +46,39 @@ export function SiteFooter() {
                 <li><a href="https://www.linkedin.com/in/jeremy-williams" className="hover:text-foreground" target="_blank" rel="noreferrer">LinkedIn</a></li>
               </ul>
             </div>
+            <div>
+              <p className="font-semibold mb-2">Legal</p>
+              <ul className="space-y-1.5 text-muted-foreground">
+                <li><Link href="/terms" className="hover:text-foreground">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link></li>
+                <li><Link href="/cookies" className="hover:text-foreground">Cookie Policy</Link></li>
+                <li><Link href="/optin/sms" className="hover:text-foreground">SMS Opt-In</Link></li>
+                <li><Link href="/marketing-opt-out" className="hover:text-foreground">Marketing Opt-Out</Link></li>
+              </ul>
+            </div>
           </nav>
         </div>
 
         <div className="mt-10 pt-6 border-t border-border text-xs text-muted-foreground flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-          <p>© {year} Dobeu Tech Solutions LLC. All rights reserved.</p>
-          <div className="flex gap-4">
+          <p>
+            &copy; {year} Dobeu Tech Solutions LLC. All rights reserved.{" "}
+            <span className="opacity-60">dobeu.net &middot; dobeu.cloud &middot; dobeutech.com &middot; dobeuinc.com</span>
+          </p>
+          <div className="flex flex-wrap gap-4 items-center">
             <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
             <Link href="/terms" className="hover:text-foreground">Terms</Link>
+            <Link href="/cookies" className="hover:text-foreground">Cookies</Link>
+            <button
+              type="button"
+              className="hover:text-foreground transition-colors"
+              onClick={() => {
+                if (typeof window !== "undefined" && (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences) {
+                  (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences!();
+                }
+              }}
+            >
+              Cookie preferences
+            </button>
             <a href="https://status.dobeu.net" target="_blank" rel="noreferrer" className="hover:text-foreground">
               Status
             </a>

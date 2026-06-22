@@ -8,53 +8,45 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { initAnalytics, pageView, setAnalyticsConsent } from "@/lib/analytics";
 import { initDatadog } from "@/lib/datadog";
 import { IntercomSecureBoot } from "@/components/intercom/IntercomSecureBoot";
-
-const CONSENT_KEY = "dobeu-analytics-consent";
+import { CookieBanner } from "@/components/CookieBanner";
+import { useCookieConsent } from "@/hooks/use-cookie-consent";
 
 /**
- * AnalyticsProvider — gates PostHog/Mixpanel on user consent and
- * loads GA4 + GTM via <Script>. Fires pageview on every route change.
+ * AnalyticsProvider — gates all third-party scripts on granular cookie consent.
+ *
+ * Analytics (PostHog, Mixpanel, GA4, GTM, Datadog) → consent.analytics
+ * Support / chat (Intercom)                         → consent.support
+ * Marketing sequences (Customer.io)                 → consent.marketing
  *
  * NOTE: We read query string from window.location directly (not useSearchParams)
- * to avoid forcing the whole app into a Suspense boundary in Next 15.5+ which
- * has known streaming issues in dev. See:
- * https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+ * to avoid forcing the whole app into a Suspense boundary in Next 15.5+.
  */
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [consent, setConsent] = React.useState<boolean | null>(null);
+  const { consent } = useCookieConsent();
 
-  // Hydrate consent from localStorage on mount
+  // Init / tear-down analytics when consent changes.
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(CONSENT_KEY);
-    if (stored === "granted") setConsent(true);
-    else if (stored === "denied") setConsent(false);
-  }, []);
-
-  // Init analytics once consent is granted (PostHog/Mixpanel + Datadog RUM+Logs)
-  React.useEffect(() => {
-    setAnalyticsConsent(consent === true);
-    if (consent !== true) return;
+    setAnalyticsConsent(consent.analytics);
+    if (!consent.analytics) return;
     initAnalytics(true);
     initDatadog();
-  }, [consent]);
+  }, [consent.analytics]);
 
-  // Fire pageview on navigation
+  // Fire pageview on navigation (analytics only).
   React.useEffect(() => {
-    if (consent !== true) return;
+    if (!consent.analytics) return;
     const search = typeof window !== "undefined" ? window.location.search : "";
-    const url = pathname + search;
-    pageView(url);
-  }, [pathname, consent]);
+    pageView(pathname + search);
+  }, [pathname, consent.analytics]);
 
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
   const ga4Id = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
 
   return (
     <>
-      {/* GTM + GA are loaded only after explicit consent. */}
-      {consent === true && gtmId && (
+      {/* GTM — analytics consent required */}
+      {consent.analytics && gtmId && (
         <Script id="gtm-loader" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -64,8 +56,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </Script>
       )}
 
-      {/* GA4 direct (in case GTM not configured) */}
-      {consent === true && ga4Id && !gtmId && (
+      {/* GA4 direct (when GTM not configured) — analytics consent required */}
+      {consent.analytics && ga4Id && !gtmId && (
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id}`}
@@ -81,52 +73,20 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       )}
 
       {children}
-      <IntercomSecureBoot enabled={consent === true} />
-      {consent === true && (
+
+      {/* Intercom — support consent required */}
+      <IntercomSecureBoot enabled={consent.support} />
+
+      {/* Vercel observability — analytics consent required */}
+      {consent.analytics && (
         <>
           <VercelAnalytics />
           <SpeedInsights />
         </>
       )}
 
-      {/* Cookie consent banner — only shown if consent is unset */}
-      {consent === null && (
-        <div
-          role="dialog"
-          aria-labelledby="consent-title"
-          aria-describedby="consent-desc"
-          className="fixed bottom-4 left-4 right-4 md:left-auto md:max-w-md z-50 glass rounded-xl p-4 shadow-glow animate-fade-up"
-        >
-          <h3 id="consent-title" className="font-semibold mb-1 text-sm">
-            Cookies and analytics
-          </h3>
-          <p id="consent-desc" className="text-xs text-muted-foreground mb-3">
-            We use PostHog, Mixpanel, Google Analytics/GTM, Datadog, and Intercom only after
-            you opt in. This helps us improve the site and support experience. Nothing is sold;
-            you can opt out anytime.
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="text-xs rounded-md bg-primary text-primary-foreground px-3 py-1.5 font-medium hover:opacity-90 transition"
-              onClick={() => {
-                window.localStorage.setItem(CONSENT_KEY, "granted");
-                setConsent(true);
-              }}
-            >
-              Accept
-            </button>
-            <button
-              className="text-xs rounded-md border border-border px-3 py-1.5 font-medium hover:bg-muted transition"
-              onClick={() => {
-                window.localStorage.setItem(CONSENT_KEY, "denied");
-                setConsent(false);
-              }}
-            >
-              Decline
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Cookie consent banner + preferences dialog */}
+      <CookieBanner />
     </>
   );
 }
