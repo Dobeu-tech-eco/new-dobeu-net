@@ -6,8 +6,6 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "regions": ["iad1"],
 
-  "skewProtection": true,
-
   "git": {
     "deploymentEnabled": {
       "main": true
