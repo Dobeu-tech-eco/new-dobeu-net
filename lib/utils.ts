@@ -125,7 +125,8 @@ export function buildAuthCallbackUrl(nextPath: string, fallback = "/portal"): st
  */
 export function sanitizeNextPath(nextPath: string | null | undefined, fallback = "/portal"): string {
   if (!nextPath) return fallback;
-  if (!nextPath.startsWith("/") || nextPath.startsWith("//")) return fallback;
+  // Security: Prevent open redirect bypasses using protocol-relative URLs
+  if (!nextPath.startsWith("/") || nextPath.startsWith("//") || nextPath.startsWith("/\\")) return fallback;
   return nextPath;
 }
 
