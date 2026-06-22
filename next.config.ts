@@ -118,6 +118,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Skew Protection: tie the build ID to the Vercel deployment ID so the
+  // client and server always agree on which deployment's assets to load.
+  // Enabled via "skewProtection": true in vercel.json. Falls back to a
+  // timestamp locally where VERCEL_DEPLOYMENT_ID is unset.
+  generateBuildId: async () => process.env.VERCEL_DEPLOYMENT_ID ?? `local-${Date.now()}`,
   // Build is a real verifier again: type-check + lint both pass, so failures
   // here should block the build rather than ship silently. (Was temporarily
   // disabled during Phase-1 launch.)
@@ -134,7 +139,9 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "**.supabase.co" },
-      { protocol: "https", hostname: "images.unsplash.com" }
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "media.licdn.com", pathname: "/dms/image/**" },
+      { protocol: "https", hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com" }
     ]
   },
   async headers() {
@@ -147,6 +154,11 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [{ source: "/home", destination: "/", permanent: true }];
+  },
+  async rewrites() {
+    // Serve the Terms of Service at the canonical /tos URL (dobeu.net/tos)
+    // in every environment (dev + preview + prod), independent of vercel.json.
+    return [{ source: "/tos", destination: "/terms" }];
   }
 };
 

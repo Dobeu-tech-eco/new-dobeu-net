@@ -1,8 +1,25 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+  // Skew Protection: propagate the __vdpl deployment cookie on every response
+  // so Next.js can detect version mismatch between client bundles and the server.
+  // On Vercel this is handled automatically; this header ensures the cookie is
+  // forwarded even through edge caching layers.
+  const response = await updateSession(request);
+
+  // Pass through the skew-protection deployment cookie if Vercel injected it.
+  const skewCookie = request.cookies.get("__vdpl");
+  if (skewCookie) {
+    (response as NextResponse).cookies.set("__vdpl", skewCookie.value, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: true,
+      path: "/",
+    });
+  }
+
+  return response;
 }
 
 export const config = {

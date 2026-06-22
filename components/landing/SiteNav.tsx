@@ -183,12 +183,13 @@ export function SiteNav() {
             {/* Mobile toggle */}
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-foreground hover:bg-muted transition-colors"
+              className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-foreground hover:bg-muted transition-all duration-200 shadow-sm hover:shadow-md relative"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen((v) => !v)}
             >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <span className="absolute inset-0 rounded-md bg-gradient-to-b from-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-200" aria-hidden="true" />
+              {mobileOpen ? <X className="h-5 w-5 relative z-10" /> : <Menu className="h-5 w-5 relative z-10" />}
             </button>
           </div>
         </nav>
