@@ -10,7 +10,8 @@ import {
   buildAuthCallbackUrl,
   resolveAuthOrigin,
   requiresAal2Stepup,
-  requiresMfaEnrollment
+  requiresMfaEnrollment,
+  sanitizeNextPath
 } from "@/lib/utils";
 
 describe("cn", () => {
@@ -207,6 +208,27 @@ describe("requiresAal2Stepup", () => {
   });
   it("returns false when assurance info is null (fail-open for shape, gate handles network errors separately)", () => {
     expect(requiresAal2Stepup(null)).toBe(false);
+  });
+});
+
+describe("sanitizeNextPath", () => {
+  it("allows valid local paths", () => {
+    expect(sanitizeNextPath("/portal")).toBe("/portal");
+    expect(sanitizeNextPath("/portal/settings")).toBe("/portal/settings");
+  });
+  it("falls back for non-local paths", () => {
+    expect(sanitizeNextPath("https://evil.example.com")).toBe("/portal");
+  });
+  it("falls back for protocol-relative bypasses", () => {
+    expect(sanitizeNextPath("//evil.example.com")).toBe("/portal");
+    expect(sanitizeNextPath("/\\evil.example.com")).toBe("/portal");
+  });
+  it("falls back for empty or undefined paths", () => {
+    expect(sanitizeNextPath("")).toBe("/portal");
+    // @ts-expect-error testing invalid types
+    expect(sanitizeNextPath(null)).toBe("/portal");
+    // @ts-expect-error testing invalid types
+    expect(sanitizeNextPath(undefined)).toBe("/portal");
   });
 });
 
