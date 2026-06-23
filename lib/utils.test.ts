@@ -225,9 +225,7 @@ describe("sanitizeNextPath", () => {
   });
   it("falls back for empty or undefined paths", () => {
     expect(sanitizeNextPath("")).toBe("/portal");
-    // @ts-expect-error testing invalid types
     expect(sanitizeNextPath(null)).toBe("/portal");
-    // @ts-expect-error testing invalid types
     expect(sanitizeNextPath(undefined)).toBe("/portal");
   });
 });
