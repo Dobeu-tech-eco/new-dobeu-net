@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/lib/actions/profile";
@@ -116,6 +117,7 @@ export function SettingsForm({ initial }: { initial: InitialProfile }) {
       )}
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>
+          {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {pending ? "Saving…" : "Save profile"}
         </Button>
       </div>
