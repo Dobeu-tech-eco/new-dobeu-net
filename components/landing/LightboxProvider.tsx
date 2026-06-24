@@ -45,8 +45,15 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
+  // ⚡ Bolt Performance Optimization
+  // Memoize the context value to preserve referential equality across renders.
+  // Without this, every time `isOpen` or `tab` state changes, a new object `{ open, close }`
+  // is created, causing all consumers (like SiteNav, Services) to needlessly re-render.
+  // Expected impact: Eliminates cascading re-renders across the app when toggling the lightbox.
+  const contextValue = React.useMemo(() => ({ open, close }), [open, close]);
+
   return (
-    <Ctx.Provider value={{ open, close }}>
+    <Ctx.Provider value={contextValue}>
       {children}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
