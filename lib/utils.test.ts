@@ -10,8 +10,34 @@ import {
   buildAuthCallbackUrl,
   resolveAuthOrigin,
   requiresAal2Stepup,
-  requiresMfaEnrollment
+  requiresMfaEnrollment,
+  sanitizeNextPath
 } from "@/lib/utils";
+
+describe("sanitizeNextPath", () => {
+  it("allows valid absolute paths", () => {
+    expect(sanitizeNextPath("/portal/tickets")).toBe("/portal/tickets");
+    expect(sanitizeNextPath("/admin")).toBe("/admin");
+  });
+
+  it("falls back to default when empty or null", () => {
+    expect(sanitizeNextPath(null)).toBe("/portal");
+    expect(sanitizeNextPath("")).toBe("/portal");
+  });
+
+  it("blocks protocol-relative URLs", () => {
+    expect(sanitizeNextPath("//evil.com")).toBe("/portal");
+  });
+
+  it("blocks malformed protocol-relative URLs that bypass standard checks", () => {
+    expect(sanitizeNextPath("/\\evil.com")).toBe("/portal");
+  });
+
+  it("blocks absolute URLs", () => {
+    expect(sanitizeNextPath("https://evil.com")).toBe("/portal");
+    expect(sanitizeNextPath("http://evil.com")).toBe("/portal");
+  });
+});
 
 describe("cn", () => {
   it("merges conditional classes and drops falsy values", () => {
