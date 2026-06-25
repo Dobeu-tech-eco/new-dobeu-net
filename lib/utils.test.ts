@@ -8,6 +8,7 @@ import {
   getSiteUrl,
   getPosthogHost,
   buildAuthCallbackUrl,
+  sanitizeNextPath,
   resolveAuthOrigin,
   requiresAal2Stepup,
   requiresMfaEnrollment
@@ -154,6 +155,23 @@ describe("buildAuthCallbackUrl", () => {
     expect(buildAuthCallbackUrl("https://evil.example")).toBe(
       "https://dobeu.net/auth/callback?next=%2Fportal",
     );
+  });
+});
+
+describe("sanitizeNextPath", () => {
+  it("allows valid relative paths", () => {
+    expect(sanitizeNextPath("/portal/settings")).toBe("/portal/settings");
+    expect(sanitizeNextPath("/")).toBe("/");
+  });
+
+  it("blocks absolute URLs and falls back", () => {
+    expect(sanitizeNextPath("https://evil.com")).toBe("/portal");
+    expect(sanitizeNextPath("http://evil.com")).toBe("/portal");
+  });
+
+  it("blocks protocol-relative URLs", () => {
+    expect(sanitizeNextPath("//evil.com")).toBe("/portal");
+    expect(sanitizeNextPath("/\\evil.com")).toBe("/portal");
   });
 });
 
