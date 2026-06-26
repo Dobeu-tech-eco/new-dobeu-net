@@ -154,6 +154,12 @@ describe("buildAuthCallbackUrl", () => {
     expect(buildAuthCallbackUrl("https://evil.example")).toBe(
       "https://dobeu.net/auth/callback?next=%2Fportal",
     );
+    expect(buildAuthCallbackUrl("//evil.example")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal",
+    );
+    expect(buildAuthCallbackUrl("/\\evil.example")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal",
+    );
   });
 });
 
