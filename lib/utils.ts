@@ -125,8 +125,21 @@ export function buildAuthCallbackUrl(nextPath: string, fallback = "/portal"): st
  */
 export function sanitizeNextPath(nextPath: string | null | undefined, fallback = "/portal"): string {
   if (!nextPath) return fallback;
-  if (!nextPath.startsWith("/") || nextPath.startsWith("//")) return fallback;
+  if (!nextPath.startsWith("/") || nextPath.startsWith("//") || nextPath.startsWith("/\\")) return fallback;
   return nextPath;
+}
+
+/**
+ * Safely stringify JSON for injection into a <script type="application/ld+json"> tag.
+ * Escapes characters that can trigger an XSS vulnerability when parsed as HTML.
+ */
+export function safeJsonLdStringify(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 /** Assurance-level shape returned by `supabase.auth.mfa.getAuthenticatorAssuranceLevel()`. */

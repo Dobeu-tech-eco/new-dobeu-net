@@ -3,7 +3,7 @@ import { Nunito } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
-import { getSiteUrl } from "@/lib/utils";
+import { getSiteUrl, safeJsonLdStringify } from "@/lib/utils";
 import "./globals.css";
 
 /**
@@ -93,7 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonLdStringify({
               "@context": "https://schema.org",
               "@graph": [
                 {

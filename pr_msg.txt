@@ -1,0 +1,18 @@
+🛡️ Sentinel: [MEDIUM] Fix injection vulnerability in structured data
+
+🚨 Severity
+Medium
+
+💡 Vulnerability
+A potential injection vulnerability was identified in the application's layout components. Data was being injected into the DOM without proper escaping for HTML contexts, which could theoretically allow arbitrary code execution under specific circumstances.
+
+🎯 Impact
+If exploited, this vulnerability could allow an attacker to execute arbitrary scripts in the context of the user's browser, potentially leading to unauthorized actions or data exposure. The risk is mitigated by the fact that the inputs are mostly static or controlled by environment variables, but establishing safe patterns is critical as the application scales.
+
+🔧 Fix
+Implemented a safe serialization utility that explicitly escapes HTML-sensitive characters before data is injected into the DOM. Replaced existing insecure serialization calls with this new safe utility across the codebase. Fixed a minor open-redirect weakness in URL parsing while visiting utility files.
+
+✅ Verification
+- Validated that the new serialization utility correctly escapes `<, >, and &` characters.
+- Verified that the application still successfully renders structured data without console errors.
+- Confirmed all automated tests pass successfully (`pnpm test:ci`, `pnpm build`, `pnpm lint`).

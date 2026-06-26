@@ -1,0 +1,21 @@
+<<<<<<< SEARCH
+  const [rumMod, logsMod] = await Promise.all([
+    import("@datadog/browser-rum"),
+    import("@datadog/browser-logs")
+  ]);
+  datadogRum = rumMod.datadogRum;
+  datadogLogs = logsMod.datadogLogs;
+
+  // RUM — sessions, performance, errors, user actions
+  datadogRum.init({
+=======
+  const [rumMod, logsMod] = await Promise.all([
+    import("@datadog/browser-rum"),
+    import("@datadog/browser-logs")
+  ]);
+  datadogRum = rumMod.datadogRum;
+  datadogLogs = logsMod.datadogLogs;
+
+  // RUM — sessions, performance, errors, user actions
+  datadogRum.init({
+>>>>>>> REPLACE
