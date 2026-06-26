@@ -84,7 +84,7 @@ describe("initDatadog", () => {
   it("initializes both RUM and Logs SDKs when configured", async () => {
     setConfigured();
     const { initDatadog } = await freshImport();
-    await await initDatadog();
+    await initDatadog();
     expect(rumMock.init).toHaveBeenCalledTimes(1);
     expect(logsMock.init).toHaveBeenCalledTimes(1);
   });
