@@ -21,6 +21,16 @@ These are durable workflow preferences observed across multiple sessions. They a
 
 ## Cursor Cloud specific instructions
 
+Standard commands live in `CLAUDE.md` (`pnpm dev`, `pnpm lint`, `pnpm type-check`, `pnpm test:ci`, `pnpm build`). The notes below are cloud-only caveats discovered while setting up the VM; they are not in `CLAUDE.md`.
+
+- **The dev server boots with zero env vars.** `pnpm dev` serves the marketing landing at `/` and `POST /api/lead` returns `{ ok: true, lead_id: null }` (the Supabase/Apollo/Resend fan-out is best-effort and fails silently when unconfigured). This is the runnable scope without secrets. `/portal` and `/admin` redirect to `/login?error=supabase_not_configured` until real Supabase env exists.
+- **Use `pnpm build`, not `pnpm build:strict` / `pnpm verify`, to verify the build in the cloud.** The VM runs Node 22 while `engines.node` pins `20.x`, producing a harmless `Unsupported engine` warning. `scripts/strict-build.mjs` (used by `build:strict` and `verify`) treats the `Detected "engines"` warning as fatal, so it fails on this VM for an environment-only reason. Plain `pnpm build` (what Vercel runs) is lenient and is the correct verifier here.
+- **Full end-to-end testing (auth, portal, admin, real lead persistence) needs secrets that are not present by default.** Live code reads `VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY`, `VERCEL_SUPABASE_SERVICE_ROLE_KEY`, and `ADMIN_EMAILS` (the `NEXT_PUBLIC_SUPABASE_*` names in `.env.example`/README are stale — don't use them). Provide these as Secrets, or run `vercel env pull .env.local`, which requires a `VERCEL_TOKEN` (interactive `vercel login` does not work in the cloud VM, and the repo is not pre-linked — no `.vercel/` dir).
+- **No Docker / local Supabase on the VM**, so `pnpm supabase start` and `pnpm db:types` won't work; point at a remote Supabase project instead.
+- Admin pages additionally require MFA/AAL2 even after the `ADMIN_EMAILS` gate, so admin E2E needs an enrolled account.
+
+## Cursor Cloud specific instructions
+
 Standard lint/test/build/dev/verify commands live in `CLAUDE.md` and `package.json` — use those. Notes below are only the non-obvious cloud caveats.
 
 - **Dependencies** are refreshed automatically on VM startup (`pnpm install --frozen-lockfile`). All five gates pass clean: `pnpm type-check`, `pnpm lint`, `pnpm test:ci` (280 tests), `pnpm build`.
