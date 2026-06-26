@@ -41,43 +41,53 @@ const resendMocks = vi.hoisted(() => ({
 vi.mock("@/lib/resend", () => resendMocks);
 
 vi.mock("@/lib/supabase/server", () => {
+  const mockGetUserById = () =>
+    vi.fn(async () => ({
+      data: {
+        user: h.state.recipientUser.email
+          ? {
+              id: "recip_id",
+              email: h.state.recipientUser.email,
+              user_metadata: { full_name: h.state.recipientUser.full_name }
+            }
+          : null
+      },
+      error: null
+    }));
+
+  const mockInsert = () =>
+    vi.fn(() => ({
+      select: vi.fn(() => ({
+        single: vi.fn(() => Promise.resolve(h.state.insertResult))
+      }))
+    }));
+
+  const mockUpdate = () =>
+    vi.fn(() => ({
+      eq: vi.fn(() => Promise.resolve({ data: null, error: h.state.updateError }))
+    }));
+
+  const mockSelect = (table: string) =>
+    vi.fn(() => ({
+      eq: vi.fn(() => ({
+        single: vi.fn(() =>
+          Promise.resolve(
+            table === "profiles" ? { data: h.state.profile, error: null } : { data: null, error: null }
+          )
+        )
+      }))
+    }));
+
   function buildClient() {
     return {
       auth: {
         getUser: vi.fn(async () => ({ data: { user: h.state.user }, error: null })),
-        admin: {
-          getUserById: vi.fn(async () => ({
-            data: {
-              user: h.state.recipientUser.email
-                ? {
-                    id: "recip_id",
-                    email: h.state.recipientUser.email,
-                    user_metadata: { full_name: h.state.recipientUser.full_name }
-                  }
-                : null
-            },
-            error: null
-          }))
-        }
+        admin: { getUserById: mockGetUserById() }
       },
       from: vi.fn((table: string) => ({
-        insert: vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve(h.state.insertResult))
-          }))
-        })),
-        update: vi.fn(() => ({
-          eq: vi.fn(() => Promise.resolve({ data: null, error: h.state.updateError }))
-        })),
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() =>
-              Promise.resolve(
-                table === "profiles" ? { data: h.state.profile, error: null } : { data: null, error: null }
-              )
-            )
-          }))
-        }))
+        insert: mockInsert(),
+        update: mockUpdate(),
+        select: mockSelect(table)
       }))
     };
   }
