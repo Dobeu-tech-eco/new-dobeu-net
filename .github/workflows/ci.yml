@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -39,3 +40,11 @@ jobs:
 
       - name: Verify
         run: pnpm verify
+
+      - name: notify vercel
+        if: always()
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: Vercel - new-dobeu-net: lint
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
