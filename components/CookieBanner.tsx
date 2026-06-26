@@ -198,7 +198,8 @@ function CategoryRow({
       </div>
       <div>
         <label htmlFor={id} className="text-sm font-semibold cursor-pointer">
-          <span dangerouslySetInnerHTML={{ __html: label }} />
+          {/* Security: Prevent potential XSS by rendering label as a standard React child instead of dangerouslySetInnerHTML */}
+          <span>{label}</span>
           {disabled && (
             <span className="ml-2 text-xs font-normal text-muted-foreground">Always on</span>
           )}
