@@ -20,24 +20,26 @@ const h = vi.hoisted(() => {
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 vi.mock("@/lib/supabase/server", () => {
+  const mockDbQuery = {
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn(() => Promise.resolve(h.state.projectSelect))
+  };
+
+  const mockDbInsert = {
+    select: vi.fn().mockReturnThis(),
+    single: vi.fn(() => Promise.resolve(h.state.insertResult))
+  };
+
   function buildClient() {
     return {
       auth: {
         getUser: vi.fn(async () => ({ data: { user: h.state.user }, error: null }))
       },
       from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve(h.state.projectSelect))
-          }))
-        })),
+        select: vi.fn(() => mockDbQuery),
         insert: vi.fn((row: Record<string, unknown>) => {
           h.state.capturedInsert = row;
-          return {
-            select: vi.fn(() => ({
-              single: vi.fn(() => Promise.resolve(h.state.insertResult))
-            }))
-          };
+          return mockDbInsert;
         })
       })),
       storage: {
