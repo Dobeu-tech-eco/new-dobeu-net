@@ -8,3 +8,6 @@
 ## 2026-06-26 - Async Module Initialization Testing
 **Learning:** When writing or fixing tests for asynchronous initialization modules (e.g., initDatadog), always await the initialization function before making assertions on mock calls.
 **Action:** Use `await` when calling asynchronous init functions in tests to ensure all internal promises have resolved before verifying the mock state.
+## 2026-06-26 - Claude Code Action Bot Allowance
+**Learning:** GitHub Action `anthropics/claude-code-action` requires explicit allowance for bots if triggered by a bot account. By default, it rejects workflows initiated by non-human actors unless configured.
+**Action:** When configuring `anthropics/claude-code-action` in GitHub workflows, specifically those handling pull request events that a bot might trigger, add `allowed_bots: "google-labs-jules"` (or equivalent bot identifier) to the action inputs.
