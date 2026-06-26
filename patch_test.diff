@@ -1,0 +1,86 @@
+--- lib/datadog.test.ts
++++ lib/datadog.test.ts
+@@ -82,16 +82,16 @@
+ describe("initDatadog", () => {
+   it("initializes both RUM and Logs SDKs when configured", async () => {
+     setConfigured();
+     const { initDatadog } = await freshImport();
+-    initDatadog();
++    await initDatadog();
+     expect(rumMock.init).toHaveBeenCalledTimes(1);
+     expect(logsMock.init).toHaveBeenCalledTimes(1);
+   });
+
+   it("passes default site/service when env overrides are absent", async () => {
+     setConfigured();
+     const { initDatadog } = await freshImport();
+-    initDatadog();
++    await initDatadog();
+     expect(rumMock.init).toHaveBeenCalledWith(
+       expect.objectContaining({
+         applicationId: "app-123",
+@@ -104,16 +104,16 @@
+
+   it("does not initialize when not configured", async () => {
+     const { initDatadog } = await freshImport();
+-    initDatadog();
++    await initDatadog();
+     expect(rumMock.init).not.toHaveBeenCalled();
+     expect(logsMock.init).not.toHaveBeenCalled();
+   });
+
+   it("is idempotent — second call does not re-init", async () => {
+     setConfigured();
+     const { initDatadog } = await freshImport();
+-    initDatadog();
+-    initDatadog();
++    await initDatadog();
++    await initDatadog();
+     expect(rumMock.init).toHaveBeenCalledTimes(1);
+     expect(logsMock.init).toHaveBeenCalledTimes(1);
+   });
+@@ -128,7 +128,7 @@
+   it("sets the user on both SDKs after initialization", async () => {
+     setConfigured();
+     const { initDatadog, ddIdentify } = await freshImport();
+-    initDatadog();
++    await initDatadog();
+     ddIdentify({ id: "u1", email: "a@b.com", name: "Tester" });
+     expect(rumMock.setUser).toHaveBeenCalledWith({ id: "u1", email: "a@b.com", name: "Tester" });
+     expect(logsMock.setUser).toHaveBeenCalledWith({ id: "u1", email: "a@b.com", name: "Tester" });
+@@ -145,14 +145,14 @@
+   it("forwards name and context after initialization", async () => {
+     setConfigured();
+     const { initDatadog, ddAction } = await freshImport();
+-    initDatadog();
++    await initDatadog();
+     ddAction("booking_scheduled", { plan: "pro" });
+     expect(rumMock.addAction).toHaveBeenCalledWith("booking_scheduled", { plan: "pro" });
+   });
+
+   it("defaults context to an empty object", async () => {
+     setConfigured();
+     const { initDatadog, ddAction } = await freshImport();
+-    initDatadog();
++    await initDatadog();
+     ddAction("evt");
+     expect(rumMock.addAction).toHaveBeenCalledWith("evt", {});
+   });
+@@ -168,7 +168,7 @@
+   it("passes through an Error instance unchanged", async () => {
+     setConfigured();
+     const { initDatadog, ddError } = await freshImport();
+-    initDatadog();
++    await initDatadog();
+     const err = new Error("boom");
+     ddError(err, { scope: "checkout" });
+     expect(rumMock.addError).toHaveBeenCalledWith(err, { scope: "checkout" });
+@@ -177,7 +177,7 @@
+   it("wraps a non-Error value in an Error", async () => {
+     setConfigured();
+     const { initDatadog, ddError } = await freshImport();
+-    initDatadog();
++    await initDatadog();
+     ddError("string failure");
+     const [errArg] = rumMock.addError.mock.calls[0];
+     expect(errArg).toBeInstanceOf(Error);

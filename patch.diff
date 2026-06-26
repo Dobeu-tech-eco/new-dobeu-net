@@ -1,0 +1,34 @@
+--- components/landing/HowItWorks.tsx
++++ components/landing/HowItWorks.tsx
+@@ -7,17 +7,17 @@
+   {
+     icon: CalendarCheck,
+     label: "30-min discovery",
+-    body: "We talk through what you&apos;re trying to ship, what&apos;s in the way, and whether I&apos;m the right person. No pitch, no slide deck.",
++    body: "We talk through what you're trying to ship, what's in the way, and whether I'm the right person. No pitch, no slide deck.",
+   },
+   {
+     icon: FileText,
+     label: "Scoped proposal",
+     body: "Within 48 hours, you get a one-pager: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine.",
+   },
+   {
+     icon: Rocket,
+     label: "Ship in 2–6 weeks",
+     body: "Daily Loom updates, your private portal for files + invoices, async-first communication. Most projects ship in a single sprint.",
+   },
+ ];
+
+@@ -69,9 +69,8 @@
+               <h3 className="font-display text-xl font-semibold mb-2">
+                 {step.label}
+               </h3>
+-              <p
+-                className="text-sm md:text-base text-muted-foreground leading-relaxed"
+-                dangerouslySetInnerHTML={{ __html: step.body }}
+-              />
++              <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
++                {step.body}
++              </p>
+             </motion.li>
+           ))}
