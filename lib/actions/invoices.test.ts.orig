@@ -204,22 +204,6 @@ describe("createInvoice (Stripe-wired)", () => {
     // only AFTER the .insert resolves).
     expect(stripeMocks.createHostedInvoice).toHaveBeenCalled();
   });
-
-  it("surfaces Stripe customer creation failure but still inserts a local row", async () => {
-    stripeMocks.getOrCreateStripeCustomer.mockRejectedValueOnce(new Error("customer_creation_failed"));
-    const { createInvoice } = await import("@/lib/actions/invoices");
-    const result = await createInvoice({
-      user_id: validUser,
-      project_id: validProj,
-      amount_cents: 10000
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toMatch(/Stripe error: customer_creation_failed/);
-
-    // createHostedInvoice shouldn't be called if customer creation fails
-    expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
-    // Local row should still be inserted (we use the mock implementation's tracked calls ideally, but returning false after .insert works)
-  });
 });
 
 describe("markInvoicePaidManually", () => {
