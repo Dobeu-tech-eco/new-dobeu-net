@@ -1,0 +1,132 @@
+# codex.yaml — OpenAI Codex / Codex CLI Configuration
+# Dobeu.net — https://dobeu.net
+#
+# STOP. Read CLAUDE.md first. It is the single source of truth.
+# This file exists because Codex CLI resolves codex.yaml by filename.
+
+project:
+  name: new-dobeu-net
+  description: "Dobeu.net HQ — Next.js 15 App Router marketing site + client portal + admin panel"
+  url: https://dobeu.net
+  repo: Dobeu-tech-eco/dobeu-net
+
+rules:
+  - Read CLAUDE.md in full before any action
+  - Read .agent/HANDOFF.md for previous session notes and outstanding items
+  - Read STATUS.md for current phase and live blockers
+  - Run git fetch --all && git status before writing any code
+  - Run gh pr list to audit open PRs before creating new ones
+  - Append session-open note to .agent/HANDOFF.md before starting work
+  - Run .agent/CHECKPOINT.md gate after every numbered Step
+  - Append session-close note to .agent/HANDOFF.md before ending session
+  - Never push directly to main or dev — always use feature branches and PRs
+  - Never exceed 3 open branches simultaneously
+  - Run pnpm verify (lint + tsc + tests + build) before any merge
+
+pre_session:
+  steps:
+    - read: CLAUDE.md
+    - read: .agent/HANDOFF.md
+    - read: STATUS.md
+    - shell: git fetch --all && git status && git branch -a
+    - shell: "gh pr list --repo Dobeu-tech-eco/dobeu-net --state open --json number,title,headRefName,baseRefName"
+    - append: .agent/HANDOFF.md
+
+post_session:
+  steps:
+    - read: .agent/CHECKPOINT.md
+    - shell: pnpm verify
+    - append: .agent/HANDOFF.md
+    - append: STATUS.md
+    - shell: "git add -A && git commit -m 'checkpoint(step-N): description' && git push origin HEAD"
+
+environment:
+  package_manager: pnpm
+  node_version: "20.x"
+  framework: nextjs
+  language: typescript
+
+tech_stack:
+  frontend:
+    - next.js (app router)
+    - typescript (strict)
+    - tailwind css v4
+    - shadcn/ui
+    - framer motion v12 (motion/react)
+  backend:
+    - supabase (postgres + auth + storage)
+    - stripe (payments + invoicing)
+    - resend (transactional email)
+    - upstash redis (rate limiting)
+  monitoring:
+    - posthog (analytics)
+    - datadog (apm + rum)
+    - sentry (errors)
+  infrastructure:
+    - vercel (hosting + edge)
+    - cloudflare (dns + cdn)
+
+branch_architecture:
+  main: "production — auto-deploys to dobeu.net — NEVER delete or push directly"
+  dev: "staging — auto-deploys to preview URL — NEVER delete or push directly"
+  feature: "feature/*, fix/*, step-* — branch from dev, PR back to dev"
+
+vercel:
+  team_scope: team_8K43hpr1Nzs0UsjjUCGh8OBK
+  project_id: prj_gsbOuACbBs2I8M1XSpDcdjoAENdb
+  project_name: new-dobeu-net
+  project_url: https://vercel.com/dobeutechnology/new-dobeu-net/
+  cli_flag: "--scope team_8K43hpr1Nzs0UsjjUCGh8OBK"
+
+quality_gates:
+  typescript: "0 errors — pnpm type-check"
+  eslint: "0 errors 0 warnings — pnpm lint"
+  tests: "all pass — pnpm test:ci"
+  build: "clean — pnpm build"
+  lighthouse_performance_mobile: ">=90"
+  lighthouse_accessibility: ">=95"
+  lighthouse_seo: "100"
+  lighthouse_best_practices: ">=95"
+
+critical_blockers:
+  - "B1: Root layout metadata = 'v0 App' — fix in Step 1"
+  - "B2: ThemeProvider not mounted — dark mode broken — fix in Step 1"
+  - "B3: AnalyticsProvider not mounted — analytics dead — fix in Step 1"
+  - "B4: Mobile LCP = 4.9s (target ≤2.5s) — fix in Step 2"
+  - "B5: Tailwind v3/v4 CSS syntax mismatch — fix in Step 1"
+  - "B15: dev branch does not exist — create before code work"
+  - "B16: Duplicate PRs #92 #93 #94 — close before new PRs"
+
+tools:
+  mcp_servers:
+    - name: Linear
+      tools: 46
+      use: "Sprint tracking, issues, milestones, projects"
+    - name: Composio
+      tools: "7 meta-tools → 100+ apps"
+      use: "GitHub, Vercel, Cloudflare, Doppler, PostHog, Slack, Figma, Datadog, Sentry"
+      search: "Composio_COMPOSIO_SEARCH_TOOLS"
+      execute: "Composio_COMPOSIO_MULTI_EXECUTE_TOOL"
+      remote_bash: "Composio_COMPOSIO_REMOTE_WORKBENCH"
+    - name: Stripe
+      tools: 11
+      use: "Payment operations, webhook docs"
+  skills:
+    - agent-browser
+    - shadcn
+    - vercel-cli
+    - vercel-flags
+    - github-cli
+    - thesvg
+    - charts
+  vercel_labs_skills:
+    path: .claude/skills/
+    list:
+      - deploy-to-vercel
+      - vercel-cli-with-tokens
+      - vercel-composition-patterns
+      - vercel-optimize
+      - vercel-react-best-practices
+      - vercel-react-view-transitions
+      - web-design-guidelines
+      - writing-guidelines

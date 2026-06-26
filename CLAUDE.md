@@ -135,3 +135,230 @@ A few patterns show up regularly in `git status` and are **not** project artifac
 - `.reports/` -- output dir for analysis tooling (e.g. `dead-code-analysis.md`). Treat as scratch; not currently in `.gitignore`. Re-run `pnpm dlx knip` + `pnpm dlx ts-prune` at HEAD before acting on stale reports.
 - `_tmp_16_<hash>` files in the repo root -- ephemeral tool/agent scratch files. Safe to delete locally; don't commit.
 - New `*.cmd` files appearing untracked -- usually one-shot operator scripts. Confirm intent before deleting; the keep-list is `start-dev.cmd` and `deploy-vercel.cmd` only.
+
+---
+
+## Process Rules (Owner-Mandated — All Agents, Non-Negotiable)
+
+These rules were set by Jeremy Williams (repo owner) and apply to every agent in every session.
+
+### Pre-Session Hook (mandatory before any code action)
+
+```bash
+# Run this sequence before touching any file:
+cat CLAUDE.md                               # 1. read full rulebook (this file)
+cat .agent/HANDOFF.md                       # 2. previous agent notes + outstanding items
+cat STATUS.md                               # 3. current phase + live blockers
+git fetch --all && git status               # 4. sync — never work on stale state
+git branch -a                               # 5. confirm branch architecture
+gh pr list --repo Dobeu-tech-eco/dobeu-net --state open --json number,title,headRefName,baseRefName
+                                            # 6. audit open PRs before creating new ones
+# 7. Catalogue available tools (run ToolSearch or Composio_COMPOSIO_SEARCH_TOOLS)
+# 8. Append session-open note to .agent/HANDOFF.md:
+#    ## YYYY-MM-DD — [Agent] — OPEN
+#    Intent: [what you plan to do this session]
+```
+
+### Post-Session Hook (mandatory before ending any session)
+
+```bash
+# Run before closing:
+pnpm verify                                 # 1. full checkpoint gate (lint+tsc+tests+build)
+# 2. Append session-close note to .agent/HANDOFF.md:
+#    ## YYYY-MM-DD — [Agent] — CLOSE
+#    Completed: [bullet list of files changed]
+#    Outstanding: [bullet list with [ ] checkboxes]
+#    Bugs found: [any new issues discovered]
+#    Questions for Jeremy: [anything needing human input]
+# 3. Update STATUS.md — mark completed items
+git add -A
+git commit -m "type(scope): description [checkpoint-N]"
+git push origin <feature-branch>            # NEVER push to main or dev directly
+```
+
+### Branch Discipline
+
+```
+main  ←  production (dobeu.net) — NEVER delete, NEVER push directly
+ └── dev  ←  staging (preview URL) — NEVER delete, NEVER push directly (create if missing)
+      └── feature/*, fix/*, step-N-*  ←  all work branches
+```
+
+- PRs target `dev`, not `main` (except the final release PR)
+- Max 3 open branches at any time — close stale ones before creating new
+- Check for duplicate PRs before opening any new PR
+- Final `dev → main` PR requires: Claude Code review + owner approval + all CI gates
+
+### Checkpoint After Every Step
+
+Run `.agent/CHECKPOINT.md` after each numbered implementation Step (1–6).
+A step is **NOT** complete until checkpoint passes. See `.agent/CHECKPOINT.md` for full gate.
+
+### Token Efficiency — Use Composio for Heavy Work
+
+- `Composio_COMPOSIO_REMOTE_WORKBENCH` — sandboxed remote bash (preserves local token context)
+- `Composio_COMPOSIO_MULTI_EXECUTE_TOOL` — parallel tool calls across multiple apps
+- `Composio_COMPOSIO_SEARCH_TOOLS` — discover any connected app's available tools
+
+### Multi-Agent QA Gate (required before dev → main)
+
+Two independent agents must sign off before any merge to `main`:
+1. **Agent 1:** `agent-browser` automated matrix — 6 viewports × 3 themes = 18 screenshots + axe audit
+2. **Agent 2:** Vercel Preview + Lighthouse CI (all 4 gates: Perf ≥90, A11y ≥95, SEO 100, BP ≥95)
+3. **Human:** Jeremy Williams reviews preview URL and approves
+4. **Orchestrator:** compiles QA report, may request additional agent review before final sign-off
+
+### Pending Workflow Files (owner action required)
+
+New CI/CD workflows are staged in `.agent/workflows-pending/` because v0's GitHub App
+lacks the `workflows` permission scope. Jeremy must install them manually:
+
+```bash
+cp .agent/workflows-pending/*.yml .github/workflows/
+git add .github/workflows/
+git commit -m "ci: add checkpoint, dev-preview, qa-matrix, release workflows"
+git push origin dev
+```
+
+Staged files: `checkpoint.yml`, `dev-preview.yml`, `qa-matrix.yml`, `release.yml`
+
+---
+
+## Tool Inventory
+
+### Vercel Project (CORRECTED 2026-06-20)
+
+```
+Project:   new-dobeu-net
+ID:        prj_gsbOuACbBs2I8M1XSpDcdjoAENdb
+URL:       https://vercel.com/dobeutechnology/new-dobeu-net/
+Team:      team_8K43hpr1Nzs0UsjjUCGh8OBK (Dobeu Tech Solutions LLC)
+CLI flag:  --scope team_8K43hpr1Nzs0UsjjUCGh8OBK
+Repo:      Dobeu-tech-eco/dobeu-net
+```
+
+Note: The phantom project `dobeu-net` (`prj_H53tuPNNfVWhm54vkxxvo17CRZDX`) was deleted 2026-06-20.
+`.vercel/project.json` (gitignored) holds the local link — correct project ID is above.
+
+### MCP Servers (loaded in v0 session)
+
+**Linear** (46 tools) — sprint tracking, issues, milestones, projects, teams, customers
+Key tools: `Linear_get_issue`, `Linear_save_issue`, `Linear_list_projects`, `Linear_save_project`,
+`Linear_list_teams`, `Linear_save_milestone`, `Linear_search_documentation`
+
+**Composio** (7 meta-tools → 100+ connected apps)
+- `Composio_COMPOSIO_SEARCH_TOOLS` — find any app's tool schemas
+- `Composio_COMPOSIO_MULTI_EXECUTE_TOOL` — parallel execution across apps
+- `Composio_COMPOSIO_REMOTE_WORKBENCH` — sandboxed remote bash
+- `Composio_COMPOSIO_MANAGE_CONNECTIONS` — list/manage app connections
+- `Composio_COMPOSIO_WAIT_FOR_CONNECTIONS` — await async connections
+- `Composio_COMPOSIO_GET_TOOL_SCHEMAS` — get schemas without searching
+
+**Composio-connected apps (user-authorized, relevant to Dobeu launch):**
+
+| Category | Apps | Primary use in this project |
+|---|---|---|
+| Dev infra | `github`, `vercel`, `cloudflare`, `doppler`, `doppler_secretops`, `datadog`, `sentry`, `grafana`, `pagerduty`, `e2b` | CI/CD, DNS, secrets management, monitoring, alerting |
+| AI/agents | `openai`, `anthropic_administrator`, `groqcloud`, `context7_mcp`, `v0`, `mem0`, `devin_mcp`, `cursor` | Models, live framework docs, agent coordination |
+| Analytics | `posthog`, `semrush`, `microsoft_clarity`, `amplitude`, `mixpanel`, `launch_darkly` | Funnels, SEO research, heatmaps, feature flags |
+| Communication | `slack`, `slackbot`, `gmail`, `zoom`, `discord` | Deploy notifications, client comms |
+| Marketing | `klaviyo`, `customerio`, `apollo`, `peopledatalabs`, `serpapi` | Email automation, lead enrichment, keyword research |
+| Booking/forms | `calendly`, `typeform` | Embedded in landing page |
+| Payments | `stripe`, `coinbase` | Invoicing, checkout |
+| Design | `figma`, `canva`, `screenshotone`, `hyperbrowser`, `browserbase_tool` | Design references, visual regression |
+| Database | `supabase`, `neon`, `clickhouse`, `prisma` | Data operations |
+| Research | `tavily`, `exa`, `perplexityai`, `context7_mcp`, `postman`, `npm` | Web research, live docs, API testing |
+| Productivity | `googlecalendar`, `googledocs`, `googledrive`, `googlesheets`, `coda`, `airtable` | Docs, project management |
+| Automation | `make` | Workflow automation |
+
+**Priority map — which Composio tools to use per launch phase:**
+
+| Phase/Step | Composio tools |
+|---|---|
+| Phase 0 — repo hygiene | `github` (close PRs, create dev branch) |
+| Step 1 — infra repair | `context7_mcp` (Next.js/Tailwind docs), `vercel` (env vars), `doppler_secretops` (secrets sync) |
+| Step 2 — performance | `datadog` (RUM baseline), `vercel` (Speed Insights) |
+| Step 3 — SEO | `semrush` (keyword validation), `google*` (Search Console) |
+| Step 5 — security | `cloudflare` (CSP/WAF), `doppler_secretops` (missing secrets), `sentry` (security monitoring) |
+| Step 6 — UI/UX | `figma` (design refs), `posthog` (A/B flags), `screenshotone` (visual baseline) |
+| Phase 3 — QA | `posthog` (funnel), `microsoft_clarity` (heatmaps), `screenshotone` (regression) |
+| Phase 4 — deploy | `vercel` + `cloudflare` (DNS), `datadog` (alerts), `pagerduty` (incidents) |
+| Ongoing | `posthog` (analytics), `sentry` (errors), `linear` (issues), `slack` (alerts) |
+
+**Stripe MCP** (11 tools) — payment operations, webhook docs, invoice management
+`stripe_search_stripe_documentation`, `stripe_get_stripe_account_info`, `stripe_create_refund`,
+`stripe_search_stripe_resources`, `stripe_fetch_stripe_resources`, `stripe_stripe_implementation_planner`,
+`stripe_stripe_api_search`, `stripe_stripe_api_details`, `stripe_stripe_api_read`, `stripe_stripe_api_write`
+
+### V0 Built-in Skills
+
+| Skill | Use in this project |
+|---|---|
+| `agent-browser` | Automated cross-device/theme QA, axe audits, Lighthouse vitals |
+| `shadcn` | Component library, theme tokens, CLI workflows |
+| `vercel-cli` | Project management, env vars, domains, logs |
+| `vercel-flags` | A/B testing for CTA variant (Step 6i) |
+| `github-cli` | PR management, branch ops, CI status checks |
+| `thesvg` | Trust bar logos (Vercel, Stripe, Supabase, Next.js, Anthropic) |
+| `charts` | Analytics dashboards in portal |
+| `skill-creation` | Package new reusable workflows |
+| `fal` | AI image generation for portfolio/case study assets |
+
+### Vercel-labs Skills (installed in `.claude/skills/`)
+
+`deploy-to-vercel`, `vercel-cli-with-tokens`, `vercel-composition-patterns`,
+`vercel-optimize`, `vercel-react-best-practices`, `vercel-react-native-skills`,
+`vercel-react-view-transitions`, `web-design-guidelines`, `writing-guidelines`
+
+---
+
+## Known Issues & Active Blockers
+
+Current as of 2026-06-20. Update this table as items are resolved.
+
+| # | Severity | Issue | Fix in | Status |
+|---|---|---|---|---|
+| B1 | CRITICAL | Root layout `title: 'v0 App'`, `description: 'Created with v0'`, `generator: 'v0.app'` live in production | Step 1 | Pending |
+| B2 | CRITICAL | `ThemeProvider` never mounted — dark mode switching broken site-wide | Step 1 | Pending |
+| B3 | CRITICAL | `AnalyticsProvider` never mounted — GTM/GA4/PostHog/Datadog/Intercom all non-functional | Step 1 | Pending |
+| B4 | CRITICAL | Mobile LCP = 4.9s (target ≤2.5s) — Lighthouse mobile = 78/100 | Step 2 | Pending |
+| B5 | HIGH | `package.json` specifies `tailwindcss: ^3.4.17` but `globals.css` uses Tailwind v4 syntax | Step 1 | Pending |
+| B6 | HIGH | `DobeuMark` SVG mask IDs not scoped — logo renders incorrectly when 2+ instances on same page | Step 1 | Pending |
+| B7 | HIGH | `dangerouslySetInnerHTML` used for static strings in 4 components (XSS surface, incorrect pattern) | Step 4 | Pending |
+| B8 | HIGH | Focus ring set to `outline-ring/50` (50% opacity) — fails WCAG 2.4.11 focus appearance | Step 4 | Pending |
+| B9 | HIGH | In-memory rate limiter resets on cold starts — provides zero distributed protection | Step 5 | Pending |
+| B10 | HIGH | `INTERCOM_IDENTITY_VERIFICATION_SECRET` not provisioned — client impersonation risk | Step 5 | Pending |
+| B11 | HIGH | Stripe webhook endpoint subscription not confirmed — invoice.paid events not processed | Step 5 | Pending |
+| B12 | HIGH | No skip-to-main-content link — WCAG 2.4.1 Level A failure | Step 4 | Pending |
+| B13 | HIGH | Cookie consent dialog missing `aria-modal="true"` — AT users can tab behind banner | Step 4 | Pending |
+| B14 | MEDIUM | Page-level `metadata` has no `description`, `openGraph`, or `twitter` card | Step 3 | Pending |
+| B15 | CRITICAL | `dev` branch does not exist — required before any code work begins | Phase 0 | Pending |
+| B16 | HIGH | Duplicate PRs #92, #93, #94 open (duplicates of #101, #100, #102) | Phase 0 | Pending |
+| B17 | MEDIUM | LinkedIn URL `linkedin.com/in/jeremy-williams` likely resolves to wrong person | Step 6 | Pending |
+| B18 | NEW | Dependabot: 12 vulnerabilities on default branch (1 high, 8 moderate, 3 low) | Step 5 | Pending |
+
+---
+
+## Launch Plan — Phase & Step Reference
+
+Full detail in `.agent/PRODUCTION-PLAN.md`. Quick reference:
+
+```
+PHASE 0  — Repo hygiene: create dev branch, close #92/#93/#94, consolidate PRs → dev
+STEP 1   — Core infra repair (B1–B6) + CSS tokens + fonts       → CHECKPOINT 1
+STEP 2   — Performance: LCP 4.9s → ≤2.5s, Lighthouse ≥90       → CHECKPOINT 2
+STEP 3   — SEO: metadata, structured data, OG image, sitemap    → CHECKPOINT 3
+STEP 4   — Accessibility: WCAG AA, skip nav, ARIA, focus rings  → CHECKPOINT 4
+STEP 5   — Security: Upstash rate limit, CSP nonces, Dependabot → CHECKPOINT 5
+STEP 6   — UI/UX polish: CTA hierarchy, trust logos, A/B setup  → CHECKPOINT 6
+PHASE 3  — Multi-agent QA gate (automated + CI + human)
+PHASE 4  — dev → main PR + production deploy + smoke test
+PHASE 5  — CI/CD workflow enhancements committed to main
+```
+
+**Clarification questions still awaiting Jeremy's answers (from initial audit):**
+- Q1: Font choice — Geist (current) vs Nunito (brand spec)?
+- Q2: Are testimonial quotes in `Proof.tsx` real/attributable?
+- Q3: Stat accuracy — "17 Properties built" — current and verifiable?
+- Q6: What does "Stripe-verified" mean in Hero subtitle?
+- Q8: Correct LinkedIn URL for Jeremy Williams?

@@ -1,0 +1,82 @@
+name: Dev Preview Deploy
+
+# Triggers on pushes to dev branch.
+# Posts the Vercel preview URL as a PR comment and sends a Slack notification.
+# OWNER ACTION REQUIRED: copy to .github/workflows/ to activate.
+# Required secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID, SLACK_WEBHOOK_URL
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NODE_VERSION: "20.x"
+
+jobs:
+  deploy-preview:
+    name: Deploy Dev Preview to Vercel
+    runs-on: ubuntu-latest
+    outputs:
+      preview-url: ${{ steps.deploy.outputs.preview-url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Vercel CLI
+        run: pnpm add -g vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }} --scope team_8K43hpr1Nzs0UsjjUCGh8OBK
+
+      - name: Build for Vercel
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }} --scope team_8K43hpr1Nzs0UsjjUCGh8OBK
+
+      - name: Deploy to Vercel preview
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope team_8K43hpr1Nzs0UsjjUCGh8OBK \
+            2>&1 | tail -1)
+          echo "preview-url=$URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $URL"
+
+  notify:
+    name: Post Preview URL
+    runs-on: ubuntu-latest
+    needs: deploy-preview
+    if: always()
+    steps:
+      - name: Post to Slack
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "*Dobeu.net dev preview deployed*\n<${{ needs.deploy-preview.outputs.preview-url }}|Open preview> · <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|View commit>\nBranch: `dev` · Triggered by: ${{ github.actor }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Summary
+        run: |
+          echo "## Dev Preview Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Preview URL:** ${{ needs.deploy-preview.outputs.preview-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next steps:** Run qa-matrix.yml against this URL before creating a dev → main PR" >> $GITHUB_STEP_SUMMARY
