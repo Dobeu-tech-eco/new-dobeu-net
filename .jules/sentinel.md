@@ -1,4 +1,4 @@
-## 2026-06-17 - IP Spoofing Prevention
-**Vulnerability:** IP spoofing in rate limiting logic by reading the leftmost IP from `x-forwarded-for`.
-**Learning:** When determining client IPs (e.g., for rate limiting on Vercel), always prioritize the guaranteed `x-real-ip` header. If forced to parse `x-forwarded-for`, use the rightmost IP to prevent IP spoofing, but be cautious as taking the rightmost IP can introduce DoS risks in multi-proxy architectures.
-**Prevention:** Use `x-real-ip` first, then fallback to `x-forwarded-for`'s rightmost IP using `.pop()`.
+## 2023-10-25 - Fix XSS Vulnerability in FAQ
+**Vulnerability:** Unsafe rendering of FAQ data using `dangerouslySetInnerHTML`. Using it for static data might seem harmless, but if the `FAQS` array data is ever loaded from an external source or user input, it could lead to stored XSS.
+**Learning:** Always use standard React interpolation for strings. Only use `dangerouslySetInnerHTML` if you have complex HTML you have fully sanitized.
+**Prevention:** Avoid `dangerouslySetInnerHTML` unless absolutely necessary and paired with a sanitizer like DOMPurify. Replace HTML entities with standard characters in data objects.
