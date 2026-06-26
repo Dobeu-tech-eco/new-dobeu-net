@@ -1,4 +1,4 @@
-## 2026-06-17 - IP Spoofing Prevention
-**Vulnerability:** IP spoofing in rate limiting logic by reading the leftmost IP from `x-forwarded-for`.
-**Learning:** When determining client IPs (e.g., for rate limiting on Vercel), always prioritize the guaranteed `x-real-ip` header. If forced to parse `x-forwarded-for`, use the rightmost IP to prevent IP spoofing, but be cautious as taking the rightmost IP can introduce DoS risks in multi-proxy architectures.
-**Prevention:** Use `x-real-ip` first, then fallback to `x-forwarded-for`'s rightmost IP using `.pop()`.
+## 2025-01-15 - Fix dangerouslySetInnerHTML XSS vulnerability in HowItWorks
+**Vulnerability:** The `HowItWorks` component used `dangerouslySetInnerHTML` to render the `body` field of the `STEPS` array. Even if the current content is static, this practice creates an unnecessary Cross-Site Scripting (XSS) risk if the data source ever becomes dynamic or is modified by an untrusted source.
+**Learning:** Using `dangerouslySetInnerHTML` should always be avoided unless strictly necessary for rendering trusted, sanitized HTML. React's default text rendering automatically escapes strings, providing built-in XSS protection.
+**Prevention:** Always use standard React children rendering (e.g., `{step.body}`) for plain text. If HTML entities like `&apos;` are present in static string properties, use their literal characters (e.g., `'`) instead, as React will render them correctly when passed as a string variable.
