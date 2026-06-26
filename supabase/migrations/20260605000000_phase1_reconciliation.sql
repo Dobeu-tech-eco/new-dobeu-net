@@ -44,9 +44,6 @@ drop table if exists public.messages cascade;
 --    the previously broad `profiles_admin_all` policy with nothing -- nobody
 --    queries `profiles` from the RLS path as an admin (it would go via service
 --    role).
---
---    TODO Phase 5: physically drop profiles.is_admin once nothing references it
---    in app code or tooling (and remove the column from generated types).
 -- -----------------------------------------------------------------------------
 drop policy if exists "profiles_admin_all"       on public.profiles;
 drop policy if exists "projects_admin_all"       on public.projects;
