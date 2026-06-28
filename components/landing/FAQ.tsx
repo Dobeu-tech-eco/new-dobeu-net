@@ -9,12 +9,12 @@ import {
 
 const FAQS = [
   {
-    q: "What&apos;s the typical engagement size?",
+    q: "What's the typical engagement size?",
     a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. I send a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing.",
   },
   {
     q: "How fast can you start?",
-    a: "Usually within a week of the discovery call. If I&apos;m fully booked I&apos;ll say so on the call and recommend someone good — never string you along.",
+    a: "Usually within a week of the discovery call. If I'm fully booked I'll say so on the call and recommend someone good — never string you along.",
   },
   {
     q: "Do you do retainers?",
@@ -34,11 +34,11 @@ const FAQS = [
   },
   {
     q: "Will I be able to maintain what you build?",
-    a: "That&apos;s the goal. Every deliverable comes with documentation, a Loom walkthrough, and a 2-week support window after handoff. Modern stack means your future hires already know it.",
+    a: "That's the goal. Every deliverable comes with documentation, a Loom walkthrough, and a 2-week support window after handoff. Modern stack means your future hires already know it.",
   },
   {
-    q: "Why &quot;dobeu&quot;?",
-    a: "Two readings at once. Say it out loud — it&apos;s my last initial, W, spelled phonetically (&quot;dub-el-u&quot;). It&apos;s also &quot;Do Be You&quot;: we handle the technical backend so you get to be you — focused on running your business, not wrangling your stack. The two overlapping circles in the mark are those two meanings merging, with an amber crescent at the intersection where the work happens.",
+    q: "Why \"dobeu\"?",
+    a: "Two readings at once. Say it out loud — it's my last initial, W, spelled phonetically (\"dub-el-u\"). It's also \"Do Be You\": we handle the technical backend so you get to be you — focused on running your business, not wrangling your stack. The two overlapping circles in the mark are those two meanings merging, with an amber crescent at the intersection where the work happens.",
   },
 ];
 
@@ -69,10 +69,10 @@ export function FAQ() {
           {FAQS.map((f, i) => (
             <AccordionItem key={i} value={`item-${i}`}>
               <AccordionTrigger>
-                <span dangerouslySetInnerHTML={{ __html: f.q }} />
+                <span>{f.q}</span>
               </AccordionTrigger>
               <AccordionContent>
-                <span dangerouslySetInnerHTML={{ __html: f.a }} />
+                <span>{f.a}</span>
               </AccordionContent>
             </AccordionItem>
           ))}
@@ -87,8 +87,5 @@ export function FAQ() {
 }
 
 function stripHtml(s: string): string {
-  return s
-    .replace(/<[^>]+>/g, "")
-    .replace(/&apos;/g, "'")
-    .replace(/&quot;/g, '"');
+  return s.replace(/<[^>]+>/g, "");
 }
