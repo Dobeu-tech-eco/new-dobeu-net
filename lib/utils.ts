@@ -167,3 +167,15 @@ export function requiresMfaEnrollment(aal: AssuranceLevel, isAdmin: boolean): bo
   return aal.currentLevel !== "aal2";
 }
 
+
+/**
+ * Safely serialize JSON for embedding inside an HTML <script> tag.
+ * Escapes < and > so a value containing "</script>" or markup cannot break
+ * out of the script context (XSS) when injected via dangerouslySetInnerHTML.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function safeJsonLdStringify(data: any): string {
+  return JSON.stringify(data)
+    .replace(/</g, "\u003c")
+    .replace(/>/g, "\u003e");
+}
