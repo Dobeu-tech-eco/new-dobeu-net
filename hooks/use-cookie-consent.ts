@@ -13,6 +13,9 @@ export interface ConsentState {
 
 const COOKIE_NAME = "dobeu_cookie_consent";
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1 year in seconds
+// Fired whenever consent changes so every useCookieConsent() instance
+// (banner + AnalyticsProvider) updates in the same session without a reload.
+const CONSENT_EVENT = "dobeu:consent-changed";
 
 function parseCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -49,6 +52,11 @@ function isDNT(): boolean {
   return navigator.doNotTrack === "1" || (window as Window & { doNotTrack?: string }).doNotTrack === "yes";
 }
 
+/** Notify every hook instance in this tab that consent changed. */
+function broadcastConsentChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(CONSENT_EVENT));
+}
+
 export function useCookieConsent() {
   const [consent, setConsentState] = useState<ConsentState>({
     decided: false,
@@ -64,24 +72,38 @@ export function useCookieConsent() {
       return;
     }
     setConsentState(readConsent());
+
+    // Stay in sync when any other instance (banner / provider) updates consent
+    // in the same session, so analytics start immediately without a reload.
+    const sync = () =>
+      setConsentState(
+        isDNT()
+          ? { decided: true, analytics: false, support: false, marketing: false }
+          : readConsent()
+      );
+    window.addEventListener(CONSENT_EVENT, sync);
+    return () => window.removeEventListener(CONSENT_EVENT, sync);
   }, []);
 
   const acceptAll = useCallback(() => {
     const state: ConsentState = { decided: true, analytics: true, support: true, marketing: true };
     writeCookie(COOKIE_NAME, JSON.stringify({ analytics: true, support: true, marketing: true }), COOKIE_MAX_AGE);
     setConsentState(state);
+    broadcastConsentChange();
   }, []);
 
   const declineAll = useCallback(() => {
     const state: ConsentState = { decided: true, analytics: false, support: false, marketing: false };
     writeCookie(COOKIE_NAME, JSON.stringify({ analytics: false, support: false, marketing: false }), COOKIE_MAX_AGE);
     setConsentState(state);
+    broadcastConsentChange();
   }, []);
 
   const savePreferences = useCallback((prefs: Omit<ConsentState, "decided">) => {
     const state: ConsentState = { decided: true, ...prefs };
     writeCookie(COOKIE_NAME, JSON.stringify(prefs), COOKIE_MAX_AGE);
     setConsentState(state);
+    broadcastConsentChange();
   }, []);
 
   return { consent, acceptAll, declineAll, savePreferences, isDNT: isDNT() };
