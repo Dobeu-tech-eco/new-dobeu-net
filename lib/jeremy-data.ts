@@ -119,11 +119,11 @@ export const SUB_BRANDS = [
     category: "Studio",
   },
   {
-    name: "dobeu.cloud",
-    label: "dobeu.cloud",
-    description: "Infrastructure & deployment services",
-    href: "https://dobeu.cloud",
-    category: "Infrastructure",
+    name: "dobeu.space",
+    label: "dobeu.space",
+    description: "Experiments, prototypes & demos",
+    href: "https://dobeu.space",
+    category: "Labs",
   },
   {
     name: "dobeutech",
@@ -133,11 +133,11 @@ export const SUB_BRANDS = [
     category: "Open Source",
   },
   {
-    name: "dobeuinc",
-    label: "dobeuinc",
-    description: "Business entity & enterprise contracts",
-    href: "https://dobeu.net",
-    category: "Enterprise",
+    name: "dobeu.dev",
+    label: "dobeu.dev",
+    description: "Developer tools, docs & sandbox",
+    href: "https://dobeu.dev",
+    category: "Developer",
   },
 ] as const;
 
