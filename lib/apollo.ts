@@ -78,34 +78,39 @@ interface ApolloContactSearchResult {
 
 async function findApolloContactByEmail(email: string): Promise<ApolloContactSearchResult | null> {
   const candidates = ["/contacts/search", "/mixed_people/search"];
-  for (const endpoint of candidates) {
-    try {
-      const res = await apolloRequest(endpoint, "POST", { q_keywords: email, page: 1, per_page: 1 });
-      if (!res.ok) continue;
-      const data = (await res.json()) as {
-        contacts?: Array<{ id?: string; email?: string }>;
-        people?: Array<{ id?: string; email?: string }>;
-      };
-      const match =
-        data.contacts?.find((c) => c.email?.toLowerCase() === email.toLowerCase()) ??
-        data.people?.find((p) => p.email?.toLowerCase() === email.toLowerCase());
-      if (match?.id) return { id: match.id };
-    } catch {
-      // Non-fatal; we'll fall back to create.
-    }
+  try {
+    return await Promise.any(
+      candidates.map(async (endpoint) => {
+        const res = await apolloRequest(endpoint, "POST", { q_keywords: email, page: 1, per_page: 1 });
+        if (!res.ok) throw new Error("Not OK");
+        const data = (await res.json()) as {
+          contacts?: Array<{ id?: string; email?: string }>;
+          people?: Array<{ id?: string; email?: string }>;
+        };
+        const match =
+          data.contacts?.find((c) => c.email?.toLowerCase() === email.toLowerCase()) ??
+          data.people?.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+        if (match?.id) return { id: match.id };
+        throw new Error("No match");
+      })
+    );
+  } catch {
+    return null;
   }
-  return null;
 }
 
 async function patchApolloContact(contactId: string, payload: Record<string, unknown>): Promise<void> {
   const candidates = [`/contacts/${contactId}`, `/contacts/${contactId}/update`];
-  for (const endpoint of candidates) {
-    try {
-      const res = await apolloRequest(endpoint, "PATCH", payload);
-      if (res.ok) return;
-    } catch {
-      // keep trying
-    }
+  try {
+    await Promise.any(
+      candidates.map(async (endpoint) => {
+        const res = await apolloRequest(endpoint, "PATCH", payload);
+        if (!res.ok) throw new Error("Not OK");
+        return true;
+      })
+    );
+  } catch {
+    // all failed, ignore
   }
 }
 

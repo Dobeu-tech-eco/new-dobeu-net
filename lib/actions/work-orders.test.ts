@@ -65,58 +65,71 @@ vi.mock("@/lib/customerio", () => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => {
-  function buildClient() {
+  function buildAuthMock() {
     return {
-      auth: {
-        getUser: vi.fn(async () => ({ data: { user: h.state.user }, error: null })),
-        admin: {
-          getUserById: vi.fn(async () => ({
-            data: { user: { email: "owner@example.com", user_metadata: {} } },
-            error: null
-          }))
-        }
-      },
-      storage: {
-        from: vi.fn(() => ({
-          createSignedUploadUrl: vi.fn(async (path: string) => ({
-            data: { path, token: "signed-token", signedUrl: `https://storage.test/${path}` },
-            error: null
-          }))
+      getUser: vi.fn(async () => ({ data: { user: h.state.user }, error: null })),
+      admin: {
+        getUserById: vi.fn(async () => ({
+          data: { user: { email: "owner@example.com", user_metadata: {} } },
+          error: null
         }))
-      },
-      from: vi.fn((table: string) => ({
-        insert: vi.fn(() => {
-          if (table === "work_order_attachments") {
-            return Promise.resolve({ data: null, error: h.state.attachmentInsertError });
-          }
-          return {
-            select: vi.fn(() => ({
-              single: vi.fn(() => Promise.resolve(h.state.insertResult))
-            }))
-          };
-        }),
-        update: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            select: vi.fn(() => ({
-              single: vi.fn(() =>
-                Promise.resolve({
-                  data: h.state.updateError ? null : h.state.updateSelectData,
-                  error: h.state.updateError
-                })
-              )
-            })),
-            then: (resolve: (v: { data: unknown; error: unknown }) => void) =>
-              resolve({ data: null, error: h.state.updateError })
-          }))
-        })),
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve(h.state.selectResult))
-          }))
+      }
+    };
+  }
+
+  function buildStorageMock() {
+    return {
+      from: vi.fn(() => ({
+        createSignedUploadUrl: vi.fn(async (path: string) => ({
+          data: { path, token: "signed-token", signedUrl: `https://storage.test/${path}` },
+          error: null
         }))
       }))
     };
   }
+
+  function buildFromMock() {
+    return vi.fn((table: string) => ({
+      insert: vi.fn(() => {
+        if (table === "work_order_attachments") {
+          return Promise.resolve({ data: null, error: h.state.attachmentInsertError });
+        }
+        return {
+          select: vi.fn(() => ({
+            single: vi.fn(() => Promise.resolve(h.state.insertResult))
+          }))
+        };
+      }),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          select: vi.fn(() => ({
+            single: vi.fn(() =>
+              Promise.resolve({
+                data: h.state.updateError ? null : h.state.updateSelectData,
+                error: h.state.updateError
+              })
+            )
+          })),
+          then: (resolve: (v: { data: unknown; error: unknown }) => void) =>
+            resolve({ data: null, error: h.state.updateError })
+        }))
+      })),
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => Promise.resolve(h.state.selectResult))
+        }))
+      }))
+    }));
+  }
+
+  function buildClient() {
+    return {
+      auth: buildAuthMock(),
+      storage: buildStorageMock(),
+      from: buildFromMock()
+    };
+  }
+
   return {
     createClient: vi.fn(async () => buildClient()),
     createAdminClient: vi.fn(() => buildClient())

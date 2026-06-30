@@ -8,7 +8,7 @@ const STEPS = [
   {
     icon: CalendarCheck,
     label: "30-min discovery",
-    body: "We talk through what you&apos;re trying to ship, what&apos;s in the way, and whether I&apos;m the right person. No pitch, no slide deck.",
+    body: "We talk through what you're trying to ship, what's in the way, and whether I'm the right person. No pitch, no slide deck.",
   },
   {
     icon: FileText,
@@ -66,10 +66,9 @@ export function HowItWorks() {
               <h3 className="font-display text-xl font-semibold mb-2">
                 {step.label}
               </h3>
-              <p
-                className="text-sm md:text-base text-muted-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: step.body }}
-              />
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                {step.body}
+              </p>
             </motion.li>
           ))}
         </ol>
