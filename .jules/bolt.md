@@ -1,3 +1,7 @@
 ## 2026-05-22 - [Lazy Loading Hidden Third-Party Embeds]
 **Learning:** Heavy third-party integrations like Calendly (`react-calendly`) and Typeform (`@typeform/embed-react`) were being statically imported and eagerly loaded on the main landing page, even though they were hidden inside a Dialog (lightbox) and Tabs components that the user might never open. Statically importing these inflates the First Load JS size.
 **Action:** When heavy third-party components are conditionally rendered or hidden behind UI interactions (like modals, lightboxes, or non-default tabs), always use `next/dynamic` to lazy load them. This defers downloading their JavaScript payload until the user actually interacts with that specific UI element, significantly reducing the initial bundle size.
+
+## 2026-06-30 - [Pausing Background Intervals for Off-Screen Carousels]
+**Learning:** Components like `ActivityTicker` and `WorkCards` in `Hero.tsx` used `setInterval` to cycle through state every few seconds, but these intervals continued to run endlessly even when the user scrolled far down the page. This causes continuous, invisible React state updates and unmounting/mounting of Framer Motion components (`AnimatePresence`), burning CPU cycles for animations the user can't see.
+**Action:** Always wrap background polling or auto-advance timers (`setInterval`) in an `if (isInView)` check using `useInView` from `motion/react`. This ensures we clear intervals when elements exit the viewport, saving CPU/battery on mobile devices during long scrolling sessions.
