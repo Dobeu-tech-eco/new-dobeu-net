@@ -8,6 +8,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { AVAILABILITY, SUB_BRANDS, FOUNDER } from "@/lib/jeremy-data";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [
   { href: "#work", label: "Work" },
@@ -170,6 +171,8 @@ export function SiteNav() {
               <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
               <span>dobeutech</span>
             </Link>
+
+            <ThemeToggle />
 
             <Button
               onClick={() => open("book")}
