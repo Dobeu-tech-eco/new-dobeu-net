@@ -80,7 +80,7 @@ export function CookieBanner() {
 
             {/* Support / Chat */}
             <CategoryRow
-              label="Support &amp; chat"
+              label="Support & chat"
               description="Intercom live chat. Allows you to message us directly from the site."
               checked={draft.support}
               onChange={(v) => setDraft((d) => ({ ...d, support: v }))}
@@ -198,7 +198,7 @@ function CategoryRow({
       </div>
       <div>
         <label htmlFor={id} className="text-sm font-semibold cursor-pointer">
-          <span dangerouslySetInnerHTML={{ __html: label }} />
+          <span>{label}</span>
           {disabled && (
             <span className="ml-2 text-xs font-normal text-muted-foreground">Always on</span>
           )}
