@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useInView } from "motion/react";
 import {
   ArrowRight,
   GitCommitHorizontal,
@@ -84,6 +84,8 @@ function timeAgo(iso: string): string {
 function ActivityTicker() {
   const [events, setEvents] = useState<GitHubEvent[]>([]);
   const [idx, setIdx] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref);
 
   useEffect(() => {
     fetch("/api/github-activity")
@@ -92,48 +94,53 @@ function ActivityTicker() {
       .catch(() => {});
   }, []);
 
+  // ⚡ Bolt: Pause auto-advance when off-screen to prevent unnecessary re-renders
   useEffect(() => {
-    if (events.length < 2) return;
+    if (events.length < 2 || !isInView) return;
     const t = setInterval(() => setIdx((i) => (i + 1) % events.length), 4000);
     return () => clearInterval(t);
-  }, [events]);
-
-  if (!events.length) return null;
-  const ev = events[idx];
+  }, [events, isInView]);
 
   return (
-    <Link
-      href={ev.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-2 rounded-full border border-border/60 bg-elevated/80 backdrop-blur px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all duration-200 max-w-full"
-      aria-label={`Latest activity: ${ev.message} in ${ev.repo}`}
-    >
-      <span className="text-primary/70 flex-shrink-0">{EVENT_ICONS[ev.type]}</span>
-      <span className="font-mono text-[11px] text-primary/80 flex-shrink-0 hidden sm:inline">
-        {ev.repo}
-      </span>
-      <span className="hidden sm:inline text-border/60" aria-hidden="true">/</span>
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={ev.id}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.25 }}
-          className="truncate"
-        >
-          {ev.message}
-        </motion.span>
-      </AnimatePresence>
-      <span className="ml-auto flex-shrink-0 opacity-50 hidden sm:inline">
-        {timeAgo(ev.timestamp)}
-      </span>
-      <ExternalLink
-        className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0"
-        aria-hidden="true"
-      />
-    </Link>
+    <div ref={ref} className="flex min-h-[30px] w-full max-w-full items-center justify-center">
+      {events.length > 0 && (() => {
+        const ev = events[idx];
+        return (
+          <Link
+            href={ev.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-2 rounded-full border border-border/60 bg-elevated/80 backdrop-blur px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all duration-200 max-w-full"
+            aria-label={`Latest activity: ${ev.message} in ${ev.repo}`}
+          >
+            <span className="text-primary/70 flex-shrink-0">{EVENT_ICONS[ev.type]}</span>
+            <span className="font-mono text-[11px] text-primary/80 flex-shrink-0 hidden sm:inline">
+              {ev.repo}
+            </span>
+            <span className="hidden sm:inline text-border/60" aria-hidden="true">/</span>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={ev.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.25 }}
+                className="truncate"
+              >
+                {ev.message}
+              </motion.span>
+            </AnimatePresence>
+            <span className="ml-auto flex-shrink-0 opacity-50 hidden sm:inline">
+              {timeAgo(ev.timestamp)}
+            </span>
+            <ExternalLink
+              className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0"
+              aria-hidden="true"
+            />
+          </Link>
+        );
+      })()}
+    </div>
   );
 }
 
@@ -142,6 +149,8 @@ function ActivityTicker() {
 // ---------------------------------------------------------------------------
 function WorkCards() {
   const [active, setActive] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref);
 
   const prev = useCallback(
     () => setActive((i) => (i - 1 + SHIPPED_WORK.length) % SHIPPED_WORK.length),
@@ -152,16 +161,17 @@ function WorkCards() {
     []
   );
 
-  // Auto-advance
+  // ⚡ Bolt: Pause auto-advance when off-screen to prevent unnecessary re-renders
   useEffect(() => {
+    if (!isInView) return;
     const t = setInterval(next, 5000);
     return () => clearInterval(t);
-  }, [next]);
+  }, [next, isInView]);
 
   const project = SHIPPED_WORK[active];
 
   return (
-    <div className="relative w-full">
+    <div ref={ref} className="relative w-full">
       <div className="overflow-hidden rounded-xl border border-border/60 bg-elevated/60 backdrop-blur">
         <AnimatePresence mode="wait">
           <motion.div
