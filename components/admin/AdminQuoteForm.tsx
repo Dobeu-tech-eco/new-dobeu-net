@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { quoteWorkOrder } from "@/lib/actions/work-orders";
@@ -47,6 +48,7 @@ export function AdminQuoteForm({ ticketId }: { ticketId: string }) {
         </p>
       )}
       <Button type="submit" disabled={pending} aria-busy={pending}>
+        {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
         {pending ? "Sending…" : "Send quote to client"}
       </Button>
     </form>

@@ -19,7 +19,12 @@ describe("useCookieConsent", () => {
     });
 
     vi.stubGlobal("navigator", { doNotTrack: null });
-    vi.stubGlobal("window", { doNotTrack: null });
+    vi.stubGlobal("window", {
+      doNotTrack: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn()
+    });
   });
 
   afterEach(() => {
