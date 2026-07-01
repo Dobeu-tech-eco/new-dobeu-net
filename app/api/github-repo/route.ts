@@ -18,7 +18,15 @@ function parseGitHubRepo(input: string): { owner: string; repo: string } | null 
     if (url.hostname !== "github.com") return null;
     const parts = url.pathname.replace(/^\//, "").split("/");
     if (parts.length < 2 || !parts[0] || !parts[1]) return null;
-    return { owner: parts[0], repo: parts[1] };
+
+    const owner = parts[0];
+    const repo = parts[1];
+
+    // Prevent directory traversal (SSRF)
+    const isValid = /^[a-zA-Z0-9_.-]+$/.test(owner) && /^[a-zA-Z0-9_.-]+$/.test(repo) && !owner.includes('..') && !repo.includes('..') && owner !== '.' && repo !== '.';
+    if (!isValid) return null;
+
+    return { owner, repo };
   } catch {
     return null;
   }
