@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "edge";
+// nodejs required: Vercel Services does not support Edge Runtime outputs.
+export const runtime = "nodejs";
 
 /** Parse owner/repo from a GitHub URL or "owner/repo" shorthand. */
 function parseGitHubRepo(input: string): { owner: string; repo: string } | null {
