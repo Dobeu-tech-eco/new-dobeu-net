@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
+// Vercel Services does not support Edge Function outputs. Prefer Node middleware.
+// (Default Next.js middleware is Edge; Services rejects that as "middleware" Edge output.)
+export const runtime = "nodejs";
+
 export async function middleware(request: NextRequest) {
   // Skew Protection: propagate the __vdpl deployment cookie on every response
   // so Next.js can detect version mismatch between client bundles and the server.
