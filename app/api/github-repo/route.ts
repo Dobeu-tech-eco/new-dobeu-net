@@ -1,14 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "edge";
+
+const RATE_LIMIT_WINDOW_SEC = 60;
+const RATE_LIMIT_MAX = 30;
+
+// GitHub username/org rules: alphanumeric, single internal hyphens, no
+// leading/trailing hyphen, max 39 chars. No dots allowed.
+const OWNER_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
+// Repo names may contain dots, but never as a bare "." / ".." segment or
+// with a ".." sequence anywhere (path traversal).
+const REPO_RE = /^[a-zA-Z0-9._-]+$/;
+
+function isValidOwner(owner: string): boolean {
+  return OWNER_RE.test(owner);
+}
+
+function isValidRepo(repo: string): boolean {
+  if (!REPO_RE.test(repo)) return false;
+  if (repo === "." || repo === "..") return false;
+  if (repo.includes("..")) return false;
+  return true;
+}
 
 /** Parse owner/repo from a GitHub URL or "owner/repo" shorthand. */
 function parseGitHubRepo(input: string): { owner: string; repo: string } | null {
   const trimmed = input.trim().replace(/\/$/, "");
 
   // Shorthand: owner/repo
-  if (/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(trimmed)) {
+  if (/^[^/]+\/[^/]+$/.test(trimmed)) {
     const [owner, repo] = trimmed.split("/");
+    if (!isValidOwner(owner) || !isValidRepo(repo)) return null;
     return { owner, repo };
   }
 
@@ -18,13 +41,31 @@ function parseGitHubRepo(input: string): { owner: string; repo: string } | null 
     if (url.hostname !== "github.com") return null;
     const parts = url.pathname.replace(/^\//, "").split("/");
     if (parts.length < 2 || !parts[0] || !parts[1]) return null;
-    return { owner: parts[0], repo: parts[1] };
+    const [owner, repo] = parts;
+    if (!isValidOwner(owner) || !isValidRepo(repo)) return null;
+    return { owner, repo };
   } catch {
     return null;
   }
 }
 
+function getClientIp(req: NextRequest): string {
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || "unknown";
+}
+
 export async function GET(req: NextRequest) {
+  const ip = getClientIp(req);
+  const { limited } = await checkRateLimit(`github-repo:${ip}`, {
+    windowSec: RATE_LIMIT_WINDOW_SEC,
+    max: RATE_LIMIT_MAX
+  });
+  if (limited) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const q = req.nextUrl.searchParams.get("q");
   if (!q) {
     return NextResponse.json({ error: "Missing q parameter" }, { status: 400 });
