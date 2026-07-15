@@ -141,7 +141,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.supabase.co" },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "media.licdn.com", pathname: "/dms/image/**" },
-      { protocol: "https", hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com" }
+      { protocol: "https", hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com" },
+      // Ported from the (now-removed) next.config.js — needed by /repos:
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "github.com" }
     ]
   },
   async headers() {
