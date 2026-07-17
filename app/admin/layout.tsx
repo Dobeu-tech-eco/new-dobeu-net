@@ -12,7 +12,8 @@ import {
   Inbox,
   CalendarCheck,
   BarChart3,
-  Ticket
+  Ticket,
+  Building2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
@@ -26,6 +27,7 @@ import { createIntercomUserJwt } from "@/lib/intercom-jwt";
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/companies", label: "Companies", icon: Building2 },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/tickets", label: "Tickets", icon: Ticket },
   { href: "/admin/invoices", label: "Invoices", icon: Receipt },

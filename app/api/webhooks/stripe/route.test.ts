@@ -32,7 +32,8 @@ const h = vi.hoisted(() => {
       status: string;
     },
     updateError: null as null | { message: string },
-    throwOnUpdate: false
+    throwOnUpdate: false,
+    insertError: null as null | { message: string; code?: string }
   };
   return { verifyMock, sendEmailMock, adminInvocations, adminBehavior };
 });
@@ -71,7 +72,20 @@ vi.mock("@/lib/supabase/server", () => ({
               rejectIfNeeded({ data: null, error: h.adminBehavior.updateError }).then(onF, onR)
           };
         }
-      })
+      }),
+      insert: (payload: unknown) => {
+        h.adminInvocations.push({ table, op: "insert", payload });
+        const settle = () =>
+          h.adminBehavior.throwOnUpdate
+            ? Promise.reject(new Error("db down"))
+            : Promise.resolve({ data: null, error: h.adminBehavior.insertError });
+        return {
+          then: (
+            onF: (v: { data: null; error: { message: string } | null }) => unknown,
+            onR?: (e: unknown) => unknown
+          ) => settle().then(onF, onR)
+        };
+      }
     })
   }),
   createClient: vi.fn()
@@ -91,6 +105,7 @@ beforeEach(() => {
   h.adminBehavior.updatedRow = null;
   h.adminBehavior.updateError = null;
   h.adminBehavior.throwOnUpdate = false;
+  h.adminBehavior.insertError = null;
   process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
   process.env.STRIPE_WEBHOOK_SECRET = "whsec_dummy";
 });
@@ -238,6 +253,102 @@ describe("POST /api/webhooks/stripe", () => {
     const res = await POST(makeRequest("{}"));
     expect(res.status).toBe(200);
     expect(h.adminInvocations[0].payload).toMatchObject({ status: "void" });
+  });
+
+  it("checkout.session.completed → grants a user entitlement", async () => {
+    h.verifyMock.mockReturnValue({
+      id: "evt_co_user",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_user_1",
+          metadata: { digital_asset_id: "asset_1", user_id: "user_9" }
+        }
+      }
+    });
+    const { POST } = await importRouteFresh();
+    const res = await POST(makeRequest("{}"));
+    expect(res.status).toBe(200);
+
+    expect(h.adminInvocations).toHaveLength(1);
+    expect(h.adminInvocations[0].table).toBe("asset_entitlements");
+    expect(h.adminInvocations[0].op).toBe("insert");
+    expect(h.adminInvocations[0].payload).toMatchObject({
+      asset_id: "asset_1",
+      company_id: null,
+      user_id: "user_9",
+      source: "stripe",
+      stripe_checkout_session_id: "cs_user_1"
+    });
+  });
+
+  it("checkout.session.completed → company grant nulls user_id", async () => {
+    h.verifyMock.mockReturnValue({
+      id: "evt_co_company",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_company_1",
+          metadata: { digital_asset_id: "asset_2", company_id: "co_1", user_id: "user_9" }
+        }
+      }
+    });
+    const { POST } = await importRouteFresh();
+    const res = await POST(makeRequest("{}"));
+    expect(res.status).toBe(200);
+    expect(h.adminInvocations[0].payload).toMatchObject({
+      asset_id: "asset_2",
+      company_id: "co_1",
+      user_id: null
+    });
+  });
+
+  it("checkout.session.completed without digital_asset_id → ignored, no writes", async () => {
+    h.verifyMock.mockReturnValue({
+      id: "evt_co_noop",
+      type: "checkout.session.completed",
+      data: { object: { id: "cs_noop", metadata: { user_id: "user_9" } } }
+    });
+    const { POST } = await importRouteFresh();
+    const res = await POST(makeRequest("{}"));
+    expect(res.status).toBe(200);
+    expect(h.adminInvocations).toHaveLength(0);
+  });
+
+  it("checkout.session.completed → unique violation is idempotent success", async () => {
+    h.verifyMock.mockReturnValue({
+      id: "evt_co_dupe",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_dupe_1",
+          metadata: { digital_asset_id: "asset_1", user_id: "user_9" }
+        }
+      }
+    });
+    h.adminBehavior.insertError = { message: "duplicate key", code: "23505" };
+    const { POST } = await importRouteFresh();
+    const res = await POST(makeRequest("{}"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.received).toBe(true);
+  });
+
+  it("checkout.session.completed → non-unique insert error → 500", async () => {
+    h.verifyMock.mockReturnValue({
+      id: "evt_co_err",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_err_1",
+          metadata: { digital_asset_id: "asset_1", user_id: "user_9" }
+        }
+      }
+    });
+    h.adminBehavior.insertError = { message: "fk violation", code: "23503" };
+    const { POST } = await importRouteFresh();
+    const res = await POST(makeRequest("{}"));
+    expect(res.status).toBe(500);
   });
 
   it("unknown event type → 200 ignored, no DB writes", async () => {
