@@ -19,7 +19,16 @@ describe("useCookieConsent", () => {
     });
 
     vi.stubGlobal("navigator", { doNotTrack: null });
-    vi.stubGlobal("window", { doNotTrack: null });
+    // Don't replace `window` wholesale — the hook registers
+    // `window.addEventListener(CONSENT_EVENT, ...)` in a useEffect, so a bare
+    // stub object without EventTarget methods throws on every non-DNT test.
+    // Only override the `doNotTrack` property on the real window, preserving
+    // its native addEventListener/removeEventListener/dispatchEvent.
+    Object.defineProperty(window as unknown as Record<string, unknown>, "doNotTrack", {
+      value: null,
+      configurable: true,
+      writable: true,
+    });
   });
 
   afterEach(() => {
