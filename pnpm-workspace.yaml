@@ -1,5 +1,4 @@
 # pnpm workspace config (compatible with pnpm 10).
-# overrides are defined in package.json under the "pnpm.overrides" field.
 # onlyBuiltDependencies is the pnpm 10 equivalent of allowBuilds.
 onlyBuiltDependencies:
   - "@vercel/speed-insights"
@@ -9,3 +8,18 @@ onlyBuiltDependencies:
   - sharp
   - supabase
   - unrs-resolver
+
+# Security overrides. Migrated 2026-07-25 from package.json "pnpm.overrides"
+# (no longer read by pnpm 10 — those pins were silently inactive) and merged
+# with the 2026-07-25 audit remediation. Re-audit with `pnpm audit --prod`.
+overrides:
+  protobufjs: ">=7.6.5 <8"
+  form-data: ">=4.0.6"
+  vite: "8.0.16"
+  ws: ">=8.21.0"
+  js-cookie: ">=3.0.7"
+  postcss: ">=8.5.18"
+  esbuild: ">=0.25.0"
+  dompurify: ">=3.4.7"
+  sharp: ">=0.35.0"
+  "@opentelemetry/core": ">=2.8.0"
