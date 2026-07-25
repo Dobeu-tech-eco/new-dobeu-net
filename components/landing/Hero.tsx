@@ -30,7 +30,8 @@ import type { GitHubEvent } from "@/app/api/github-activity/route";
 function useTypewriter(
   phrases: readonly string[],
   typingSpeed = 52,
-  pauseMs = 2400
+  pauseMs = 2400,
+  paused = false
 ) {
   const [display, setDisplay] = useState("");
   const [phraseIdx, setPhraseIdx] = useState(0);
@@ -38,6 +39,7 @@ function useTypewriter(
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
+    if (paused) return;
     const phrase = phrases[phraseIdx];
     let timer: ReturnType<typeof setTimeout>;
 
@@ -54,7 +56,7 @@ function useTypewriter(
 
     setDisplay(phrase.slice(0, charIdx));
     return () => clearTimeout(timer);
-  }, [charIdx, deleting, phraseIdx, phrases, typingSpeed, pauseMs]);
+  }, [charIdx, deleting, phraseIdx, phrases, typingSpeed, pauseMs, paused]);
 
   return display;
 }
@@ -265,7 +267,12 @@ export function Hero() {
   const { open } = useLightbox();
   const mp = useMotionProps(FADE_UP);
   const mpFade = useMotionProps(FADE);
-  const typeText = useTypewriter(TYPEWRITER_PHRASES);
+
+  const ref = useRef<HTMLElement>(null);
+  const isInView = useInView(ref);
+
+  // ⚡ Bolt: Pause typewriter effect when off-screen to prevent unnecessary re-renders
+  const typeText = useTypewriter(TYPEWRITER_PHRASES, 52, 2400, !isInView);
 
   function trackAndOpen(target: "book" | "form" | "email", label: string) {
     track("cta_click", { cta_label: label, cta_location: "hero", target });
@@ -274,6 +281,7 @@ export function Hero() {
 
   return (
     <section
+      ref={ref}
       id="top"
       aria-labelledby="hero-heading"
       className="relative overflow-hidden pt-10 md:pt-16 pb-16 md:pb-24"
