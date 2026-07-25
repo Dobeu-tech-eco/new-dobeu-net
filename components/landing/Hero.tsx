@@ -281,7 +281,7 @@ export function Hero() {
         aria-hidden="true"
         style={{
           background:
-            "radial-gradient(ellipse 70% 50% at 15% 60%, hsl(var(--dobeu-indigo-500)/0.09), transparent 65%), radial-gradient(ellipse 50% 40% at 90% 20%, hsl(var(--dobeu-amber-500)/0.06), transparent 55%)",
+            "radial-gradient(ellipse 70% 50% at 15% 60%, hsl(var(--dobeu-violet-500)/0.10), transparent 65%), radial-gradient(ellipse 50% 40% at 90% 20%, hsl(var(--dobeu-amber-500)/0.07), transparent 55%)",
         }}
       />
 

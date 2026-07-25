@@ -35,7 +35,7 @@ export function FinalCTA() {
             aria-hidden="true"
             style={{
               background:
-                "radial-gradient(ellipse 60% 55% at 5% 10%, hsl(var(--dobeu-indigo-500)/0.08), transparent 60%), radial-gradient(ellipse 45% 40% at 95% 90%, hsl(var(--dobeu-amber-500)/0.07), transparent 55%)",
+                "radial-gradient(ellipse 60% 55% at 5% 10%, hsl(var(--dobeu-violet-500)/0.10), transparent 60%), radial-gradient(ellipse 45% 40% at 95% 90%, hsl(var(--dobeu-amber-500)/0.09), transparent 55%)",
             }}
           />
 
