@@ -314,9 +314,9 @@ export function Hero() {
                 initial={mp.initial}
                 animate={mp.animate}
                 transition={{ duration: 0.45, delay: 0.1 }}
-                className="block text-4xl sm:text-5xl lg:text-[4.5rem] xl:text-[5rem] text-foreground"
+                className="block text-4xl sm:text-5xl lg:text-[4.5rem] xl:text-[5rem] text-muted-foreground/50"
               >
-                Ship the agent.
+                Hi. I&apos;m Jeremy.
               </motion.span>
               <motion.span
                 initial={mp.initial}
@@ -324,15 +324,18 @@ export function Hero() {
                 transition={{ duration: 0.45, delay: 0.18 }}
                 className="block text-4xl sm:text-5xl lg:text-[4.5rem] xl:text-[5rem] text-foreground"
               >
-                Ship the app.
-              </motion.span>
-              <motion.span
-                initial={mp.initial}
-                animate={mp.animate}
-                transition={{ duration: 0.45, delay: 0.26 }}
-                className="block text-4xl sm:text-5xl lg:text-[4.5rem] xl:text-[5rem]"
-              >
-                <span className="text-muted-foreground/50">Ship the brand.</span>
+                I ship{" "}
+                <span
+                  className="text-primary"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {typeText}
+                  <span
+                    className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle animate-pulse"
+                    aria-hidden="true"
+                  />
+                </span>
               </motion.span>
             </h1>
           </div>
@@ -348,20 +351,10 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.35 }}
               className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl"
             >
-              One operator. Modern stack. Production-grade{" "}
-              <span
-                className="font-semibold text-foreground"
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                {typeText}
-                <span
-                  className="inline-block w-[2px] h-[0.9em] bg-primary ml-0.5 align-middle animate-pulse"
-                  aria-hidden="true"
-                />
-              </span>{" "}
-              for founders who need it{" "}
-              <span className="text-foreground font-semibold">shipped, not pitched.</span>
+              One operator. Modern stack. Production-grade AI agents, apps, and
+              growth systems for founders who need it{" "}
+              <span className="text-foreground font-semibold">shipped, not pitched.</span>{" "}
+              From idea to live in 2–6 weeks.
             </motion.p>
 
             {/* Trust strip */}

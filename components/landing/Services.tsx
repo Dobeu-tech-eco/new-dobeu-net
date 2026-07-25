@@ -74,15 +74,16 @@ export function Services() {
               id="work-heading"
               className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance"
             >
-              Four disciplines.
+              Four things, done well —
               <br />
-              <span className="text-muted-foreground/50">One operator.</span>
+              <span className="text-muted-foreground/50">built on partnership.</span>
             </h2>
           </div>
           <p className="max-w-sm text-sm text-muted-foreground leading-relaxed md:text-right">
-            Most engagements blend two or three. I take on a small number of
-            clients at a time, transfer everything into your hands, and stay on
-            as a long-term advisor past launch.
+            Most engagements blend a few of these. What you&apos;re really
+            hiring isn&apos;t a checklist — it&apos;s a partner. I take on a
+            small number of clients at a time, transfer everything I build into
+            your hands, and stay on as a long-term IT advisor well past launch.
           </p>
         </motion.div>
 
@@ -146,15 +147,15 @@ export function Services() {
             onClick={() => open("form")}
             className="group w-full rounded-2xl border border-dashed border-border/50 hover:border-primary/30 bg-transparent hover:bg-primary/3 px-7 py-6 flex items-center justify-between transition-all duration-200"
           >
-            <div className="flex items-center gap-4 text-left">
+              <div className="flex items-center gap-4 text-left">
               <span className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-accent/10 text-accent shrink-0 group-hover:bg-accent/15 transition-colors">
                 <LineChart className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="font-semibold text-sm text-foreground">Have something different?</p>
+                <p className="font-semibold text-sm text-foreground">Something else?</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Got a project that doesn&apos;t fit neatly — tell me, I&apos;ve probably shipped
-                  something close.
+                  Got a project that doesn&apos;t fit a category? Tell me about it — I&apos;ve
+                  probably shipped something close.
                 </p>
               </div>
             </div>
