@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "motion/react";
-import { Linkedin, Mail, CheckCircle2 } from "lucide-react";
+import { Linkedin, Mail, ArrowRight } from "lucide-react";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { FOUNDER } from "@/lib/jeremy-data";
-import { useMotionProps, FADE_UP, FADE } from "@/hooks/use-motion-props";
+import { useLightbox } from "@/components/landing/LightboxProvider";
+import { useMotionProps, FADE_UP, SCALE_IN } from "@/hooks/use-motion-props";
 
 const REASONS = [
   {
@@ -22,9 +22,17 @@ const REASONS = [
   },
 ];
 
+// Quick-stats shown beside the name block
+const STATS = [
+  { value: "2019", label: "Building since" },
+  { value: "50+", label: "Projects shipped" },
+  { value: "4", label: "Service pillars" },
+];
+
 export function Founder() {
-  const mpFade = useMotionProps(FADE);
+  const { open } = useLightbox();
   const mpUp = useMotionProps(FADE_UP);
+  const mpScale = useMotionProps(SCALE_IN);
 
   return (
     <section
@@ -45,112 +53,146 @@ export function Founder() {
           The operator
         </motion.p>
 
-        {/* Two-column editorial layout */}
-        <div className="grid md:grid-cols-[280px_1fr] gap-10 md:gap-16 items-start">
+        {/* ── Top editorial row: name block + stats ── */}
+        <motion.div
+          initial={mpUp.initial}
+          whileInView={mpUp.whileInView}
+          viewport={mpUp.viewport}
+          transition={{ duration: 0.45, delay: 0.05 }}
+          className="flex flex-col md:flex-row md:items-end gap-8 md:gap-16 mb-14 md:mb-16 pb-10 border-b border-border/25"
+        >
+          {/* Name + availability */}
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/20 px-3 py-1 text-[11px] font-semibold text-green-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" aria-hidden="true" />
+                Available now
+              </span>
+            </div>
+            <h2
+              id="about-heading"
+              className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[0.98] text-balance"
+            >
+              {FOUNDER.name}
+            </h2>
+            <p className="mt-3 text-base text-muted-foreground">{FOUNDER.title} &mdash; {FOUNDER.location}</p>
 
-          {/* ── Left column: photo + identity ── */}
-          <motion.div
-            initial={mpFade.initial}
-            whileInView={mpFade.whileInView}
-            viewport={mpFade.viewport}
-            transition={{ duration: 0.55 }}
-            className="flex flex-col items-center md:items-start gap-5"
-          >
-            {/* Photo */}
-            <div className="relative w-52 md:w-full aspect-square rounded-2xl overflow-hidden border border-border/50">
-              <Image
-                src={FOUNDER.avatar}
-                alt={`${FOUNDER.name}, ${FOUNDER.title}`}
-                fill
-                sizes="(max-width: 768px) 208px, 280px"
-                className="object-cover object-top"
-              />
-              {/* Availability overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border/30 px-3 py-2 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]" aria-hidden="true" />
-                <span className="text-xs font-medium text-foreground">Available now</span>
+            {/* Social links */}
+            <div className="mt-5 flex items-center gap-2.5">
+              <a
+                href={FOUNDER.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Jeremy on LinkedIn"
+                className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-elevated/50 hover:bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
+                LinkedIn
+              </a>
+              <a
+                href="mailto:jeremyw@dobeu.net"
+                aria-label="Email Jeremy"
+                className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-elevated/50 hover:bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Mail className="h-3.5 w-3.5" aria-hidden="true" />
+                Email
+              </a>
+            </div>
+          </div>
+
+          {/* Stats row */}
+          <div className="flex items-end gap-8 md:gap-10 shrink-0">
+            {STATS.map((s) => (
+              <div key={s.label} className="text-right md:text-right">
+                <p className="font-display text-3xl md:text-4xl font-extrabold text-foreground leading-none">{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-1.5">{s.label}</p>
               </div>
-            </div>
+            ))}
+          </div>
+        </motion.div>
 
-            {/* Identity card */}
-            <div className="text-center md:text-left w-full">
-              <p className="font-bold text-base text-foreground">{FOUNDER.name}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">{FOUNDER.title}</p>
-              <p className="text-xs text-muted-foreground/60 mt-0.5">{FOUNDER.location} &middot; Since {FOUNDER.since}</p>
+        {/* ── Two-column: bio + reasons ── */}
+        <div className="grid md:grid-cols-[1fr_1fr] gap-12 md:gap-20">
 
-              {/* Social links */}
-              <div className="mt-4 flex items-center justify-center md:justify-start gap-2">
-                <a
-                  href={FOUNDER.linkedin}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Jeremy on LinkedIn"
-                  className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-elevated/50 hover:bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
-                  LinkedIn
-                </a>
-                <a
-                  href="mailto:jeremyw@dobeu.net"
-                  aria-label="Email Jeremy"
-                  className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-elevated/50 hover:bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-                  Email
-                </a>
-              </div>
-            </div>
-
-            {/* Dobeu mark — brand accent */}
-            <div className="hidden md:flex items-center justify-center w-16 h-16 rounded-2xl border border-border/30 bg-elevated/30 mt-2">
-              <DobeuMark className="w-10 h-10" />
-            </div>
-          </motion.div>
-
-          {/* ── Right column: bio + why reasons ── */}
+          {/* Left: bio text */}
           <motion.div
             initial={mpUp.initial}
             whileInView={mpUp.whileInView}
             viewport={mpUp.viewport}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <h2
-              id="about-heading"
-              className="font-display text-3xl md:text-4xl lg:text-[2.6rem] font-extrabold tracking-tight leading-[1.07] text-balance mb-6"
-            >
+            <h3 className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-[1.1] text-balance mb-6">
               Why one person,
               <br />
               <span className="text-muted-foreground/50">not an agency?</span>
-            </h2>
+            </h3>
 
-            <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10 max-w-2xl">
-              I&apos;m Jeremy Williams. I&apos;ve been shipping software since 2019 —
-              for logistics operators, fintechs, ops teams, and founders building things
-              that didn&apos;t exist yet. Dobeu Tech Solutions is the practice; everything
-              ships under it.
+            <p className="text-base text-muted-foreground leading-relaxed mb-6">
+              I&apos;ve been shipping software since 2019 — for logistics operators, fintechs,
+              ops teams, and founders building things that didn&apos;t exist yet. Dobeu Tech
+              Solutions is the practice; everything ships under it.
+            </p>
+            <p className="text-sm text-muted-foreground/70 leading-relaxed">
+              Every client I take on gets my full attention. That means I turn down more
+              than I accept. If I&apos;m the right person for your project, you&apos;ll know it
+              by end of the discovery call.
             </p>
 
-            {/* Why reasons — structured */}
-            <div className="space-y-6">
+            {/* Brand mark — editorial accent */}
+            <motion.div
+              initial={mpScale.initial}
+              whileInView={mpScale.whileInView}
+              viewport={mpScale.viewport}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              className="mt-10 flex items-center gap-4"
+              aria-hidden="true"
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl border border-border/30 bg-card/50">
+                <DobeuMark className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-foreground">dobeu.net</p>
+                <p className="text-[11px] text-muted-foreground/60">Principal engineering & AI studio</p>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Right: why reasons */}
+          <motion.div
+            initial={mpUp.initial}
+            whileInView={mpUp.whileInView}
+            viewport={mpUp.viewport}
+            transition={{ duration: 0.5, delay: 0.18 }}
+          >
+            <div className="space-y-0 divide-y divide-border/25">
               {REASONS.map((r, i) => (
                 <motion.div
                   key={r.headline}
                   initial={mpUp.initial}
                   whileInView={mpUp.whileInView}
                   viewport={mpUp.viewport}
-                  transition={{ duration: 0.35, delay: 0.15 + i * 0.08 }}
-                  className="flex gap-4"
+                  transition={{ duration: 0.35, delay: 0.22 + i * 0.08 }}
+                  className="py-6 first:pt-0"
                 >
-                  <div className="mt-0.5 shrink-0 h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground mb-1">{r.headline}</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{r.body}</p>
-                  </div>
+                  <p className="font-semibold text-sm text-foreground mb-1.5 leading-snug">{r.headline}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{r.body}</p>
                 </motion.div>
               ))}
             </div>
+
+            {/* Inline CTA */}
+            <motion.button
+              initial={mpUp.initial}
+              whileInView={mpUp.whileInView}
+              viewport={mpUp.viewport}
+              transition={{ duration: 0.35, delay: 0.46 }}
+              type="button"
+              onClick={() => open("book")}
+              className="group mt-6 flex items-center gap-2 text-sm font-semibold text-primary hover:underline underline-offset-4 transition-colors"
+            >
+              Book a 30-min call
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            </motion.button>
           </motion.div>
         </div>
       </div>

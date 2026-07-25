@@ -19,7 +19,7 @@ export function FinalCTA() {
   return (
     <section
       aria-labelledby="cta-heading"
-      className="py-24 md:py-32 border-t border-border/30"
+      className="py-24 md:py-32 border-t border-border/25"
     >
       <div className="container max-w-6xl">
         <motion.div
@@ -27,15 +27,15 @@ export function FinalCTA() {
           whileInView={mp.whileInView}
           viewport={mp.viewport}
           transition={{ duration: 0.5 }}
-          className="relative rounded-2xl border border-border/40 bg-elevated/40 overflow-hidden"
+          className="relative rounded-2xl border border-border/30 bg-card/50 overflow-hidden"
         >
-          {/* Subtle glow — indigo top-left, amber bottom-right */}
+          {/* Subtle glow — violet top-left, coral amber bottom-right */}
           <div
             className="pointer-events-none absolute inset-0"
             aria-hidden="true"
             style={{
               background:
-                "radial-gradient(ellipse 60% 55% at 5% 10%, hsl(var(--dobeu-violet-500)/0.10), transparent 60%), radial-gradient(ellipse 45% 40% at 95% 90%, hsl(var(--dobeu-amber-500)/0.09), transparent 55%)",
+                "radial-gradient(ellipse 55% 50% at 0% 0%, hsl(var(--dobeu-violet-500)/0.09), transparent 60%), radial-gradient(ellipse 50% 45% at 100% 100%, hsl(var(--dobeu-amber-500)/0.10), transparent 60%)",
             }}
           />
 
@@ -49,13 +49,13 @@ export function FinalCTA() {
               {/* Headline */}
               <h2
                 id="cta-heading"
-                className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance mb-5"
+                className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.04] text-balance mb-5"
               >
                 Let&apos;s build the thing.
               </h2>
 
               {/* Sub-copy */}
-              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10 max-w-lg">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10 max-w-md">
                 30 minutes. No pitch. We&apos;ll figure out together whether
                 I&apos;m the right person to ship what you&apos;re trying to
                 ship.
@@ -66,12 +66,12 @@ export function FinalCTA() {
                 <Button
                   size="lg"
                   onClick={() => trackAndOpen("book", "Book a call — final CTA")}
-                  className="group w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8"
+                  className="group w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8 shadow-amber-glow/30"
                 >
                   <CalendarDays className="mr-2 h-4 w-4" aria-hidden="true" />
                   Book a call
                   <ArrowRight
-                    className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                    className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5"
                     aria-hidden="true"
                   />
                 </Button>
@@ -79,7 +79,7 @@ export function FinalCTA() {
                   size="lg"
                   variant="outline"
                   onClick={() => trackAndOpen("email", "Send your email — final CTA")}
-                  className="w-full sm:w-auto font-medium px-8"
+                  className="w-full sm:w-auto rounded-full font-medium px-8"
                 >
                   <Mail className="mr-2 h-4 w-4" aria-hidden="true" />
                   Or just send your email
@@ -87,9 +87,9 @@ export function FinalCTA() {
               </div>
             </div>
 
-            {/* Decorative number — top-right corner */}
+            {/* Decorative arrow — top-right */}
             <div
-              className="absolute top-8 right-8 md:top-12 md:right-14 font-mono text-[6rem] md:text-[9rem] font-bold text-border/10 leading-none select-none pointer-events-none hidden sm:block"
+              className="absolute top-10 right-10 md:top-14 md:right-16 font-mono text-[5rem] md:text-[8rem] font-bold text-border/8 leading-none select-none pointer-events-none hidden sm:block"
               aria-hidden="true"
             >
               →

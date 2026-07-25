@@ -170,7 +170,7 @@ function WorkCards() {
 
   return (
     <div ref={ref} className="relative w-full">
-      <div className="overflow-hidden rounded-xl border border-border/50 bg-elevated/50 backdrop-blur-sm">
+      <div className="overflow-hidden rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm">
         <AnimatePresence mode="wait">
           <motion.div
             key={active}
@@ -275,7 +275,7 @@ export function Hero() {
       aria-labelledby="hero-heading"
       className="relative overflow-hidden pt-16 md:pt-24 pb-20 md:pb-32"
     >
-      {/* Subtle radial glow — indigo only, no gradients on fills */}
+      {/* Subtle radial glow */}
       <div
         className="pointer-events-none absolute inset-0 -z-10"
         aria-hidden="true"
@@ -291,20 +291,20 @@ export function Hero() {
           initial={mp.initial}
           animate={mp.animate}
           transition={{ duration: 0.5 }}
-          className="mb-14 md:mb-18"
+          className="mb-14 md:mb-16"
         >
           {/* Eyebrow row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8">
             <ActivityTicker />
-            <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+            <div className="flex items-center gap-2.5 text-xs text-muted-foreground shrink-0">
               <span className="hidden sm:block h-px w-8 bg-border/60" aria-hidden="true" />
               <span>{FOUNDER.location}</span>
-              <span className="text-border/50" aria-hidden="true">&middot;</span>
+              <span className="h-1 w-1 rounded-full bg-border/50 flex-shrink-0" aria-hidden="true" />
               <span>Since {FOUNDER.since}</span>
             </div>
           </div>
 
-          {/* Headline — large, left-aligned, B2B confidence */}
+          {/* Headline */}
           <div className="max-w-4xl">
             <h1
               id="hero-heading"
@@ -314,7 +314,7 @@ export function Hero() {
                 initial={mp.initial}
                 animate={mp.animate}
                 transition={{ duration: 0.45, delay: 0.1 }}
-                className="block text-4xl sm:text-5xl lg:text-[4.5rem] xl:text-[5rem] text-muted-foreground/50"
+                className="block text-4xl sm:text-5xl lg:text-[4.5rem] xl:text-[5rem] text-muted-foreground/40"
               >
                 Hi. I&apos;m Jeremy.
               </motion.span>
@@ -343,7 +343,7 @@ export function Hero() {
 
         {/* ── Two-column lower row ── */}
         <div className="grid md:grid-cols-[1fr_auto] gap-10 md:gap-16 items-start">
-          {/* Left: sub-copy + CTAs + typewriter */}
+          {/* Left: sub-copy + CTAs */}
           <div>
             <motion.p
               initial={mp.initial}
@@ -362,26 +362,22 @@ export function Hero() {
               initial={mp.initial}
               animate={mp.animate}
               transition={{ duration: 0.5, delay: 0.42 }}
-              className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground"
+              className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
             >
               {[
                 "Building since 2019",
                 "NYC-based",
                 "Stripe-verified",
-                { label: "No agency overhead", highlight: true },
-              ].map((item, i) =>
-                typeof item === "string" ? (
-                  <span key={i} className="flex items-center gap-1.5">
-                    <span className="h-0.5 w-0.5 rounded-full bg-border/60 hidden sm:inline-block" aria-hidden="true" />
-                    {item}
-                  </span>
-                ) : (
-                  <span key={i} className="flex items-center gap-1.5 text-accent font-semibold">
-                    <span className="h-0.5 w-0.5 rounded-full bg-border/60 hidden sm:inline-block" aria-hidden="true" />
-                    {item.label}
-                  </span>
-                )
-              )}
+              ].map((item, i) => (
+                <span key={i} className="flex items-center gap-2">
+                  {i > 0 && <span className="h-1 w-1 rounded-full bg-border/60 flex-shrink-0" aria-hidden="true" />}
+                  {item}
+                </span>
+              ))}
+              <span className="flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-border/60 flex-shrink-0" aria-hidden="true" />
+                <span className="text-accent font-semibold">No agency overhead</span>
+              </span>
             </motion.div>
 
             {/* CTAs */}
@@ -394,16 +390,16 @@ export function Hero() {
               <Button
                 size="lg"
                 onClick={() => trackAndOpen("book", "Book a call — hero")}
-                className="group w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-7 shadow-amber-glow/20"
+                className="group w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-7 shadow-amber-glow/20"
               >
                 Book a call
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
               </Button>
               <Button
                 size="lg"
                 variant="outline"
                 onClick={() => trackAndOpen("form", "Tell me about your project — hero")}
-                className="w-full sm:w-auto font-medium px-7"
+                className="w-full sm:w-auto rounded-full font-medium px-7"
               >
                 Tell me about your project
               </Button>
@@ -415,12 +411,12 @@ export function Hero() {
             initial={mpFade.initial}
             animate={mpFade.animate}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex flex-col items-center gap-5 w-full md:w-72"
+            className="flex flex-col items-center gap-5 w-full md:w-[280px]"
             aria-label="About Jeremy Williams"
           >
             {/* Avatar */}
             <div className="relative">
-              <div className="h-20 w-20 rounded-2xl overflow-hidden border border-border/50 shadow-lg">
+              <div className="h-20 w-20 rounded-2xl overflow-hidden ring-2 ring-border/40 shadow-lg">
                 <Image
                   src={FOUNDER.avatar}
                   alt={`${FOUNDER.name}, ${FOUNDER.title} at Dobeu`}
@@ -431,7 +427,7 @@ export function Hero() {
                 />
               </div>
               <span
-                className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]"
+                className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.45)]"
                 aria-label="Currently available"
               />
             </div>
@@ -472,7 +468,7 @@ export function Hero() {
           </motion.aside>
         </div>
 
-        {/* Mobile work cards */}
+        {/* Mobile work cards (shown below on small screens) */}
         <motion.div
           initial={mp.initial}
           animate={mp.animate}

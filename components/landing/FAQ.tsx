@@ -12,7 +12,7 @@ import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 const FAQS = [
   {
     q: "What's the typical engagement size?",
-    a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. I send a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing.",
+    a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. You get a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing.",
   },
   {
     q: "How fast can you start?",
@@ -20,7 +20,7 @@ const FAQS = [
   },
   {
     q: "Do you do retainers?",
-    a: "Occasionally — for ongoing automation work, agent maintenance, or growth engineering. Discovery call is the right place to scope this.",
+    a: "Occasionally — for ongoing automation work, agent maintenance, or growth engineering. The discovery call is the right place to scope this.",
   },
   {
     q: "Where will the code live?",
@@ -40,7 +40,7 @@ const FAQS = [
   },
   {
     q: "Why \"dobeu\"?",
-    a: "Two readings at once. Say it out loud — it's my last initial, W, spelled phonetically (\"dub-el-u\"). It's also \"Do Be You\": we handle the technical backend so you get to be you — focused on running your business, not wrangling your stack.",
+    a: "Two readings at once. Say it out loud — it's my last initial W, spelled phonetically (\"dub-el-u\"). It's also \"Do Be You\": we handle the technical backend so you get to focus on running your business.",
   },
 ];
 
@@ -61,10 +61,10 @@ export function FAQ() {
     <section
       id="faq"
       aria-labelledby="faq-heading"
-      className="py-24 md:py-32 border-t border-border/30"
+      className="py-24 md:py-32 border-t border-border/25"
     >
       <div className="container max-w-6xl">
-        <div className="grid md:grid-cols-[1fr_2fr] gap-10 md:gap-16 items-start">
+        <div className="grid md:grid-cols-[280px_1fr] gap-10 md:gap-20 items-start">
 
           {/* Left: sticky header */}
           <motion.div
@@ -83,18 +83,24 @@ export function FAQ() {
             >
               Everything
               <br />
-              <span className="text-muted-foreground/50">you need to know.</span>
+              <span className="text-muted-foreground/40">you need to know.</span>
             </h2>
-            <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-xs">
-              Still have questions? Drop me an email at{" "}
+            <p className="mt-5 text-sm text-muted-foreground leading-relaxed">
+              Still have questions? Drop me a line at{" "}
               <a
                 href="mailto:jeremyw@dobeu.net"
-                className="text-primary hover:underline underline-offset-4"
+                className="text-primary hover:underline underline-offset-4 font-medium"
               >
                 jeremyw@dobeu.net
               </a>
               .
             </p>
+
+            {/* Count pill */}
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
+              <span className="font-mono font-bold text-foreground">{FAQS.length}</span>
+              questions answered
+            </div>
           </motion.div>
 
           {/* Right: accordion */}
@@ -106,11 +112,15 @@ export function FAQ() {
           >
             <Accordion type="single" collapsible className="w-full">
               {FAQS.map((f, i) => (
-                <AccordionItem key={i} value={`item-${i}`} className="border-border/40">
-                  <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline py-5">
+                <AccordionItem
+                  key={i}
+                  value={`item-${i}`}
+                  className="border-border/30 last:border-b-0"
+                >
+                  <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline py-5 gap-4 [&>svg]:shrink-0 [&>svg]:text-primary/60">
                     {f.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-5">
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-5 pr-6">
                     {f.a}
                   </AccordionContent>
                 </AccordionItem>
