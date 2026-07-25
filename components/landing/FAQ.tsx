@@ -1,11 +1,13 @@
 "use client";
 
+import { motion } from "motion/react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 
 const FAQS = [
   {
@@ -38,12 +40,13 @@ const FAQS = [
   },
   {
     q: "Why \"dobeu\"?",
-    a: "Two readings at once. Say it out loud — it's my last initial, W, spelled phonetically (\"dub-el-u\"). It's also \"Do Be You\": we handle the technical backend so you get to be you — focused on running your business, not wrangling your stack. The two overlapping circles in the mark are those two meanings merging, with an amber crescent at the intersection where the work happens.",
+    a: "Two readings at once. Say it out loud — it's my last initial, W, spelled phonetically (\"dub-el-u\"). It's also \"Do Be You\": we handle the technical backend so you get to be you — focused on running your business, not wrangling your stack.",
   },
 ];
 
 export function FAQ() {
-  // JSON-LD for AI Overviews + featured snippets
+  const mp = useMotionProps(FADE_UP);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -55,29 +58,68 @@ export function FAQ() {
   };
 
   return (
-    <section id="faq" aria-labelledby="faq-heading" className="py-20 md:py-28">
-      <div className="container max-w-3xl">
-        <div className="text-center mb-12">
-          <h2
-            id="faq-heading"
-            className="font-display text-3xl md:text-5xl font-bold tracking-tight"
+    <section
+      id="faq"
+      aria-labelledby="faq-heading"
+      className="py-24 md:py-32 border-t border-border/30"
+    >
+      <div className="container max-w-6xl">
+        <div className="grid md:grid-cols-[1fr_2fr] gap-10 md:gap-16 items-start">
+
+          {/* Left: sticky header */}
+          <motion.div
+            initial={mp.initial}
+            whileInView={mp.whileInView}
+            viewport={mp.viewport}
+            transition={{ duration: 0.45 }}
+            className="md:sticky md:top-24"
           >
-            FAQ
-          </h2>
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
+              Questions
+            </p>
+            <h2
+              id="faq-heading"
+              className="font-display text-3xl md:text-4xl font-extrabold tracking-tight leading-[1.05] text-balance"
+            >
+              Everything
+              <br />
+              <span className="text-muted-foreground/50">you need to know.</span>
+            </h2>
+            <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-xs">
+              Still have questions? Drop me an email at{" "}
+              <a
+                href="mailto:jeremyw@dobeu.net"
+                className="text-primary hover:underline underline-offset-4"
+              >
+                jeremyw@dobeu.net
+              </a>
+              .
+            </p>
+          </motion.div>
+
+          {/* Right: accordion */}
+          <motion.div
+            initial={mp.initial}
+            whileInView={mp.whileInView}
+            viewport={mp.viewport}
+            transition={{ duration: 0.45, delay: 0.1 }}
+          >
+            <Accordion type="single" collapsible className="w-full">
+              {FAQS.map((f, i) => (
+                <AccordionItem key={i} value={`item-${i}`} className="border-border/40">
+                  <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline py-5">
+                    {f.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-5">
+                    {f.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </motion.div>
         </div>
-        <Accordion type="single" collapsible className="w-full">
-          {FAQS.map((f, i) => (
-            <AccordionItem key={i} value={`item-${i}`}>
-              <AccordionTrigger>
-                <span>{f.q}</span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <span>{f.a}</span>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
       </div>
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

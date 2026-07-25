@@ -3,85 +3,119 @@
 import Link from "next/link";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 
+const FOOTER_LINKS = {
+  Site: [
+    { label: "Work", href: "/#work" },
+    { label: "Process", href: "/#how" },
+    { label: "About", href: "/#about" },
+    { label: "FAQ", href: "/#faq" },
+    { label: "Repos", href: "/repos" },
+  ],
+  Account: [
+    { label: "Log in", href: "/login" },
+    { label: "Client portal", href: "/portal" },
+  ],
+  Contact: [
+    { label: "jeremyw@dobeu.net", href: "mailto:jeremyw@dobeu.net", external: true },
+    { label: "LinkedIn", href: "https://www.linkedin.com/in/jeremy-williams", external: true },
+    { label: "Status", href: "https://status.dobeu.net", external: true },
+  ],
+  Legal: [
+    { label: "Terms", href: "/terms" },
+    { label: "Privacy", href: "/privacy" },
+    { label: "Cookies", href: "/cookies" },
+    { label: "SMS Opt-In", href: "/optin/sms" },
+    { label: "Marketing Opt-Out", href: "/marketing-opt-out" },
+  ],
+};
+
 export function SiteFooter() {
   const year = new Date().getFullYear();
+
   return (
-    <footer className="border-t border-border py-12 mt-12">
-      <div className="container max-w-6xl">
-        <div className="flex flex-col md:flex-row gap-8 md:items-start md:justify-between">
-          <div className="flex items-start gap-3 max-w-sm">
-            <DobeuMark className="h-10 w-10 shrink-0" />
-            <div>
-              <p className="font-display text-lg font-extrabold text-[hsl(var(--brand-indigo-slate))]">
-                Dobeu Tech Solutions LLC
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Ship the agent. Ship the app. Ship the brand. One operator, modern stack.
-              </p>
+    <footer className="border-t border-border/30 bg-background">
+      <div className="container max-w-6xl py-14 md:py-16">
+
+        {/* Top row: brand identity + nav columns */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10 md:gap-16 mb-12">
+          {/* Brand identity */}
+          <div className="max-w-xs">
+            <div className="flex items-center gap-2.5 mb-4">
+              <DobeuMark className="h-8 w-8 shrink-0" />
+              <div>
+                <p className="font-display text-base font-extrabold text-[hsl(var(--brand-indigo-slate))] leading-tight lowercase">
+                  dobeu.net
+                </p>
+              </div>
             </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Ship the agent. Ship the app. Ship the brand. One operator, modern stack.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground/50">
+              dobeu.net &middot; dobeu.cloud &middot; dobeutech.com
+            </p>
           </div>
 
-          <nav className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm" aria-label="Footer">
-            <div>
-              <p className="font-semibold mb-2">Site</p>
-              <ul className="space-y-1.5 text-muted-foreground">
-                <li><Link href="/#work" className="hover:text-foreground">Work</Link></li>
-                <li><Link href="/#how" className="hover:text-foreground">How it works</Link></li>
-                <li><Link href="/#about" className="hover:text-foreground">About</Link></li>
-                <li><Link href="/#faq" className="hover:text-foreground">FAQ</Link></li>
-                <li><Link href="/repos" className="hover:text-foreground">Repos</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold mb-2">Account</p>
-              <ul className="space-y-1.5 text-muted-foreground">
-                <li><Link href="/login" className="hover:text-foreground">Log in</Link></li>
-                <li><Link href="/portal" className="hover:text-foreground">Client portal</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold mb-2">Contact</p>
-              <ul className="space-y-1.5 text-muted-foreground">
-                <li><a href="mailto:jeremyw@dobeu.net" className="hover:text-foreground">jeremyw@dobeu.net</a></li>
-                <li><a href="https://www.linkedin.com/in/jeremy-williams" className="hover:text-foreground" target="_blank" rel="noreferrer">LinkedIn</a></li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold mb-2">Legal</p>
-              <ul className="space-y-1.5 text-muted-foreground">
-                <li><Link href="/terms" className="hover:text-foreground">Terms of Service</Link></li>
-                <li><Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link></li>
-                <li><Link href="/cookies" className="hover:text-foreground">Cookie Policy</Link></li>
-                <li><Link href="/optin/sms" className="hover:text-foreground">SMS Opt-In</Link></li>
-                <li><Link href="/marketing-opt-out" className="hover:text-foreground">Marketing Opt-Out</Link></li>
-              </ul>
-            </div>
+          {/* Nav grid */}
+          <nav
+            className="grid grid-cols-2 sm:grid-cols-4 gap-8"
+            aria-label="Footer navigation"
+          >
+            {Object.entries(FOOTER_LINKS).map(([group, links]) => (
+              <div key={group}>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                  {group}
+                </p>
+                <ul className="space-y-2">
+                  {links.map((link) => (
+                    <li key={link.label}>
+                      {"external" in link && link.external ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {link.label}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </nav>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-border text-xs text-muted-foreground flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+        {/* Bottom bar */}
+        <div className="pt-8 border-t border-border/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-muted-foreground/50">
           <p>
-            &copy; {year} Dobeu Tech Solutions LLC. All rights reserved.{" "}
-            <span className="opacity-60">dobeu.net &middot; dobeu.cloud &middot; dobeutech.com &middot; dobeuinc.com</span>
+            &copy; {year} Dobeu Tech Solutions LLC. All rights reserved.
           </p>
-          <div className="flex flex-wrap gap-4 items-center">
-            <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
-            <Link href="/terms" className="hover:text-foreground">Terms</Link>
-            <Link href="/cookies" className="hover:text-foreground">Cookies</Link>
+          <div className="flex items-center gap-5">
+            <Link href="/privacy" className="hover:text-muted-foreground transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-muted-foreground transition-colors">Terms</Link>
             <button
               type="button"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-muted-foreground transition-colors"
               onClick={() => {
-                if (typeof window !== "undefined" && (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences) {
+                if (
+                  typeof window !== "undefined" &&
+                  (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences
+                ) {
                   (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences!();
                 }
               }}
             >
               Cookie preferences
             </button>
-            <a href="https://status.dobeu.net" target="_blank" rel="noreferrer" className="hover:text-foreground">
-              Status
-            </a>
           </div>
         </div>
       </div>
