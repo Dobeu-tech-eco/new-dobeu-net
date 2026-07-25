@@ -9,19 +9,19 @@ const STEPS = [
     num: "01",
     icon: CalendarCheck,
     label: "30-min discovery",
-    body: "We talk through what you're trying to ship, what's blocking it, and whether I'm the right person. No pitch, no slide deck.",
+    body: "We talk through what you're trying to ship, what's in the way, and whether I'm the right person. No pitch, no slide deck.",
   },
   {
     num: "02",
     icon: FileText,
     label: "Scoped proposal",
-    body: "Within 48 hours: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine — your call.",
+    body: "Within 48 hours, you get a one-pager: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine.",
   },
   {
     num: "03",
     icon: Rocket,
     label: "Ship in 2–6 weeks",
-    body: "Daily Loom updates, your private portal for files + invoices, async-first. Most projects ship in a single sprint.",
+    body: "Daily Loom updates, your private portal for files + invoices, async-first communication. Most projects ship in a single sprint.",
   },
 ];
 

@@ -9,16 +9,16 @@ import { useMotionProps, FADE_UP, FADE } from "@/hooks/use-motion-props";
 
 const REASONS = [
   {
-    headline: "You talk to the builder.",
-    body: "No account managers between you and the person doing the work. Every question goes directly to the engineer.",
+    headline: "You talk to the person doing the work.",
+    body: "No account managers between you and the build.",
   },
   {
-    headline: "Decisions in hours, not weeks.",
-    body: "No agency layers, no rebrand committees. I move fast because there's no org structure slowing things down.",
+    headline: "Decisions get made in hours, not weeks.",
+    body: "No agency layers, no rebrand committees.",
   },
   {
     headline: "Modern stack from day one.",
-    body: "Nothing you'll have to rewrite in 18 months. Every deliverable is documented, handed off, and yours.",
+    body: "Nothing you'll have to rewrite in 18 months.",
   },
 ];
 

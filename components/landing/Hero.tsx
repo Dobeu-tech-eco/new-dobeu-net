@@ -396,7 +396,7 @@ export function Hero() {
                 onClick={() => trackAndOpen("book", "Book a call — hero")}
                 className="group w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-7 shadow-amber-glow/20"
               >
-                Book a free call
+                Book a call
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
               </Button>
               <Button

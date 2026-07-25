@@ -43,9 +43,9 @@ const SERVICES: ServiceItem[] = [
   {
     num: "04",
     icon: LineChart,
-    title: "Growth engineering",
+    title: "Marketing & growth engineering",
     description:
-      "Programmatic SEO, GA4/PostHog attribution, lifecycle automation, paid-ads infra.",
+      "Programmatic SEO, GA4/PostHog/Mixpanel attribution, lifecycle automation, paid-ads infra.",
     detail: "Turn traffic into pipeline — measurably.",
   },
 ];
@@ -68,7 +68,7 @@ export function Services() {
         >
           <div className="max-w-xl">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
-              What I ship
+              The Dobeu Universe
             </p>
             <h2
               id="work-heading"
@@ -79,11 +79,13 @@ export function Services() {
               <span className="text-muted-foreground/50">built on partnership.</span>
             </h2>
           </div>
-          <p className="max-w-sm text-sm text-muted-foreground leading-relaxed md:text-right">
+          <p className="max-w-md text-sm text-muted-foreground leading-relaxed md:text-right">
             Most engagements blend a few of these. What you&apos;re really
-            hiring isn&apos;t a checklist — it&apos;s a partner. I take on a
-            small number of clients at a time, transfer everything I build into
-            your hands, and stay on as a long-term IT advisor well past launch.
+            hiring, though, isn&apos;t a checklist — it&apos;s a partner. I take
+            on a small number of clients at a time, transfer everything I build
+            into your hands, and stay on as a long-term IT advisor well past
+            launch. If we&apos;re a fit, I&apos;ll say so honestly — and if not,
+            I&apos;ll tell you that too.
           </p>
         </motion.div>
 

@@ -58,7 +58,7 @@ export function FinalCTA() {
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10 max-w-lg">
                 30 minutes. No pitch. We&apos;ll figure out together whether
                 I&apos;m the right person to ship what you&apos;re trying to
-                ship — and if not, I&apos;ll point you somewhere good.
+                ship.
               </p>
 
               {/* CTA buttons */}
@@ -69,7 +69,7 @@ export function FinalCTA() {
                   className="group w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8"
                 >
                   <CalendarDays className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Book a free call
+                  Book a call
                   <ArrowRight
                     className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5"
                     aria-hidden="true"
@@ -82,7 +82,7 @@ export function FinalCTA() {
                   className="w-full sm:w-auto font-medium px-8"
                 >
                   <Mail className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Or just drop your email
+                  Or just send your email
                 </Button>
               </div>
             </div>
