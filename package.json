@@ -2,6 +2,7 @@
   "name": "new-dobeu-net",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "description": "dobeu.net v3 — Next.js 15 marketing landing + minimal client portal for Dobeu Tech Solutions",
   "scripts": {
     "dev": "next dev",
