@@ -20,6 +20,7 @@
     "verify": "pnpm type-check && pnpm lint && pnpm test:ci && pnpm build:strict"
   },
   "dependencies": {
+    "@amplitude/unified": "^1.1.27",
     "@datadog/browser-logs": "5.35.1",
     "@datadog/browser-rum": "5.35.1",
     "@hookform/resolvers": "^3.10.0",

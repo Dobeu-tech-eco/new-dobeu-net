@@ -2,7 +2,20 @@
 
 import { useState, useRef, FormEvent, KeyboardEvent } from "react";
 import Image from "next/image";
-import { Star, GitFork, Eye, AlertCircle, ExternalLink, Globe, Lock, Archive, X, Plus, Clock } from "lucide-react";
+import {
+  Star,
+  GitFork,
+  Eye,
+  AlertCircle,
+  ExternalLink,
+  Globe,
+  Lock,
+  Archive,
+  X,
+  Plus,
+  Clock,
+  Github,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,29 +108,29 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
     .slice(0, 8);
 
   return (
-    <article className="relative group rounded-xl border border-border bg-card p-5 flex flex-col gap-4 transition-shadow hover:shadow-lg">
+    <article className="relative group rounded-xl border border-border bg-card p-5 flex flex-col gap-4 transition-all duration-200 hover:border-primary/30 hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.12),0_4px_24px_hsl(var(--primary)/0.08)]">
       {/* Remove button */}
       <button
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${repo.full_name}`}
-        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
+        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
       >
         <X className="h-3.5 w-3.5" />
       </button>
 
       {/* Header */}
-      <div className="flex items-start gap-3 pr-6">
-        <a href={repo.owner.html_url} target="_blank" rel="noreferrer" tabIndex={-1}>
+      <div className="flex items-start gap-3 pr-7">
+        <a href={repo.owner.html_url} target="_blank" rel="noreferrer" tabIndex={-1} className="flex-shrink-0">
           <Image
             src={repo.owner.avatar_url}
             alt={repo.owner.login}
             width={36}
             height={36}
-            className="rounded-full border border-border flex-shrink-0"
+            className="rounded-lg border border-border"
           />
         </a>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <a
             href={repo.html_url}
             target="_blank"
@@ -125,24 +138,28 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
             className="font-display font-bold text-base leading-tight hover:text-primary transition-colors flex items-center gap-1.5 flex-wrap"
           >
             {repo.full_name}
-            <ExternalLink className="h-3 w-3 opacity-50 flex-shrink-0" aria-hidden="true" />
+            <ExternalLink className="h-3 w-3 opacity-40 flex-shrink-0" aria-hidden="true" />
           </a>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {repo.archived && (
-              <span className="inline-flex items-center gap-1 text-xs text-amber-500">
-                <Archive className="h-3 w-3" aria-hidden="true" /> Archived
+              <span className="inline-flex items-center gap-1 text-xs text-amber-500 font-medium">
+                <Archive className="h-3 w-3" aria-hidden="true" />
+                Archived
               </span>
             )}
             {repo.visibility === "private" ? (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <Lock className="h-3 w-3" aria-hidden="true" /> Private
+                <Lock className="h-3 w-3" aria-hidden="true" />
+                Private
               </span>
             ) : (
-              <span className="text-xs text-muted-foreground capitalize">{repo.visibility}</span>
+              <span className="text-xs text-muted-foreground/60 capitalize">{repo.visibility}</span>
             )}
-            {repo.fork && <span className="text-xs text-muted-foreground">Fork</span>}
+            {repo.fork && <span className="text-xs text-muted-foreground/60">Fork</span>}
             {repo.license && (
-              <span className="text-xs text-muted-foreground">{repo.license.spdx_id}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-mono">
+                {repo.license.spdx_id}
+              </span>
             )}
           </div>
         </div>
@@ -150,7 +167,7 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
 
       {/* Description */}
       {repo.description && (
-        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
           {repo.description}
         </p>
       )}
@@ -158,14 +175,17 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
       {/* Topics */}
       {repo.topics.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {repo.topics.slice(0, 10).map((t) => (
-            <Badge key={t} className="text-xs px-2 py-0.5 font-normal bg-muted text-muted-foreground hover:bg-muted border-transparent">
+          {repo.topics.slice(0, 8).map((t) => (
+            <Badge
+              key={t}
+              className="text-xs px-2 py-0.5 font-normal rounded-md bg-primary/8 text-primary border-transparent hover:bg-primary/14"
+            >
               {t}
             </Badge>
           ))}
-          {repo.topics.length > 10 && (
+          {repo.topics.length > 8 && (
             <span className="text-xs text-muted-foreground self-center">
-              +{repo.topics.length - 10} more
+              +{repo.topics.length - 8}
             </span>
           )}
         </div>
@@ -174,11 +194,18 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
       {/* Language bar */}
       {topLangs.length > 0 && (
         <div>
-          <div className="flex h-2 rounded-full overflow-hidden gap-0.5" role="img" aria-label="Language breakdown">
+          <div
+            className="flex h-1.5 rounded-full overflow-hidden gap-px"
+            role="img"
+            aria-label="Language breakdown"
+          >
             {topLangs.map(([lang, bytes]) => (
               <div
                 key={lang}
-                style={{ width: `${(bytes / totalBytes) * 100}%`, backgroundColor: langColor(lang) }}
+                style={{
+                  width: `${(bytes / totalBytes) * 100}%`,
+                  backgroundColor: langColor(lang),
+                }}
                 title={`${lang}: ${Math.round((bytes / totalBytes) * 100)}%`}
               />
             ))}
@@ -187,12 +214,12 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
             {topLangs.slice(0, 5).map(([lang, bytes]) => (
               <span key={lang} className="flex items-center gap-1 text-xs text-muted-foreground">
                 <span
-                  className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0"
+                  className="inline-block h-2 w-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: langColor(lang) }}
                   aria-hidden="true"
                 />
                 {lang}
-                <span className="opacity-60">{Math.round((bytes / totalBytes) * 100)}%</span>
+                <span className="opacity-50">{Math.round((bytes / totalBytes) * 100)}%</span>
               </span>
             ))}
           </div>
@@ -200,40 +227,42 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
       )}
 
       {/* Stats row */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground border-t border-border pt-3 mt-auto flex-wrap">
-        <span className="flex items-center gap-1">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground border-t border-border/60 pt-3 mt-auto flex-wrap">
+        <span className="flex items-center gap-1 tabular-nums">
           <Star className="h-3.5 w-3.5" aria-hidden="true" />
           {formatCount(repo.stargazers_count)}
         </span>
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1 tabular-nums">
           <GitFork className="h-3.5 w-3.5" aria-hidden="true" />
           {formatCount(repo.forks_count)}
         </span>
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1 tabular-nums">
           <Eye className="h-3.5 w-3.5" aria-hidden="true" />
           {formatCount(repo.watchers_count)}
         </span>
         {repo.open_issues_count > 0 && (
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 tabular-nums">
             <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
-            {formatCount(repo.open_issues_count)} issues
+            {formatCount(repo.open_issues_count)}
           </span>
         )}
-        {repo.homepage && (
-          <a
-            href={repo.homepage}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1 hover:text-foreground transition-colors ml-auto"
-          >
-            <Globe className="h-3.5 w-3.5" aria-hidden="true" />
-            Site
-          </a>
-        )}
-        <span className="flex items-center gap-1 ml-auto">
-          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-          {timeAgo(repo.pushed_at)}
-        </span>
+        <div className="flex items-center gap-2 ml-auto">
+          {repo.homepage && (
+            <a
+              href={repo.homepage}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <Globe className="h-3.5 w-3.5" aria-hidden="true" />
+              Site
+            </a>
+          )}
+          <span className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+            {timeAgo(repo.pushed_at)}
+          </span>
+        </div>
       </div>
     </article>
   );
@@ -253,7 +282,6 @@ export function ReposClient() {
     const q = input.trim();
     if (!q) return;
 
-    // Prevent duplicates
     const normalised = q.replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, "");
     const already = repos.some(
       (r) => r.full_name.toLowerCase() === normalised.toLowerCase()
@@ -284,7 +312,7 @@ export function ReposClient() {
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") handleSubmit();
+    if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSubmit();
   }
 
   function removeRepo(id: number) {
@@ -293,49 +321,65 @@ export function ReposClient() {
 
   return (
     <section className="container max-w-5xl py-16 md:py-24">
-      {/* Hero */}
-      <div className="mb-12 max-w-2xl">
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-balance mb-4">
+      {/* Page header */}
+      <div className="mb-10 max-w-2xl">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
+          Tools
+        </p>
+        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-balance mb-3">
           GitHub Repo Viewer
         </h1>
-        <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-          Paste a GitHub URL or <code className="font-mono text-sm bg-muted px-1.5 py-0.5 rounded">owner/repo</code> shorthand.
-          Instantly see stats, language breakdown, topics, and more.
+        <p className="text-base text-muted-foreground leading-relaxed">
+          Paste a full GitHub URL or{" "}
+          <code className="font-mono text-sm bg-muted px-1.5 py-0.5 rounded-md">
+            owner/repo
+          </code>{" "}
+          shorthand. Instantly see stats, language breakdown, topics, and more.
         </p>
       </div>
 
       {/* Input form */}
-      <form onSubmit={handleSubmit} className="flex gap-2 max-w-2xl mb-4">
+      <form onSubmit={handleSubmit} className="flex gap-2 max-w-2xl mb-2">
         <Input
           ref={inputRef}
           value={input}
-          onChange={(e) => { setInput(e.target.value); setError(null); }}
+          onChange={(e) => {
+            setInput(e.target.value);
+            setError(null);
+          }}
           onKeyDown={handleKeyDown}
-          placeholder="https://github.com/owner/repo  or  owner/repo"
+          placeholder="github.com/owner/repo  or  owner/repo"
           aria-label="GitHub repository URL or owner/repo"
-          className="font-mono text-sm flex-1"
+          className="font-mono text-sm flex-1 rounded-xl"
           disabled={loading}
           autoComplete="off"
           spellCheck={false}
         />
-        <Button type="submit" disabled={loading || !input.trim()}>
+        <Button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="rounded-xl gap-1.5"
+        >
           {loading ? (
-            <span className="flex items-center gap-2">
-              <span className="h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+            <>
+              <span
+                className="h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"
+                aria-hidden="true"
+              />
               Loading
-            </span>
+            </>
           ) : (
-            <span className="flex items-center gap-1.5">
+            <>
               <Plus className="h-4 w-4" aria-hidden="true" />
               Add repo
-            </span>
+            </>
           )}
         </Button>
       </form>
 
       {/* Error */}
       {error && (
-        <p role="alert" className="flex items-center gap-2 text-sm text-destructive mb-6">
+        <p role="alert" className="flex items-center gap-2 text-sm text-destructive mb-6 mt-2">
           <AlertCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           {error}
         </p>
@@ -343,15 +387,13 @@ export function ReposClient() {
 
       {/* Empty state */}
       {repos.length === 0 && !loading && (
-        <div className="mt-16 flex flex-col items-center gap-3 text-muted-foreground">
-          <div className="h-14 w-14 rounded-2xl border border-border flex items-center justify-center bg-muted/40">
-            <svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-            </svg>
+        <div className="mt-20 flex flex-col items-center gap-3 text-center">
+          <div className="h-16 w-16 rounded-2xl border border-border bg-muted/30 flex items-center justify-center">
+            <Github className="h-8 w-8 text-muted-foreground/50" aria-hidden="true" />
           </div>
-          <p className="text-sm font-medium">No repos linked yet</p>
-          <p className="text-xs text-center max-w-xs">
-            Add a GitHub repo above to see its full stats, language breakdown, topics, and more.
+          <p className="font-semibold text-sm">No repos added yet</p>
+          <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+            Add a GitHub repo above to see its stats, language breakdown, topics, and last push time.
           </p>
         </div>
       )}
@@ -359,13 +401,15 @@ export function ReposClient() {
       {/* Grid */}
       {repos.length > 0 && (
         <>
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-xs text-muted-foreground mb-4 mt-1 tabular-nums">
             {repos.length} repo{repos.length !== 1 ? "s" : ""} linked
           </p>
-          <div className={cn(
-            "grid gap-4",
-            repos.length === 1 ? "grid-cols-1 max-w-xl" : "md:grid-cols-2"
-          )}>
+          <div
+            className={cn(
+              "grid gap-4",
+              repos.length === 1 ? "grid-cols-1 max-w-xl" : "md:grid-cols-2"
+            )}
+          >
             {repos.map((repo) => (
               <RepoCard key={repo.id} repo={repo} onRemove={() => removeRepo(repo.id)} />
             ))}
