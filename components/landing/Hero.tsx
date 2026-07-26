@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence, useInView } from "motion/react";
 import {
@@ -414,17 +413,19 @@ export function Hero() {
             className="flex flex-col items-center gap-5 w-full md:w-[280px]"
             aria-label="About Jeremy Williams"
           >
-            {/* Avatar */}
+            {/* Initials monogram */}
             <div className="relative">
-              <div className="h-20 w-20 rounded-2xl overflow-hidden ring-2 ring-border/40 shadow-lg">
-                <Image
-                  src={FOUNDER.avatar}
-                  alt={`${FOUNDER.name}, ${FOUNDER.title} at Dobeu`}
-                  fill
-                  sizes="80px"
-                  className="object-cover object-top"
-                  priority
-                />
+              <div
+                className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 ring-2 ring-border/40 shadow-lg"
+                aria-hidden="true"
+              >
+                <span className="font-display text-2xl font-extrabold tracking-tight text-primary">
+                  {FOUNDER.name
+                    .split(" ")
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)}
+                </span>
               </div>
               <span
                 className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.45)]"
