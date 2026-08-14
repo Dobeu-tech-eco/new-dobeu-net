@@ -13,36 +13,13 @@ install_vercel_cli() {
   npm install -g vercel@latest
 }
 
-link_vercel_project() {
-  if [[ -z "${VERCEL_TOKEN:-}" ]]; then
-    echo "VERCEL_TOKEN not set — skipping vercel link and env pull."
-    return 0
-  fi
-
-  vercel link --yes \
-    --project new-dobeu-net \
-    --scope dobeutechnology \
-    --token "${VERCEL_TOKEN}"
-
-  vercel env pull .env.local --yes --token "${VERCEL_TOKEN}" || {
-    echo "vercel env pull failed (non-fatal); continuing without .env.local"
-  }
-}
-
-verify_vercel_connect() {
-  if [[ -z "${VERCEL_TOKEN:-}" ]]; then
-    return 0
-  fi
-
-  if vercel connect list --token "${VERCEL_TOKEN}" 2>/dev/null | grep -q .; then
-    echo "Vercel Connect connectors are available for this project."
-  else
-    echo "No Vercel Connect connectors found — run: vercel connect create github"
-  fi
-}
-
 install_vercel_cli
 corepack enable >/dev/null 2>&1 || true
 pnpm install --frozen-lockfile
-link_vercel_project
-verify_vercel_connect
+
+if [[ -n "${VERCEL_TOKEN:-}" ]]; then
+  bash scripts/pull-vercel-env.sh .env.local
+else
+  echo "VERCEL_TOKEN not set — skipping vercel env pull (.env.local unchanged)."
+  echo "GitHub access: use Composio MCP (github toolkit, account github_big-lain for Dobeu-tech-eco)."
+fi
