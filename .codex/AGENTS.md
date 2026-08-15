@@ -2,6 +2,10 @@
 
 This supplements the root `AGENTS.md` with a repo-local ECC baseline.
 
+## Autonomous Loop Protocol
+
+For the full Grok Build + MCP orchestration workflow (7 checkpoints, subagent order, START/END notes), see [`.codex/autonomous-loop.md`](./autonomous-loop.md).
+
 ## Repo Skill
 
 - Repo-generated Codex skill: `.agents/skills/new-dobeu-net/SKILL.md`
