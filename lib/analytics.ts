@@ -19,8 +19,10 @@ type EventProps = Record<string, string | number | boolean | null | undefined>;
 // Lazily-resolved SDK singletons. Stay null until init runs in the browser.
 type PostHog = typeof import("posthog-js")["default"];
 type Mixpanel = typeof import("mixpanel-browser")["default"];
+type Amplitude = typeof import("@amplitude/unified");
 let posthog: PostHog | null = null;
 let mixpanel: Mixpanel | null = null;
+let amplitude: Amplitude | null = null;
 
 let initialized = false;
 let consentGranted = false;
@@ -60,6 +62,18 @@ export async function initAnalytics(consent: boolean): Promise<void> {
     });
   }
 
+  // ---- Amplitude (analytics + session replay via @amplitude/unified) ----
+  // Initialized once, client-side only. autocapture records clicks / page views;
+  // sampleRate:1 records every session for full replay coverage.
+  {
+    const mod = await import("@amplitude/unified");
+    amplitude = mod;
+    amplitude.initAll("7592b9266570a49b68a07e8d3b027915", {
+      analytics: { autocapture: true },
+      sessionReplay: { sampleRate: 1 }
+    });
+  }
+
   // ---- GA4 (via gtag) and GTM are loaded via <Script> in app/layout.tsx ----
 
   initialized = true;
@@ -76,6 +90,7 @@ export function track(eventName: string, props: EventProps = {}): void {
   try {
     if (posthog && process.env.NEXT_PUBLIC_POSTHOG_KEY) posthog.capture(eventName, props);
     if (mixpanel && process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) mixpanel.track(eventName, props);
+    if (amplitude) amplitude.track(eventName, props);
     if (typeof window.gtag === "function") {
       window.gtag("event", eventName, props);
     }
