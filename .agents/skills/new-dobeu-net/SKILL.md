@@ -98,23 +98,23 @@ chore: security hardening, dependency remediation, error pages, and API test cov
 
 ## Architecture
 
-### Project Structure: Monorepo
+### Project Structure: Single Next.js App
 
-This project uses **hybrid** module organization.
+One Next.js 15 project (single `package.json`). Three surfaces share `app/`: public marketing (`/`), client portal (`/portal/*`), and admin (`/admin/*`). See `CLAUDE.md` for the full architecture map.
 
 ### Configuration Files
 
-- `containers/function/Dockerfile`
 - `package.json`
 - `vercel.json`
 - `vitest.config.ts`
-- `next.config.js`
 - `next.config.ts`
+- `playwright.config.ts`
+- `tailwind.config.ts`
 
 ### Guidelines
 
-- This project uses a hybrid organization
 - Follow existing patterns when adding new code
+- Canonical architecture and commands live in `CLAUDE.md`
 
 ## Code Style
 
@@ -129,7 +129,7 @@ This project uses **hybrid** module organization.
 | Classes | PascalCase |
 | Constants | SCREAMING_SNAKE_CASE |
 
-### Import Style: Path Aliases (@/, ~/)
+### Import Style: Path Aliases (`@/*`)
 
 ### Export Style: Mixed Style
 
@@ -154,20 +154,23 @@ import { api } from '@/lib/api'
 - **Unit tests**: Test individual functions and components in isolation
 - **Integration tests**: Test interactions between multiple components/services
 
-### Mocking: vi.mock
+### Mocking
 
+- **`lib/actions/*.test.ts`**: use `buildStubClient()` from `lib/actions/__test-helpers.ts` — do not `vi.mock("@supabase/...")`.
+- **Other tests**: `vi.mock` is fine when appropriate.
 
-*Test file structure*
+*Server-action test pattern*
 
 ```typescript
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from "vitest";
+import { buildStubClient } from "./__test-helpers";
 
-describe('MyFunction', () => {
-  it('should return expected result', () => {
-    const result = myFunction(input)
-    expect(result).toBe(expected)
-  })
-})
+describe("createProject", () => {
+  it("returns ok on success", async () => {
+    const client = buildStubClient({ tables: { projects: { insert: { data: { id: "1" }, error: null } } } });
+    // ...
+  });
+});
 ```
 
 ## Error Handling
