@@ -9,6 +9,8 @@ This file is intentionally a thin pointer because some tools discover instructio
 Sibling pointer files:
 - `GEMINI.md`
 - `.github/copilot-instructions.md`
+- `.codex/AGENTS.md` — Codex CLI baseline and ECC tooling
+- `.codex/autonomous-loop.md` — full autonomous loop protocol (Grok Build + MCP)
 
 If guidance changes, update `CLAUDE.md` and keep this file minimal.
 
