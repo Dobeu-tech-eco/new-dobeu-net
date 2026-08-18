@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import {
   Accordion,
   AccordionContent,
@@ -7,11 +8,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { safeJsonLdStringify } from "@/lib/utils";
+import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 
 const FAQS = [
   {
     q: "What's the typical engagement size?",
-    a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. I send a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing.",
+    a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. You get a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing.",
   },
   {
     q: "How fast can you start?",
@@ -19,7 +21,7 @@ const FAQS = [
   },
   {
     q: "Do you do retainers?",
-    a: "Occasionally — for ongoing automation work, agent maintenance, or growth engineering. Discovery call is the right place to scope this.",
+    a: "Occasionally — for ongoing automation work, agent maintenance, or growth engineering. The discovery call is the right place to scope this.",
   },
   {
     q: "Where will the code live?",
@@ -39,12 +41,13 @@ const FAQS = [
   },
   {
     q: "Why \"dobeu\"?",
-    a: "Two readings at once. Say it out loud — it's my last initial, W, spelled phonetically (\"dub-el-u\"). It's also \"Do Be You\": we handle the technical backend so you get to be you — focused on running your business, not wrangling your stack. The two overlapping circles in the mark are those two meanings merging, with an amber crescent at the intersection where the work happens.",
+    a: "Two readings at once. Say it out loud — it's my last initial W, spelled phonetically (\"dub-el-u\"). It's also \"Do Be You\": we handle the technical backend so you get to focus on running your business.",
   },
 ];
 
 export function FAQ() {
-  // JSON-LD for AI Overviews + featured snippets
+  const mp = useMotionProps(FADE_UP);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -56,29 +59,78 @@ export function FAQ() {
   };
 
   return (
-    <section id="faq" aria-labelledby="faq-heading" className="py-20 md:py-28">
-      <div className="container max-w-3xl">
-        <div className="text-center mb-12">
-          <h2
-            id="faq-heading"
-            className="font-display text-3xl md:text-5xl font-bold tracking-tight"
+    <section
+      id="faq"
+      aria-labelledby="faq-heading"
+      className="py-24 md:py-32 border-t border-border/25"
+    >
+      <div className="container max-w-6xl">
+        <div className="grid md:grid-cols-[280px_1fr] gap-10 md:gap-20 items-start">
+
+          {/* Left: sticky header */}
+          <motion.div
+            initial={mp.initial}
+            whileInView={mp.whileInView}
+            viewport={mp.viewport}
+            transition={{ duration: 0.45 }}
+            className="md:sticky md:top-24"
           >
-            FAQ
-          </h2>
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
+              Questions
+            </p>
+            <h2
+              id="faq-heading"
+              className="font-display text-3xl md:text-4xl font-extrabold tracking-tight leading-[1.05] text-balance"
+            >
+              Everything
+              <br />
+              <span className="text-muted-foreground/40">you need to know.</span>
+            </h2>
+            <p className="mt-5 text-sm text-muted-foreground leading-relaxed">
+              Still have questions? Drop me a line at{" "}
+              <a
+                href="mailto:jeremyw@dobeu.net"
+                className="text-primary hover:underline underline-offset-4 font-medium"
+              >
+                jeremyw@dobeu.net
+              </a>
+              .
+            </p>
+
+            {/* Count pill */}
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
+              <span className="font-mono font-bold text-foreground">{FAQS.length}</span>
+              questions answered
+            </div>
+          </motion.div>
+
+          {/* Right: accordion */}
+          <motion.div
+            initial={mp.initial}
+            whileInView={mp.whileInView}
+            viewport={mp.viewport}
+            transition={{ duration: 0.45, delay: 0.1 }}
+          >
+            <Accordion type="single" collapsible className="w-full">
+              {FAQS.map((f, i) => (
+                <AccordionItem
+                  key={i}
+                  value={`item-${i}`}
+                  className="border-border/30 last:border-b-0"
+                >
+                  <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline py-5 gap-4 [&>svg]:shrink-0 [&>svg]:text-primary/60">
+                    {f.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-5 pr-6">
+                    {f.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </motion.div>
         </div>
-        <Accordion type="single" collapsible className="w-full">
-          {FAQS.map((f, i) => (
-            <AccordionItem key={i} value={`item-${i}`}>
-              <AccordionTrigger>
-                <span>{f.q}</span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <span>{f.a}</span>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
       </div>
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}

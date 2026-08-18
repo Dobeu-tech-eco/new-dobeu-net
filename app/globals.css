@@ -3,54 +3,68 @@
 @tailwind utilities;
 
 /* ============================================================================
- * Dobeu Design System v2 — CSS variables
- * Mirror of @dobeu/tokens (see C:/Users/jswil/dobeu-eco/figma-design/dobeu-design-system/packages/tokens)
+ * Dobeu Design System v3 — CSS variables
+ * Palette refresh: Deep Violet primary, Coral Amber CTA, Void dark canvas.
  * Values are HSL components (no hsl() wrapper) so Tailwind's `hsl(var(--x))` works.
- * Brand colors (indigo) NEVER change across themes. Only accent + active motif shift per property.
+ * Brand colors NEVER hardcoded in components — always via token → Tailwind.
+ * ============================================================================
+ *
+ * Core 5 brand colors:
+ *   Deep Violet  #5B4FD9  hsl(245, 63%, 58%)   ← primary (replaces indigo #6B5CE7)
+ *   Coral Amber  #F59555  hsl(24, 89%, 64%)    ← CTA accent dark (replaces #F4A261)
+ *   Void         #111120  hsl(243, 30%, 10%)   ← dark canvas (replaces #1A1A2E)
+ *   Slate        #4A42A0  hsl(244, 42%, 44%)   ← wordmark / light headings
+ *   Clean White  #FAFAFA  hsl(0, 0%, 98%)      ← light canvas
  * ============================================================================ */
 
 @layer base {
   :root {
-    /* ---- Raw Dobeu palette (HSL) ----
-       Indigo 500 = #6B5CE7  → hsl(249, 73%, 63%)
-       Indigo 700 = #4A3FA8  → hsl(247, 46%, 45%)
-       Amber 500  = #F4A261  → hsl(27, 88%, 67%)
-       Ink 900    = #1A1A2E  → hsl(240, 28%, 14%)
-       Paper 50   = #FAFAFC  → hsl(240, 22%, 99%) */
+    /* ---- Raw Dobeu palette (HSL) — v3 ---- */
+    --dobeu-violet-50:  245 70% 97%;
+    --dobeu-violet-100: 245 68% 93%;
+    --dobeu-violet-200: 245 66% 86%;
+    --dobeu-violet-300: 245 64% 76%;
+    --dobeu-violet-400: 245 63% 68%;
+    --dobeu-violet-500: 245 63% 58%;   /* #5B4FD9 — primary brand */
+    --dobeu-violet-600: 244 54% 50%;
+    --dobeu-violet-700: 244 42% 44%;   /* #4A42A0 — slate */
+    --dobeu-violet-800: 244 38% 34%;
+    --dobeu-violet-900: 243 36% 24%;
 
-    --dobeu-indigo-50: 249 80% 96%;
-    --dobeu-indigo-100: 249 78% 92%;
-    --dobeu-indigo-200: 249 76% 84%;
-    --dobeu-indigo-300: 249 74% 76%;
-    --dobeu-indigo-400: 249 73% 68%;
-    --dobeu-indigo-500: 249 73% 63%;
-    --dobeu-indigo-600: 248 60% 56%;
-    --dobeu-indigo-700: 247 46% 45%;
-    --dobeu-indigo-800: 246 40% 35%;
-    --dobeu-indigo-900: 245 38% 26%;
+    /* Keep legacy indigo aliases pointing to new violet for smooth migration */
+    --dobeu-indigo-50:  var(--dobeu-violet-50);
+    --dobeu-indigo-100: var(--dobeu-violet-100);
+    --dobeu-indigo-200: var(--dobeu-violet-200);
+    --dobeu-indigo-300: var(--dobeu-violet-300);
+    --dobeu-indigo-400: var(--dobeu-violet-400);
+    --dobeu-indigo-500: var(--dobeu-violet-500);
+    --dobeu-indigo-600: var(--dobeu-violet-600);
+    --dobeu-indigo-700: var(--dobeu-violet-700);
+    --dobeu-indigo-800: var(--dobeu-violet-800);
+    --dobeu-indigo-900: var(--dobeu-violet-900);
 
-    --dobeu-amber-500: 27 88% 67%;
-    --dobeu-amber-600: 22 70% 58%;
+    --dobeu-amber-500: 24 89% 64%;    /* #F59555 — coral amber (v3) */
+    --dobeu-amber-600: 20 74% 55%;
 
-    --dobeu-ink-900: 240 28% 14%;
-    --dobeu-paper-50: 240 22% 99%;
+    --dobeu-ink-900:  243 30% 10%;    /* #111120 — void dark canvas (v3) */
+    --dobeu-paper-50: 0 0% 98%;       /* #FAFAFA — clean white (v3) */
 
-    /* ---- v2 brand primitives (Design System v2) ---- */
-    /* Indigo Slate #5A4FAB — wordmark color + light-mode heading color */
-    --brand-indigo-slate: 247 38% 49%;
-    /* Cream Soft #FFF8F0 — light-mode secondary surface */
-    --brand-cream-soft: 36 100% 97%;
+    /* ---- v3 brand primitives ---- */
+    /* Slate #4A42A0 — wordmark color + light-mode heading color */
+    --brand-indigo-slate: 244 42% 44%;
+    /* Light canvas */
+    --brand-cream-soft: 0 0% 100%;
     /* Borders */
-    --brand-border-light: 247 60% 92%; /* #E0DFF5 */
-    --brand-border-dark: 245 24% 22%; /* #2A2A45 */
-    /* 10% tints (for badges, pills, soft fills) */
-    --brand-tint-indigo-10: 250 70% 95%; /* #E8E5FA */
-    --brand-tint-amber-10: 30 90% 94%; /* #FEF0E0 */
-    /* Heading-specific foreground (slate by default in light mode) */
+    --brand-border-light: 245 55% 91%; /* light violet-tinted rule */
+    --brand-border-dark:  243 22% 19%; /* dark void-tinted rule */
+    /* 10% tints (badges, pills, soft fills) */
+    --brand-tint-indigo-10: 245 62% 95%;
+    --brand-tint-amber-10:  24 90% 94%;
+    /* Heading foreground (slate in light, paper in dark) */
     --fg-heading: var(--brand-indigo-slate);
 
-    /* ---- Light theme (default for dobeu.net) ---- */
-    --background: 0 0% 100%; /* pure white per brand canvas spec */
+    /* ---- Light theme ---- */
+    --background: 0 0% 100%;
     --foreground: var(--dobeu-ink-900);
 
     --card: 0 0% 100%;
@@ -59,60 +73,59 @@
     --popover: 0 0% 100%;
     --popover-foreground: var(--dobeu-ink-900);
 
-    --primary: var(--dobeu-indigo-500);
+    --primary: var(--dobeu-violet-500);
     --primary-foreground: var(--dobeu-paper-50);
 
-    --secondary: var(--brand-cream-soft);
+    --secondary: 240 6% 97%;
     --secondary-foreground: var(--dobeu-ink-900);
 
     --accent: var(--dobeu-amber-500);
     --accent-foreground: var(--dobeu-ink-900);
 
-    --muted: 240 10% 96%;
-    --muted-foreground: 240 6% 40%;
+    --muted: 240 8% 96%;
+    --muted-foreground: 243 6% 40%;
 
     --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
     --border: var(--brand-border-light);
     --input: var(--brand-border-light);
-    --ring: var(--dobeu-indigo-500);
+    --ring: var(--dobeu-violet-500);
 
     --radius-sm: 6px;
-    --radius-md: 12px; /* v2: buttons + inputs land at 12px */
-    --radius-lg: 20px; /* v2: cards land at 20px */
+    --radius-md: 12px;
+    --radius-lg: 20px;
     --radius-xl: 24px;
     --radius-pill: 999px;
 
-    /* Elevated surface — slightly above background, used for cards/dropdowns */
-    --elevated: 0 0% 100%; /* light: same as card */
+    --elevated: 0 0% 100%;
   }
 
   .dark {
-    --background: var(--dobeu-ink-900);
+    --background: var(--dobeu-ink-900);    /* #111120 void */
     --foreground: var(--dobeu-paper-50);
 
-    /* Heading slate doesn't read on dark surfaces — fall back to paper */
+    /* Heading: fall back to paper-50 on dark */
     --fg-heading: var(--dobeu-paper-50);
 
-    --card: 240 25% 18%;
+    --card: 243 28% 15%;               /* slightly lifted above void */
     --card-foreground: var(--dobeu-paper-50);
 
-    --popover: 240 25% 16%;
+    --popover: 243 28% 13%;
     --popover-foreground: var(--dobeu-paper-50);
 
-    /* v2 CTA-swap rule: in dark mode the primary CTA flips to amber. */
+    /* v3 CTA-swap: dark-mode primary = coral amber for maximum contrast pop */
     --primary: var(--dobeu-amber-500);
     --primary-foreground: var(--dobeu-ink-900);
 
-    --secondary: 240 20% 22%;
+    --secondary: 243 24% 18%;
     --secondary-foreground: var(--dobeu-paper-50);
 
-    --accent: var(--dobeu-indigo-400);
+    --accent: var(--dobeu-violet-400);
     --accent-foreground: var(--dobeu-ink-900);
 
-    --muted: 240 20% 22%;
-    --muted-foreground: 240 8% 70%;
+    --muted: 243 22% 17%;
+    --muted-foreground: 243 8% 68%;
 
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
@@ -121,8 +134,8 @@
     --input: var(--brand-border-dark);
     --ring: var(--dobeu-amber-500);
 
-    /* Elevated surface — dark: #242440 as per Dobeu brand spec */
-    --elevated: 240 25% 18%;
+    /* Elevated surface — void + 5% lift */
+    --elevated: 243 26% 16%;
   }
 }
 
@@ -182,7 +195,15 @@
 /* ---- Utility extensions ---- */
 @layer utilities {
   .gradient-text {
-    @apply bg-gradient-to-r from-dobeu-indigo-500 to-dobeu-amber-500 bg-clip-text text-transparent;
+    background: linear-gradient(
+      to right,
+      hsl(var(--dobeu-violet-500)) 0%,
+      hsl(var(--dobeu-amber-500)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
   }
   .gradient-text-deep {
     background: linear-gradient(
