@@ -11,6 +11,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HeroShaderBackground } from "@/components/landing/HeroShaderBackground";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
 import { useMotionProps, FADE_UP, FADE } from "@/hooks/use-motion-props";
@@ -163,15 +164,7 @@ export function Hero() {
       aria-labelledby="hero-heading"
       className="relative overflow-hidden pt-16 md:pt-24 pb-20 md:pb-32"
     >
-      {/* Subtle radial glow */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-10"
-        aria-hidden="true"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 50% at 15% 60%, hsl(var(--dobeu-violet-500)/0.10), transparent 65%), radial-gradient(ellipse 50% 40% at 90% 20%, hsl(var(--dobeu-amber-500)/0.07), transparent 55%)",
-        }}
-      />
+      <HeroShaderBackground />
 
       <div className="container max-w-6xl">
         {/* Eyebrow row */}
