@@ -162,7 +162,7 @@ export function Hero() {
       ref={ref}
       id="top"
       aria-labelledby="hero-heading"
-      className="relative overflow-hidden pt-16 md:pt-24 pb-20 md:pb-32"
+      className="relative isolate overflow-hidden pt-16 md:pt-24 pb-20 md:pb-32"
     >
       <HeroShaderBackground />
 
