@@ -75,7 +75,7 @@ export function HeroShaderBackground() {
       <div ref={paletteRef} className="sr-only">
         <span className="text-background" />
         <span className="text-dobeu-violet-500" />
-        <span className="text-dobeu-violet-300 dark:text-dobeu-violet-700" />
+        <span className="text-dobeu-violet-300 dark:text-dobeu-violet-400" />
         <span className="text-dobeu-amber-500" />
       </div>
 
@@ -87,8 +87,8 @@ export function HeroShaderBackground() {
           colorBack={palette.background}
           colors={[palette.violet, palette.violetSoft, palette.amber]}
           shape="wave"
-          softness={0.7}
-          intensity={0.45}
+          softness={0.65}
+          intensity={0.58}
           noise={0.1}
           speed={0.2}
           scale={1.1}
@@ -103,7 +103,7 @@ export function HeroShaderBackground() {
        * md+ (split layout, copy on the left): fade toward the background on the
        * left where the copy sits and let the gradient bloom on the right.
        */}
-      <div className="absolute inset-0 bg-background/40 dark:bg-background/35 md:hidden" />
+      <div className="absolute inset-0 bg-background/35 dark:bg-background/30 md:hidden" />
       <div className="absolute inset-0 hidden md:block md:bg-gradient-to-r md:from-background/70 md:via-background/25 md:to-transparent dark:md:from-background/70 dark:md:via-background/20 dark:md:to-transparent" />
     </div>
   );
