@@ -96,8 +96,15 @@ export function HeroShaderBackground() {
         />
       )}
 
-      {/* Legibility scrim: fade toward the background where hero copy sits, leave the gradient visible elsewhere */}
-      <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-background/25 to-transparent dark:from-background/70 dark:via-background/20 dark:to-transparent" />
+      {/*
+       * Legibility veil.
+       * Mobile (full-width copy): a light, uniform veil keeps text readable
+       * without erasing the gradient across the single column.
+       * md+ (split layout, copy on the left): fade toward the background on the
+       * left where the copy sits and let the gradient bloom on the right.
+       */}
+      <div className="absolute inset-0 bg-background/40 dark:bg-background/35 md:hidden" />
+      <div className="absolute inset-0 hidden md:block md:bg-gradient-to-r md:from-background/70 md:via-background/25 md:to-transparent dark:md:from-background/70 dark:md:via-background/20 dark:md:to-transparent" />
     </div>
   );
 }
