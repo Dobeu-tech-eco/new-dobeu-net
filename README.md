@@ -110,24 +110,31 @@ new-dobeu-net/
 | Route | Auth | Description |
 |---|---|---|
 | `/` | public | Marketing landing with hero, services, lightbox CTA, FAQ |
+| `/privacy`, `/terms`, `/cookies` | public | Legal pages |
+| `/marketing-opt-out`, `/optin/sms` | public | Consent management |
+| `/repos` | public | GitHub project showcase |
 | `/login` | public | Magic-link auth via Supabase |
-| `/auth/callback` | public | OAuth callback handler |
+| `/auth/callback` | public | Auth callback handler (open-redirect guarded) |
 | `/portal` | required | Client dashboard |
-| `/portal/projects` | required | Project list |
-| `/portal/projects/[id]` | required | Project detail + files + invoices |
+| `/portal/projects`, `/portal/projects/[id]` | required | Project list + detail (files, invoices) |
 | `/portal/files` | required | Flat file browser with signed-URL downloads |
-| `/portal/invoices` | required | Invoice list + Stripe pay links |
-| `/portal/messages` | required | Thread with admin |
-| `/portal/settings` | required | Profile |
+| `/portal/invoices` | required | Invoice list + Stripe-hosted pay links |
+| `/portal/tickets`, `/portal/tickets/[id]` | required | Work-order ticketing (client side) |
+| `/portal/settings`, `/portal/settings/mfa` | required | Profile + TOTP MFA enrollment |
 | `/admin` | admin only | Overview: leads, bookings, MRR, users |
-| `/admin/leads` | admin only | Apollo-enriched lead table (TODO) |
-| `/admin/bookings` | admin only | Upcoming + past bookings (TODO) |
-| `/admin/users` | admin only | User list, edit, send invoice (TODO) |
-| `/api/lead` | public POST | Lead capture: Supabase + Apollo + Resend fan-out |
-| `/api/webhooks/stripe` | Stripe sig | Invoice status sync (TODO) |
-
-Routes marked `(TODO)` are scaffolded in `PLAN.md` Phase 2C but need their data layer wired
-before they render real data.
+| `/admin/leads` | admin only | Apollo-enriched lead table |
+| `/admin/bookings` | admin only | Upcoming + past bookings |
+| `/admin/users`, `/admin/users/[id]` | admin only | User list, edit, invite |
+| `/admin/projects`, `/admin/projects/[id]` | admin only | Project CRUD |
+| `/admin/invoices` | admin only | Invoice creation (Stripe-hosted) + manual-paid escape hatch |
+| `/admin/tickets`, `/admin/tickets/[id]` | admin only | Work-order ticketing (admin side: quote, update status) |
+| `/admin/analytics` | admin only | Site analytics overview |
+| `/api/lead` | public POST | Lead capture: Supabase + Apollo + Resend fan-out (Zod-validated, rate-limited) |
+| `/api/webhooks/stripe` | Stripe sig | Invoice status sync (`invoice.paid/payment_failed/finalized/voided`) |
+| `/api/webhooks/calendly` | Calendly HMAC | Booking → lead pipeline |
+| `/api/typeform/webhook` | Typeform HMAC | Typeform submission → lead pipeline |
+| `/api/github-repo` | public GET | `/repos` data source (owner/repo validated, rate-limited) |
+| `/api/agent` | admin only | Embedded Claude Agent SDK surface |
 
 ---
 

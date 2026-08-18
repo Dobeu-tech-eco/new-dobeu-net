@@ -5,14 +5,21 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { processLead } from "@/lib/leads";
 
+// Whitelisted keys only (matches app/api/typeform/webhook/route.ts) so a
+// caller can't stuff an arbitrarily large object into leads.raw_payload.
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
+
 const LeadSchema = z.object({
-  email: z.string().email(),
-  name: z.string().optional().nullable(),
-  company: z.string().optional().nullable(),
+  email: z.string().email().max(254),
+  name: z.string().max(200).optional().nullable(),
+  company: z.string().max(200).optional().nullable(),
   message: z.string().max(2000).optional().nullable(),
   source: z.enum(["book", "form", "email", "typeform", "other"]).default("other"),
-  utm: z.record(z.string()).default({}),
-  referrer: z.string().optional().nullable()
+  utm: z
+    .object(Object.fromEntries(UTM_KEYS.map((k) => [k, z.string().max(200).optional()])))
+    .partial()
+    .default({}),
+  referrer: z.string().max(2048).optional().nullable()
 });
 
 export const runtime = "nodejs";
@@ -43,7 +50,14 @@ export async function POST(request: Request) {
     company,
     message,
     source,
-    utm,
+    // Zod's optional UTM values type as `string | undefined`; processLead wants
+    // a clean Record<string, string>, so drop the undefined entries here.
+    utm: utm
+      ? (Object.fromEntries(Object.entries(utm).filter(([, v]) => v !== undefined)) as Record<
+          string,
+          string
+        >)
+      : undefined,
     referrer,
     ipHash: hashIp(ip)
   });
@@ -91,6 +105,9 @@ function hashIp(ip: string): string {
 function getClientIp(request: Request): string {
   const realIp = request.headers.get("x-real-ip")?.trim();
   if (realIp) return realIp;
-  const lastForwarded = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
-  return lastForwarded || "unknown";
+  // First entry in x-forwarded-for is the original client; each proxy hop
+  // appends its own IP after it, so the last entry is the nearest proxy, not
+  // the client. Matches the same resolution used in app/api/github-repo/route.ts.
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || "unknown";
 }
