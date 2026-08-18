@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-export const runtime = "edge";
+// nodejs required: Vercel Services does not support Edge Runtime outputs.
+export const runtime = "nodejs";
 
 const RATE_LIMIT_WINDOW_SEC = 60;
 const RATE_LIMIT_MAX = 30;

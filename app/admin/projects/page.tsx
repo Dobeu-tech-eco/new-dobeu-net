@@ -9,11 +9,16 @@ export default async function AdminProjectsPage() {
     supabase
       .from("projects")
       .select("id,title,status,total_cents,owner_user_id,started_at,delivered_at,created_at")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(200),
+    // Full owner list is needed here (not just existing project owners) so
+    // NewProjectDialog can assign a brand-new project to any client — bounded
+    // to 500 to match the same picker pattern in app/admin/invoices/page.tsx.
     supabase
       .from("profiles")
       .select("id,full_name,company")
       .order("created_at", { ascending: false })
+      .limit(500)
   ]);
 
   const ownerOptions = (owners ?? []).map((o) => ({
