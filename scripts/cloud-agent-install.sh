@@ -18,7 +18,7 @@ corepack enable >/dev/null 2>&1 || true
 pnpm install --frozen-lockfile
 
 if [[ -n "${VERCEL_TOKEN:-}" ]]; then
-  bash scripts/pull-vercel-env.sh .env.local
+  bash scripts/pull-vercel-env.sh .env.local || echo "vercel env pull failed (non-fatal); continuing without .env.local"
 else
   echo "VERCEL_TOKEN not set — skipping vercel env pull (.env.local unchanged)."
   echo "GitHub access: use Composio MCP (github toolkit, account github_big-lain for Dobeu-tech-eco)."
