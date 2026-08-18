@@ -81,22 +81,23 @@ export function HeroShaderBackground() {
 
       {canRenderShader && palette && (
         <GrainGradient
-          className="absolute inset-0 h-full w-full opacity-40 dark:opacity-55"
+          className="absolute inset-0 h-full w-full opacity-90 dark:opacity-100"
           width="100%"
           height="100%"
           colorBack={palette.background}
           colors={[palette.violet, palette.violetSoft, palette.amber]}
           shape="wave"
-          softness={0.82}
-          intensity={0.22}
-          noise={0.12}
-          speed={0.18}
-          scale={1.15}
+          softness={0.7}
+          intensity={0.45}
+          noise={0.1}
+          speed={0.2}
+          scale={1.1}
           maxPixelCount={900_000}
         />
       )}
 
-      <div className="absolute inset-0 bg-background/35 dark:bg-background/25" />
+      {/* Legibility scrim: fade toward the background where hero copy sits, leave the gradient visible elsewhere */}
+      <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-background/25 to-transparent dark:from-background/70 dark:via-background/20 dark:to-transparent" />
     </div>
   );
 }
