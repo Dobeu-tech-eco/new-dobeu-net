@@ -9,7 +9,8 @@
  */
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
+// nodejs required: Vercel Services does not support Edge Runtime outputs.
+export const runtime = "nodejs";
 export const revalidate = 300; // 5 minutes
 
 export interface GitHubEvent {

@@ -101,12 +101,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     switch (event.type) {
       case "invoice.paid": {
+        // The .neq("status","paid") guard makes this idempotent across
+        // instances: the in-memory event dedupe (lib/stripe-event-dedupe.ts)
+        // only protects a single instance, and Stripe delivers at-least-once.
+        // A repeat delivery of an already-paid invoice now matches 0 rows ->
+        // row is null -> notifyInvoicePaid no-ops, instead of re-sending the
+        // "paid" receipt email on every redelivery.
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id) {
           const { data: row } = await admin
             .from("invoices")
             .update({ status: "paid", paid_at: new Date().toISOString() })
             .eq("stripe_invoice_id", inv.id)
+            .neq("status", "paid")
             .select("id,project_id,amount_cents,currency,status")
             .single();
 
@@ -119,13 +126,16 @@ export async function POST(request: Request): Promise<NextResponse> {
         // Schema enum (invoice_status) doesn't have 'failed'/'uncollectible'
         // -- 'overdue' is the closest semantic match (invoice didn't get
         // paid). The admin email is the operational signal; the local row's
-        // status just keeps the dashboard honest.
+        // status just keeps the dashboard honest. Same idempotency guard as
+        // invoice.paid above -- a repeat delivery of an already-overdue
+        // invoice no-ops instead of re-sending the admin alert.
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id) {
           const { data: row } = await admin
             .from("invoices")
             .update({ status: "overdue" })
             .eq("stripe_invoice_id", inv.id)
+            .neq("status", "overdue")
             .select("id,project_id,amount_cents,currency,status")
             .single();
 

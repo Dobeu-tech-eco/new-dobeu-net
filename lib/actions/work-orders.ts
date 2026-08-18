@@ -419,7 +419,13 @@ export async function acceptWorkOrderQuote(
     return { ok: false, error: "work order has no quote amount" };
   }
 
-  const { error: flipErr } = await supabase
+  // Write via the service-role client, not the cookie-bound one. Ownership +
+  // status + amount are already fully validated above; the write itself no
+  // longer depends on a client-writable RLS policy (there isn't one — see
+  // 20260717064702_rls_hardening_wo_and_anon_insert.sql), matching the same
+  // defense-in-depth pattern quoteWorkOrder/updateWorkOrderStatus already use.
+  const admin = createAdminClient();
+  const { error: flipErr } = await admin
     .from("work_orders")
     .update({ status: "accepted", accepted_at: new Date().toISOString() })
     .eq("id", id);

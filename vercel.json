@@ -1,16 +1,71 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
-  "buildCommand": "pnpm build",
-  "devCommand": "pnpm dev",
-  "installCommand": "pnpm install --frozen-lockfile",
   "regions": ["iad1"],
+
+  "services": {
+    "web": {
+      "root": ".",
+      "framework": "nextjs",
+      "buildCommand": "pnpm build",
+      "devCommand": "pnpm dev",
+      "installCommand": "pnpm install --frozen-lockfile"
+    },
+    "oci": {
+      "root": "containers/function",
+      "runtime": "container",
+      "entrypoint": "Dockerfile",
+      "routes": [
+        {
+          "src": "/oci",
+          "transforms": [
+            {
+              "type": "request.path",
+              "op": "set",
+              "args": "/"
+            }
+          ]
+        },
+        {
+          "src": "/oci/(.*)",
+          "transforms": [
+            {
+              "type": "request.path",
+              "op": "set",
+              "args": "/$1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "rewrites": [
+    {
+      "source": "/oci",
+      "destination": { "service": "oci" }
+    },
+    {
+      "source": "/oci/(.*)",
+      "destination": { "service": "oci" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "web" }
+    }
+  ],
 
   "git": {
     "deploymentEnabled": {
       "main": true
     }
   },
+
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "0 10 * * *"
+    }
+  ],
 
   "headers": [
     {
@@ -24,6 +79,15 @@
     },
     {
       "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/oci/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

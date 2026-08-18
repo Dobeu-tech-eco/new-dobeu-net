@@ -1,228 +1,87 @@
-# dobeu.net v3 — Implementation Plan
+# dobeu.net v3 — Plan
 
-**Status:** Awaiting Jeremy's approval
-**Brainstorm:** `BRAINSTORM.md` (read first)
-**Working dir:** `C:\Users\jswil\repos\new-dobeu-net`
-**Target deploy:** Vercel preview → DNS cutover to `dobeu.net` on approval
+**Status:** Original build plan (2026-05-21) fully executed — Phases 0–5 shipped and live on `https://dobeu.net`.
+This file now tracks the **active plan: production hardening + close-out**.
 
----
-
-## Execution model
-
-Six phases. Each phase ships independently, has its own verification gate, and can be paused/resumed at the boundary. Phases 2–5 use parallel subagents where work is independent (per `superpowers:subagent-driven-development` and `superpowers:dispatching-parallel-agents`).
-
-```
-Phase 0 → Phase 1 → ┌── Phase 2A (landing) ─────┐
-                    ├── Phase 2B (auth+portal) ─┤ → Phase 3 → Phase 4 → Phase 5
-                    └── Phase 2C (admin) ───────┘
-```
+- **History / context:** `BRAINSTORM.md` (product decisions, data model, open questions) and `STATUS.md` (phase-by-phase shipping record).
+- **Detailed task breakdown for the active plan:** [`docs/superpowers/plans/2026-07-14-production-readiness.md`](docs/superpowers/plans/2026-07-14-production-readiness.md) — step-by-step commands, file map, verification matrix. This file is the summary + sequencing; that file is the executable checklist.
 
 ---
 
-## Phase 0 — Approval (you are here)
+## Part 1 — Completed build (historical record)
 
-**Owner:** Jeremy
-**Exit gate:** Jeremy says "approved, go" (or specific edits required) in chat.
+The original six-phase plan (repo init → landing/portal/admin parallel build → integration → verification → DNS cutover) completed between 2026-05-21 and 2026-06-17. Everything below is **done** — see `STATUS.md` for commit-level detail:
 
-Deliverable: this plan + `BRAINSTORM.md`, read and approved.
+| Phase | Scope | Outcome |
+|---|---|---|
+| 0–1 | Approval, repo init, tokens, Supabase schema, env scaffolding | ✅ Shipped |
+| 2A/B/C | Landing, auth + portal, admin + lead pipeline APIs | ✅ Shipped |
+| 3 | Stripe-hosted invoicing + webhook, work-order (tickets) UI, Resend wiring, Datadog | ✅ Shipped, live |
+| 4 | Supabase TOTP MFA (admin AAL2), Intercom identity verification | ✅ Code complete |
+| 5 | Lighthouse/a11y polish, CI tests, `profiles.is_admin` dropped on live | ✅ Shipped |
+| Legacy cutover | `db-dobeutech-unified` → Vercel Supabase | ✅ Decided NO-OP (zero portal rows); optional auth pre-seed only |
 
-Decisions still needing Jeremy input _before_ code:
-
-1. **Repo:** new `dobeutech/new-dobeu-net` repo _(default)_, or force-rewrite `dobeutech/digital-wharf-dynamics`? See Open Question #1 in brainstorm.
-2. **Apollo Meetings:** I'll verify embed availability against your plan via the Apollo MCP during Phase 1 — no decision needed from you, but if it falls back to custom, the custom flow needs Google Calendar OAuth (your Google account). OK to wire that up?
-3. **ADMIN_EMAILS:** confirm `jswilliamstu@gmail.com` is the only admin in v1.
-
----
-
-## Phase 1 — Foundation (single-threaded, ~45 min)
-
-Set up the skeleton so parallel work can begin in Phase 2.
-
-1. **Repo init** — create `new-dobeu-net` (or rewrite digital-wharf-dynamics per Q1), init Next.js 15 App Router with TypeScript + Tailwind + ESLint + Prettier. Add `pnpm` lockfile.
-2. **Design tokens wire-up** — copy `@dobeu/tokens` CSS variables into `app/globals.css`, build Tailwind config from the same source. Install Nunito + Quicksand via `next/font/google`. Configure `next-themes` for Light/Dark/System.
-3. **shadcn/ui scaffold** — `npx shadcn@latest init`, add base components (button, dialog, sheet, dropdown, form, input, tabs, accordion, toast/sonner). Override default theme with Dobeu tokens.
-4. **Supabase project** — verify project exists (or create); enable Email auth; create initial migration with all tables from §8 of brainstorm; commit `supabase/migrations/`. Generate types to `lib/database.types.ts`.
-5. **Env scaffolding** — `.env.example` with every needed var. Document each in README. Use Vercel env via `vercel env pull` later.
-6. **Layout shell** — `app/layout.tsx` with `<ThemeProvider>`, `<AnalyticsProvider>`, `<Toaster>`, `<CookieConsent>`. Sticky nav. Footer. Skip-to-content link. Reading-order verified.
-7. **Connection check** — call Apollo / Supabase / Stripe / PostHog / Resend MCPs once each to confirm credentials are live. Log results to `docs/connection-check-2026-05-21.md`.
-
-**Verification gate:** `pnpm dev` renders a styled, themed empty homepage at `http://localhost:3000` in both light + dark, with the Dobeu logo (sourced from `OneDrive/.../dobeu-eco-logo-all/`) and Nunito visibly applied.
+**Not done from the original plan (carried forward to Part 3):** Phase 6 post-launch scheduled automations (daily lead digest, weekly Lighthouse/uptime, monthly invoice aging).
 
 ---
 
-## Phase 2 — Build (three parallel streams)
+## Part 2 — Active plan: production hardening sprint
 
-Subagent A, B, C work concurrently against the foundation laid in Phase 1. Each gets a worktree branch so they can't step on each other.
+**Source audit:** 2026-07-14, repo HEAD `7ce3872`, live-site header check + Vercel env inventory + Supabase policy review. Full findings in the [production-readiness plan](docs/superpowers/plans/2026-07-14-production-readiness.md).
 
-### Phase 2A — Marketing landing
+**Approach chosen:** hardening-only first (its "Approach A") — no new marketing features until security/config gaps close.
 
-**Subagent:** frontend-developer
-**Worktree:** `feature/landing`
-**Tasks:**
+### Critical fixes (in order)
 
-- Hero with bold typography + dual CTA + trust strip
-- "What I do" — 4 service tiles + "something else" tile
-- "How it works" — 3-step process with mark animation
-- Proof section — logo wall (placeholder if none) + 2-3 testimonial quotes
-- Founder section — photo + bio + LinkedIn link
-- FAQ accordion with `FAQPage` JSON-LD
-- Sticky bottom CTA bar on mobile
-- Footer (logo, email, LinkedIn, status, privacy, terms)
-- The **lightbox modal** with three tabs (Book / Typeform / Email)
-- All copy drafted; marked `<!-- COPY:REVIEW -->` where Jeremy review is required
-- Mobile (375px) + tablet (768px) + desktop (1280px) breakpoints
-- Light + Dark + System theme parity
+1. **Unblock CSP — single Next config** *(Task 1)*
+   `next.config.js` shadows `next.config.ts`, so the CSP/HSTS/X-Frame-Options stack **is not shipping on production responses** (verified via `curl -sI https://dobeu.net`). Merge the `.js` file's `images.remotePatterns` into `next.config.ts`, delete `next.config.js`, verify no dual-config warning on build, then confirm headers on the live site post-deploy.
 
-### Phase 2B — Auth + Client portal
+2. **Production env correctness** *(Task 2 — operator/Vercel CLI)*
+   Missing from Vercel: `UPSTASH_REDIS_REST_URL/TOKEN` (rate limit currently in-memory per instance), `CALENDLY_WEBHOOK_SIGNING_KEY` (webhook 503s — bookings never become leads), `TYPEFORM_WEBHOOK_SECRET`, `CUSTOMERIO_SITE_ID/API_KEY`, `GITHUB_TOKEN`, `COMPOSIO_API_KEY`/`ANTHROPIC_API_KEY` (agent surface). Wrong: `NEXT_PUBLIC_DATADOG_ENV=development` on Production/Preview. Register the Calendly + Typeform webhooks after the secrets land; redeploy and confirm auto-deploy from `main` is healthy.
 
-**Subagent:** fullstack-developer
-**Worktree:** `feature/portal`
-**Tasks:**
+3. **Merge PR #178 — GitHub repo parser SSRF/traversal fix** *(Task 3)*
+   HIGH severity; `app/api/github-repo/route.ts` accepts `..` path segments on `main`. Prefer merging the open PR; otherwise implement strict segment validation with tests.
 
-- Supabase Auth middleware (`@supabase/ssr`)
-- `/login` page with magic-link form
-- `/auth/callback` handler
-- `<ProtectedRoute>` HOC + server-side `requireUser()`
-- `/portal/dashboard` — open projects, unpaid invoices, unread messages widgets
-- `/portal/projects` + `/portal/projects/[id]` with timeline + files + thread
-- `/portal/files` — signed-URL downloads with retention badge
-- `/portal/invoices` — list + "Pay" → Stripe Checkout link
-- `/portal/messages` — threaded view, 30s poll
-- `/portal/settings`
-- Server actions for all mutations; no client-side Supabase writes
-- RLS verified by tests: cross-tenant read returns empty
+4. **Supabase RLS hygiene** *(Task 4)*
+   `profiles_update_own` lacks `WITH CHECK` (ownership reassignment possible). New migration re-creating the policy with both `USING` and `WITH CHECK` on `(select auth.uid()) = id`; audit other UPDATE policies (work-order accept path); run Supabase advisors; verify RLS inventory on live.
 
-### Phase 2C — Admin panel + integrations backend
+5. **GitHub security baseline** *(Task 5)*
+   Secret scanning, push protection, and code scanning are all **off** on `Dobeu-tech-eco/new-dobeu-net`. Enable them; triage open PRs (#178 security first; #177 spinner, #179 typewriter CPU are optional polish).
 
-**Subagent:** backend-architect + frontend-developer
-**Worktree:** `feature/admin`
-**Tasks:**
+6. **Docs + `.env.example` alignment** *(Task 6)*
+   `.env.example` still documents legacy `NEXT_PUBLIC_SUPABASE_*` names; README still marks shipped features as TODO. (`CLAUDE.md` was refreshed against the codebase 2026-07-14.)
 
-- `<AdminRoute>` HOC gated by `ADMIN_EMAILS` env list
-- `/admin/dashboard` with KPI tiles + recent activity feed
-- `/admin/users` + `/admin/users/[id]` with edit + project create
-- `/admin/projects` + `/admin/projects/[id]` with file upload + status edit
-- `/admin/invoices/new` — Stripe invoice creator
-- `/admin/leads` — Apollo-enriched lead table, filter by source/UTM
-- `/admin/bookings` — upcoming + past, sync state
-- `/admin/analytics` — embedded PostHog + Mixpanel + summary widgets
-- **API routes** for:
-  - `POST /api/lead` (Supabase + Apollo upsert + analytics fan-out)
-  - `POST /api/book` (booking create + Apollo activity + confirmation email)
-  - `POST /api/webhooks/stripe` (invoice paid/failed → Supabase)
-  - `POST /api/webhooks/apollo` (booking confirmed/cancelled)
-  - `POST /api/webhooks/resend` (delivery/bounce tracking)
-- Server-side Apollo client wrapper in `lib/apollo.ts` (key in env)
-- Server-side PostHog/Mixpanel/GA4 server-event firing in `lib/analytics.ts`
+### Verification gate (Tasks 7–8)
 
-**Verification gate (all three):** each branch's PR shows: build green, unit tests green, Playwright happy-path test green, screenshots attached for mobile/desktop/light/dark.
+- `pnpm audit` + `pnpm verify` green.
+- Live smoke per `scripts/post-merge-smoke.md`: `/` 200, `/portal` + `/admin` redirect to login, `/api/lead` empty POST → 400.
+- `curl -sI https://dobeu.net` shows CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, Permissions-Policy.
+- Stripe Dashboard endpoint subscribed to `invoice.paid/payment_failed/finalized/voided` with secret matching `STRIPE_WEBHOOK_SECRET`; Resend DKIM/SPF verified; one test invoice paid end-to-end flips local status.
+- Calendly test booking produces a `leads` row + notification email without manual copying.
+
+### Success criteria
+
+Production-ready means all ten criteria in the readiness doc, headline items: CSP live, Upstash rate limiting active, Calendly→lead path working, PR #178 closed, `profiles` `WITH CHECK` applied, GitHub secret scanning on, Datadog env correct.
 
 ---
 
-## Phase 3 — Integration + tracking plan
+## Part 3 — Deferred tracks (do not block Part 2)
 
-Merge 2A/2B/2C to `main` in order, resolving conflicts at the route+layout boundary.
+1. **Twilio SMS MFA** *(readiness Tasks 9–10)* — Twilio Verify as secondary factor layered on existing TOTP; **blocked on a decision: admin-only, all portal users, or deferred**. Console/API-key setup first, app code second; TOTP remains the primary admin control either way.
+2. **Landing conversion pack** *(readiness Task 11)* — real social proof (`Proof.tsx` re-enable with attributable quotes), case-study pages, mobile Lighthouse ≥90 (currently ~80, accepted non-gater), lead-form UX, admin leads CRM polish, optional blog/pricing.
+3. **Post-launch automations** *(original Phase 6, never built)* — daily lead/booking/invoice digest, weekly Lighthouse + uptime report, monthly Stripe aging. Candidates for Make.com scenarios or Composio triggers once Part 2 lands.
+4. **v2 backlog** *(BRAINSTORM §13)* — multi-language, real-time chat, team accounts, status page, native app.
 
-1. **Merge order:** 2C (backend APIs) → 2B (portal needs APIs) → 2A (landing needs portal links).
-2. **Tracking plan** — write `docs/tracking-plan.md` listing every event (name, properties, fires-where, fires-when). Includes: `$pageview`, `lead_captured`, `lead_form_submitted`, `booking_scheduled`, `booking_completed`, `signup`, `login`, `file_downloaded`, `invoice_viewed`, `invoice_paid`, `message_sent`, `admin_action_*`. Cross-referenced to PostHog/Mixpanel/GA4.
-3. **GTM container** — create GTM container with tags for GA4 + PostHog + Mixpanel + Apollo pixel. Export config JSON to `docs/gtm-container.json` for reference.
-4. **CSP + cookie consent** — finalize `next.config.js` CSP, deploy cookie consent banner with explicit categories (essential/analytics/marketing).
-5. **OG image generation** — `app/opengraph-image.tsx` using the indigo→amber gradient + Nunito.
-6. **Sitemap + robots + llms.txt** — auto-generated at build.
+## Open decisions needing Jeremy
 
-**Verification gate:** real session walkthrough fires every event in the tracking plan, verified in PostHog Live Events and GA4 DebugView.
+1. SMS MFA scope (admin-only / all users / deferred) — gates deferred track 1.
+2. Vercel builds on Node 24 while `.nvmrc`/CI pin 20 (`engines: >=20` allows the float) — pin Vercel to 20, or bump the policy to 22/24 deliberately.
+3. Whether to enable CodeQL / CodeRabbit on the repo (plan-dependent).
 
----
+## Definition of done (this plan)
 
-## Phase 4 — Verification (the gate that matters)
-
-Per `superpowers:verification-before-completion`. Nothing ships until this gate is fully green.
-
-1. **Lighthouse** (mobile + desktop) on `/` and `/portal/dashboard`:
-   - Perf ≥90 / A11y ≥95 / BP ≥90 / SEO ≥95
-2. **Browser-as-human walkthrough** (Playwright + Chrome DevTools MCP):
-   - First-time visitor: scrolls to bottom, opens lightbox, books a call → Apollo + Supabase + PostHog all show the lead.
-   - First-time visitor: opens lightbox, submits Typeform → lead captured, Customer.io welcome fires.
-   - First-time visitor: drops email in lightbox tab 3 → lead captured, welcome fires.
-   - Returning lead: clicks email magic link → lands in `/portal/dashboard`, sees their project (or empty state).
-   - Existing client: views invoice → clicks "Pay" → completes Stripe test checkout → invoice flips to paid in portal + admin.
-   - Admin: logs in → uploads a file to a project → client sees it on refresh and downloads it.
-3. **Accessibility:** axe + manual screen reader pass (VoiceOver / NVDA) on landing + portal.
-4. **Cross-browser:** Chrome, Firefox, Safari (Webkit), mobile Safari, mobile Chrome via Playwright.
-5. **Theme parity:** every page in Light, Dark, System (matches OS).
-6. **A/B test scaffold** — wire PostHog feature flag for hero copy variant (one experiment ready to run post-launch). Per `marketing-skills:ab-test-setup`.
-7. **Verification artifacts** committed to `docs/verification/2026-05-21/`:
-   - `lighthouse-landing-{mobile,desktop}.html`
-   - `lighthouse-portal-{mobile,desktop}.html`
-   - `walkthrough-screenshots/` (one per flow × theme × viewport)
-   - `axe-report.json`
-   - `tracking-verification.md` (event names + screenshots from PostHog/GA4)
-
-**Verification gate:** all of the above + Jeremy spot-checks the preview URL and signs off.
-
----
-
-## Phase 5 — Production cutover
-
-Once Jeremy signs off in Phase 4.
-
-1. Verify production env vars in Vercel (Apollo, Supabase, Stripe live keys, etc.).
-2. Switch Stripe webhook URL from old → new deployment.
-3. Switch Apollo webhook URL.
-4. Update DNS: `dobeu.net` `A` / `CNAME` → new Vercel project.
-5. Wait for propagation (~5 min usually).
-6. Smoke test: real submission with real email, real Stripe test invoice, real magic link.
-7. Email existing Auth0 users a "we've upgraded — re-verify with this magic link" notice.
-8. Decommission old Netlify site (downgrade plan to free or delete after 7-day soak).
-
-**Verification gate:** real user `jswilliamstu@gmail.com` end-to-end test on production passes.
-
----
-
-## Phase 6 — Post-launch (optional, scheduled)
-
-Things to schedule via `mcp__scheduled-tasks__create_scheduled_task` once live:
-
-- Daily 8am ET: PostHog → Slack summary of yesterday's leads + bookings + paid invoices.
-- Weekly Mon 9am ET: A/B test status check + Lighthouse audit + uptime report.
-- Monthly first-of-month: Stripe invoice aging report.
-
----
-
-## Risks & mitigations
-
-| Risk                                       | Likelihood | Impact | Mitigation                                                                             |
-| ------------------------------------------ | ---------- | ------ | -------------------------------------------------------------------------------------- |
-| Apollo Meetings not embeddable             | Med        | Med    | Phase 1 verifies; custom Supabase availability picker as fallback (same data model).   |
-| Existing Auth0 users locked out at cutover | Med        | Med    | Email blast with magic link 24h before DNS swap; preserve old site for 7-day soak.     |
-| Lighthouse perf score below 90 on mobile   | Med        | Low    | Bundle analyzer in Phase 4; lazy-load PostHog + heavy embeds; `next/image` everywhere. |
-| Vercel CSP blocks PostHog/Mixpanel         | Low        | Low    | CSP allowlist drafted in Phase 3, tested with `report-only` mode first.                |
-| Stripe webhook misconfig → invoices stuck  | Low        | High   | Webhook signature verification + retry-safe handlers + manual reconciliation endpoint. |
-| Subagent scope creep                       | Med        | Med    | Each subagent gets a tight brief + worktree; reviews happen at PR boundaries.          |
-
----
-
-## Definition of done
-
-- [ ] All 6 phases complete
-- [ ] `dobeu.net` serves new site from Vercel
-- [ ] Lighthouse all ≥ targets
-- [ ] Every event in tracking plan verified in PostHog + GA4
-- [ ] One real lead captured end-to-end (Jeremy's test submission)
-- [ ] Admin can upload file → client downloads
-- [ ] Stripe test invoice paid → status flips
-- [ ] Old Netlify site decommissioned or in soak mode
-- [ ] `MEMORY.md` updated with operational notes
-- [ ] Final summary doc at `docs/launch-2026-05-21.md`
-
----
-
-## Approval status (2026-05-21)
-
-**APPROVED by Jeremy.** Decisions confirmed:
-
-1. **Repo:** new repo `dobeutech/new-dobeu-net` (clean history, new Vercel project, swap DNS when green).
-2. **Booking:** verify Apollo Meetings embed in Phase 1 first; if not embeddable, return with Google Calendar OAuth recommendation before committing.
-3. **Admin in v1:** `ADMIN_EMAILS = ["jeremyw@dobeu.net"]` only.
-
-Proceeding to Phase 1.
+- [ ] All Part 2 critical fixes merged and deployed
+- [ ] Verification gate fully green (headers, smoke, Stripe/Resend/Calendly end-to-end)
+- [ ] GitHub security features enabled; no open HIGH security PRs
+- [ ] `STATUS.md` updated with hardening-sprint record
+- [ ] Deferred-track decisions (above) captured, even if the answer is "later"

@@ -63,3 +63,10 @@ Thumbs.db
 
 .vercel
 .env*
+
+# Ruflo hub-only policy (memory lives at repos root; never per-repo)
+.swarm/
+.claude-flow/
+
+.vercel
+.env*
