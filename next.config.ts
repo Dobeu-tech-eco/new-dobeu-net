@@ -20,7 +20,8 @@ const csp = {
     "https://www.datadoghq-browser-agent.com",
     "https://va.vercel-scripts.com",
     "https://widget.intercom.io",
-    "https://js.intercomcdn.com"
+    "https://js.intercomcdn.com",
+    "https://cdn.amplitude.com"
   ],
   connect: [
     "'self'",
@@ -55,7 +56,8 @@ const csp = {
     "wss://nexus-websocket-a.intercom.io",
     "wss://nexus-websocket-b.intercom.io",
     "https://uploads.intercomcdn.com",
-    "https://uploads.intercomusercontent.com"
+    "https://uploads.intercomusercontent.com",
+    "https://*.amplitude.com"
   ],
   img: ["'self'", "data:", "blob:", "https:"],
   font: [
@@ -141,7 +143,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.supabase.co" },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "media.licdn.com", pathname: "/dms/image/**" },
-      { protocol: "https", hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com" }
+      { protocol: "https", hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com" },
+      // Ported from the (now-removed) next.config.js — needed by /repos:
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "github.com" }
     ]
   },
   async headers() {
