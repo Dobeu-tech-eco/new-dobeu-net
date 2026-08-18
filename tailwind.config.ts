@@ -14,37 +14,51 @@ const fontFamily = {
 };
 
 const colors = {
-  // Raw Dobeu palette (rarely used directly — prefer semantic tokens below)
+  // Raw Dobeu palette v3 (rarely used directly — prefer semantic tokens below)
   dobeu: {
+    violet: {
+      50:  "hsl(var(--dobeu-violet-50))",
+      100: "hsl(var(--dobeu-violet-100))",
+      200: "hsl(var(--dobeu-violet-200))",
+      300: "hsl(var(--dobeu-violet-300))",
+      400: "hsl(var(--dobeu-violet-400))",
+      500: "#5B4FD9",  /* Deep Violet — primary brand */
+      600: "#4C43C0",
+      700: "#4A42A0",  /* Slate — wordmark / headings */
+      800: "#38307A",
+      900: "#271F57",
+      slate: "#4A42A0"
+    },
+    // Legacy indigo aliases → resolve to violet tokens at runtime via CSS vars
     indigo: {
-      50: "hsl(var(--dobeu-indigo-50))",
+      50:  "hsl(var(--dobeu-indigo-50))",
       100: "hsl(var(--dobeu-indigo-100))",
       200: "hsl(var(--dobeu-indigo-200))",
       300: "hsl(var(--dobeu-indigo-300))",
       400: "hsl(var(--dobeu-indigo-400))",
-      500: "#6B5CE7",
-      600: "#5A4DD4",
-      700: "#4A3FA8",
-      800: "#3A327F",
-      900: "#2B2660",
-      slate: "#5A4FAB" /* v2 wordmark + light-mode heading color */
+      500: "hsl(var(--dobeu-indigo-500))",
+      600: "hsl(var(--dobeu-indigo-600))",
+      700: "hsl(var(--dobeu-indigo-700))",
+      800: "hsl(var(--dobeu-indigo-800))",
+      900: "hsl(var(--dobeu-indigo-900))",
+      slate: "hsl(var(--brand-indigo-slate))"
     },
     amber: {
-      500: "#F4A261",
-      600: "#E08B47"
+      500: "#F59555",  /* Coral Amber v3 — CTA accent on dark */
+      600: "#D97D3F"
     },
     ink: {
-      900: "#1A1A2E",
-      800: "#222338",
-      700: "#2F3047"
+      900: "#111120",  /* Void dark canvas v3 */
+      800: "#1A1A2E",  /* Legacy dark (still used in some radial glows) */
+      700: "#242440"
     },
     paper: {
-      50: "#FAFAFC",
-      100: "#F2F3F7",
-      200: "#E5E7EE"
+      50:  "#FAFAFA",
+      100: "#F4F4F6",
+      200: "#E8E8EE"
     },
     cream: {
-      50: "#FFF8F0" /* v2 light-mode secondary surface */
+      50: "#FFF8F0"
     }
   },
   "fg-heading": "hsl(var(--fg-heading))",
@@ -95,13 +109,15 @@ const borderRadius = {
 };
 
 const boxShadow = {
-  glow: "0 0 40px -10px hsl(var(--primary) / 0.5)",
-  "amber-glow": "0 0 40px -10px hsl(var(--accent) / 0.5)"
+  // v3: glow always references the violet (not the amber CTA swap) for consistent hover glow
+  glow: "0 0 40px -10px hsl(var(--dobeu-violet-500) / 0.45)",
+  "amber-glow": "0 0 40px -10px hsl(var(--dobeu-amber-500) / 0.45)"
 };
 
 const backgroundImage = {
-  "dobeu-hero": "radial-gradient(ellipse 80% 60% at 50% 0%, hsl(var(--primary) / 0.15), transparent 60%), radial-gradient(ellipse 60% 50% at 80% 100%, hsl(var(--accent) / 0.12), transparent 60%)",
-  "dobeu-mesh": "radial-gradient(at 0% 0%, hsl(var(--primary) / 0.18) 0%, transparent 50%), radial-gradient(at 100% 100%, hsl(var(--accent) / 0.14) 0%, transparent 50%), radial-gradient(at 50% 50%, hsl(var(--primary) / 0.06) 0%, transparent 60%)"
+  // v3: violet + coral-amber radial glows — subtle mesh for hero & card overlays
+  "dobeu-hero": "radial-gradient(ellipse 80% 60% at 50% 0%, hsl(var(--dobeu-violet-500) / 0.12), transparent 60%), radial-gradient(ellipse 60% 50% at 80% 100%, hsl(var(--dobeu-amber-500) / 0.09), transparent 60%)",
+  "dobeu-mesh": "radial-gradient(at 0% 0%, hsl(var(--dobeu-violet-500) / 0.15) 0%, transparent 50%), radial-gradient(at 100% 100%, hsl(var(--dobeu-amber-500) / 0.12) 0%, transparent 50%), radial-gradient(at 50% 50%, hsl(var(--dobeu-violet-500) / 0.05) 0%, transparent 60%)"
 };
 
 const keyframes = {
