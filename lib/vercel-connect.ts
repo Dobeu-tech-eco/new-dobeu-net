@@ -1,3 +1,4 @@
+import "server-only";
 import { getToken } from "@vercel/connect";
 
 export { getToken };
