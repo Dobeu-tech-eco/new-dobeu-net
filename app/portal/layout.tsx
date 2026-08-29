@@ -9,6 +9,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
 import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
+import { AnalyticsIdentify } from "@/components/portal/AnalyticsIdentify";
 import { isAdminEmail } from "@/lib/utils";
 import { intercomNameFromUser } from "@/lib/intercom";
 import { createIntercomUserJwt } from "@/lib/intercom-jwt";
@@ -43,6 +44,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
+      <AnalyticsIdentify user_id={user.id} email={user.email ?? undefined} is_admin={isAdmin} />
       <IntercomIdentify
         user_id={user.id}
         email={user.email ?? undefined}

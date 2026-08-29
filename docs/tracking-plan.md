@@ -1,6 +1,30 @@
 # Tracking plan — dobeu.net v3
 
-Every event captured here fires to PostHog + Mixpanel + GA4 (via GTM dataLayer) when consent is granted.
+Every event captured here fires to PostHog + Mixpanel + Amplitude + GA4 (via GTM dataLayer) when consent is granted.
+
+## Amplitude (org `polished-sun-911894`, project `dobeu.net` #784238)
+
+- **Naming**: raw event names stay `snake_case` in code because one `track()` call feeds GA4/PostHog/Mixpanel too. Amplitude's `[Object] [Past-tense verb]` Title Case convention is applied as **display names** in the tracking plan (`cta_click` → "CTA Clicked"), never by renaming the raw event. Properties are `snake_case` everywhere.
+- **Autocapture** (no code needed): `[Amplitude] Page Viewed` (incl. Next.js route changes), `Start/End Session`, `Form Started/Submitted`, `Element Clicked`, `File Downloaded`, `Rage Click`/`Dead Click`, `Web Vitals`, plus UTM/click-id attribution on every event. Network tracking is off. `$pageview` is **not** forwarded to Amplitude (would double-count).
+- **Session Replay**: sample rate from `NEXT_PUBLIC_AMPLITUDE_REPLAY_SAMPLE_RATE` (default 1); the remote setting in Amplitude → Session Replay overrides it. Inputs are masked by default; add `.amp-mask` / `.amp-block` to any element that must never appear in a replay.
+- **Identity**: `user_id` = Supabase auth id, set by `components/portal/AnalyticsIdentify.tsx` after login (user properties `email`, `is_admin`); `LogoutButton` resets. Anonymous visitors are device-id only — never set a user id from a form submit.
+- **Consent**: nothing loads until the "analytics" category is accepted; withdrawing consent calls `setOptOut(true)`. Cookies: `AMP_<key prefix>`, `AMP_MKTG_<key prefix>` (1 year), listed on `/cookies`.
+
+| Raw event (code)              | Amplitude display name        | Category    |
+| ----------------------------- | ----------------------------- | ----------- |
+| `cta_click`                   | CTA Clicked                   | Engagement  |
+| `lead_submitted`              | Lead Submitted                | Lifecycle   |
+| `lead_captured`               | Lead Captured                 | Lifecycle   |
+| `lead_capture_failed`         | Lead Capture Failed           | System      |
+| `booking_started`             | Booking Started               | Lifecycle   |
+| `booking_scheduled`           | Booking Scheduled             | Lifecycle   |
+| `calendly_profile_viewed`     | Calendly Profile Viewed       | Engagement  |
+| `calendly_event_type_viewed`  | Calendly Event Type Viewed    | Engagement  |
+| `calendly_date_selected`      | Calendly Date Selected        | Engagement  |
+| `typeform_loaded`             | Typeform Loaded               | Engagement  |
+| `typeform_submitted`          | Typeform Submitted            | Lifecycle   |
+| `login_magic_link_sent`       | Login Magic Link Sent         | Lifecycle   |
+| `login_password_success`      | Login Password Succeeded      | Lifecycle   |
 
 | Event name              | Fires when                           | Properties                                     | PostHog    | Mixpanel   | GA4                    |
 | ----------------------- | ------------------------------------ | ---------------------------------------------- | ---------- | ---------- | ---------------------- |
