@@ -16,6 +16,7 @@
     "test:ci": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "lighthouse:ci": "lhci autorun",
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
     "build:strict": "node scripts/strict-build.mjs",
     "verify": "pnpm type-check && pnpm lint && pnpm test:ci && pnpm build:strict",
@@ -62,6 +63,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@lhci/cli": "0.14.0",
     "@playwright/test": "^1.49.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
