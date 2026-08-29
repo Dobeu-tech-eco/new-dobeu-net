@@ -28,6 +28,9 @@
  */
 
 import type { RumEvent, RumInitConfiguration } from "@datadog/browser-rum";
+import { redactUrl } from "@/lib/datadog-redact";
+
+export { redactUrl } from "@/lib/datadog-redact";
 
 // Browser-only SDKs — loaded lazily via dynamic import() so they are never
 // evaluated during SSR/prerender (they reference `window` at module scope,
@@ -40,6 +43,8 @@ let datadogLogs: DatadogLogs | null = null;
 
 let initialized = false;
 let initPromise: Promise<void> | null = null;
+/** Latest consent choice. Used to abort an in-flight init if the user withdraws. */
+let latestConsent: boolean | null = null;
 
 interface DDConfig {
   applicationId: string;
@@ -51,20 +56,6 @@ interface DDConfig {
   replaySampleRate: number;
   traceSampleRate: number;
 }
-
-/** Query-string keys that must never reach Datadog. */
-const SENSITIVE_QUERY_KEYS = [
-  "email",
-  "token",
-  "access_token",
-  "refresh_token",
-  "code",
-  "session",
-  "signature",
-  "api_key",
-  "apikey",
-  "password"
-];
 
 /**
  * Error messages that are pure noise: browser extensions, cross-origin script
@@ -97,10 +88,11 @@ function readEnv(): DDConfig | null {
     process.env.NODE_ENV ||
     "development";
 
-  const sha =
-    process.env.NEXT_PUBLIC_DATADOG_VERSION ||
-    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
-    undefined;
+  const explicitVersion = process.env.NEXT_PUBLIC_DATADOG_VERSION;
+  const sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || undefined;
+  // Explicit overrides must match scripts/upload-sourcemaps.mjs verbatim.
+  // Only derived commit SHAs are shortened to 7 chars.
+  const version = explicitVersion || (sha ? sha.slice(0, 7) : undefined);
 
   return {
     applicationId,
@@ -108,8 +100,7 @@ function readEnv(): DDConfig | null {
     site: process.env.NEXT_PUBLIC_DATADOG_SITE || "datadoghq.com",
     service: process.env.NEXT_PUBLIC_DATADOG_SERVICE || "dobeu-net",
     env,
-    // Short SHAs read better in the Datadog UI and still uniquely identify a build.
-    version: sha ? sha.slice(0, 7) : undefined,
+    version,
     replaySampleRate: readNumber(
       process.env.NEXT_PUBLIC_DATADOG_REPLAY_SAMPLE_RATE,
       env === "production" ? 20 : 0
@@ -120,24 +111,6 @@ function readEnv(): DDConfig | null {
 
 export function isDatadogConfigured(): boolean {
   return readEnv() !== null;
-}
-
-/** Strip sensitive query parameters from any URL before it leaves the browser. */
-export function redactUrl(url: string | undefined): string | undefined {
-  if (!url) return url;
-  try {
-    const parsed = new URL(url, "https://dobeu.net");
-    let touched = false;
-    for (const key of SENSITIVE_QUERY_KEYS) {
-      if (parsed.searchParams.has(key)) {
-        parsed.searchParams.set(key, "REDACTED");
-        touched = true;
-      }
-    }
-    return touched ? parsed.toString() : url;
-  } catch {
-    return url;
-  }
 }
 
 export function isIgnoredError(message: string | undefined): boolean {
@@ -172,6 +145,13 @@ const beforeSend: NonNullable<RumInitConfiguration["beforeSend"]> = (event) => {
   return true;
 };
 
+function applyWithdrawnConsent(): void {
+  datadogRum?.setTrackingConsent("not-granted");
+  datadogLogs?.setTrackingConsent("not-granted");
+  datadogRum?.clearUser();
+  datadogLogs?.clearUser();
+}
+
 /**
  * Initialize Datadog RUM + Logs SDKs. Idempotent and concurrency-safe.
  * Skips silently when the environment is not configured.
@@ -190,6 +170,9 @@ export async function initDatadog(): Promise<void> {
       import("@datadog/browser-rum"),
       import("@datadog/browser-logs")
     ]);
+    // Consent can flip to withdrawn while the SDKs are still downloading.
+    if (latestConsent === false) return;
+
     datadogRum = rumMod.datadogRum;
     datadogLogs = logsMod.datadogLogs;
 
@@ -232,7 +215,9 @@ export async function initDatadog(): Promise<void> {
 
       beforeSend,
       silentMultipleInit: true
-    });
+      // trackResourceHeaders is a documented Browser RUM v7 option (CDN HIT/MISS
+      // via x-vercel-cache) that @datadog/browser-rum 7.10.0's types omit.
+    } as RumInitConfiguration & { trackResourceHeaders: boolean });
 
     // Logs — structured browser logs, forwarded errors, and CSP violation
     // reports (valuable given the strict CSP in next.config.ts).
@@ -265,17 +250,23 @@ export async function initDatadog(): Promise<void> {
  * consent. Withdrawing stops collection and clears the Datadog session cookie.
  */
 export async function setDatadogConsent(granted: boolean): Promise<void> {
+  latestConsent = granted;
   if (granted) {
-    await initDatadog();
+    while (latestConsent === true && !initialized) {
+      await initDatadog();
+      if (!initialized) break;
+    }
+    if (latestConsent !== true) {
+      applyWithdrawnConsent();
+      return;
+    }
     datadogRum?.setTrackingConsent("granted");
     datadogLogs?.setTrackingConsent("granted");
     return;
   }
   // Never initialise just to opt out — if the SDK never loaded there is
   // nothing to stop.
-  datadogRum?.setTrackingConsent("not-granted");
-  datadogLogs?.setTrackingConsent("not-granted");
-  datadogRum?.clearUser();
+  applyWithdrawnConsent();
 }
 
 /** Attach the current user (e.g. post-login) so events are user-correlated. */

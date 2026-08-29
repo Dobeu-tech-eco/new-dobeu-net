@@ -29,8 +29,10 @@ calls `setDatadogConsent(consent.analytics)`:
 
 - **Granted** → the SDKs are dynamically imported (so visitors who decline never
   download ~100 KB of JS), initialised, and consent set to `granted`.
-- **Withdrawn** → `setTrackingConsent("not-granted")` stops collection and clears
-  the Datadog session cookie. If the SDK never loaded, nothing happens.
+- **Withdrawn** → `setTrackingConsent("not-granted")` stops collection, clears
+  the RUM and Logs user, and clears the Datadog session cookie. If the SDK
+  never loaded, nothing happens. An in-flight init (accept then immediately
+  withdraw) observes the latest choice and does not grant tracking.
 
 ## Environment variables
 
@@ -64,7 +66,9 @@ project — it is what gives every RUM event its `env` and `version` tag.
 - `enablePrivacyForActionName: true` — action names are never derived from
   user-authored text.
 - `beforeSend` redacts `email`, `token`, `code`, `session`, `signature`,
-  `api_key`, `password` and friends from view / resource / error URLs.
+  `api_key`, `password` and friends from view / resource / error URLs. The
+  same redaction runs on server `onRequestError` paths (including
+  `/auth/callback?code=`) before they are POSTed to Datadog Logs.
 - `beforeSend` drops un-actionable noise: `ResizeObserver loop`, bare
   `Script error.`, and anything originating in a browser extension.
 - `allowedTracingUrls` injects trace headers **only** on our own origin, so no

@@ -19,6 +19,8 @@
 
 import "server-only";
 
+import { redactLogContext } from "@/lib/datadog-redact";
+
 const DEFAULT_SITE = "datadoghq.com";
 
 type LogLevel = "debug" | "info" | "warn" | "error";
@@ -95,5 +97,8 @@ export async function logServerError(
   context: Record<string, unknown> = {}
 ): Promise<void> {
   const err = serializeError(error);
-  await logToDatadog("error", String(err.message), { error: err, ...context });
+  await logToDatadog("error", String(err.message), {
+    error: err,
+    ...redactLogContext(context)
+  });
 }
