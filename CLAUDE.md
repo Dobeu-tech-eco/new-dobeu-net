@@ -48,9 +48,6 @@ pnpm db:types                  # regenerate lib/database.types.ts from local sch
 
 For a full pre-merge check, run `pnpm verify`, which mirrors CI locally. `pnpm build:strict` additionally fails on the `Detected "engines"` and `currently disables static generation` warnings; plain `pnpm build` (used by Vercel) stays lenient so a harmless future warning can't block production deploys.
 
-### ⚠️ Duplicate Next config files
-Both `next.config.js` and `next.config.ts` are tracked. **Next.js resolves `next.config.js` first**, so the `.js` file (a slim v0-import: `images.remotePatterns` + `generateBuildId` only) shadows the `.ts` file that carries the CSP/security headers, strict-mode flags, redirects, and rewrites. Any change to config must reconcile this — do not edit one file assuming it's the active one without checking which Next.js actually loads (it warns at build time when both exist).
-
 ## Architecture
 
 ### Three-surface app, one Next.js project
@@ -97,7 +94,7 @@ Entry points that call `processLead()`:
 `"use client"` module. One `track()` call dispatches to PostHog + Mixpanel + GA4 (gtag) + GTM dataLayer (GA4/GTM scripts load via `<Script>` in `app/layout.tsx`; posthog-js/mixpanel-browser load lazily). **Consent-gated**: `initAnalytics(consent)` no-ops until the user consents (cookie-consent banner; `hooks/use-cookie-consent.ts`). Each provider is independently feature-flagged by the presence of its `NEXT_PUBLIC_*` env key. Datadog RUM/Logs (`lib/datadog.ts`) and Intercom (`lib/intercom.ts`) wire in via `components/analytics-provider.tsx` / `app/layout.tsx`.
 
 ### Security headers / CSP
-`next.config.ts` builds a strict Content-Security-Policy plus HSTS, X-Frame-Options, etc., applied to all routes — **but see the duplicate-config warning above: while `next.config.js` exists, Next.js loads it instead and these headers are not applied**. When adding any third-party script, embed, or API host, add its domains to the relevant CSP array (`script`, `connect`, `frame`, `font`, `style`) or it will be blocked at runtime once the `.ts` config is active. CSP arrays are intentionally split line-per-entry so git keeps treating the file as text.
+`next.config.ts` builds a strict Content-Security-Policy plus HSTS, X-Frame-Options, etc., applied to all routes. When adding any third-party script, embed, or API host, add its domains to the relevant CSP array (`script`, `connect`, `frame`, `font`, `style`) or it will be blocked at runtime (Intercom's realtime websocket on `*.intercom-messenger.com` was blocked this way until 2026-08-29). CSP arrays are intentionally split line-per-entry so git keeps treating the file as text.
 
 ### `lib/` map
 - `lib/supabase/{client,server,middleware}.ts` — the three clients described above.
