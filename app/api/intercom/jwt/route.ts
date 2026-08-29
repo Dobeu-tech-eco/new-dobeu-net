@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createIntercomUserJwt } from "@/lib/intercom-jwt";
@@ -9,8 +8,12 @@ import { checkRateLimit } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const VISITOR_COOKIE = "dobeu_intercom_visitor";
-const VISITOR_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+/**
+ * Legacy cookie from the previous visitor-JWT scheme. Anonymous visitors are
+ * no longer signed (that minted an Intercom *User* per visitor); the cookie is
+ * cleared when seen so old browsers converge on plain visitor boots.
+ */
+const LEGACY_VISITOR_COOKIE = "dobeu_intercom_visitor";
 const RATE_LIMIT_WINDOW_SEC = 60;
 const RATE_LIMIT_MAX = 20;
 
@@ -40,41 +43,29 @@ export async function GET(req: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  let token: string | undefined;
-  let newVisitorId: string | undefined;
-
-  if (user) {
-    token = createIntercomUserJwt({
-      user_id: user.id,
-      email: user.email ?? undefined,
-      name: intercomNameFromUser(user),
-      created_at: user.created_at
-        ? Math.floor(new Date(user.created_at).getTime() / 1000)
-        : undefined
-    });
-  } else {
+  if (!user) {
+    // Anonymous visitors boot without a JWT so Intercom keeps them as
+    // Visitors/Leads. 204 tells IntercomSecureBoot to do a plain boot.
+    const res = new NextResponse(null, { status: 204 });
     const jar = await cookies();
-    let visitorId = jar.get(VISITOR_COOKIE)?.value;
-    if (!visitorId) {
-      visitorId = randomUUID();
-      newVisitorId = visitorId;
+    if (jar.get(LEGACY_VISITOR_COOKIE)) {
+      res.cookies.set(LEGACY_VISITOR_COOKIE, "", { maxAge: 0, path: "/" });
     }
-    token = createIntercomUserJwt({ user_id: visitorId });
+    return res;
   }
+
+  const token = createIntercomUserJwt({
+    user_id: user.id,
+    email: user.email ?? undefined,
+    name: intercomNameFromUser(user),
+    created_at: user.created_at
+      ? Math.floor(new Date(user.created_at).getTime() / 1000)
+      : undefined
+  });
 
   if (!token) {
     return NextResponse.json({ error: "Failed to sign Intercom JWT" }, { status: 500 });
   }
 
-  const res = NextResponse.json({ token });
-  if (newVisitorId) {
-    res.cookies.set(VISITOR_COOKIE, newVisitorId, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: VISITOR_MAX_AGE
-    });
-  }
-  return res;
+  return NextResponse.json({ token });
 }

@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // Shared mutable auth state so each test can set the "current user".
 const h = vi.hoisted(() => {
-  const state: { user: { id: string; email: string } | null } = {
-    user: { id: "user_1", email: "client@example.com" }
+  const state: {
+    user: { id: string; email: string } | null;
+    aal: { currentLevel: "aal1" | "aal2"; nextLevel: "aal1" | "aal2" } | null;
+  } = {
+    user: { id: "user_1", email: "client@example.com" },
+    aal: { currentLevel: "aal2", nextLevel: "aal2" },
   };
   return { state };
 });
@@ -13,20 +17,35 @@ const adminClientSentinel = { __admin: true };
 vi.mock("@/lib/supabase/server", () => {
   const cookieBound = {
     auth: {
-      getUser: vi.fn(async () => ({ data: { user: h.state.user }, error: null }))
-    }
+      getUser: vi.fn(async () => ({
+        data: { user: h.state.user },
+        error: null,
+      })),
+      mfa: {
+        getAuthenticatorAssuranceLevel: vi.fn(async () => ({
+          data: h.state.aal,
+          error: null,
+        })),
+      },
+    },
   };
   return {
     createClient: vi.fn(async () => cookieBound),
-    createAdminClient: vi.fn(() => adminClientSentinel)
+    createAdminClient: vi.fn(() => adminClientSentinel),
   };
 });
 
-import { requireUser, requireAdmin, AuthError } from "@/lib/actions/auth";
+import {
+  requireUser,
+  requireAdmin,
+  requireAdminAal2,
+  AuthError,
+} from "@/lib/actions/auth";
 
 beforeEach(() => {
   vi.clearAllMocks();
   h.state.user = { id: "user_1", email: "client@example.com" };
+  h.state.aal = { currentLevel: "aal2", nextLevel: "aal2" };
   // isAdminEmail() reads ADMIN_EMAILS — set a known admin allowlist.
   process.env.ADMIN_EMAILS = "admin@dobeu.net";
 });
@@ -42,7 +61,7 @@ describe("requireUser", () => {
     h.state.user = null;
     await expect(requireUser()).rejects.toMatchObject({
       name: "AuthError",
-      code: "not_authenticated"
+      code: "not_authenticated",
     });
     await expect(requireUser()).rejects.toBeInstanceOf(AuthError);
   });
@@ -61,7 +80,7 @@ describe("requireAdmin", () => {
     h.state.user = { id: "user_1", email: "client@example.com" };
     await expect(requireAdmin()).rejects.toMatchObject({
       name: "AuthError",
-      code: "forbidden"
+      code: "forbidden",
     });
   });
 
@@ -69,7 +88,48 @@ describe("requireAdmin", () => {
     h.state.user = null;
     await expect(requireAdmin()).rejects.toMatchObject({
       name: "AuthError",
-      code: "not_authenticated"
+      code: "not_authenticated",
+    });
+  });
+});
+
+describe("requireAdminAal2", () => {
+  it("returns the service-role client for an AAL2 admin", async () => {
+    h.state.user = { id: "admin_1", email: "admin@dobeu.net" };
+
+    const { user, admin } = await requireAdminAal2();
+
+    expect(user.id).toBe("admin_1");
+    expect(admin).toBe(adminClientSentinel);
+  });
+
+  it("rejects an unenrolled AAL1 admin", async () => {
+    h.state.user = { id: "admin_1", email: "admin@dobeu.net" };
+    h.state.aal = { currentLevel: "aal1", nextLevel: "aal1" };
+
+    await expect(requireAdminAal2()).rejects.toMatchObject({
+      name: "AuthError",
+      code: "mfa_required",
+    });
+  });
+
+  it("rejects an enrolled admin whose session has not stepped up", async () => {
+    h.state.user = { id: "admin_1", email: "admin@dobeu.net" };
+    h.state.aal = { currentLevel: "aal1", nextLevel: "aal2" };
+
+    await expect(requireAdminAal2()).rejects.toMatchObject({
+      name: "AuthError",
+      code: "mfa_required",
+    });
+  });
+
+  it("fails closed when assurance data is unavailable", async () => {
+    h.state.user = { id: "admin_1", email: "admin@dobeu.net" };
+    h.state.aal = null;
+
+    await expect(requireAdminAal2()).rejects.toMatchObject({
+      name: "AuthError",
+      code: "mfa_required",
     });
   });
 });
