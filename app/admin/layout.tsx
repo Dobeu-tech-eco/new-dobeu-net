@@ -21,6 +21,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
 import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
+import { AnalyticsIdentify } from "@/components/portal/AnalyticsIdentify";
 import { intercomNameFromUser } from "@/lib/intercom";
 import { createIntercomUserJwt } from "@/lib/intercom-jwt";
 
@@ -58,6 +59,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      <AnalyticsIdentify user_id={user.id} email={user.email ?? undefined} is_admin />
       <IntercomIdentify
         user_id={user.id}
         email={user.email ?? undefined}

@@ -57,7 +57,7 @@ vi.mock("@/lib/supabase/server", () => ({
             h.adminBehavior.throwOnUpdate
               ? Promise.reject(new Error("db down"))
               : Promise.resolve(value);
-          return {
+          const terminal = {
             select: () => ({
               single: () =>
                 rejectIfNeeded({
@@ -70,6 +70,12 @@ vi.mock("@/lib/supabase/server", () => ({
               onR?: (e: unknown) => unknown
             ) =>
               rejectIfNeeded({ data: null, error: h.adminBehavior.updateError }).then(onF, onR)
+          };
+          return {
+            ...terminal,
+            // The route chains .neq("status", ...) as an idempotency guard after
+            // .eq(); the filter doesn't change mock behavior, just pass through.
+            neq: (_col: string, _val: string) => terminal
           };
         }
       }),

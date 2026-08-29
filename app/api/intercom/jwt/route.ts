@@ -1,19 +1,38 @@
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createIntercomUserJwt } from "@/lib/intercom-jwt";
 import { intercomNameFromUser } from "@/lib/intercom";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const VISITOR_COOKIE = "dobeu_intercom_visitor";
 const VISITOR_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+const RATE_LIMIT_WINDOW_SEC = 60;
+const RATE_LIMIT_MAX = 20;
 
-export async function GET() {
+function getClientIp(req: NextRequest): string {
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || "unknown";
+}
+
+export async function GET(req: NextRequest) {
   if (!process.env.INTERCOM_API_SECRET) {
     return NextResponse.json({ error: "Intercom secure messenger not configured" }, { status: 503 });
+  }
+
+  const ip = getClientIp(req);
+  const { limited } = await checkRateLimit(`intercom-jwt:${ip}`, {
+    windowSec: RATE_LIMIT_WINDOW_SEC,
+    max: RATE_LIMIT_MAX
+  });
+  if (limited) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const supabase = await createClient();
