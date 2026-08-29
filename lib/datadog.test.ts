@@ -5,12 +5,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 const rumMock = {
   init: vi.fn(),
   setUser: vi.fn(),
+  clearUser: vi.fn(),
   addAction: vi.fn(),
-  addError: vi.fn()
+  addError: vi.fn(),
+  setTrackingConsent: vi.fn(),
+  setGlobalContext: vi.fn(),
+  addFeatureFlagEvaluation: vi.fn(),
+  getSessionReplayLink: vi.fn(() => "https://app.datadoghq.com/rum/replay/x")
 };
 const logsMock = {
   init: vi.fn(),
-  setUser: vi.fn()
+  setUser: vi.fn(),
+  clearUser: vi.fn(),
+  setTrackingConsent: vi.fn()
 };
 
 vi.mock("@datadog/browser-rum", () => ({ datadogRum: rumMock }));
@@ -26,6 +33,10 @@ function clearEnv() {
   delete process.env.NEXT_PUBLIC_DATADOG_SERVICE;
   delete process.env.NEXT_PUBLIC_DATADOG_ENV;
   delete process.env.NEXT_PUBLIC_DATADOG_VERSION;
+  delete process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA;
+  delete process.env.NEXT_PUBLIC_VERCEL_ENV;
+  delete process.env.NEXT_PUBLIC_DATADOG_REPLAY_SAMPLE_RATE;
+  delete process.env.NEXT_PUBLIC_DATADOG_TRACE_SAMPLE_RATE;
 }
 
 function setConfigured() {
@@ -43,10 +54,16 @@ beforeEach(() => {
   clearEnv();
   rumMock.init.mockClear();
   rumMock.setUser.mockClear();
+  rumMock.clearUser.mockClear();
   rumMock.addAction.mockClear();
   rumMock.addError.mockClear();
+  rumMock.setTrackingConsent.mockClear();
+  rumMock.setGlobalContext.mockClear();
+  rumMock.addFeatureFlagEvaluation.mockClear();
   logsMock.init.mockClear();
   logsMock.setUser.mockClear();
+  logsMock.clearUser.mockClear();
+  logsMock.setTrackingConsent.mockClear();
 });
 
 afterEach(() => {
@@ -184,5 +201,188 @@ describe("ddError", () => {
     const [errArg] = rumMock.addError.mock.calls[0];
     expect(errArg).toBeInstanceOf(Error);
     expect((errArg as Error).message).toBe("string failure");
+  });
+});
+
+describe("version + env tagging", () => {
+  it("derives a short version from the Vercel commit SHA", async () => {
+    setConfigured();
+    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA = "abcdef1234567890";
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    expect(rumMock.init).toHaveBeenCalledWith(
+      expect.objectContaining({ version: "abcdef1" })
+    );
+  });
+
+  it("prefers an explicit NEXT_PUBLIC_DATADOG_VERSION over the SHA", async () => {
+    setConfigured();
+    process.env.NEXT_PUBLIC_DATADOG_VERSION = "2.0.0";
+    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA = "abcdef1234567890";
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    expect(rumMock.init).toHaveBeenCalledWith(expect.objectContaining({ version: "2.0.0" }));
+  });
+
+  it("falls back to NEXT_PUBLIC_VERCEL_ENV for env", async () => {
+    setConfigured();
+    process.env.NEXT_PUBLIC_VERCEL_ENV = "preview";
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    expect(rumMock.init).toHaveBeenCalledWith(expect.objectContaining({ env: "preview" }));
+  });
+});
+
+describe("sampling", () => {
+  it("disables session replay outside production by default", async () => {
+    setConfigured();
+    process.env.NEXT_PUBLIC_DATADOG_ENV = "preview";
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    expect(rumMock.init).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionReplaySampleRate: 0, sessionSampleRate: 100 })
+    );
+  });
+
+  it("samples 20% of sessions for replay in production by default", async () => {
+    setConfigured();
+    process.env.NEXT_PUBLIC_DATADOG_ENV = "production";
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    expect(rumMock.init).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionReplaySampleRate: 20 })
+    );
+  });
+
+  it("honours an explicit replay sample rate", async () => {
+    setConfigured();
+    process.env.NEXT_PUBLIC_DATADOG_REPLAY_SAMPLE_RATE = "5";
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    expect(rumMock.init).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionReplaySampleRate: 5 })
+    );
+  });
+
+  it("ignores an out-of-range sample rate and uses the default", async () => {
+    setConfigured();
+    process.env.NEXT_PUBLIC_DATADOG_ENV = "production";
+    process.env.NEXT_PUBLIC_DATADOG_REPLAY_SAMPLE_RATE = "900";
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    expect(rumMock.init).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionReplaySampleRate: 20 })
+    );
+  });
+});
+
+describe("redactUrl", () => {
+  it("redacts sensitive query parameters", async () => {
+    const { redactUrl } = await freshImport();
+    expect(redactUrl("https://dobeu.net/login?email=a@b.com&next=/portal")).toBe(
+      "https://dobeu.net/login?email=REDACTED&next=%2Fportal"
+    );
+  });
+
+  it("leaves clean URLs untouched", async () => {
+    const { redactUrl } = await freshImport();
+    const url = "https://dobeu.net/pricing?ref=blog";
+    expect(redactUrl(url)).toBe(url);
+  });
+
+  it("returns the input unchanged when it is not a URL", async () => {
+    const { redactUrl } = await freshImport();
+    expect(redactUrl(undefined)).toBeUndefined();
+  });
+});
+
+describe("isIgnoredError", () => {
+  it("ignores ResizeObserver loop noise", async () => {
+    const { isIgnoredError } = await freshImport();
+    expect(isIgnoredError("ResizeObserver loop limit exceeded")).toBe(true);
+  });
+
+  it("ignores browser-extension stack frames", async () => {
+    const { isIgnoredError } = await freshImport();
+    expect(isIgnoredError("chrome-extension://abc/inject.js failed")).toBe(true);
+  });
+
+  it("keeps real application errors", async () => {
+    const { isIgnoredError } = await freshImport();
+    expect(isIgnoredError("Cannot read properties of undefined")).toBe(false);
+  });
+
+  it("treats an absent message as not ignored", async () => {
+    const { isIgnoredError } = await freshImport();
+    expect(isIgnoredError(undefined)).toBe(false);
+  });
+});
+
+describe("setDatadogConsent", () => {
+  it("initializes and grants consent when accepted", async () => {
+    setConfigured();
+    const { setDatadogConsent } = await freshImport();
+    await setDatadogConsent(true);
+    expect(rumMock.init).toHaveBeenCalledTimes(1);
+    expect(rumMock.setTrackingConsent).toHaveBeenCalledWith("granted");
+    expect(logsMock.setTrackingConsent).toHaveBeenCalledWith("granted");
+  });
+
+  it("never loads the SDK when consent is withheld", async () => {
+    setConfigured();
+    const { setDatadogConsent } = await freshImport();
+    await setDatadogConsent(false);
+    expect(rumMock.init).not.toHaveBeenCalled();
+    expect(rumMock.setTrackingConsent).not.toHaveBeenCalled();
+  });
+
+  it("withdraws consent and clears the user after a prior grant", async () => {
+    setConfigured();
+    const { setDatadogConsent } = await freshImport();
+    await setDatadogConsent(true);
+    rumMock.setTrackingConsent.mockClear();
+    await setDatadogConsent(false);
+    expect(rumMock.setTrackingConsent).toHaveBeenCalledWith("not-granted");
+    expect(logsMock.setTrackingConsent).toHaveBeenCalledWith("not-granted");
+    expect(rumMock.clearUser).toHaveBeenCalled();
+  });
+});
+
+describe("ddFeatureFlag / ddSetGlobalContext / ddClearUser", () => {
+  it("no-op before initialization", async () => {
+    const { ddFeatureFlag, ddSetGlobalContext } = await freshImport();
+    ddFeatureFlag("new_pricing", true);
+    ddSetGlobalContext({ tier: "pro" });
+    expect(rumMock.addFeatureFlagEvaluation).not.toHaveBeenCalled();
+    expect(rumMock.setGlobalContext).not.toHaveBeenCalled();
+  });
+
+  it("forwards to the SDK after initialization", async () => {
+    setConfigured();
+    const { initDatadog, ddFeatureFlag, ddSetGlobalContext, ddClearUser } =
+      await freshImport();
+    await initDatadog();
+    ddFeatureFlag("new_pricing", true);
+    ddSetGlobalContext({ tier: "pro" });
+    ddClearUser();
+    expect(rumMock.addFeatureFlagEvaluation).toHaveBeenCalledWith("new_pricing", true);
+    expect(rumMock.setGlobalContext).toHaveBeenCalledWith({ tier: "pro" });
+    expect(rumMock.clearUser).toHaveBeenCalled();
+    expect(logsMock.clearUser).toHaveBeenCalled();
+  });
+});
+
+describe("tracing configuration", () => {
+  it("only injects tracing headers on the app's own origin", async () => {
+    setConfigured();
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    const config = rumMock.init.mock.calls[0][0] as {
+      allowedTracingUrls: Array<{ match: (url: string) => boolean; propagatorTypes: string[] }>;
+    };
+    const rule = config.allowedTracingUrls[0];
+    expect(rule.propagatorTypes).toEqual(["tracecontext", "datadog"]);
+    expect(rule.match(`${window.location.origin}/api/lead`)).toBe(true);
+    expect(rule.match("https://api.stripe.com/v1/charges")).toBe(false);
   });
 });

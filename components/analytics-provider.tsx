@@ -6,7 +6,7 @@ import Script from "next/script";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { initAnalytics, pageView, setAnalyticsConsent } from "@/lib/analytics";
-import { initDatadog } from "@/lib/datadog";
+import { setDatadogConsent } from "@/lib/datadog";
 import { IntercomSecureBoot } from "@/components/intercom/IntercomSecureBoot";
 import { CookieBanner } from "@/components/CookieBanner";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
@@ -28,9 +28,11 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   // Init / tear-down analytics when consent changes.
   React.useEffect(() => {
     setAnalyticsConsent(consent.analytics);
+    // Datadog handles both grant and withdrawal (withdrawal stops collection
+    // and clears the session cookie), so it is called unconditionally.
+    void setDatadogConsent(consent.analytics);
     if (!consent.analytics) return;
     initAnalytics(true);
-    initDatadog();
   }, [consent.analytics]);
 
   // Fire pageview on navigation (analytics only).
