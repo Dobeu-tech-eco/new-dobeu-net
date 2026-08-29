@@ -122,6 +122,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Emit browser source maps so Datadog RUM stack traces deminify.
+  // scripts/upload-sourcemaps.mjs uploads them to Datadog and then deletes
+  // them from .next/static, so they are never served to the public.
+  productionBrowserSourceMaps: true,
   // Skew Protection: tie the build ID to the Vercel deployment ID so the
   // client and server always agree on which deployment's assets to load.
   // Enabled via "skewProtection": true in vercel.json. Falls back to a
