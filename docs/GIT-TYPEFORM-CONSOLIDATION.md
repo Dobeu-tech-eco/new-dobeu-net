@@ -26,18 +26,18 @@ tags are local only and must not be pushed unless separately approved.
 
 ## Branch disposition
 
-| Branch | Disposition |
-| --- | --- |
-| `main` | Keep; merge only through reviewed PRs. |
-| `dev` | Keep; bring forward to current `main`, then use as the release integration branch. |
-| `cursor_dev/frontend-visual-labs-plan-8128` | Preserve its unique requirements document in consolidated history. |
-| `feat/typeform-estimate-pipeline` | Use only as source material; replace with the review-first budget intake. |
-| `backup/2026-07-26` | Preserve in the verified bundle; tenancy work is already superseded on `main`. |
-| `cc-dev/vercel-connect-env-0a2b` | Preserve in the bundle; review any still-useful fixes individually and do not merge stale history. |
-| `copilot/1c49d1eaccf2a54fdbfcfa45dece75160b581dfe` | Delete after final verification; its workflow patch is already byte-identical on `main`. |
-| `dev-vercel-oci` | Delete after approval; strictly behind `main`. |
-| `feature/hardening-audit-and-landing-refresh` | Delete after approval; strictly behind `main`. |
-| `main-msi` | Preserve in the bundle; its only net difference is stale `AGENTS.md` content. |
+| Branch                                             | Disposition                                                                                        |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `main`                                             | Keep; merge only through reviewed PRs.                                                             |
+| `dev`                                              | Keep; bring forward to current `main`, then use as the release integration branch.                 |
+| `cursor_dev/frontend-visual-labs-plan-8128`        | Preserve its unique requirements document in consolidated history.                                 |
+| `feat/typeform-estimate-pipeline`                  | Use only as source material; replace with the review-first budget intake.                          |
+| `backup/2026-07-26`                                | Preserve in the verified bundle; tenancy work is already superseded on `main`.                     |
+| `cc-dev/vercel-connect-env-0a2b`                   | Preserve in the bundle; review any still-useful fixes individually and do not merge stale history. |
+| `copilot/1c49d1eaccf2a54fdbfcfa45dece75160b581dfe` | Delete after final verification; its workflow patch is already byte-identical on `main`.           |
+| `dev-vercel-oci`                                   | Delete after approval; strictly behind `main`.                                                     |
+| `feature/hardening-audit-and-landing-refresh`      | Delete after approval; strictly behind `main`.                                                     |
+| `main-msi`                                         | Preserve in the bundle; its only net difference is stale `AGENTS.md` content.                      |
 
 Dirty local worktrees and their local branches are outside the destructive
 cleanup scope. They must not be reset, cleaned, stashed, detached, or removed.
@@ -62,16 +62,20 @@ The production handler must:
 3. Require a response token and persist before acknowledging delivery.
 4. Deduplicate on `(form_id, response_token)` before any downstream effect.
 5. Store the raw event, extracted contact fields, budget ref/label, service
-   family, project summary, timestamps, and a `pending_review` status.
+   family, project summary, timestamps, and a `new` status awaiting admin review.
 6. Keep the table service-role-only and expose it only through the existing
    MFA-protected admin surface.
 7. Return `5xx` when durable storage fails so Typeform retries.
 8. Return `2xx` for a duplicate without creating another record or notification.
 9. Never calculate or send client pricing automatically.
 
-The existing Make Typeform destination remains enabled until its exact form and
-notification behavior is verified. A production canary may create a Typeform
-response plus a Linear issue and Slack message, so it remains approval-gated.
+The form's Make webhook is now verified as the trigger for active scenario
+`DTS Intake → Linear + Slack` (`4894373`). It maps the same contact, service,
+budget, and summary refs into one Linear issue and then sends a direct Slack
+notification linking that issue. It contains no price calculation or client
+email, so it can coexist with the application-owned durable intake queue. A
+production canary will create a Typeform response, Linear issue, and Slack
+message, so it remains approval-gated.
 
 ## Release gates
 
@@ -80,6 +84,8 @@ response plus a Linear issue and Slack message, so it remains approval-gated.
 - TypeScript, lint, Vitest, strict build, and relevant E2E checks pass.
 - Preview contains the form ID and webhook secret and accepts a signed synthetic
   payload without pricing or client-email side effects.
+- Preview and Production expose `NEXT_PUBLIC_TYPEFORM_FORM_ID=wKVKIBe7`; the
+  webhook fails closed if that deployment value drifts from its database-bound ID.
 - The additive Supabase migration is verified before the production handler is
   enabled.
 - Production receives one approved non-PII canary with exactly one durable row.
