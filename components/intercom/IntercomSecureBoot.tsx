@@ -4,7 +4,8 @@ import * as React from "react";
 import { initIntercom, initIntercomSecure } from "@/lib/intercom";
 
 /**
- * Boots Intercom Secure Messenger with a server-signed JWT after analytics consent.
+ * Boots Intercom after support consent: with a server-signed JWT for
+ * authenticated users, or as a plain visitor when the JWT route returns 204.
  */
 export function IntercomSecureBoot({ enabled }: { enabled: boolean }) {
   React.useEffect(() => {
@@ -15,7 +16,9 @@ export function IntercomSecureBoot({ enabled }: { enabled: boolean }) {
       try {
         const res = await fetch("/api/intercom/jwt", { credentials: "same-origin" });
         if (cancelled) return;
-        if (res.status === 503) {
+        // 503 = secure messenger not configured; 204 = anonymous visitor.
+        // Both mean "boot without a JWT" (visitors stay Visitors/Leads).
+        if (res.status === 503 || res.status === 204) {
           initIntercom();
           return;
         }
