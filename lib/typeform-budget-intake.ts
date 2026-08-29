@@ -123,7 +123,7 @@ const MAX_LENGTH = {
 function boundedString(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, maxLength) : null;
+  return trimmed ? Array.from(trimmed).slice(0, maxLength).join("") : null;
 }
 
 function findAnswer(
@@ -194,7 +194,7 @@ export function extractTypeformBudgetIntake(
   if (!rawToken) {
     throw new TypeformBudgetIntakeValidationError("missing_response_token");
   }
-  if (rawToken.length > MAX_LENGTH.responseToken) {
+  if (Array.from(rawToken).length > MAX_LENGTH.responseToken) {
     throw new TypeformBudgetIntakeValidationError("response_token_too_long");
   }
   if (!Array.isArray(response?.answers)) {

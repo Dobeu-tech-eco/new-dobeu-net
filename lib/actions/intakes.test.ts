@@ -304,11 +304,27 @@ describe("atomic review-audit migration", () => {
     "utf8",
   );
 
+  it("creates only the forward-compatible audit prerequisite needed by live", () => {
+    expect(sql).toContain("create table if not exists public.admin_audit_log");
+    expect(sql).toContain(
+      "actor_user_id uuid references auth.users(id) on delete set null",
+    );
+    expect(sql).toContain(
+      "alter table public.admin_audit_log enable row level security",
+    );
+    expect(sql).toContain(
+      "revoke all on table public.admin_audit_log from anon, authenticated",
+    );
+    expect(sql).not.toContain("create table if not exists public.companies");
+  });
+
   it("enforces initial state, review metadata, and forward-only transitions", () => {
     expect(sql).toContain(
-      "before insert or update on public.typeform_budget_intakes",
+      "before insert or update or delete on public.typeform_budget_intakes",
     );
     expect(sql).toContain("if tg_op = 'INSERT'");
+    expect(sql).toContain("if tg_op = 'DELETE'");
+    expect(sql).toContain("return old");
     expect(sql).toContain("if old.status = 'archived'");
     expect(sql).toContain("if old.status = 'reviewed' and new.status = 'new'");
     expect(sql).toContain(

@@ -3,6 +3,22 @@
 -- This table deliberately contains no pricing or delivery state. The webhook
 -- only records the signed submission; an MFA-protected admin reviews it later.
 
+-- Production predates the broader multi-tenant migration that originally
+-- introduced this shared audit table. Create only that narrow prerequisite
+-- here, using the same schema so the later migration remains compatible.
+create table if not exists public.admin_audit_log (
+  id uuid primary key default uuid_generate_v4(),
+  actor_user_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  target_type text not null,
+  target_id text,
+  data jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.admin_audit_log enable row level security;
+revoke all on table public.admin_audit_log from anon, authenticated;
+
 create table public.typeform_budget_intakes (
   id uuid primary key default uuid_generate_v4(),
 
@@ -86,6 +102,14 @@ begin
     return new;
   end if;
 
+  if tg_op = 'DELETE' then
+    if old.status = 'archived' then
+      raise exception 'archived intake is immutable'
+        using errcode = 'check_violation';
+    end if;
+    return old;
+  end if;
+
   if old.status = 'archived' then
     raise exception 'archived intake is immutable'
       using errcode = 'check_violation';
@@ -116,7 +140,7 @@ revoke execute on function public.enforce_typeform_budget_intake_state()
 drop trigger if exists typeform_budget_intakes_state_guard
   on public.typeform_budget_intakes;
 create trigger typeform_budget_intakes_state_guard
-  before insert or update on public.typeform_budget_intakes
+  before insert or update or delete on public.typeform_budget_intakes
   for each row execute function public.enforce_typeform_budget_intake_state();
 
 -- Keep the privileged state transition and its actor audit in one database

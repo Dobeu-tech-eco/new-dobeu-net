@@ -294,6 +294,22 @@ describe("extractTypeformBudgetIntake", () => {
     expect(extracted.projectSummary).toHaveLength(10_000);
   });
 
+  it("bounds extracted text without splitting an astral Unicode character", () => {
+    const payload = fullPayload();
+    const answers = payload.form_response?.answers?.map((item) =>
+      item.field?.ref === "contact_name"
+        ? { ...item, text: `${"a".repeat(239)}😀tail` }
+        : item,
+    );
+    const extracted = extractTypeformBudgetIntake({
+      ...payload,
+      form_response: { ...payload.form_response, answers },
+    });
+
+    expect(extracted.name).toBe(`${"a".repeat(239)}😀`);
+    expect(Array.from(extracted.name ?? "")).toHaveLength(240);
+  });
+
   it.each([
     [
       "unexpected form",
