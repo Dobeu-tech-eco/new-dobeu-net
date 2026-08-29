@@ -12,32 +12,34 @@ client pricing.
 
 ## Verified baseline
 
-- Production `main`: `8cb93494c859eb09de2515cf0f40e4b555516130`
+- Current `origin/main`: `9ae8488d95996ec5be6259a8d35466cf027526ef`
+  (`#201`; production deployment must be re-verified before release)
 - Existing `dev`: `18518832d95fe919fb59d4305d5263c3710cc01e`
 - Existing Typeform feature: `3507b5b8283a406e8b8c49d4613a8d921d7bc1b7`
 - More complete local Typeform prototype: `346cee1a8b1f31acff0d04502e86d27032289020`
-- New visual/Labs requirements branch: `d61a2b904b723a1be7b292e6078a2c059cee4b44`
-- Recovery bundle: `C:\\Users\\JeremyWilliams\\repos\\new-dobeu-net-pre-consolidation-20260829.bundle`
-- Recovery bundle SHA-256: `697980A1915F7013098EBA37BEC49ED15349A7E4F2C6C0215112E4D203C4BE50`
+- Visual/Labs branch after its Datadog revert: `c3e082e395923ba952227a23f1b57b6cdd38383a`
+- Recovery bundle: `C:\\Users\\JeremyWilliams\\repos\\new-dobeu-net-pre-consolidation-20260829-main201.bundle`
+- Recovery bundle SHA-256: `4045E26F4C3D149BE6AEF1E314CC8EAFEB905D2A463DA543DB6C0F845224E5FD`
 
-The bundle passed `git bundle verify` and contains every current remote branch,
-the current `main` and `dev`, and both Typeform implementations. Its archive
-tags are local only and must not be pushed unless separately approved.
+The refreshed bundle passed `git bundle verify` and records complete history
+for all ten current remote heads, current `origin/main`, current `origin/dev`,
+the rebased consolidation branch, and both prior Typeform implementations. Its
+archive tags are local only and must not be pushed unless separately approved.
 
 ## Branch disposition
 
-| Branch                                             | Disposition                                                                                        |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `main`                                             | Keep; merge only through reviewed PRs.                                                             |
-| `dev`                                              | Keep; bring forward to current `main`, then use as the release integration branch.                 |
-| `cursor_dev/frontend-visual-labs-plan-8128`        | Preserve its unique requirements document in consolidated history.                                 |
-| `feat/typeform-estimate-pipeline`                  | Use only as source material; replace with the review-first budget intake.                          |
-| `backup/2026-07-26`                                | Preserve in the verified bundle; tenancy work is already superseded on `main`.                     |
-| `cc-dev/vercel-connect-env-0a2b`                   | Preserve in the bundle; review any still-useful fixes individually and do not merge stale history. |
-| `copilot/1c49d1eaccf2a54fdbfcfa45dece75160b581dfe` | Delete after final verification; its workflow patch is already byte-identical on `main`.           |
-| `dev-vercel-oci`                                   | Delete after approval; strictly behind `main`.                                                     |
-| `feature/hardening-audit-and-landing-refresh`      | Delete after approval; strictly behind `main`.                                                     |
-| `main-msi`                                         | Preserve in the bundle; its only net difference is stale `AGENTS.md` content.                      |
+| Branch                                             | Disposition                                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `main`                                             | Keep; merge only through reviewed PRs.                                                                 |
+| `dev`                                              | Keep; bring forward to current `main`, then use as the release integration branch.                     |
+| `cursor_dev/frontend-visual-labs-plan-8128`        | Delete after verification; visual/Labs landed in `#201`, while this tip reverts Datadog. Do not merge. |
+| `feat/typeform-estimate-pipeline`                  | Use only as source material; replace with the review-first budget intake.                              |
+| `backup/2026-07-26`                                | Preserve in the verified bundle; tenancy work is already superseded on `main`.                         |
+| `cc-dev/vercel-connect-env-0a2b`                   | Preserve in the bundle; review any still-useful fixes individually and do not merge stale history.     |
+| `copilot/1c49d1eaccf2a54fdbfcfa45dece75160b581dfe` | Delete after final verification; its workflow patch is already byte-identical on `main`.               |
+| `dev-vercel-oci`                                   | Delete after approval; strictly behind `main`.                                                         |
+| `feature/hardening-audit-and-landing-refresh`      | Delete after approval; strictly behind `main`.                                                         |
+| `main-msi`                                         | Preserve in the bundle; its only net difference is stale `AGENTS.md` content.                          |
 
 Dirty local worktrees and their local branches are outside the destructive
 cleanup scope. They must not be reset, cleaned, stashed, detached, or removed.
@@ -91,6 +93,15 @@ message, so it remains approval-gated.
 - Production receives one approved non-PII canary with exactly one durable row.
 - Only after production verification are obsolete remote branches deleted and
   `dev` synchronized with final `main`.
+
+## Local verification
+
+The rebased implementation passed TypeScript, changed-file ESLint, all 49
+Vitest files (504 tests), `git diff --check`, and the strict production build.
+The independent security re-review reported no remaining findings. Applying
+the migration to a real Supabase database, Preview verification, and the live
+canary remain external approval gates; the local Docker daemon was not running,
+so the migration has not been claimed as runtime-verified.
 
 ## Approval boundary
 
