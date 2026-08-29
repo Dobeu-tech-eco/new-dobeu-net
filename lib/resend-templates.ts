@@ -10,6 +10,7 @@
  * preview/staging envs render the right hostname.
  */
 import { getSiteUrl, formatCurrency } from "@/lib/utils";
+import type { EstimateResult } from "@/lib/pricing/estimate";
 
 export interface EmailContent {
   subject: string;
@@ -334,5 +335,165 @@ export function leadAdminNotification(args: {
 <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;">${tableRows}</table>`,
     { previewText: `${args.name ?? args.email} (${args.source})` }
   );
+  return { subject, text, html };
+}
+
+// ---- estimate templates (Typeform scope intake) ----
+
+export interface EstimateTemplateContact {
+  email: string;
+  name?: string | null;
+  company?: string | null;
+}
+
+/** Dollars -> the cents that `formatCurrency` expects. */
+function usd(dollars: number): string {
+  return formatCurrency(Math.round(dollars) * 100);
+}
+
+const CONFIDENCE_COPY: Record<string, string> = {
+  firm: "Your answers were specific, so this range is tight.",
+  indicative:
+    "A few answers were still open, so this range is wider than it would be after a scoping call.",
+  rough:
+    "Several answers were still to be determined, so treat this as a planning range rather than a quote."
+};
+
+/**
+ * Client-facing estimate. Leads with the range, explains what moves it, and
+ * links to the itemized breakdown. Deliberately never claims to be a quote —
+ * the intake's own acknowledgement question sets the same expectation.
+ */
+export function estimateToClient(args: {
+  contact: EstimateTemplateContact;
+  estimate: EstimateResult;
+  token: string;
+}): EmailContent {
+  const { contact, estimate, token } = args;
+  const url = `${getSiteUrl()}/estimate/${token}`;
+  const who = contact.name?.trim().split(/\s+/)[0] || "there";
+  const range = `${usd(estimate.low)} – ${usd(estimate.high)}`;
+  const confidenceNote = CONFIDENCE_COPY[estimate.confidence] ?? CONFIDENCE_COPY["indicative"]!;
+  const retainer = estimate.monthlyRetainer
+    ? `${usd(estimate.monthlyRetainer.low)} – ${usd(estimate.monthlyRetainer.high)} per month`
+    : null;
+
+  const subject = `Your preliminary estimate: ${range}`;
+
+  const text = [
+    `Hi ${who},`,
+    "",
+    `Based on what you told us, this project lands in the range ${range}.`,
+    "",
+    confidenceNote,
+    ...(retainer ? ["", `Ongoing support would run ${retainer} on top of the build.`] : []),
+    "",
+    `Full breakdown: ${url}`,
+    "",
+    "This is a planning estimate, not a proposal. Final scope, fixed price, and terms are confirmed only after we talk and you accept in writing.",
+    "",
+    "— Jeremy, Dobeu Tech Solutions"
+  ].join("\n");
+
+  const retainerHtml = retainer
+    ? `<p style="margin:0 0 16px;">Ongoing support would run <strong>${escapeHtml(retainer)}</strong> on top of the build.</p>`
+    : "";
+
+  const html = shell(
+    `<h1 style="margin:0 0 8px;font-size:22px;">Your preliminary estimate</h1>
+<p style="margin:0 0 20px;color:${DOBEU_MUTED};">Hi ${escapeHtml(who)} — here is where your project lands.</p>
+<div style="margin:0 0 20px;padding:20px;border:1px solid ${DOBEU_BORDER};border-radius:12px;background:#FAFAFB;text-align:center;">
+  <div style="font-size:28px;font-weight:800;letter-spacing:-0.01em;">${escapeHtml(range)}</div>
+  <div style="margin-top:6px;font-size:13px;color:${DOBEU_MUTED};text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(estimate.confidence)} range &middot; approx. ${escapeHtml(String(estimate.totalHours))} hours</div>
+</div>
+<p style="margin:0 0 16px;">${escapeHtml(confidenceNote)}</p>
+${retainerHtml}
+${button(url, "See the full breakdown")}
+<p style="margin:20px 0 0;font-size:13px;color:${DOBEU_MUTED};">This is a planning estimate, not a proposal. Final scope, fixed price, and terms are confirmed only after we talk and you accept in writing.</p>`,
+    { previewText: `Preliminary estimate: ${range}` }
+  );
+
+  return { subject, text, html };
+}
+
+/** Internal notification. Carries the breakdown, the flags, and the free text. */
+export function estimateAdminNotification(args: {
+  contact: EstimateTemplateContact;
+  estimate: EstimateResult;
+  token: string;
+  narrative?: Record<string, string | null>;
+  labels?: Record<string, readonly string[]>;
+}): EmailContent {
+  const { contact, estimate, token, narrative = {}, labels = {} } = args;
+  const url = `${getSiteUrl()}/estimate/${token}`;
+  const who = contact.name?.trim() || contact.email;
+  const company = contact.company?.trim();
+  const range = `${usd(estimate.low)} – ${usd(estimate.high)}`;
+
+  const subject = `Estimate ${range} — ${company || who} (${estimate.track}, budget ${estimate.budgetFit})`;
+
+  const answerLines = Object.entries(labels).map(
+    ([field, values]) => `  ${field}: ${values.join(", ")}`
+  );
+  const narrativeLines = Object.entries(narrative)
+    .filter(([, value]) => Boolean(value))
+    .map(([field, value]) => `  ${field}: ${value}`);
+  const lineItemLines = estimate.lineItems.map(
+    (entry) => `  ${entry.label} — ${entry.hours}h ${entry.discipline} = ${usd(entry.amount)}`
+  );
+
+  const text = [
+    `${who}${company ? ` · ${company}` : ""} · ${contact.email}`,
+    `Track: ${estimate.track} · Confidence: ${estimate.confidence} · Budget fit: ${estimate.budgetFit}`,
+    `Range: ${range} (mid ${usd(estimate.midpoint)}) · ${estimate.totalHours}h · rate card ${estimate.rateCardVersion}`,
+    "",
+    ...(estimate.reviewFlags.length ? ["FLAGS:", ...estimate.reviewFlags.map((f) => `  - ${f}`), ""] : []),
+    "LINE ITEMS:",
+    ...lineItemLines,
+    "",
+    ...(estimate.multipliers.length
+      ? ["MULTIPLIERS:", ...estimate.multipliers.map((m) => `  ${m.label} x${m.factor}`), ""]
+      : []),
+    ...(narrativeLines.length ? ["WHAT THEY WROTE:", ...narrativeLines, ""] : []),
+    ...(answerLines.length ? ["ANSWERS:", ...answerLines, ""] : []),
+    url
+  ].join("\n");
+
+  const flagsHtml = estimate.reviewFlags.length
+    ? `<div style="margin:0 0 18px;padding:14px 16px;border-left:3px solid ${DOBEU_AMBER};background:#FFFBEB;border-radius:6px;">
+${estimate.reviewFlags.map((flag) => `<div style="margin:0 0 6px;font-size:14px;">${escapeHtml(flag)}</div>`).join("")}
+</div>`
+    : "";
+
+  const rows = estimate.lineItems
+    .map(
+      (entry) =>
+        `<tr><td style="padding:6px 0;border-bottom:1px solid ${DOBEU_BORDER};font-size:14px;">${escapeHtml(entry.label)}</td>
+<td style="padding:6px 0;border-bottom:1px solid ${DOBEU_BORDER};font-size:14px;color:${DOBEU_MUTED};text-align:right;white-space:nowrap;">${entry.hours}h &middot; ${escapeHtml(usd(entry.amount))}</td></tr>`
+    )
+    .join("");
+
+  const narrativeHtml = narrativeLines.length
+    ? `<h2 style="margin:22px 0 8px;font-size:15px;">What they wrote</h2>
+${Object.entries(narrative)
+  .filter(([, value]) => Boolean(value))
+  .map(
+    ([field, value]) =>
+      `<p style="margin:0 0 10px;font-size:14px;"><span style="color:${DOBEU_MUTED};">${escapeHtml(field)}:</span> ${escapeHtml(value)}</p>`
+  )
+  .join("")}`
+    : "";
+
+  const html = shell(
+    `<h1 style="margin:0 0 4px;font-size:20px;">${escapeHtml(range)}</h1>
+<p style="margin:0 0 18px;color:${DOBEU_MUTED};font-size:14px;">${escapeHtml(who)}${company ? ` &middot; ${escapeHtml(company)}` : ""} &middot; ${escapeHtml(contact.email)}<br/>
+${escapeHtml(estimate.track)} track &middot; ${escapeHtml(estimate.confidence)} &middot; budget ${escapeHtml(estimate.budgetFit)} &middot; ${escapeHtml(String(estimate.totalHours))}h &middot; rate card ${escapeHtml(estimate.rateCardVersion)}</p>
+${flagsHtml}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+${narrativeHtml}
+${button(url, "Open the estimate")}`,
+    { previewText: `${range} — ${company || who}` }
+  );
+
   return { subject, text, html };
 }
