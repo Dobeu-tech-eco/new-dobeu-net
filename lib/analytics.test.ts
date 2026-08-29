@@ -6,15 +6,18 @@ const h = vi.hoisted(() => ({
   posthogOptIn: vi.fn(),
   posthogIdentify: vi.fn(),
   posthogReset: vi.fn(),
+  posthogIsIdentified: vi.fn(() => false),
   mixpanelTrack: vi.fn(),
   mixpanelOptOut: vi.fn(),
   mixpanelOptIn: vi.fn(),
   mixpanelIdentify: vi.fn(),
   mixpanelReset: vi.fn(),
+  mixpanelGetProperty: vi.fn((): string | undefined => undefined),
   ampInitAll: vi.fn(() => Promise.resolve()),
   ampTrack: vi.fn(),
   ampSetOptOut: vi.fn(),
   ampSetUserId: vi.fn(),
+  ampGetUserId: vi.fn((): string | undefined => undefined),
   ampIdentify: vi.fn(),
   ampReset: vi.fn(),
   identifySet: vi.fn()
@@ -26,6 +29,7 @@ vi.mock("posthog-js", () => ({
     capture: h.posthogCapture,
     identify: h.posthogIdentify,
     reset: h.posthogReset,
+    _isIdentified: h.posthogIsIdentified,
     opt_out_capturing: h.posthogOptOut,
     opt_in_capturing: h.posthogOptIn
   }
@@ -37,6 +41,7 @@ vi.mock("mixpanel-browser", () => ({
     track: h.mixpanelTrack,
     identify: h.mixpanelIdentify,
     reset: h.mixpanelReset,
+    get_property: h.mixpanelGetProperty,
     opt_out_tracking: h.mixpanelOptOut,
     opt_in_tracking: h.mixpanelOptIn,
     people: { set: vi.fn() }
@@ -52,12 +57,22 @@ vi.mock("@amplitude/unified", () => {
     track: h.ampTrack,
     setOptOut: h.ampSetOptOut,
     setUserId: h.ampSetUserId,
+    getUserId: h.ampGetUserId,
     identify: h.ampIdentify,
     reset: h.ampReset,
     Identify,
     Types: { LogLevel: { Debug: 4, Warn: 2 } }
   };
 });
+
+const USER_ID = "user-uuid-1234";
+
+/** Make every provider mock report a persisted identity (or none). */
+function stubPersistedIdentity(identified: boolean): void {
+  h.ampGetUserId.mockReturnValue(identified ? USER_ID : undefined);
+  h.posthogIsIdentified.mockReturnValue(identified);
+  h.mixpanelGetProperty.mockReturnValue(identified ? USER_ID : undefined);
+}
 
 type AnalyticsModule = typeof import("@/lib/analytics");
 
@@ -71,6 +86,7 @@ async function loadAnalytics(): Promise<AnalyticsModule> {
 
 beforeEach(() => {
   Object.values(h).forEach((fn) => fn.mockClear());
+  stubPersistedIdentity(false);
   vi.unstubAllEnvs();
   // @ts-expect-error test shim
   global.window = { dataLayer: [] };
@@ -159,18 +175,37 @@ describe("amplitude fan-out", () => {
   });
 
   it("identifies the authenticated user with user_id + properties and resets on logout", () => {
-    analytics.identifyUser({ userId: "user-uuid-1234", email: "client@example.com", isAdmin: false });
-    expect(h.ampSetUserId).toHaveBeenCalledWith("user-uuid-1234");
+    analytics.identifyUser({ userId: USER_ID, email: "client@example.com", isAdmin: false });
+    expect(h.ampSetUserId).toHaveBeenCalledWith(USER_ID);
     expect(h.identifySet).toHaveBeenCalledWith("email", "client@example.com");
     expect(h.identifySet).toHaveBeenCalledWith("is_admin", false);
     expect(h.ampIdentify).toHaveBeenCalled();
-    expect(h.posthogIdentify).toHaveBeenCalledWith("user-uuid-1234", { email: "client@example.com" });
-    expect(h.mixpanelIdentify).toHaveBeenCalledWith("user-uuid-1234");
+    expect(h.posthogIdentify).toHaveBeenCalledWith(USER_ID, { email: "client@example.com" });
+    expect(h.mixpanelIdentify).toHaveBeenCalledWith(USER_ID);
 
+    stubPersistedIdentity(true);
     analytics.resetAnalyticsUser();
-    expect(h.ampReset).toHaveBeenCalled();
-    expect(h.posthogReset).toHaveBeenCalled();
-    expect(h.mixpanelReset).toHaveBeenCalled();
+    expect(h.ampReset).toHaveBeenCalledTimes(1);
+    expect(h.posthogReset).toHaveBeenCalledTimes(1);
+    expect(h.mixpanelReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves anonymous devices untouched on reset (keeps the pre-login device id)", () => {
+    analytics.resetAnalyticsUser();
+    expect(h.ampReset).not.toHaveBeenCalled();
+    expect(h.posthogReset).not.toHaveBeenCalled();
+    expect(h.mixpanelReset).not.toHaveBeenCalled();
+  });
+
+  it("re-attaches the identity when consent is withdrawn and later re-granted", () => {
+    analytics.identifyUser({ userId: USER_ID });
+    analytics.setAnalyticsConsent(false);
+    h.mixpanelIdentify.mockClear();
+    h.ampSetUserId.mockClear();
+
+    analytics.setAnalyticsConsent(true);
+    expect(h.mixpanelIdentify).toHaveBeenCalledWith(USER_ID);
+    expect(h.ampSetUserId).toHaveBeenCalledWith(USER_ID);
   });
 
   it("applies an identity supplied before the SDKs finished loading", async () => {
@@ -180,6 +215,47 @@ describe("amplitude fan-out", () => {
     expect(h.ampSetUserId).not.toHaveBeenCalled();
     await fresh.initAnalytics(true);
     expect(h.ampSetUserId).toHaveBeenCalledWith("user-uuid-5678");
+  });
+
+  it("applies a reset requested before the SDKs finished loading", async () => {
+    vi.stubEnv("NEXT_PUBLIC_AMPLITUDE_API_KEY", AMPLITUDE_KEY);
+    stubPersistedIdentity(true);
+    const fresh = await loadAnalytics();
+    fresh.resetAnalyticsUser();
+    expect(h.ampReset).not.toHaveBeenCalled();
+    await fresh.initAnalytics(true);
+    expect(h.ampReset).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("initialization races", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_AMPLITUDE_API_KEY", AMPLITUDE_KEY);
+  });
+
+  it("shares one in-flight load between concurrent callers", async () => {
+    const fresh = await loadAnalytics();
+    await Promise.all([fresh.initAnalytics(true), fresh.initAnalytics(true)]);
+    fresh.setAnalyticsConsent(true);
+    await fresh.initAnalytics(true);
+    expect(h.ampInitAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("honors a consent withdrawal that lands while the SDKs are still loading", async () => {
+    let finishLoad: () => void = () => undefined;
+    h.ampInitAll.mockImplementationOnce(
+      () => new Promise<void>((resolve) => { finishLoad = resolve; })
+    );
+    const fresh = await loadAnalytics();
+    const loading = fresh.initAnalytics(true);
+    await vi.waitFor(() => expect(h.ampInitAll).toHaveBeenCalled());
+    fresh.setAnalyticsConsent(false);
+    finishLoad();
+    await loading;
+
+    expect(h.ampSetOptOut).toHaveBeenLastCalledWith(true);
+    fresh.track("cta_click");
+    expect(h.ampTrack).not.toHaveBeenCalled();
   });
 });
 

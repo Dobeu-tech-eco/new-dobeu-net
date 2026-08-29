@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { identifyUser } from "@/lib/analytics";
+import { createClient } from "@/lib/supabase/client";
+import { identifyUser, resetAnalyticsUser } from "@/lib/analytics";
 
 /**
  * Client component that attaches the authenticated Supabase user to the
@@ -12,6 +13,10 @@ import { identifyUser } from "@/lib/analytics";
  *
  * Consent gating lives in `lib/analytics.ts`: the identity is held until the
  * visitor grants the "analytics" cookie category and the SDKs finish loading.
+ *
+ * It also listens for Supabase `SIGNED_OUT` — sign-outs that never go through
+ * `LogoutButton` (another tab, an expired or revoked session) must detach the
+ * identity too, or the next visitor on this device inherits it.
  */
 export interface AnalyticsIdentifyProps {
   user_id: string;
@@ -23,6 +28,13 @@ export function AnalyticsIdentify({ user_id, email, is_admin }: AnalyticsIdentif
   React.useEffect(() => {
     identifyUser({ userId: user_id, email, isAdmin: is_admin });
   }, [user_id, email, is_admin]);
+
+  React.useEffect(() => {
+    const { data } = createClient().auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") resetAnalyticsUser();
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
 
   return null;
 }

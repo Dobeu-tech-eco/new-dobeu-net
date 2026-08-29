@@ -11,7 +11,13 @@
  * Consent model (see components/analytics-provider.tsx + hooks/use-cookie-consent.ts):
  *   - Nothing initializes until the visitor grants the "analytics" category.
  *   - If consent is later withdrawn, every SDK is switched to its opt-out
- *     mode so autocaptured events (which bypass `track()`) stop too.
+ *     mode so autocaptured events (which bypass `track()`) stop too — even if
+ *     the withdrawal lands while the SDKs are still being imported.
+ *
+ * Identity (see components/portal/AnalyticsIdentify.tsx + AnalyticsSignedOut.tsx):
+ *   - `identifyUser()` attaches the verified Supabase user id; held until consent.
+ *   - `resetAnalyticsUser()` detaches it on any sign-out path (button, other tab,
+ *     expired session) and is a no-op for anonymous devices.
  *
  * Sensitive server-side events (bookings, payments) are not tracked here;
  * add a dedicated server module if that becomes necessary.
@@ -39,11 +45,17 @@ let amplitude: Amplitude | null = null;
 
 let initialized = false;
 let consentGranted = false;
+/** Single-flight SDK load so concurrent callers never double-initialize. */
+let initPromise: Promise<void> | null = null;
 /** Last identified user; re-applied once the SDKs finish loading after consent. */
 let currentUser: AnalyticsUser | null = null;
+/** A reset requested before the SDKs loaded; applied as soon as they do. */
+let resetPending = false;
 
 /** Synthetic PostHog-style page view — Amplitude autocaptures page views itself. */
 const PAGEVIEW_EVENT = "$pageview";
+/** Mixpanel persists the identified user under this super property. */
+const MIXPANEL_USER_ID_PROPERTY = "$user_id";
 
 /**
  * Amplitude Session Replay share of sessions to record (0–1). Amplitude's
@@ -130,23 +142,43 @@ async function initAmplitude(apiKey: string): Promise<void> {
   });
 }
 
-export async function initAnalytics(consent: boolean): Promise<void> {
-  if (typeof window === "undefined" || initialized) return;
+/**
+ * Load the SDKs once the visitor has consented. Single-flight: concurrent
+ * callers (AnalyticsProvider + setAnalyticsConsent, React strict-mode double
+ * effects) share one in-flight load, and consent is re-read after the awaits
+ * so a withdrawal that lands while the imports are pending wins.
+ */
+export function initAnalytics(consent: boolean): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  consentGranted = consent;
+  if (!consent || initialized) return Promise.resolve();
+  if (!initPromise) initPromise = loadSdks().then(finishInit, handleInitFailure);
+  return initPromise;
+}
 
-  // Only fire analytics if the user has consented.
-  if (!consent) return;
-
+async function loadSdks(): Promise<void> {
   if (process.env.NEXT_PUBLIC_POSTHOG_KEY) await initPosthog(process.env.NEXT_PUBLIC_POSTHOG_KEY);
   if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) await initMixpanel(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN);
   if (process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY) {
     await initAmplitude(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY);
   }
-
   // ---- GA4 (via gtag) and GTM are loaded via <Script> in app/layout.tsx ----
+}
 
+function finishInit(): void {
   initialized = true;
-  consentGranted = true;
+  // Consent may have been withdrawn while the SDKs were still loading.
+  if (!consentGranted) {
+    applyOptOut(true);
+    return;
+  }
+  if (resetPending) detachIdentity();
   if (currentUser) applyIdentity(currentUser);
+}
+
+function handleInitFailure(error: unknown): void {
+  initPromise = null; // let the next consent change retry
+  console.warn("[analytics.init] SDK load failed", error);
 }
 
 /** Flip every initialized SDK into (or out of) opt-out mode. */
@@ -165,7 +197,10 @@ function applyOptOut(optOut: boolean): void {
 export function setAnalyticsConsent(consent: boolean): void {
   consentGranted = consent;
   if (consent) void initAnalytics(true);
-  if (initialized) applyOptOut(!consent);
+  if (!initialized) return;
+  applyOptOut(!consent);
+  // Mixpanel's opt-out wipes its persisted distinct id — re-attach the user on re-grant.
+  if (consent && currentUser) applyIdentity(currentUser);
 }
 
 export function track(eventName: string, props: EventProps = {}): void {
@@ -218,14 +253,29 @@ export function identifyUser(user: AnalyticsUser): void {
   if (initialized && consentGranted) applyIdentity(user);
 }
 
-/** Detach the user on logout so the next visitor on this device starts anonymous. */
+/**
+ * Detach the user (logout, expired/revoked session) so the next visitor on
+ * this device starts anonymous. Only providers that still carry a user id are
+ * reset, so on an anonymous device this is a no-op and the anonymous device id
+ * — and with it the pre-login → post-login merge — survives. Idempotent; if the
+ * SDKs have not loaded yet the reset is applied once they do.
+ */
 export function resetAnalyticsUser(): void {
   if (typeof window === "undefined") return;
   currentUser = null;
+  if (!initialized) {
+    resetPending = true;
+    return;
+  }
+  detachIdentity();
+}
+
+function detachIdentity(): void {
+  resetPending = false;
   try {
-    amplitude?.reset();
-    posthog?.reset();
-    mixpanel?.reset();
+    if (amplitude?.getUserId()) amplitude.reset();
+    if (posthog?._isIdentified()) posthog.reset();
+    if (mixpanel?.get_property(MIXPANEL_USER_ID_PROPERTY)) mixpanel.reset();
   } catch (e) {
     console.warn("[analytics.reset] failed", e);
   }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { LoginForm } from "./LoginForm";
+import { AnalyticsSignedOut } from "@/components/portal/AnalyticsSignedOut";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ArrowLeft, ShieldCheck, Zap, Lock } from "lucide-react";
 
@@ -34,6 +35,7 @@ const TRUST_POINTS = [
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
+      <AnalyticsSignedOut />
       {/* ─── Left panel — decorative brand side ───────────────────────────── */}
       <div
         className="hidden lg:flex lg:w-[46%] flex-col justify-between p-12 bg-card border-r border-border relative overflow-hidden"
