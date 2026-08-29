@@ -26,6 +26,11 @@
  *   - added work-order lifecycle timestamps:
  *     `work_orders.{in_progress_at,delivered_at,closed_at,cancelled_at}`
  *   - added `profiles.phone` + `profiles.notify_email`
+ *
+ * 2026-07-17 (tenancy): synced with `20260717120000_multi_tenant_companies.sql`
+ *   - added `companies`, `company_roles`, `company_members`, `digital_assets`,
+ *     `asset_entitlements`, `admin_audit_log`
+ *   - added nullable `projects.company_id` + `work_orders.company_id`
  */
 
 export type Json =
@@ -87,6 +92,7 @@ export interface Database {
           delivered_at: string | null;
           total_cents: number;
           stripe_link: string | null;
+          company_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -222,6 +228,7 @@ export interface Database {
           closed_at: string | null;
           cancelled_at: string | null;
           invoice_id: string | null;
+          company_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -249,6 +256,106 @@ export interface Database {
           filename: string;
         };
         Update: Partial<Database["public"]["Tables"]["work_order_attachments"]["Row"]>;
+        Relationships: [];
+      };
+      companies: {
+        Row: {
+          id: string;
+          name: string;
+          status: "active" | "suspended";
+          stripe_customer_id: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["companies"]["Row"]> & {
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["companies"]["Row"]>;
+        Relationships: [];
+      };
+      company_roles: {
+        Row: {
+          key: string;
+          label: string;
+          rank: number;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["company_roles"]["Row"]> & {
+          key: string;
+          label: string;
+          rank: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["company_roles"]["Row"]>;
+        Relationships: [];
+      };
+      company_members: {
+        Row: {
+          id: string;
+          company_id: string;
+          user_id: string;
+          role: string;
+          status: "invited" | "active" | "disabled";
+          invited_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["company_members"]["Row"]> & {
+          company_id: string;
+          user_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["company_members"]["Row"]>;
+        Relationships: [];
+      };
+      digital_assets: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          storage_path: string;
+          stripe_product_id: string | null;
+          price_cents: number | null;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["digital_assets"]["Row"]> & {
+          title: string;
+          storage_path: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["digital_assets"]["Row"]>;
+        Relationships: [];
+      };
+      asset_entitlements: {
+        Row: {
+          id: string;
+          asset_id: string;
+          company_id: string | null;
+          user_id: string | null;
+          source: string;
+          stripe_checkout_session_id: string | null;
+          granted_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["asset_entitlements"]["Row"]> & {
+          asset_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["asset_entitlements"]["Row"]>;
+        Relationships: [];
+      };
+      admin_audit_log: {
+        Row: {
+          id: string;
+          actor_user_id: string | null;
+          action: string;
+          target_type: string;
+          target_id: string | null;
+          data: Json | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["admin_audit_log"]["Row"]> & {
+          action: string;
+          target_type: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_audit_log"]["Row"]>;
         Relationships: [];
       };
     };

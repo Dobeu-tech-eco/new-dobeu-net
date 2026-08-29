@@ -3,7 +3,15 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-import { LayoutDashboard, FolderKanban, FileText, Receipt, Ticket, Settings } from "lucide-react";
+import {
+  LayoutDashboard,
+  FolderKanban,
+  FileText,
+  Receipt,
+  Ticket,
+  Package,
+  Settings
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -20,7 +28,8 @@ const NAV = [
   { href: "/portal/tickets", label: "Tickets", icon: Ticket },
   { href: "/portal/files", label: "Files", icon: FileText },
   { href: "/portal/invoices", label: "Invoices", icon: Receipt },
-  { href: "/portal/settings", label: "Settings", icon: Settings },
+  { href: "/portal/assets", label: "Assets", icon: Package },
+  { href: "/portal/settings", label: "Settings", icon: Settings }
 ];
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
