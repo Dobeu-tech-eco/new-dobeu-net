@@ -83,7 +83,8 @@ The fan-out lives in `lib/leads.ts` so every lead entry point shares one code pa
 Entry points that call `processLead()`:
 - **`app/api/lead/route.ts`** -- public `POST` (the landing-page form). Zod-validated, per-IP rate limit: Upstash sliding window (`@upstash/ratelimit`) when `UPSTASH_REDIS_REST_URL/TOKEN` are set, in-memory fallback otherwise.
 - **`app/api/webhooks/calendly/route.ts`** -- Calendly `invitee.created` webhook. Verifies the `Calendly-Webhook-Signature` HMAC (`lib/calendly.ts`) before trusting the payload; gated on `CALENDLY_WEBHOOK_SIGNING_KEY` (returns 503 / never accepts unsigned calls when unset). This is where a booking actually becomes a lead -- the client-side Calendly embed only exposes URIs, not email/name.
-- **`app/api/typeform/webhook/route.ts`** -- Typeform submissions, HMAC-verified via `TYPEFORM_WEBHOOK_SECRET`.
+
+The Typeform budget route is intentionally separate: **`app/api/typeform/webhook/route.ts`** verifies `TYPEFORM_WEBHOOK_SECRET`, accepts only form `wKVKIBe7`, and durably stores an idempotent review record in `typeform_budget_intakes`. It does not call `processLead()`, price work, send customer email, or fan out to Apollo, Linear, or Slack. An AAL2-protected admin reviews and archives submissions under `/admin/intakes`.
 
 ### Stripe invoicing (Phase 3 — live)
 - `lib/invoice-creation.ts` — service-role invoice creation core. Deliberately **not** a `"use server"` file so its exports can't be invoked from the client; callers do their own authz (`createInvoice` after `requireAdmin()`, `acceptWorkOrderQuote` after owner check). Locked decisions: Stripe-hosted invoices; lazy-create the Stripe customer on first invoice and stash on `profiles.stripe_customer_id`; mirror Stripe state onto a local `invoices` row; a Stripe failure still inserts a local row (NULL `stripe_invoice_id`) so the admin sees the attempt.
@@ -107,7 +108,7 @@ Datadog is the single pane: RUM + Session Replay + browser Logs client-side (`li
 ### `lib/` map
 - `lib/supabase/{client,server,middleware}.ts` — the three clients described above.
 - `lib/leads.ts` — `processLead()` fan-out (single shared path).
-- `lib/apollo.ts`, `lib/customerio.ts`, `lib/calendly.ts`, `lib/typeform.ts` — third-party integrations called from the lead pipeline / webhooks.
+- `lib/apollo.ts`, `lib/customerio.ts`, `lib/calendly.ts`, `lib/typeform.ts` — third-party integrations called from the lead pipeline / webhooks; `lib/typeform-budget-intake.ts` is the isolated review-first Typeform persistence path.
 - `lib/stripe.ts`, `lib/stripe-event-dedupe.ts`, `lib/invoice-creation.ts` — Stripe surfaces (see above).
 - `lib/resend.ts` + `lib/resend-templates.ts` — email send wrapper + HTML templates; every send is wrapped so a Resend failure can't break the underlying action.
 - `lib/rate-limit.ts` — generic fixed-window limiter (Upstash REST pipeline with in-memory fallback) + `hashIp()`; note `app/api/lead` uses `@upstash/ratelimit` directly instead.
