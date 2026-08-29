@@ -48,8 +48,8 @@ pnpm db:types                  # regenerate lib/database.types.ts from local sch
 
 For a full pre-merge check, run `pnpm verify`, which mirrors CI locally. `pnpm build:strict` additionally fails on the `Detected "engines"` and `currently disables static generation` warnings; plain `pnpm build` (used by Vercel) stays lenient so a harmless future warning can't block production deploys.
 
-### ⚠️ Duplicate Next config files
-Both `next.config.js` and `next.config.ts` are tracked. **Next.js resolves `next.config.js` first**, so the `.js` file (a slim v0-import: `images.remotePatterns` + `generateBuildId` only) shadows the `.ts` file that carries the CSP/security headers, strict-mode flags, redirects, and rewrites. Any change to config must reconcile this — do not edit one file assuming it's the active one without checking which Next.js actually loads (it warns at build time when both exist).
+### Next config
+Only `next.config.ts` is tracked (the shadowing `next.config.js` v0-import was removed; production headers confirmed live 2026-08-29). **Do not add a `next.config.js`** — Next.js resolves it first and it would silently shadow the CSP/security headers, strict-mode flags, redirects, and rewrites in the `.ts` file.
 
 ## Architecture
 
@@ -94,10 +94,12 @@ Entry points that call `processLead()`:
 `lib/agent/index.ts` runs the Claude Agent SDK's `query()` against a per-user Composio tool-router session. Degrades gracefully: returns `{ ok: false, error: "not_configured" | "sdk_not_installed" }` when `COMPOSIO_API_KEY`/`ANTHROPIC_API_KEY` or the SDK packages are absent — never throws at build time. HTTP surface is `app/api/agent/route.ts` (**admin-gated** via `isAdminEmail`, `maxDuration = 60`); long-running automations belong in `scripts/agent.ts` out of band. Never accept `permissionMode: "bypassPermissions"` from an end-user request body.
 
 ### Client-side analytics fan-out (`lib/analytics.ts`)
-`"use client"` module. One `track()` call dispatches to PostHog + Mixpanel + GA4 (gtag) + GTM dataLayer (GA4/GTM scripts load via `<Script>` in `app/layout.tsx`; posthog-js/mixpanel-browser load lazily). **Consent-gated**: `initAnalytics(consent)` no-ops until the user consents (cookie-consent banner; `hooks/use-cookie-consent.ts`). Each provider is independently feature-flagged by the presence of its `NEXT_PUBLIC_*` env key. Datadog RUM/Logs (`lib/datadog.ts`) and Intercom (`lib/intercom.ts`) wire in via `components/analytics-provider.tsx` / `app/layout.tsx`.
+`"use client"` module. One `track()` call dispatches to PostHog + Mixpanel + Amplitude + GA4 (gtag) + GTM dataLayer (GA4/GTM scripts load via `<Script>` in `app/layout.tsx`; posthog-js / mixpanel-browser / `@amplitude/unified` load lazily). **Consent-gated**: `initAnalytics(consent)` no-ops until the user consents (cookie-consent banner; `hooks/use-cookie-consent.ts`); withdrawing consent calls each SDK's opt-out so autocaptured events stop too. Each provider is independently feature-flagged by the presence of its `NEXT_PUBLIC_*` env key. Datadog RUM/Logs (`lib/datadog.ts`) and Intercom (`lib/intercom.ts`) wire in via `components/analytics-provider.tsx` / `app/layout.tsx`.
+
+**Amplitude specifics** (org `polished-sun-911894`, project `dobeu.net` #784238, US zone): `@amplitude/unified` with explicit Autocapture (page views, sessions, forms, clicks, downloads, attribution, web vitals, frustration signals; network tracking off), Session Replay at `NEXT_PUBLIC_AMPLITUDE_REPLAY_SAMPLE_RATE` (default 1; remote setting wins), Guides & Surveys skipped. `track()` deliberately does **not** forward the synthetic `$pageview` to Amplitude — autocapture already records route changes. Identity: `components/portal/AnalyticsIdentify.tsx` (mounted in the portal/admin layouts) calls `identifyUser()` with the Supabase user id + email and resets on Supabase `SIGNED_OUT` (other-tab / expired-session sign-outs); `LogoutButton` calls `resetAnalyticsUser()` explicitly and `components/portal/AnalyticsSignedOut.tsx` (on `/login`) clears a stale identity when no session exists. `resetAnalyticsUser()` only resets providers that still hold a user id, so anonymous device ids (and the anonymous → identified merge) survive. `initAnalytics()` is single-flight and re-reads consent after the SDK imports resolve. Event names stay `snake_case` in code (shared with GA4/PostHog/Mixpanel); Title Case display names + descriptions live in Amplitude's tracking plan — see `docs/tracking-plan.md`.
 
 ### Security headers / CSP
-`next.config.ts` builds a strict Content-Security-Policy plus HSTS, X-Frame-Options, etc., applied to all routes — **but see the duplicate-config warning above: while `next.config.js` exists, Next.js loads it instead and these headers are not applied**. When adding any third-party script, embed, or API host, add its domains to the relevant CSP array (`script`, `connect`, `frame`, `font`, `style`) or it will be blocked at runtime once the `.ts` config is active. CSP arrays are intentionally split line-per-entry so git keeps treating the file as text.
+`next.config.ts` builds a strict Content-Security-Policy plus HSTS, X-Frame-Options, etc., applied to all routes. When adding any third-party script, embed, or API host, add its domains to the relevant CSP array (`script`, `connect`, `frame`, `font`, `style`) or it will be blocked at runtime (Amplitude needs `https://*.amplitude.com` in `connect` and `worker-src blob:` for replay compression). CSP arrays are intentionally split line-per-entry so git keeps treating the file as text.
 
 ### `lib/` map
 - `lib/supabase/{client,server,middleware}.ts` — the three clients described above.
@@ -140,6 +142,7 @@ Entry points that call `processLead()`:
 | `INTERCOM_API_SECRET` | Server-side JWT signing for Intercom Secure Messenger (`lib/intercom-jwt.ts`, `/api/intercom/jwt`). Unset → anonymous legacy boot. |
 | `INTERCOM_IDENTITY_VERIFICATION_SECRET` | Legacy HMAC (`lib/intercom-hmac.ts`); superseded by `INTERCOM_API_SECRET` when JWT is enabled. |
 | `NEXT_PUBLIC_SITE_URL` | Canonical origin for metadata/emails. |
+| `NEXT_PUBLIC_AMPLITUDE_API_KEY` | Amplitude browser key (public). Absent → Amplitude skipped. `NEXT_PUBLIC_AMPLITUDE_REPLAY_SAMPLE_RATE` (0–1, default 1) throttles Session Replay. |
 | `NEXT_PUBLIC_*` (PostHog, Mixpanel, Intercom, Datadog) | Per-provider client-side analytics — feature-flagged by presence. GA4/GTM load via `<Script>` in `app/layout.tsx`. |
 
 ## Quality standards
