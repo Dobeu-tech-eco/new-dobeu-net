@@ -49,8 +49,9 @@ export default function PrivacyPage() {
       <ul>
         <li>
           <strong>Usage data</strong> — pages visited, buttons clicked, scroll depth, session duration,
-          and referrer URL. Collected via PostHog, Mixpanel, and Google Analytics 4{" "}
-          <em>only after you accept the cookie banner</em>.
+          and referrer URL. Collected via PostHog, Mixpanel, Amplitude, and Google Analytics 4{" "}
+          <em>only after you accept the cookie banner</em>. Amplitude may also record a replay of
+          how you interact with the page (text you type is masked before it leaves your browser).
         </li>
         <li>
           <strong>Device and browser data</strong> — browser type, operating system, device type, screen
@@ -112,6 +113,7 @@ export default function PrivacyPage() {
           <tr><td>Customer.io</td><td>Marketing email sequences (opt-in only)</td><td>US</td></tr>
           <tr><td>PostHog</td><td>Product analytics (opt-in only)</td><td>US</td></tr>
           <tr><td>Mixpanel</td><td>Event analytics (opt-in only)</td><td>US</td></tr>
+          <tr><td>Amplitude</td><td>Product analytics and session replay (opt-in only)</td><td>US</td></tr>
           <tr><td>Google Analytics 4</td><td>Traffic analytics (opt-in only)</td><td>US / EU</td></tr>
           <tr><td>Apollo.io</td><td>CRM and lead management</td><td>US</td></tr>
           <tr><td>Intercom</td><td>Customer support chat (opt-in only)</td><td>US</td></tr>

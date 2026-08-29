@@ -175,3 +175,35 @@ export const GTM_PILLARS = [
     icon: "TrendingUp",
   },
 ] as const;
+
+/** Hero capability cards — scroll to matching `#service-*` anchor in Services. */
+export const HERO_CAPABILITY_CARDS = [
+  {
+    id: "ai-agents",
+    label: "AI agents",
+    description: "Autonomous workflows & tool-calling pipelines",
+    icon: "Bot" as const,
+  },
+  {
+    id: "fullstack",
+    label: "Full-stack apps",
+    description: "Next.js, Supabase, Vercel — production from day one",
+    icon: "Code2" as const,
+  },
+  {
+    id: "brand",
+    label: "Brand systems",
+    description: "Design tokens, Figma libraries, Code Connect",
+    icon: "Palette" as const,
+  },
+  {
+    id: "growth",
+    label: "Growth engineering",
+    description: "Attribution, lifecycle automation, paid infra",
+    icon: "LineChart" as const,
+  },
+] as const;
+
+/** Reveal hero → `/labs` CTA once `/labs` satisfies AE2 (Phase B). */
+export const SHOW_LABS_HERO_CTA =
+  process.env.NEXT_PUBLIC_SHOW_LABS_HERO_CTA !== "false";

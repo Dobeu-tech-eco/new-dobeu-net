@@ -6,10 +6,12 @@
  * Stripe POST. The only escape hatch is `markInvoicePaidManually` for cash/wire.
  *
  * Events handled:
- *   invoice.paid           → status='paid',   paid_at=now()   (+ client receipt email)
- *   invoice.payment_failed → status='failed'                  (+ admin notification email)
- *   invoice.finalized      → mirror hosted_invoice_url        (re-finalization can change it)
- *   invoice.voided         → status='void'
+ *   invoice.paid                 → status='paid', paid_at=now()  (+ client receipt email)
+ *   invoice.payment_failed       → status='overdue'              (+ admin notification email)
+ *   invoice.finalized            → mirror hosted_invoice_url     (re-finalization can change it)
+ *   invoice.voided               → status='void'
+ *   checkout.session.completed   → grant a digital-asset entitlement (Phase 5),
+ *                                  keyed on session.id for idempotent retries
  *
  * Everything else is acked with `200 { received: true, ignored }` so Stripe
  * stops retrying — Stripe expects 2xx for "received and acknowledged", not
@@ -166,6 +168,12 @@ export async function POST(request: Request): Promise<NextResponse> {
         break;
       }
 
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await grantAssetEntitlement(admin, session);
+        break;
+      }
+
       default:
         console.log(
           JSON.stringify({
@@ -258,5 +266,57 @@ async function notifyInvoiceFailed(
     });
   } catch (e) {
     console.warn("[stripe webhook] invoice.payment_failed email failed (non-fatal):", e);
+  }
+}
+
+/** Postgres unique_violation — a retry hit the idempotency index. Treat as success. */
+function isUniqueViolation(error: { code?: string | null } | null): boolean {
+  return error?.code === "23505";
+}
+
+/**
+ * Grant a digital-asset entitlement from a completed checkout (Phase 5).
+ *
+ * Convention: the Checkout Session carries `metadata.digital_asset_id` and
+ * exactly one grantee — `metadata.company_id` (all members gain access) or
+ * `metadata.user_id` (the purchaser). Sessions without a `digital_asset_id`
+ * are not asset purchases and are ignored.
+ *
+ * Idempotency: `stripe_checkout_session_id` has a UNIQUE partial index, so a
+ * redelivered event races to the same row — a unique violation means "already
+ * granted", which is success, not failure.
+ */
+async function grantAssetEntitlement(
+  admin: ReturnType<typeof createAdminClient>,
+  session: Stripe.Checkout.Session
+): Promise<void> {
+  const digitalAssetId = session.metadata?.digital_asset_id;
+  if (!digitalAssetId) return; // Not a digital-asset checkout.
+
+  const companyId = session.metadata?.company_id ?? null;
+  const userId = session.metadata?.user_id ?? null;
+  if (!companyId && !userId) {
+    console.warn(
+      JSON.stringify({
+        msg: "stripe_asset_grant_no_grantee",
+        session_id: session.id,
+        asset_id: digitalAssetId
+      })
+    );
+    return;
+  }
+
+  // Company grant wins when both are present; the schema check enforces
+  // exactly one grantee, so null the other side.
+  const { error } = await admin.from("asset_entitlements").insert({
+    asset_id: digitalAssetId,
+    company_id: companyId,
+    user_id: companyId ? null : userId,
+    source: "stripe",
+    stripe_checkout_session_id: session.id
+  });
+
+  if (error && !isUniqueViolation(error)) {
+    throw new Error(`asset entitlement insert failed: ${error.message}`);
   }
 }

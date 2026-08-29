@@ -5,31 +5,44 @@ import Link from "next/link";
 import { motion, AnimatePresence, useInView } from "motion/react";
 import {
   ArrowRight,
+  Bot,
+  Code2,
+  ExternalLink,
   GitCommitHorizontal,
   GitPullRequest,
+  LineChart,
+  Palette,
   Tag,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroShaderBackground } from "@/components/landing/HeroShaderBackground";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
-import { useMotionProps, FADE_UP, FADE } from "@/hooks/use-motion-props";
-import { FOUNDER, TYPEWRITER_PHRASES } from "@/lib/jeremy-data";
+import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
+import {
+  FOUNDER,
+  HERO_CAPABILITY_CARDS,
+  SHOW_LABS_HERO_CTA,
+  TYPEWRITER_PHRASES,
+} from "@/lib/jeremy-data";
 import type { GitHubEvent } from "@/app/api/github-activity/route";
 
-// ---------------------------------------------------------------------------
-// Typewriter hook
-// ---------------------------------------------------------------------------
+const CAPABILITY_ICONS = {
+  Bot,
+  Code2,
+  Palette,
+  LineChart,
+} as const;
+
 function useTypewriter(
   phrases: readonly string[],
   typingSpeed = 52,
   pauseMs = 2400,
-  paused = false
+  paused = false,
 ) {
-  const [display, setDisplay] = useState("");
+  const [display, setDisplay] = useState(phrases[0] ?? "");
   const [phraseIdx, setPhraseIdx] = useState(0);
-  const [charIdx, setCharIdx] = useState(0);
+  const [charIdx, setCharIdx] = useState(phrases[0]?.length ?? 0);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -55,9 +68,6 @@ function useTypewriter(
   return display;
 }
 
-// ---------------------------------------------------------------------------
-// Event icon map
-// ---------------------------------------------------------------------------
 const EVENT_ICONS: Record<GitHubEvent["type"], React.ReactNode> = {
   push: <GitCommitHorizontal className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />,
   pr: <GitPullRequest className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />,
@@ -74,9 +84,6 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
-// ---------------------------------------------------------------------------
-// ActivityTicker
-// ---------------------------------------------------------------------------
 function ActivityTicker() {
   const [events, setEvents] = useState<GitHubEvent[]>([]);
   const [idx, setIdx] = useState(0);
@@ -97,7 +104,11 @@ function ActivityTicker() {
   }, [events, isInView]);
 
   return (
-    <div ref={ref} className="flex min-h-[30px] w-full max-w-full items-center justify-start">
+    <div
+      ref={ref}
+      className="flex min-h-[30px] w-full max-w-full items-center justify-center"
+      data-testid="hero-activity-ticker"
+    >
       {events.length > 0 && (() => {
         const ev = events[idx];
         return (
@@ -139,17 +150,19 @@ function ActivityTicker() {
   );
 }
 
-// Main Hero
-// ---------------------------------------------------------------------------
+function scrollToService(serviceId: string) {
+  document.getElementById(`service-${serviceId}`)?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
 export function Hero() {
   const { open } = useLightbox();
   const mp = useMotionProps(FADE_UP);
-  const mpFade = useMotionProps(FADE);
 
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref);
-
-  // Pause typewriter when off-screen to prevent unnecessary re-renders
   const typeText = useTypewriter(TYPEWRITER_PHRASES, 52, 2400, !isInView);
 
   function trackAndOpen(target: "book" | "form" | "email", label: string) {
@@ -162,19 +175,18 @@ export function Hero() {
       ref={ref}
       id="top"
       aria-labelledby="hero-heading"
-      className="relative isolate overflow-hidden pt-16 md:pt-24 pb-20 md:pb-32"
+      className="relative isolate flex min-h-[min(92vh,900px)] flex-col justify-center overflow-hidden py-20 md:py-28"
     >
       <HeroShaderBackground />
 
-      <div className="container max-w-6xl">
-        {/* Eyebrow row */}
+      <div className="container relative z-10 max-w-6xl">
         <motion.div
           initial={mp.initial}
           animate={mp.animate}
           transition={{ duration: 0.5 }}
-          className="mb-14 md:mb-16"
+          className="mx-auto flex max-w-4xl flex-col items-center text-center"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8">
+          <div className="mb-8 flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <ActivityTicker />
             <div className="flex items-center gap-2.5 text-xs text-muted-foreground shrink-0">
               <span className="hidden sm:block h-px w-8 bg-border/60" aria-hidden="true" />
@@ -184,107 +196,124 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Headline */}
-          <div className="max-w-4xl">
-            <h1
-              id="hero-heading"
-              className="font-display font-extrabold tracking-tight leading-[1.02]"
-            >
-              <motion.span
-                initial={mp.initial}
-                animate={mp.animate}
-                transition={{ duration: 0.45, delay: 0.1 }}
-                className="block text-4xl sm:text-5xl lg:text-[4.5rem] xl:text-[5rem] text-muted-foreground/40"
-              >
-                Hi. I&apos;m Jeremy.
-              </motion.span>
-              <motion.span
-                initial={mp.initial}
-                animate={mp.animate}
-                transition={{ duration: 0.45, delay: 0.18 }}
-                className="block text-4xl sm:text-5xl lg:text-[4.5rem] xl:text-[5rem] text-foreground"
-              >
-                I ship{" "}
-                <span
-                  className="text-primary"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {typeText}
-                  <span
-                    className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle animate-pulse"
-                    aria-hidden="true"
-                  />
-                </span>
-              </motion.span>
-            </h1>
-          </div>
-        </motion.div>
-
-        {/* Sub-copy + CTAs */}
-        <motion.p
-          initial={mp.initial}
-          animate={mp.animate}
-          transition={{ duration: 0.5, delay: 0.35 }}
-          className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl"
-        >
-          One operator. Modern stack. Production-grade AI agents, apps, and
-          growth systems for founders who need it{" "}
-          <span className="text-foreground font-semibold">shipped, not pitched.</span>{" "}
-          From idea to live in 2–6 weeks.
-        </motion.p>
-
-        {/* Trust strip */}
-        <motion.div
-          initial={mp.initial}
-          animate={mp.animate}
-          transition={{ duration: 0.5, delay: 0.42 }}
-          className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
-        >
-          {[
-            "Building since 2019",
-            "NYC-based",
-            "Stripe-verified",
-          ].map((item, i) => (
-            <span key={i} className="flex items-center gap-2">
-              {i > 0 && (
-                <span className="h-1 w-1 rounded-full bg-border/60 flex-shrink-0" aria-hidden="true" />
-              )}
-              {item}
+          <h1
+            id="hero-heading"
+            className="font-display font-extrabold tracking-tight leading-[1.02] text-balance"
+          >
+            <span className="block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-muted-foreground/45">
+              Hi. I&apos;m Jeremy.
             </span>
-          ))}
-          <span className="flex items-center gap-2">
-            <span className="h-1 w-1 rounded-full bg-border/60 flex-shrink-0" aria-hidden="true" />
-            <span className="text-accent font-semibold">No agency overhead</span>
-          </span>
-        </motion.div>
+            <span className="mt-2 block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-foreground">
+              I ship{" "}
+              <span className="text-primary" aria-live="polite" aria-atomic="true" data-testid="hero-typewriter">
+                {typeText}
+                <span
+                  className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle animate-pulse"
+                  aria-hidden="true"
+                />
+              </span>
+            </span>
+          </h1>
 
-        {/* CTAs */}
-        <motion.div
-          initial={mp.initial}
-          animate={mp.animate}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
-        >
-          <Button
-            size="lg"
-            onClick={() => trackAndOpen("book", "Book a call — hero")}
-            className="group w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-7 shadow-amber-glow/20"
+          <motion.p
+            initial={mp.initial}
+            animate={mp.animate}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-6 max-w-2xl text-base md:text-lg text-muted-foreground leading-relaxed"
           >
-            Book a call
-            <ArrowRight
-              className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => trackAndOpen("form", "Tell me about your project — hero")}
-            className="w-full sm:w-auto rounded-full font-medium px-7"
+            One operator. Modern stack. Production-grade AI agents, apps, and growth systems for
+            founders who need it{" "}
+            <span className="text-foreground font-semibold">shipped, not pitched.</span> From idea
+            to live in 2–6 weeks.
+          </motion.p>
+
+          <motion.ul
+            initial={mp.initial}
+            animate={mp.animate}
+            transition={{ duration: 0.55, delay: 0.28 }}
+            className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            aria-label="Core capabilities"
           >
-            Tell me about your project
-          </Button>
+            {HERO_CAPABILITY_CARDS.map((card) => {
+              const Icon = CAPABILITY_ICONS[card.icon];
+              return (
+                <li key={card.id}>
+                  <button
+                    type="button"
+                    onClick={() => scrollToService(card.id)}
+                    className="group flex h-full w-full flex-col items-start rounded-2xl border border-border/50 bg-card/70 p-4 text-left shadow-sm backdrop-blur transition-all duration-200 hover:border-primary/35 hover:bg-card hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/16">
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="font-display text-sm font-bold tracking-tight text-foreground">
+                      {card.label}
+                    </span>
+                    <span className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {card.description}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </motion.ul>
+
+          <motion.div
+            initial={mp.initial}
+            animate={mp.animate}
+            transition={{ duration: 0.5, delay: 0.36 }}
+            className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
+          >
+            {["Building since 2019", "NYC-based", "Stripe-verified"].map((item, i) => (
+              <span key={item} className="flex items-center gap-2">
+                {i > 0 && (
+                  <span className="h-1 w-1 rounded-full bg-border/60 flex-shrink-0" aria-hidden="true" />
+                )}
+                {item}
+              </span>
+            ))}
+            <span className="flex items-center gap-2">
+              <span className="h-1 w-1 rounded-full bg-border/60 flex-shrink-0" aria-hidden="true" />
+              <span className="text-accent font-semibold">No agency overhead</span>
+            </span>
+          </motion.div>
+
+          <motion.div
+            initial={mp.initial}
+            animate={mp.animate}
+            transition={{ duration: 0.5, delay: 0.44 }}
+            className="mt-9 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center"
+          >
+            <Button
+              size="lg"
+              onClick={() => trackAndOpen("book", "Book a call — hero")}
+              className="group w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-7 shadow-amber-glow/20"
+            >
+              Book a call
+              <ArrowRight
+                className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </Button>
+            {SHOW_LABS_HERO_CTA && (
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="w-full sm:w-auto rounded-full font-medium px-7"
+              >
+                <Link href="/labs">Explore the lab →</Link>
+              </Button>
+            )}
+            <Button
+              size="lg"
+              variant="ghost"
+              onClick={() => trackAndOpen("form", "Tell me about your project — hero")}
+              className="w-full sm:w-auto rounded-full font-medium px-7 text-muted-foreground hover:text-foreground"
+            >
+              Tell me about your project
+            </Button>
+          </motion.div>
         </motion.div>
       </div>
     </section>

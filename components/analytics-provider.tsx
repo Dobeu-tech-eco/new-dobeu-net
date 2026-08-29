@@ -6,7 +6,7 @@ import Script from "next/script";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { initAnalytics, pageView, setAnalyticsConsent } from "@/lib/analytics";
-import { initDatadog } from "@/lib/datadog";
+import { setDatadogConsent } from "@/lib/datadog";
 import { IntercomSecureBoot } from "@/components/intercom/IntercomSecureBoot";
 import { CookieBanner } from "@/components/CookieBanner";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
@@ -28,9 +28,11 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   // Init / tear-down analytics when consent changes.
   React.useEffect(() => {
     setAnalyticsConsent(consent.analytics);
+    // Datadog handles both grant and withdrawal (withdrawal stops collection
+    // and clears the session cookie), so it is called unconditionally.
+    void setDatadogConsent(consent.analytics);
     if (!consent.analytics) return;
     initAnalytics(true);
-    initDatadog();
   }, [consent.analytics]);
 
   // Fire pageview on navigation (analytics only).
@@ -47,7 +49,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     <>
       {/* GTM — analytics consent required */}
       {consent.analytics && gtmId && (
-        <Script id="gtm-loader" strategy="afterInteractive">
+        <Script id="gtm-loader" strategy="lazyOnload">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -61,9 +63,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id}`}
-            strategy="afterInteractive"
+            strategy="lazyOnload"
           />
-          <Script id="ga4-init" strategy="afterInteractive">
+          <Script id="ga4-init" strategy="lazyOnload">
             {`window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());

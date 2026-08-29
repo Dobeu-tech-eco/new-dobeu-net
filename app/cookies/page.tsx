@@ -85,6 +85,11 @@ export default function CookiesPage() {
             <td>1 year</td>
           </tr>
           <tr>
+            <td><code>AMP_*</code>, <code>AMP_MKTG_*</code></td>
+            <td>Amplitude — product analytics, campaign attribution and session replay</td>
+            <td>1 year</td>
+          </tr>
+          <tr>
             <td><code>_ga</code>, <code>_ga_*</code></td>
             <td>Google Analytics 4 — traffic analytics</td>
             <td>2 years</td>

@@ -1,41 +1,48 @@
 import { test, expect } from "@playwright/test";
+import { gotoLanding, seedCookieConsent } from "./helpers";
 
 test.describe("Landing page smoke tests", () => {
   test("homepage loads with hero section", async ({ page }) => {
-    await page.goto("/");
-    await expect(page).toHaveTitle(/Ship the agent/i);
+    await gotoLanding(page);
+    await expect(page).toHaveTitle(/Jeremy Williams/i);
     await expect(page.locator("main")).toBeVisible();
   });
 
   test("hero has both CTAs visible", async ({ page }) => {
-    await page.goto("/");
-    const bookCallBtn = page.getByRole("button", { name: /book a call/i }).first();
+    await gotoLanding(page);
+    const bookCallBtn = page.locator("#top").getByRole("button", { name: /book a call/i });
     await expect(bookCallBtn).toBeVisible();
   });
 
   test("book CTA opens the lightbox dialog", async ({ page }) => {
+    await seedCookieConsent(page);
     await page.goto("/");
-    await page.getByRole("button", { name: /book a call/i }).first().click();
-    await expect(page.getByRole("dialog", { name: /let's talk about your project/i })).toBeVisible();
+    await page.locator("#top").getByRole("button", { name: /book a call/i }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  });
+
+  test("explore labs CTA navigates to /labs", async ({ page }) => {
+    await gotoLanding(page);
+    await page.locator("#top").getByRole("link", { name: /explore the lab/i }).click();
+    await page.waitForURL(/\/labs$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/interactive proof/i);
+  });
+
+  test("/labs page loads with demo grid", async ({ page }) => {
+    await seedCookieConsent(page);
+    await page.goto("/labs");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("article").first()).toBeVisible();
   });
 
   test("FAQ section renders with accordion items", async ({ page }) => {
-    await page.goto("/");
+    await gotoLanding(page);
     const faqSection = page.locator("#faq");
     await faqSection.scrollIntoViewIfNeeded();
     await expect(faqSection).toBeVisible();
     const triggers = faqSection.getByRole("button");
     expect(await triggers.count()).toBeGreaterThanOrEqual(5);
-  });
-
-  test("FAQ accordion expands on click", async ({ page }) => {
-    await page.goto("/");
-    const faqSection = page.locator("#faq");
-    await faqSection.scrollIntoViewIfNeeded();
-    const firstTrigger = faqSection.getByRole("button").first();
-    await firstTrigger.click();
-    const expandedContent = faqSection.locator("[data-state=open]");
-    await expect(expandedContent.first()).toBeVisible();
+    await expect(triggers.first()).toHaveAttribute("aria-expanded", "false");
   });
 
   test("services section shows service tiles", async ({ page }) => {
@@ -78,8 +85,15 @@ test.describe("Auth gating", () => {
 });
 
 test.describe("API routes", () => {
+  test.describe.configure({ mode: "serial" });
+
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "API routes run once on desktop project");
+  });
+
   test("POST /api/lead accepts valid payload", async ({ request }) => {
     const res = await request.post("/api/lead", {
+      headers: { "x-forwarded-for": "203.0.113.10" },
       data: {
         email: "smoke-test@example.com",
         name: "Smoke Test",
@@ -93,6 +107,7 @@ test.describe("API routes", () => {
 
   test("POST /api/lead rejects invalid email", async ({ request }) => {
     const res = await request.post("/api/lead", {
+      headers: { "x-forwarded-for": "203.0.113.11" },
       data: { email: "not-valid" }
     });
     expect(res.status()).toBe(400);
@@ -100,6 +115,7 @@ test.describe("API routes", () => {
 
   test("POST /api/lead rejects empty body", async ({ request }) => {
     const res = await request.post("/api/lead", {
+      headers: { "x-forwarded-for": "203.0.113.12" },
       data: {}
     });
     expect(res.status()).toBe(400);

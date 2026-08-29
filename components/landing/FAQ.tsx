@@ -107,8 +107,7 @@ export function FAQ() {
           {/* Right: accordion */}
           <motion.div
             initial={mp.initial}
-            whileInView={mp.whileInView}
-            viewport={mp.viewport}
+            animate={mp.animate}
             transition={{ duration: 0.45, delay: 0.1 }}
           >
             <Accordion type="single" collapsible className="w-full">

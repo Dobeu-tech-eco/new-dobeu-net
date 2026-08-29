@@ -92,6 +92,7 @@ export function Services() {
           {SERVICES.map((s, i) => (
             <motion.article
               key={s.title}
+              id={`service-${["ai-agents", "fullstack", "brand", "growth"][i]}`}
               initial={mp.initial}
               whileInView={mp.whileInView}
               viewport={mp.viewport}
