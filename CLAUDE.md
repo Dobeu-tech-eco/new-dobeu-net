@@ -49,7 +49,7 @@ pnpm db:types                  # regenerate lib/database.types.ts from local sch
 For a full pre-merge check, run `pnpm verify`, which mirrors CI locally. `pnpm build:strict` additionally fails on the `Detected "engines"` and `currently disables static generation` warnings; plain `pnpm build` (used by Vercel) stays lenient so a harmless future warning can't block production deploys.
 
 ### Next config
-Only `next.config.ts` is tracked (the shadowing `next.config.js` v0-import was removed; production headers confirmed live 2026-08-29). **Do not add a `next.config.js`** — Next.js resolves it first and it would silently shadow the CSP/security headers, strict-mode flags, redirects, and rewrites in the `.ts` file.
+Only `next.config.ts` is tracked (the shadowing `next.config.js` v0-import was removed; production headers confirmed live 2026-08-29). **Do not add a `next.config.js`** — Next.js resolves it first and it would silently shadow the CSP/security headers, strict-mode flags, redirects, and rewrites in the `.ts` file. It also enables `productionBrowserSourceMaps` so Datadog RUM stack traces can deminify — see the observability section below.
 
 ## Architecture
 
@@ -98,6 +98,9 @@ Entry points that call `processLead()`:
 
 **Amplitude specifics** (org `polished-sun-911894`, project `dobeu.net` #784238, US zone): `@amplitude/unified` with explicit Autocapture (page views, sessions, forms, clicks, downloads, attribution, web vitals, frustration signals; network tracking off), Session Replay at `NEXT_PUBLIC_AMPLITUDE_REPLAY_SAMPLE_RATE` (default 1; remote setting wins), Guides & Surveys skipped. `track()` deliberately does **not** forward the synthetic `$pageview` to Amplitude — autocapture already records route changes. Identity: `components/portal/AnalyticsIdentify.tsx` (mounted in the portal/admin layouts) calls `identifyUser()` with the Supabase user id + email and resets on Supabase `SIGNED_OUT` (other-tab / expired-session sign-outs); `LogoutButton` calls `resetAnalyticsUser()` explicitly and `components/portal/AnalyticsSignedOut.tsx` (on `/login`) clears a stale identity when no session exists. `resetAnalyticsUser()` only resets providers that still hold a user id, so anonymous device ids (and the anonymous → identified merge) survive. `initAnalytics()` is single-flight and re-reads consent after the SDK imports resolve. Event names stay `snake_case` in code (shared with GA4/PostHog/Mixpanel); Title Case display names + descriptions live in Amplitude's tracking plan — see `docs/tracking-plan.md`.
 
+### Observability (Datadog — replaced Sentry)
+Datadog is the single pane: RUM + Session Replay + browser Logs client-side (`lib/datadog.ts`, SDK v7, consent-gated and lazily imported so decliners download no SDK), and server errors via `instrumentation.ts` → `onRequestError` → `lib/datadog-server.ts`, which POSTs to the Datadog HTTP log intake (server-only `DATADOG_API_KEY`, always non-fatal). `AnalyticsProvider` calls `setDatadogConsent()` for both grant and withdrawal. `pnpm build` runs `scripts/upload-sourcemaps.mjs`, which uploads browser source maps to Datadog and then **deletes** every `.map` from `.next/static` so they never ship publicly; the RUM `version` tag and the upload's `--release-version` are both the 7-char commit SHA and must stay in lockstep. `@sentry/nextjs` and the `sentry.*.config.ts` files were removed — Sentry's domains were never in the CSP, so it could never have sent an event. Full detail in `docs/datadog.md` and `docs/datadog-sourcemaps.md`.
+
 ### Security headers / CSP
 `next.config.ts` builds a strict Content-Security-Policy plus HSTS, X-Frame-Options, etc., applied to all routes. When adding any third-party script, embed, or API host, add its domains to the relevant CSP array (`script`, `connect`, `frame`, `font`, `style`) or it will be blocked at runtime (Intercom's realtime websocket on `*.intercom-messenger.com` was blocked this way until 2026-08-29; Amplitude needs `https://*.amplitude.com` in `connect` and `worker-src blob:` for replay compression). CSP arrays are intentionally split line-per-entry so git keeps treating the file as text.
 
@@ -108,7 +111,7 @@ Entry points that call `processLead()`:
 - `lib/stripe.ts`, `lib/stripe-event-dedupe.ts`, `lib/invoice-creation.ts` — Stripe surfaces (see above).
 - `lib/resend.ts` + `lib/resend-templates.ts` — email send wrapper + HTML templates; every send is wrapped so a Resend failure can't break the underlying action.
 - `lib/rate-limit.ts` — generic fixed-window limiter (Upstash REST pipeline with in-memory fallback) + `hashIp()`; note `app/api/lead` uses `@upstash/ratelimit` directly instead.
-- `lib/analytics.ts`, `lib/datadog.ts`, `lib/intercom.ts`, `lib/intercom-jwt.ts`, `lib/intercom-hmac.ts` — analytics + support widget.
+- `lib/analytics.ts`, `lib/datadog.ts` (browser RUM/Logs), `lib/datadog-server.ts` (server log intake), `lib/intercom.ts`, `lib/intercom-jwt.ts`, `lib/intercom-hmac.ts` — analytics + support widget.
 - `lib/agent/` — embedded Claude Agent SDK + Composio (see above).
 - `lib/jeremy-data.ts` — founder profile content used by landing components.
 - `lib/utils.ts` — `isAdminEmail()` lives here (admin gate); also shared cn/format helpers.
