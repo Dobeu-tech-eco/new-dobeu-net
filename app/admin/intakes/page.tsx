@@ -78,6 +78,10 @@ export default async function AdminIntakesPage({ searchParams }: PageProps) {
   const hasNextPage = (rows?.length ?? 0) > PAGE_SIZE;
   const intakes = rows?.slice(0, PAGE_SIZE);
 
+  if (error) {
+    console.error("[admin/intakes] queue query failed:", error.code);
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -109,7 +113,7 @@ export default async function AdminIntakesPage({ searchParams }: PageProps) {
 
       {error && (
         <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          Unable to load the intake queue: {error.message}
+          Unable to load the intake queue. Try again.
         </p>
       )}
 

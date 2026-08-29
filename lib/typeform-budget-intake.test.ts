@@ -132,6 +132,9 @@ describe("Typeform budget form configuration", () => {
     vi.stubEnv("NEXT_PUBLIC_TYPEFORM_FORM_ID", "replacement-form");
     expect(isTypeformBudgetFormConfigurationConsistent()).toBe(false);
 
+    vi.stubEnv("NEXT_PUBLIC_TYPEFORM_FORM_ID", ` ${TYPEFORM_BUDGET_FORM_ID} `);
+    expect(isTypeformBudgetFormConfigurationConsistent()).toBe(false);
+
     vi.stubEnv("NEXT_PUBLIC_TYPEFORM_FORM_ID", "");
     expect(isTypeformBudgetFormConfigurationConsistent()).toBe(false);
   });

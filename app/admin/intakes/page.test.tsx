@@ -2,8 +2,11 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => {
-  const state: { rows: Record<string, unknown>[] } = { rows: [] };
-  const range = vi.fn(async () => ({ data: state.rows, error: null }));
+  const state: {
+    rows: Record<string, unknown>[];
+    error: { code: string; message: string } | null;
+  } = { rows: [], error: null };
+  const range = vi.fn(async () => ({ data: state.rows, error: state.error }));
   const query: Record<string, ReturnType<typeof vi.fn>> = {};
   query.select = vi.fn(() => query);
   query.eq = vi.fn(() => query);
@@ -39,6 +42,7 @@ function intake(index: number) {
 beforeEach(() => {
   vi.clearAllMocks();
   h.state.rows = [];
+  h.state.error = null;
 });
 
 afterEach(cleanup);
@@ -81,6 +85,31 @@ describe("AdminIntakesPage pagination", () => {
     expect(screen.getByRole("link", { name: /previous/i })).toHaveAttribute(
       "href",
       "/admin/intakes?status=new&mapping=mapped",
+    );
+  });
+
+  it("renders a generic queue error without exposing database details", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    h.state.error = {
+      code: "42P01",
+      message: "relation internal_schema.secret_table does not exist",
+    };
+
+    render(
+      await AdminIntakesPage({
+        searchParams: Promise.resolve({}),
+      }),
+    );
+
+    expect(
+      screen.getByText("Unable to load the intake queue. Try again."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/internal_schema/i)).not.toBeInTheDocument();
+    expect(consoleError).toHaveBeenCalledWith(
+      "[admin/intakes] queue query failed:",
+      "42P01",
     );
   });
 });

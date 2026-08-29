@@ -4,9 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 export const TYPEFORM_BUDGET_FORM_ID = "wKVKIBe7";
 
 export function isTypeformBudgetFormConfigurationConsistent(): boolean {
-  return (
-    process.env.NEXT_PUBLIC_TYPEFORM_FORM_ID?.trim() === TYPEFORM_BUDGET_FORM_ID
-  );
+  return process.env.NEXT_PUBLIC_TYPEFORM_FORM_ID === TYPEFORM_BUDGET_FORM_ID;
 }
 
 export const TYPEFORM_BUDGET_FIELD_IDS = {

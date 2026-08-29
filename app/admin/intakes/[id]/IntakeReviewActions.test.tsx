@@ -169,7 +169,7 @@ describe("IntakeReviewActions", () => {
     fireEvent.click(archive);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "intake_not_found_or_invalid_transition",
+      "This intake changed or is no longer available for that action.",
     );
     expect(mockedArchiveIntake).toHaveBeenCalledWith({
       id: INTAKE_ID,

@@ -7,6 +7,21 @@ import { archiveIntake, markIntakeReviewed } from "@/lib/actions/intakes";
 
 type IntakeStatus = "new" | "reviewed" | "archived";
 
+const ACTION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+  not_authenticated: "Sign in again before updating this intake.",
+  forbidden: "Your account is not allowed to update this intake.",
+  mfa_required: "Complete MFA verification before updating this intake.",
+  "invalid id": "This intake link is invalid.",
+  "notes too long": "Review notes must be 4,000 characters or fewer.",
+  intake_not_found_or_invalid_transition:
+    "This intake changed or is no longer available for that action. Refresh and try again.",
+  intake_update_failed: "Unable to update intake. Try again.",
+};
+
+function actionErrorMessage(code: string): string {
+  return ACTION_ERROR_MESSAGES[code] ?? "Unable to update intake. Try again.";
+}
+
 export function IntakeReviewActions({
   intakeId,
   status,
@@ -43,7 +58,10 @@ export function IntakeReviewActions({
             : await archiveIntake({ id: intakeId, notes });
 
         if (!result.ok) {
-          setFeedback({ kind: "error", text: result.error });
+          setFeedback({
+            kind: "error",
+            text: actionErrorMessage(result.error),
+          });
           return;
         }
 
