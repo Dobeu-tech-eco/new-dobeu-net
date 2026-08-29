@@ -57,6 +57,8 @@ const csp = {
     "wss://nexus-websocket-b.intercom.io",
     "https://uploads.intercomcdn.com",
     "https://uploads.intercomusercontent.com",
+    "https://*.intercom-messenger.com",
+    "wss://*.intercom-messenger.com",
     "https://*.amplitude.com"
   ],
   img: ["'self'", "data:", "blob:", "https:"],
