@@ -12,7 +12,8 @@ import {
   Inbox,
   CalendarCheck,
   BarChart3,
-  Ticket
+  Ticket,
+  Building2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
@@ -20,12 +21,14 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
 import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
+import { AnalyticsIdentify } from "@/components/portal/AnalyticsIdentify";
 import { intercomNameFromUser } from "@/lib/intercom";
 import { createIntercomUserJwt } from "@/lib/intercom-jwt";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/companies", label: "Companies", icon: Building2 },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/tickets", label: "Tickets", icon: Ticket },
   { href: "/admin/invoices", label: "Invoices", icon: Receipt },
@@ -56,6 +59,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      <AnalyticsIdentify user_id={user.id} email={user.email ?? undefined} is_admin />
       <IntercomIdentify
         user_id={user.id}
         email={user.email ?? undefined}

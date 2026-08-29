@@ -3,6 +3,7 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { resetAnalyticsUser } from "@/lib/analytics";
 import { shutdownIntercom } from "@/lib/intercom";
 
 export function LogoutButton() {
@@ -13,6 +14,8 @@ export function LogoutButton() {
     shutdownIntercom();
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Detach analytics identity so the next visitor on this device is anonymous.
+    resetAnalyticsUser();
     router.push("/");
     router.refresh();
   }
