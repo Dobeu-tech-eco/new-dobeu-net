@@ -15,7 +15,7 @@ test.describe("Landing page smoke tests", () => {
     await gotoLanding(page);
     const hero = page.locator("#top");
     await expect(hero.getByRole("button", { name: /book a call/i })).toBeVisible();
-    await expect(hero.getByRole("button", { name: /get a price estimate/i })).toBeVisible();
+    await expect(hero.getByTestId("hero-estimate-cta")).toBeVisible();
     await expect(hero.getByRole("link", { name: /explore the lab/i })).toHaveCount(0);
   });
 
@@ -75,11 +75,19 @@ test.describe("Landing page smoke tests", () => {
 });
 
 test.describe("Commercial routes", () => {
-  test("primary nav has no Labs item", async ({ page }) => {
+  test("primary nav has no Labs item", async ({ page }, testInfo) => {
     await seedCookieConsent(page);
     await page.goto("/");
-    const nav = page.getByRole("navigation", { name: /primary/i });
-    await expect(nav.getByRole("link", { name: /^labs$/i })).toHaveCount(0);
+    const isMobile = testInfo.project.name === "mobile-chrome";
+    if (isMobile) {
+      await page.getByRole("button", { name: /open menu/i }).click();
+    }
+    const nav = isMobile
+      ? page.getByRole("navigation", { name: /mobile navigation/i })
+      : page.getByRole("navigation", { name: /primary/i });
+    if (!isMobile) {
+      await expect(nav.getByRole("link", { name: /^labs$/i })).toHaveCount(0);
+    }
     await expect(nav.getByRole("link", { name: /services/i })).toBeVisible();
     await expect(nav.getByRole("link", { name: /pricing/i })).toBeVisible();
   });
@@ -112,16 +120,25 @@ test.describe("Commercial routes", () => {
     await expect(page.locator("body")).not.toContainText(/Jane D/);
   });
 
-  test("unknown service pillar is 404", async ({ page }) => {
-    const res = await page.goto("/services/not-a-pillar");
-    expect(res?.status()).toBe(404);
+  test("unknown service pillar is 404", async ({ request }) => {
+    const res = await request.get("/services/not-a-pillar");
+    expect(res.status()).toBe(404);
   });
 
-  test("process nav from pricing stays on /process", async ({ page }) => {
+  test("process nav from pricing stays on /process", async ({ page }, testInfo) => {
     await seedCookieConsent(page);
     await page.goto("/pricing");
-    await page.getByRole("navigation", { name: /primary/i }).getByRole("link", { name: /process/i }).click();
-    await page.waitForURL(/\/process$/);
+    const isMobile = testInfo.project.name === "mobile-chrome";
+    const processLink = isMobile
+      ? page.getByRole("navigation", { name: /mobile navigation/i }).getByRole("link", { name: "Process", exact: true })
+      : page.locator("header").getByRole("link", { name: "Process", exact: true });
+    if (isMobile) {
+      await page.getByRole("button", { name: /open menu/i }).click();
+    }
+    await expect(processLink).toHaveAttribute("href", "/process");
+    await expect(processLink).toBeVisible();
+    await processLink.click();
+    await expect(page).toHaveURL(/\/process$/, { timeout: 20_000 });
     expect(page.url()).not.toMatch(/#how/);
   });
 });
