@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowRight, CalendarDays, Mail } from "lucide-react";
+import { ArrowRight, CalendarDays, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
 import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
+import { HERO_COPY, PRICE_RANGE } from "@/lib/jeremy-data";
 
 export function FinalCTA() {
   const { open } = useLightbox();
@@ -29,7 +30,6 @@ export function FinalCTA() {
           transition={{ duration: 0.5 }}
           className="relative rounded-2xl border border-border/30 bg-card/50 overflow-hidden"
         >
-          {/* Subtle glow — violet top-left, coral amber bottom-right */}
           <div
             className="pointer-events-none absolute inset-0"
             aria-hidden="true"
@@ -41,12 +41,10 @@ export function FinalCTA() {
 
           <div className="relative px-8 py-14 md:px-16 md:py-20">
             <div className="max-w-2xl">
-              {/* Eyebrow */}
               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-5">
                 Ready to ship?
               </p>
 
-              {/* Headline */}
               <h2
                 id="cta-heading"
                 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.04] text-balance mb-5"
@@ -54,14 +52,15 @@ export function FinalCTA() {
                 Let&apos;s build the thing.
               </h2>
 
-              {/* Sub-copy */}
-              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10 max-w-md">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-4 max-w-md">
                 30 minutes. No pitch. We&apos;ll figure out together whether
                 I&apos;m the right person to ship what you&apos;re trying to
                 ship.
               </p>
+              <p className="text-sm font-medium text-foreground mb-10">
+                {PRICE_RANGE.line}
+              </p>
 
-              {/* CTA buttons */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <Button
                   size="lg"
@@ -69,7 +68,7 @@ export function FinalCTA() {
                   className="group w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8 shadow-amber-glow/30"
                 >
                   <CalendarDays className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Book a call
+                  {HERO_COPY.bookCta}
                   <ArrowRight
                     className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5"
                     aria-hidden="true"
@@ -78,18 +77,17 @@ export function FinalCTA() {
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => trackAndOpen("email", "Send your email — final CTA")}
+                  onClick={() => trackAndOpen("form", "Get a price estimate — final CTA")}
                   className="w-full sm:w-auto rounded-full font-medium px-8"
                 >
-                  <Mail className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Or just send your email
+                  <ClipboardList className="mr-2 h-4 w-4" aria-hidden="true" />
+                  {HERO_COPY.estimateCta}
                 </Button>
               </div>
             </div>
 
-            {/* Decorative arrow — top-right */}
             <div
-              className="absolute top-10 right-10 md:top-14 md:right-16 font-mono text-[5rem] md:text-[8rem] font-bold text-border/8 leading-none select-none pointer-events-none hidden sm:block"
+              className="absolute top-10 right-10 md:top-14 md:right-16 font-mono text-[5rem] md:text-[8rem] font-bold text-border/20 leading-none select-none pointer-events-none hidden sm:block"
               aria-hidden="true"
             >
               →

@@ -221,6 +221,14 @@
   .skip-link {
     @apply sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-lg;
   }
+  #work,
+  #how,
+  #about,
+  #faq,
+  #top,
+  [id^="service-"] {
+    scroll-margin-top: 5rem;
+  }
   /* Hide scrollbars on overflow containers (SubBrandsStrip ticker row) */
   .scrollbar-none {
     -ms-overflow-style: none;

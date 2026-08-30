@@ -2,16 +2,21 @@ import { test, expect } from "@playwright/test";
 import { gotoLanding, seedCookieConsent } from "./helpers";
 
 test.describe("Landing page smoke tests", () => {
-  test("homepage loads with hero section", async ({ page }) => {
+  test("homepage loads with outcome hero", async ({ page }) => {
     await gotoLanding(page);
-    await expect(page).toHaveTitle(/Jeremy Williams/i);
+    await expect(page).toHaveTitle(/AI Automation|Small Business|Dobeu/i);
     await expect(page.locator("main")).toBeVisible();
+    await expect(page.locator("#hero-heading")).toContainText(/trucks, kitchens, and sites/i);
+    await expect(page.locator("#hero-heading")).not.toContainText(/autonomous AI coding agents/i);
+    await expect(page.getByTestId("hero-price-line")).toContainText(/\$5k/);
   });
 
-  test("hero has both CTAs visible", async ({ page }) => {
+  test("hero has book and estimate CTAs", async ({ page }) => {
     await gotoLanding(page);
-    const bookCallBtn = page.locator("#top").getByRole("button", { name: /book a call/i });
-    await expect(bookCallBtn).toBeVisible();
+    const hero = page.locator("#top");
+    await expect(hero.getByRole("button", { name: /book a call/i })).toBeVisible();
+    await expect(hero.getByTestId("hero-estimate-cta")).toBeVisible();
+    await expect(hero.getByRole("link", { name: /explore the lab/i })).toHaveCount(0);
   });
 
   test("book CTA opens the lightbox dialog", async ({ page }) => {
@@ -19,13 +24,17 @@ test.describe("Landing page smoke tests", () => {
     await page.goto("/");
     await page.locator("#top").getByRole("button", { name: /book a call/i }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByRole("tab", { name: /book a call/i })).toHaveAttribute("data-state", "active");
   });
 
-  test("explore labs CTA navigates to /labs", async ({ page }) => {
-    await gotoLanding(page);
-    await page.locator("#top").getByRole("link", { name: /explore the lab/i }).click();
-    await page.waitForURL(/\/labs$/);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(/interactive proof/i);
+  test("estimate CTA mounts the Typeform tab", async ({ page }) => {
+    await seedCookieConsent(page);
+    await page.goto("/");
+    await page.getByTestId("hero-estimate-cta").click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("tab", { name: /tell me more/i })).toHaveAttribute("data-state", "active");
+    await expect(dialog.getByTestId("typeform-widget")).toHaveAttribute("data-tf-form", "wKVKIBe7");
   });
 
   test("/labs page loads with demo grid", async ({ page }) => {
@@ -62,6 +71,75 @@ test.describe("Landing page smoke tests", () => {
       const classAttr = await html.getAttribute("class");
       expect(classAttr).toBeTruthy();
     }
+  });
+});
+
+test.describe("Commercial routes", () => {
+  test("primary nav has no Labs item", async ({ page }, testInfo) => {
+    await seedCookieConsent(page);
+    await page.goto("/");
+    const isMobile = testInfo.project.name === "mobile-chrome";
+    if (isMobile) {
+      await page.getByRole("button", { name: /open menu/i }).click();
+    }
+    const nav = isMobile
+      ? page.getByRole("navigation", { name: /mobile navigation/i })
+      : page.getByRole("navigation", { name: /primary/i });
+    if (!isMobile) {
+      await expect(nav.getByRole("link", { name: /^labs$/i })).toHaveCount(0);
+    }
+    await expect(nav.getByRole("link", { name: /services/i })).toBeVisible();
+    await expect(nav.getByRole("link", { name: /pricing/i })).toBeVisible();
+  });
+
+  test("/pricing estimate mounts Typeform", async ({ page }) => {
+    await seedCookieConsent(page);
+    await page.goto("/pricing");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.getByTestId("pricing-estimate-cta").click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByTestId("typeform-widget")).toHaveAttribute("data-tf-form", "wKVKIBe7");
+  });
+
+  for (const path of ["/services", "/about", "/process", "/case-studies", "/pricing"]) {
+    test(`${path} returns 200 with an h1`, async ({ page }) => {
+      await seedCookieConsent(page);
+      const res = await page.goto(path);
+      expect(res?.ok()).toBeTruthy();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    });
+  }
+
+  test("/case-studies/lastplate is attributable and metric-less", async ({ page }) => {
+    await seedCookieConsent(page);
+    await page.goto("/case-studies/lastplate");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/LastPlate/i);
+    await expect(page.getByRole("link", { name: /lastplateprod/i })).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/90%/);
+    await expect(page.locator("body")).not.toContainText(/Jane D/);
+  });
+
+  test("unknown service pillar is 404", async ({ request }) => {
+    const res = await request.get("/services/not-a-pillar");
+    expect(res.status()).toBe(404);
+  });
+
+  test("process nav from pricing stays on /process", async ({ page }, testInfo) => {
+    await seedCookieConsent(page);
+    await page.goto("/pricing");
+    const isMobile = testInfo.project.name === "mobile-chrome";
+    const processLink = isMobile
+      ? page.getByRole("navigation", { name: /mobile navigation/i }).getByRole("link", { name: "Process", exact: true })
+      : page.locator("header").getByRole("link", { name: "Process", exact: true });
+    if (isMobile) {
+      await page.getByRole("button", { name: /open menu/i }).click();
+    }
+    await expect(processLink).toHaveAttribute("href", "/process");
+    await expect(processLink).toBeVisible();
+    await processLink.click();
+    await expect(page).toHaveURL(/\/process$/, { timeout: 20_000 });
+    expect(page.url()).not.toMatch(/#how/);
   });
 });
 
@@ -132,11 +210,16 @@ test.describe("SEO & metadata", () => {
     expect(text).toContain("Disallow: /admin");
   });
 
-  test("sitemap.xml is accessible", async ({ request }) => {
+  test("sitemap.xml lists commercial routes with distinct lastmod", async ({ request }) => {
     const res = await request.get("/sitemap.xml");
     expect(res.ok()).toBe(true);
     const text = await res.text();
     expect(text).toContain("<urlset");
+    for (const path of ["/services", "/pricing", "/about", "/process", "/case-studies", "/case-studies/lastplate"]) {
+      expect(text).toContain(path);
+    }
+    const lastmods = [...text.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((m) => m[1]);
+    expect(new Set(lastmods).size).toBeGreaterThan(1);
   });
 });
 

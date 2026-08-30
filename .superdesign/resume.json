@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "/": {
+      "targetKind": "existing-ui",
+      "projectId": "4f848575-e467-48a9-946d-9f5be31e891b",
+      "baselineDraftId": "904b6f3a-ffd5-4173-b6c9-b2584daaaee8",
+      "activeDraftId": "904b6f3a-ffd5-4173-b6c9-b2584daaaee8",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": ["public-brand-dobeu-horizontal.svg"],
+      "brandAssets": {
+        "logo": {
+          "assetKey": "public-brand-dobeu-horizontal.svg",
+          "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/4f848575-e467-48a9-946d-9f5be31e891b/brand-assets/public-brand-dobeu-horizontal.svg/dobeu-horizontal.svg",
+          "sourcePath": "public/brand/dobeu-horizontal.svg"
+        }
+      },
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "components/landing/Hero.tsx",
+        "components/landing/SiteNav.tsx",
+        "components/landing/SiteFooter.tsx",
+        "app/page.tsx",
+        "components/ui/button.tsx",
+        "components/brand/DobeuMark.tsx",
+        "lib/jeremy-data.ts",
+        ".superdesign/init/theme.md:1:90"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "b5779a0b2cb20f8a2c949af315ba68b6a4a4358a207208bedcacfeab623d3d97",
+        "components/landing/Hero.tsx": "22ef1dfdbdb3cd99f4db8c07e69e3da081c7a44479d8ede6139d6344a64ad0dc",
+        "components/landing/SiteNav.tsx": "056cd15ccd4038a6ea46dfc191f6e417b500b84158c64ee9572506ab8be2a696",
+        "components/landing/SiteFooter.tsx": "5b7d601b29d3465573b5b7a51f48e7121e8d213cdf7d9e84fe288baabac042f3",
+        "app/page.tsx": "ab862560595bce8939cc93d3f12b680476fa0848e3dddf52292a07c1199f7d1b",
+        "components/ui/button.tsx": "38c0f6cc323c72b002af17843bf210520e8dc4191cf84e6a2621b6e31854b64c",
+        "components/brand/DobeuMark.tsx": "f9dd04e5b476ac3938e516bfaf6873ada6611940893cb7814ab9748f988c575a",
+        "lib/jeremy-data.ts": "a2e9650fcaf97ca30112e7dbe43e721389e026aec4f56c22d9b3acbeae4f2f89",
+        ".superdesign/init/theme.md": "abf45bbfd713456176d982552d77e516421a1f31529604b7889f35eaae99d14f"
+      },
+      "components": [],
+      "drafts": {
+        "904b6f3a-ffd5-4173-b6c9-b2584daaaee8": {
+          "title": "Current homepage",
+          "visualDirection": "pixel-perfect Immersive Canvas reproduction",
+          "currentVersion": 1
+        },
+        "b10739c0-8364-4009-b019-75bec69bdf78": {
+          "title": "Dobeu SMB Outcome Homepage",
+          "visualDirection": "outcome-led SMB hero, published price, solid-surface chips",
+          "parentDraftId": "904b6f3a-ffd5-4173-b6c9-b2584daaaee8",
+          "currentVersion": 1
+        },
+        "3d4c9015-e5c4-4a98-8174-8370ffd86273": {
+          "title": "Dobeu Case-Study Homepage",
+          "visualDirection": "Business Mechanic metric-card proof pattern",
+          "parentDraftId": "904b6f3a-ffd5-4173-b6c9-b2584daaaee8",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-30T04:50:00.000Z"
+    }
+  }
+}

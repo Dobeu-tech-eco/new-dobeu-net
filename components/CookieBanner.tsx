@@ -22,6 +22,9 @@ export function CookieBanner() {
     marketing: false,
   });
 
+  const bannerRef = React.useRef<HTMLDivElement>(null);
+  const showFirstVisitBanner = !isDNT && !consent.decided && !showPrefs;
+
   // Expose a global so the footer "Cookie preferences" link works.
   React.useEffect(() => {
     (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences = () => {
@@ -32,6 +35,28 @@ export function CookieBanner() {
       delete (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences;
     };
   }, [consent]);
+
+  // Publish banner height so sticky CTAs and the hero pad instead of hiding.
+  React.useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (!showFirstVisitBanner) {
+      root.style.removeProperty("--cookie-banner-offset");
+      return;
+    }
+    const node = bannerRef.current;
+    if (!node) return;
+    const apply = () => {
+      const extra = 16; // matches bottom-4
+      root.style.setProperty("--cookie-banner-offset", `${Math.ceil(node.getBoundingClientRect().height + extra)}px`);
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--cookie-banner-offset");
+    };
+  }, [showFirstVisitBanner]);
 
   // DNT: no banner, no cookies. Nothing to show.
   if (isDNT) return null;
@@ -126,6 +151,8 @@ export function CookieBanner() {
       role="dialog"
       aria-labelledby="cookie-banner-title"
       aria-describedby="cookie-banner-desc"
+      ref={bannerRef}
+      data-testid="cookie-banner"
       className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 rounded-xl border border-border bg-card p-4 shadow-2xl"
     >
       <p id="cookie-banner-title" className="font-semibold text-sm mb-1">

@@ -2,22 +2,22 @@
 
 import Link from "next/link";
 import { DobeuMark } from "@/components/brand/DobeuMark";
+import {
+  FOOTER_SITE_LINKS,
+  FOUNDER,
+  NAP,
+  SITE_IDENTITY,
+} from "@/lib/jeremy-data";
 
 const FOOTER_LINKS = {
-  Site: [
-    { label: "Work", href: "/#work" },
-    { label: "Process", href: "/#how" },
-    { label: "About", href: "/#about" },
-    { label: "FAQ", href: "/#faq" },
-    { label: "Repos", href: "/repos" },
-  ],
+  Site: FOOTER_SITE_LINKS,
   Account: [
     { label: "Log in", href: "/login" },
     { label: "Client portal", href: "/portal" },
   ],
   Contact: [
-    { label: "jeremyw@dobeu.net", href: "mailto:jeremyw@dobeu.net", external: true },
-    { label: "LinkedIn", href: "https://www.linkedin.com/in/jeremy-williams", external: true },
+    { label: NAP.email, href: `mailto:${NAP.email}`, external: true },
+    { label: "LinkedIn", href: FOUNDER.linkedin, external: true },
     { label: "Status", href: "https://status.dobeu.net", external: true },
   ],
   Legal: [
@@ -36,9 +36,7 @@ export function SiteFooter() {
     <footer className="border-t border-border/30 bg-background">
       <div className="container max-w-6xl py-14 md:py-16">
 
-        {/* Top row: brand identity + nav columns */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10 md:gap-16 mb-12">
-          {/* Brand identity */}
           <div className="max-w-xs">
             <div className="flex items-center gap-2.5 mb-4">
               <DobeuMark className="h-8 w-8 shrink-0" />
@@ -49,14 +47,14 @@ export function SiteFooter() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Ship the agent. Ship the app. Ship the brand. One operator, modern stack.
+              AI automation and custom software for operators in {NAP.areaServed}.
+              One person, modern stack.
             </p>
-            <p className="mt-2 text-xs text-muted-foreground/50">
-              dobeu.net &middot; dobeu.cloud &middot; dobeutech.com
+            <p className="mt-2 text-xs text-muted-foreground">
+              {SITE_IDENTITY.legalName} · {NAP.locality}, {NAP.region} · {NAP.email}
             </p>
           </div>
 
-          {/* Nav grid */}
           <nav
             className="grid grid-cols-2 sm:grid-cols-4 gap-8"
             aria-label="Footer navigation"
@@ -94,17 +92,16 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        {/* Bottom bar */}
-        <div className="pt-8 border-t border-border/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-muted-foreground/50">
+        <div className="pt-8 border-t border-border/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-muted-foreground">
           <p>
-            &copy; {year} Dobeu Tech Solutions LLC. All rights reserved.
+            &copy; {year} {SITE_IDENTITY.legalName}. All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="/privacy" className="hover:text-muted-foreground transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-muted-foreground transition-colors">Terms</Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
             <button
               type="button"
-              className="hover:text-muted-foreground transition-colors"
+              className="hover:text-foreground transition-colors"
               onClick={() => {
                 if (
                   typeof window !== "undefined" &&
