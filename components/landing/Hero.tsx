@@ -8,11 +8,8 @@ import {
   Bot,
   Code2,
   ExternalLink,
-  GitCommitHorizontal,
-  GitPullRequest,
   LineChart,
   Palette,
-  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroShaderBackground } from "@/components/landing/HeroShaderBackground";
@@ -21,8 +18,13 @@ import { track } from "@/lib/analytics";
 import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 import {
   FOUNDER,
+  HAS_ATTRIBUTABLE_CASE_STUDIES,
   HERO_CAPABILITY_CARDS,
+  HERO_COPY,
+  NAP,
+  PRICE_RANGE,
   SHOW_LABS_HERO_CTA,
+  SITE_IDENTITY,
   TYPEWRITER_PHRASES,
 } from "@/lib/jeremy-data";
 import type { GitHubEvent } from "@/app/api/github-activity/route";
@@ -68,14 +70,6 @@ function useTypewriter(
   return display;
 }
 
-const EVENT_ICONS: Record<GitHubEvent["type"], React.ReactNode> = {
-  push: <GitCommitHorizontal className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />,
-  pr: <GitPullRequest className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />,
-  release: <Tag className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />,
-  star: <Tag className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />,
-  other: <GitCommitHorizontal className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />,
-};
-
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (secs < 60) return `${secs}s ago`;
@@ -120,10 +114,10 @@ function ActivityTicker() {
             aria-label={`Latest activity: ${ev.message} in ${ev.repo}`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" aria-hidden="true" />
-            <span className="font-mono text-[11px] text-primary/80 flex-shrink-0 hidden sm:inline">
+            <span className="font-mono text-[11px] text-primary flex-shrink-0 hidden sm:inline">
               {ev.repo}
             </span>
-            <span className="hidden sm:inline text-border/50" aria-hidden="true">/</span>
+            <span className="hidden sm:inline text-border" aria-hidden="true">/</span>
             <AnimatePresence mode="wait">
               <motion.span
                 key={ev.id}
@@ -136,7 +130,7 @@ function ActivityTicker() {
                 {ev.message}
               </motion.span>
             </AnimatePresence>
-            <span className="ml-1 flex-shrink-0 opacity-40 hidden sm:inline">
+            <span className="ml-1 flex-shrink-0 opacity-70 hidden sm:inline">
               {timeAgo(ev.timestamp)}
             </span>
             <ExternalLink
@@ -164,6 +158,7 @@ export function Hero() {
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref);
   const typeText = useTypewriter(TYPEWRITER_PHRASES, 52, 2400, !isInView);
+  const secondaryHref = HAS_ATTRIBUTABLE_CASE_STUDIES ? "/case-studies" : "/pricing";
 
   function trackAndOpen(target: "book" | "form" | "email", label: string) {
     track("cta_click", { cta_label: label, cta_location: "hero", target });
@@ -175,7 +170,7 @@ export function Hero() {
       ref={ref}
       id="top"
       aria-labelledby="hero-heading"
-      className="relative isolate flex min-h-[min(92vh,900px)] flex-col justify-center overflow-hidden py-20 md:py-28"
+      className="relative isolate flex min-h-[min(92vh,900px)] flex-col justify-center overflow-hidden py-20 md:py-28 pb-[calc(6rem+var(--cookie-banner-offset,0px))]"
     >
       <HeroShaderBackground />
 
@@ -186,12 +181,16 @@ export function Hero() {
           transition={{ duration: 0.5 }}
           className="mx-auto flex max-w-4xl flex-col items-center text-center"
         >
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
+            {SITE_IDENTITY.brandName}
+          </p>
+
           <div className="mb-8 flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <ActivityTicker />
             <div className="flex items-center gap-2.5 text-xs text-muted-foreground shrink-0">
-              <span className="hidden sm:block h-px w-8 bg-border/60" aria-hidden="true" />
-              <span>{FOUNDER.location}</span>
-              <span className="h-1 w-1 rounded-full bg-border/50 flex-shrink-0" aria-hidden="true" />
+              <span className="hidden sm:block h-px w-8 bg-border" aria-hidden="true" />
+              <span>{NAP.areaServed}</span>
+              <span className="h-1 w-1 rounded-full bg-border flex-shrink-0" aria-hidden="true" />
               <span>Since {FOUNDER.since}</span>
             </div>
           </div>
@@ -200,31 +199,36 @@ export function Hero() {
             id="hero-heading"
             className="font-display font-extrabold tracking-tight leading-[1.02] text-balance"
           >
-            <span className="block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-muted-foreground/45">
-              Hi. I&apos;m Jeremy.
+            <span className="block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-muted-foreground">
+              {HERO_COPY.greeting}{" "}
             </span>
             <span className="mt-2 block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-foreground">
-              I ship{" "}
-              <span className="text-primary" aria-live="polite" aria-atomic="true" data-testid="hero-typewriter">
-                {typeText}
-                <span
-                  className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle animate-pulse"
-                  aria-hidden="true"
-                />
-              </span>
+              {HERO_COPY.outcome}
             </span>
           </h1>
+
+          <p
+            className="mt-4 max-w-2xl text-base md:text-lg text-foreground leading-relaxed"
+            aria-hidden="true"
+          >
+            I ship{" "}
+            <span className="text-primary" data-testid="hero-typewriter">
+              {typeText}
+              <span
+                className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle animate-pulse"
+                aria-hidden="true"
+              />
+            </span>
+          </p>
 
           <motion.p
             initial={mp.initial}
             animate={mp.animate}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-6 max-w-2xl text-base md:text-lg text-muted-foreground leading-relaxed"
+            data-testid="hero-diagnostic"
           >
-            One operator. Modern stack. Production-grade AI agents, apps, and growth systems for
-            founders who need it{" "}
-            <span className="text-foreground font-semibold">shipped, not pitched.</span> From idea
-            to live in 2–6 weeks.
+            {HERO_COPY.diagnostic}
           </motion.p>
 
           <motion.ul
@@ -241,7 +245,7 @@ export function Hero() {
                   <button
                     type="button"
                     onClick={() => scrollToService(card.id)}
-                    className="group flex h-full w-full flex-col items-start rounded-2xl border border-border/50 bg-card/70 p-4 text-left shadow-sm backdrop-blur transition-all duration-200 hover:border-primary/35 hover:bg-card hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group flex h-full w-full flex-col items-start rounded-2xl border border-border bg-card/70 p-4 text-left shadow-sm backdrop-blur transition-all duration-200 hover:border-primary/35 hover:bg-card hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/16">
                       <Icon className="h-4 w-4" aria-hidden="true" />
@@ -264,19 +268,35 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.36 }}
             className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
           >
-            {["Building since 2019", "NYC-based", "Stripe-verified"].map((item, i) => (
+            {["Building since 2019", NAP.areaServed, "Stripe-verified"].map((item, i) => (
               <span key={item} className="flex items-center gap-2">
                 {i > 0 && (
-                  <span className="h-1 w-1 rounded-full bg-border/60 flex-shrink-0" aria-hidden="true" />
+                  <span className="h-1 w-1 rounded-full bg-border flex-shrink-0" aria-hidden="true" />
                 )}
                 {item}
               </span>
             ))}
             <span className="flex items-center gap-2">
-              <span className="h-1 w-1 rounded-full bg-border/60 flex-shrink-0" aria-hidden="true" />
+              <span className="h-1 w-1 rounded-full bg-border flex-shrink-0" aria-hidden="true" />
               <span className="text-accent font-semibold">No agency overhead</span>
             </span>
           </motion.div>
+
+          <motion.p
+            initial={mp.initial}
+            animate={mp.animate}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mt-5 text-sm font-medium text-foreground"
+            data-testid="hero-price-line"
+          >
+            <button
+              type="button"
+              onClick={() => trackAndOpen("form", "Price line — hero")}
+              className="underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+            >
+              {PRICE_RANGE.line} · {HERO_COPY.estimateCta}
+            </button>
+          </motion.p>
 
           <motion.div
             initial={mp.initial}
@@ -289,30 +309,41 @@ export function Hero() {
               onClick={() => trackAndOpen("book", "Book a call — hero")}
               className="group w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-7 shadow-amber-glow/20"
             >
-              Book a call
+              {HERO_COPY.bookCta}
               <ArrowRight
                 className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5"
                 aria-hidden="true"
               />
             </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => trackAndOpen("form", "Get a price estimate — hero")}
+              className="w-full sm:w-auto rounded-full font-medium px-7"
+              data-testid="hero-estimate-cta"
+            >
+              {HERO_COPY.estimateCta}
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
+              asChild
+              className="w-full sm:w-auto rounded-full font-medium px-7 text-foreground"
+            >
+              <Link href={secondaryHref}>
+                {HAS_ATTRIBUTABLE_CASE_STUDIES ? "See shipped work" : "View pricing"}
+              </Link>
+            </Button>
             {SHOW_LABS_HERO_CTA && (
               <Button
                 size="lg"
-                variant="outline"
+                variant="ghost"
                 asChild
                 className="w-full sm:w-auto rounded-full font-medium px-7"
               >
                 <Link href="/labs">Explore the lab →</Link>
               </Button>
             )}
-            <Button
-              size="lg"
-              variant="ghost"
-              onClick={() => trackAndOpen("form", "Tell me about your project — hero")}
-              className="w-full sm:w-auto rounded-full font-medium px-7 text-muted-foreground hover:text-foreground"
-            >
-              Tell me about your project
-            </Button>
           </motion.div>
         </motion.div>
       </div>

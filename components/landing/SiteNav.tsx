@@ -6,16 +6,11 @@ import { Menu, X, ChevronDown, GitBranch, ExternalLink, ArrowRight } from "lucid
 import { Button } from "@/components/ui/button";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { useLightbox } from "@/components/landing/LightboxProvider";
-import { AVAILABILITY, SUB_BRANDS, FOUNDER } from "@/lib/jeremy-data";
+import { AVAILABILITY, FOUNDER, PRIMARY_NAV_LINKS, SUB_BRANDS } from "@/lib/jeremy-data";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const NAV_LINKS = [
-  { href: "#work", label: "Work" },
-  { href: "#how", label: "Process" },
-  { href: "#about", label: "About" },
-  { href: "#faq", label: "FAQ" },
-];
+const NAV_LINKS = PRIMARY_NAV_LINKS;
 
 const AVAILABILITY_STYLES = {
   open: {
@@ -146,6 +141,19 @@ export function SiteNav() {
                       The Dobeu Universe
                     </p>
                   </div>
+                      <Link
+                    href="/labs"
+                    role="menuitem"
+                    onClick={() => setBrandsOpen(false)}
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors group"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                        Labs
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">Interactive demos</p>
+                    </div>
+                  </Link>
                   {SUB_BRANDS.map((brand) => (
                     <Link
                       key={brand.name}
@@ -247,6 +255,13 @@ export function SiteNav() {
                   <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
                     The Dobeu Universe
                   </p>
+                  <Link
+                    href="/labs"
+                    className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <span>Labs</span>
+                  </Link>
                   {SUB_BRANDS.map((brand) => (
                     <Link
                       key={brand.name}

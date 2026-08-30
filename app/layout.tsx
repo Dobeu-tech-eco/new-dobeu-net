@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { FOUNDER, NAP, ORGANIZATION_SAME_AS, PERSON_SAME_AS, SITE_IDENTITY } from "@/lib/jeremy-data";
 import { getSiteUrl, safeJsonLdStringify } from "@/lib/utils";
 import "./globals.css";
 
@@ -27,15 +28,6 @@ export const metadata: Metadata = {
   },
   description:
     "One operator. Modern stack. Production-grade AI agents, full-stack web apps, brand systems, and growth engineering for founders who need it shipped, not pitched.",
-  keywords: [
-    "AI agent development",
-    "Claude Composio",
-    "Next.js Supabase",
-    "design systems",
-    "growth engineering",
-    "Dobeu Tech Solutions",
-    "Jeremy Williams"
-  ],
   authors: [{ name: "Jeremy Williams", url: SITE_URL }],
   creator: "Dobeu Tech Solutions",
   openGraph: {
@@ -117,19 +109,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 {
                   "@type": "Person",
                   "@id": `${SITE_URL}/#person`,
-                  name: "Jeremy Williams",
+                  name: FOUNDER.name,
                   url: SITE_URL,
-                  jobTitle: "Founder & Principal Engineer",
+                  jobTitle: FOUNDER.title,
                   worksFor: { "@id": `${SITE_URL}/#organization` },
-                  sameAs: [
-                    "https://www.linkedin.com/in/jeremy-williams"
-                  ]
+                  sameAs: [...PERSON_SAME_AS]
                 },
                 {
                   "@type": "Organization",
                   "@id": `${SITE_URL}/#organization`,
-                  name: "Dobeu Tech Solutions LLC",
+                  name: SITE_IDENTITY.legalName,
                   url: SITE_URL,
+                  email: NAP.email,
+                  address: {
+                    "@type": "PostalAddress",
+                    addressLocality: NAP.locality,
+                    addressRegion: NAP.region,
+                    addressCountry: "US"
+                  },
+                  areaServed: NAP.areaServed,
                   logo: {
                     "@type": "ImageObject",
                     url: `${SITE_URL}/brand/dobeu-horizontal.png`,
@@ -137,9 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     height: 80
                   },
                   founder: { "@id": `${SITE_URL}/#person` },
-                  sameAs: [
-                    "https://www.linkedin.com/in/jeremy-williams"
-                  ]
+                  sameAs: [...ORGANIZATION_SAME_AS]
                 }
               ]
             })
