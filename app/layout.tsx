@@ -13,7 +13,9 @@ import "./globals.css";
  */
 const nunito = Nunito({
   subsets: ["latin"],
-  display: "swap",
+  // optional: if Nunito misses the first paint, keep the fallback so a late
+  // swap cannot become LCP after homepage JS (mobile LH was 3.4s / 0.89).
+  display: "optional",
   variable: "--font-nunito",
   weight: ["400", "500", "600", "700", "800"]
 });

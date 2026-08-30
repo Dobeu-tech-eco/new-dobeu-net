@@ -19,8 +19,33 @@ const HeroShaderBackground = dynamic(
     import("@/components/landing/HeroShaderBackground").then(
       (module) => module.HeroShaderBackground,
     ),
-  { ssr: true },
+  { ssr: false },
 );
+
+function HeroBackdrop() {
+  const [loadShader, setLoadShader] = useState(false);
+
+  useEffect(() => {
+    if (!window.matchMedia("(min-width: 769px)").matches) return;
+    const timer = window.setTimeout(() => setLoadShader(true), 1);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (loadShader) return <HeroShaderBackground />;
+
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-background"
+      data-testid="hero-shader-background"
+    >
+      <div className="absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-dobeu-violet-500/15 blur-3xl dark:bg-dobeu-violet-500/20" />
+      <div className="absolute -right-20 top-0 h-64 w-64 rounded-full bg-dobeu-amber-500/10 blur-3xl dark:bg-dobeu-amber-500/15" />
+      <div className="absolute inset-0 bg-background/35 dark:bg-background/30 md:hidden" />
+      <div className="absolute inset-0 hidden md:block md:bg-gradient-to-r md:from-background/70 md:via-background/25 md:to-transparent dark:md:from-background/70 dark:md:via-background/20 dark:md:to-transparent" />
+    </div>
+  );
+}
 import { track } from "@/lib/analytics";
 import {
   FOUNDER,
@@ -183,7 +208,7 @@ export function Hero() {
       aria-labelledby="hero-heading"
       className="relative isolate flex min-h-[min(92vh,900px)] flex-col justify-center overflow-hidden py-20 md:py-28 pb-[calc(6rem+var(--cookie-banner-offset,0px))]"
     >
-      <HeroShaderBackground />
+      <HeroBackdrop />
 
       <div className="container relative z-10 max-w-6xl">
         {/* LCP copy is static. motion + opacity:0 delayed Lighthouse until hydration. */}
@@ -204,7 +229,7 @@ export function Hero() {
 
           <h1
             id="hero-heading"
-            className="font-display font-extrabold tracking-tight leading-[1.02] text-balance"
+            className="font-display font-extrabold tracking-tight leading-[1.02]"
           >
             <span className="block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-muted-foreground">
               {HERO_COPY.greeting}{" "}
