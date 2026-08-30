@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type RefObject } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { motion, AnimatePresence, useInView } from "motion/react";
 import {
   ArrowRight,
   Bot,
@@ -12,10 +12,16 @@ import {
   Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HeroShaderBackground } from "@/components/landing/HeroShaderBackground";
 import { useLightbox } from "@/components/landing/LightboxProvider";
+
+const HeroShaderBackground = dynamic(
+  () =>
+    import("@/components/landing/HeroShaderBackground").then(
+      (module) => module.HeroShaderBackground,
+    ),
+  { ssr: true },
+);
 import { track } from "@/lib/analytics";
-import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 import {
   FOUNDER,
   HAS_ATTRIBUTABLE_CASE_STUDIES,
@@ -78,11 +84,28 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
+function useInViewport<T extends Element>(ref: RefObject<T | null>) {
+  const [isInView, setIsInView] = useState(true);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsInView(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return isInView;
+}
+
 function ActivityTicker() {
   const [events, setEvents] = useState<GitHubEvent[]>([]);
   const [idx, setIdx] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref);
+  const isInView = useInViewport(ref);
 
   useEffect(() => {
     fetch("/api/github-activity")
@@ -118,18 +141,7 @@ function ActivityTicker() {
               {ev.repo}
             </span>
             <span className="hidden sm:inline text-border" aria-hidden="true">/</span>
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={ev.id}
-                initial={{ opacity: 0, y: 3 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -3 }}
-                transition={{ duration: 0.2 }}
-                className="truncate max-w-[180px]"
-              >
-                {ev.message}
-              </motion.span>
-            </AnimatePresence>
+            <span className="truncate max-w-[180px]">{ev.message}</span>
             <span className="ml-1 flex-shrink-0 opacity-70 hidden sm:inline">
               {timeAgo(ev.timestamp)}
             </span>
@@ -153,10 +165,9 @@ function scrollToService(serviceId: string) {
 
 export function Hero() {
   const { open } = useLightbox();
-  const mp = useMotionProps(FADE_UP);
 
   const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref);
+  const isInView = useInViewport(ref);
   const typeText = useTypewriter(TYPEWRITER_PHRASES, 52, 2400, !isInView);
   const secondaryHref = HAS_ATTRIBUTABLE_CASE_STUDIES ? "/case-studies" : "/pricing";
 
@@ -224,10 +235,7 @@ export function Hero() {
             {HERO_COPY.diagnostic}
           </p>
 
-          <motion.ul
-            initial={mp.initial}
-            animate={mp.animate}
-            transition={{ duration: 0.55, delay: 0.28 }}
+          <ul
             className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
             aria-label="Core capabilities"
           >
@@ -253,14 +261,9 @@ export function Hero() {
                 </li>
               );
             })}
-          </motion.ul>
+          </ul>
 
-          <motion.div
-            initial={mp.initial}
-            animate={mp.animate}
-            transition={{ duration: 0.5, delay: 0.36 }}
-            className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
-          >
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
             {["Building since 2019", NAP.areaServed, "Stripe-verified"].map((item, i) => (
               <span key={item} className="flex items-center gap-2">
                 {i > 0 && (
@@ -273,12 +276,9 @@ export function Hero() {
               <span className="h-1 w-1 rounded-full bg-border flex-shrink-0" aria-hidden="true" />
               <span className="text-accent font-semibold">No agency overhead</span>
             </span>
-          </motion.div>
+          </div>
 
-          <motion.p
-            initial={mp.initial}
-            animate={mp.animate}
-            transition={{ duration: 0.5, delay: 0.4 }}
+          <p
             className="mt-5 text-sm font-medium text-foreground"
             data-testid="hero-price-line"
           >
@@ -289,14 +289,9 @@ export function Hero() {
             >
               {PRICE_RANGE.line} · {HERO_COPY.estimateCta}
             </button>
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={mp.initial}
-            animate={mp.animate}
-            transition={{ duration: 0.5, delay: 0.44 }}
-            className="mt-9 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center"
-          >
+          <div className="mt-9 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center">
             <Button
               size="lg"
               onClick={() => trackAndOpen("book", "Book a call — hero")}
@@ -337,7 +332,7 @@ export function Hero() {
                 <Link href="/labs">Explore the lab →</Link>
               </Button>
             )}
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
