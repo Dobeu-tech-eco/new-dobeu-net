@@ -450,10 +450,21 @@ export function Hero() {
               <Button
                 size="xl"
                 variant="outline"
-                onClick={() => trackAndOpen("form", "Tell me about your project — hero")}
+                asChild
                 className="w-full sm:w-auto"
               >
-                Tell me about your project
+                <Link
+                  href="/estimate"
+                  onClick={() =>
+                    track("cta_click", {
+                      cta_label: "Get a planning estimate",
+                      cta_location: "hero",
+                      target: "/estimate",
+                    })
+                  }
+                >
+                  Get a planning estimate
+                </Link>
               </Button>
             </motion.div>
 

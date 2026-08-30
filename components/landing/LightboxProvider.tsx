@@ -58,7 +58,8 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
           <DialogHeader>
             <DialogTitle className="gradient-text">Let&apos;s talk about your project</DialogTitle>
             <DialogDescription>
-              Three ways in — book a call, send the details, or just drop your email. Whichever fits.
+              Book a call, send a quick note, or jump to the full planning estimate
+              (about 7 minutes). Whichever fits.
             </DialogDescription>
           </DialogHeader>
 
@@ -72,7 +73,7 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
               <BookingTab onClose={close} />
             </TabsContent>
             <TabsContent value="form">
-              <TypeformTab />
+              <TypeformTab onClose={close} />
             </TabsContent>
             <TabsContent value="email">
               <LeadForm source="email" onSuccess={close} />

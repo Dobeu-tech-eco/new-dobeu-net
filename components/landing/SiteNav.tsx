@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: "#how", label: "How it works" },
   { href: "#about", label: "About" },
   { href: "#faq", label: "FAQ" },
+  { href: "/estimate", label: "Estimate" },
 ];
 
 const AVAILABILITY_STYLES = {

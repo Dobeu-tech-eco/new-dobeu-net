@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "motion/react";
 import { Bot, Code2, Palette, LineChart, MessageCircleQuestion } from "lucide-react";
-import { useLightbox } from "@/components/landing/LightboxProvider";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
 
@@ -39,7 +40,6 @@ const SERVICES: ServiceItem[] = [
 ];
 
 export function Services() {
-  const { open } = useLightbox();
   const mp = useMotionProps(FADE_UP_LG, "-100px");
 
   return (
@@ -91,32 +91,42 @@ export function Services() {
           ))}
 
           {/* "Something else" tile spans full width on lg, half on sm */}
-          <motion.button
+          <motion.div
             initial={mp.initial}
             whileInView={mp.whileInView}
             viewport={mp.viewport}
             transition={{ duration: 0.4, delay: 0.2 }}
-            onClick={() => open("form")}
-            className="sm:col-span-2 group rounded-xl border-2 border-dashed border-border hover:border-accent hover:bg-accent/5 p-6 md:p-8 text-left transition-all"
           >
-            <div className="flex items-start gap-4">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-accent/15 text-accent shrink-0 group-hover:scale-105 transition-transform">
-                <MessageCircleQuestion className="h-6 w-6" />
+            <Link
+              href="/estimate"
+              onClick={() =>
+                track("cta_click", {
+                  cta_label: "Tell me about it — services",
+                  cta_location: "services",
+                  target: "/estimate",
+                })
+              }
+              className="sm:col-span-2 group block rounded-xl border-2 border-dashed border-border hover:border-accent hover:bg-accent/5 p-6 md:p-8 text-left transition-all"
+            >
+              <div className="flex items-start gap-4">
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-accent/15 text-accent shrink-0 group-hover:scale-105 transition-transform">
+                  <MessageCircleQuestion className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl md:text-2xl font-semibold mb-1">
+                    Something else?
+                  </h3>
+                  <p className="text-sm md:text-base text-muted-foreground">
+                    Got a project that doesn&apos;t fit a category? Tell me about it — I&apos;ve probably
+                    shipped something close.{" "}
+                    <span className="text-accent font-medium underline-offset-4 group-hover:underline">
+                      Get a planning estimate →
+                    </span>
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-display text-xl md:text-2xl font-semibold mb-1">
-                  Something else?
-                </h3>
-                <p className="text-sm md:text-base text-muted-foreground">
-                  Got a project that doesn&apos;t fit a category? Tell me about it — I&apos;ve probably
-                  shipped something close.{" "}
-                  <span className="text-accent font-medium underline-offset-4 group-hover:underline">
-                    Start the conversation →
-                  </span>
-                </p>
-              </div>
-            </div>
-          </motion.button>
+            </Link>
+          </motion.div>
         </div>
       </div>
     </section>

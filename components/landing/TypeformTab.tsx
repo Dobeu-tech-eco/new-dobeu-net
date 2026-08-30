@@ -1,37 +1,31 @@
 "use client";
 
-import { Widget } from "@typeform/embed-react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
-import { track } from "@/lib/analytics";
+import { LeadForm } from "@/components/landing/LeadForm";
 
-export function TypeformTab() {
-  const formId = process.env.NEXT_PUBLIC_TYPEFORM_FORM_ID;
-
-  if (!formId) {
-    return (
-      <div className="rounded-lg border border-border bg-muted/40 p-6 text-center space-y-3">
-        <p className="text-sm">
-          Typeform isn&apos;t wired yet. Drop a note instead:
+export function TypeformTab({ onClose }: { onClose?: () => void }) {
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-1">
+        <p className="text-sm font-semibold">Need a planning estimate?</p>
+        <p className="text-xs text-muted-foreground">
+          The full scope intake lives on its own page — about 7 minutes, adaptive
+          questions, and a preliminary range by email.
         </p>
-        <Button variant="outline" asChild>
-          <a href="mailto:jeremyw@dobeu.net?subject=Project%20Inquiry">
-            jeremyw@dobeu.net <ExternalLink className="h-3 w-3 ml-1" />
-          </a>
+      </div>
+
+      <LeadForm source="form" onSuccess={onClose} />
+
+      <div className="border-t border-border pt-4">
+        <Button asChild size="lg" className="w-full">
+          <Link href="/estimate">
+            Get a planning estimate (≈7 min)
+            <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Link>
         </Button>
       </div>
-    );
-  }
-
-  return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <Widget
-        id={formId}
-        style={{ height: 560 }}
-        className="w-full"
-        onSubmit={() => track("typeform_submitted", { form_id: formId })}
-        onReady={() => track("typeform_loaded", { form_id: formId })}
-      />
     </div>
   );
 }
