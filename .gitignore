@@ -64,6 +64,9 @@ Thumbs.db
 .vercel
 .env*
 
+# Superdesign scratch (init, design-system, resume, website extracts stay tracked)
+.superdesign/tmp/
+
 # Ruflo hub-only policy (memory lives at repos root; never per-repo)
 .swarm/
 .claude-flow/
