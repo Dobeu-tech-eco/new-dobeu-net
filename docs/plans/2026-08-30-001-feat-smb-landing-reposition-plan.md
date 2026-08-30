@@ -6,7 +6,7 @@ topic: smb-landing-reposition
 artifact_contract: ce-unified-plan/v1
 artifact_readiness: implementation-ready
 product_contract_source: ce-plan-bootstrap
-product_contract_preservation: "Product Contract extracted from the 2026-08-29 independent website audit; visual-labs quality gates preserved, homepage commercial layer rewritten. Doc-review pass tightened R8/R10/R12/R15 and KTDs with no product-scope change."
+product_contract_preservation: "Product Contract extracted from the 2026-08-29 independent website audit; visual-labs quality gates preserved, homepage commercial layer rewritten. Doc-review pass tightened R8/R10/R12/R15 and KTDs with no product-scope change. Session add: R17 Typeform estimate embed (wKVKIBe7) stays live; KTD9 SMB Outcome locked."
 origin: docs/audits/2026-08-29-dobeu-net-website-audit.md
 execution: code
 ---
@@ -74,14 +74,16 @@ The 2026-08-29 visual-labs plan already shipped the Immersive Canvas hero, `/lab
 
 - R15. Marketing pages emit `ProfessionalService` (with `areaServed`). `/pricing` and each `/services/{pillar}` emit `Service` + `Offer` ($5k–$30k `priceRange`). Nested routes also emit `BreadcrumbList`. FAQPage JSON-LD stays on the page that still renders the FAQ (homepage unless FAQ moves). Root WebSite/Person/Organization `sameAs` and NAP live only in the root layout (U2). Page-level graphs must not emit a second Person.
 - R16. Homepage `<title>` and description lead with service + geography, not the personal name. Remove `<meta name="keywords">`.
+- R17. The review-first Typeform budget form `wKVKIBe7` (`https://dobeutech.typeform.com/to/wKVKIBe7`) stays the live price-estimate intake. Every new marketing page that offers Book a call / Get a price estimate wraps `LightboxProvider`. Estimate / "Tell me more" / price-line CTAs open the lightbox `form` tab so `TypeformTab` mounts. The published live embed id is `01M18GV8E73N64HYJ21HRDZA0X`. Do not drop lazy-load, `typeform_loaded` / `typeform_submitted` analytics, the webhook-only review-first contract, or CSP Typeform hosts. Fallback mailto only if the widget cannot mount.
 
 ### Key Flows
 
-- F1. Cold visit: land on `/` → read outcome H1 → see price band → Book a call opens the existing lightbox (book / form / email).
+- F1. Cold visit: land on `/` → read outcome H1 → see price band → Book a call opens the lightbox book tab; Get a price estimate (or the price-line CTA) opens the Typeform `form` tab (`wKVKIBe7`).
 - F2. First-visit (any viewport): cookie banner visible → first-paint hero Book a call stays clickable → after scroll, padded sticky Book a call stays clickable → consent can be decided without losing either CTA.
 - F3. Legacy bookmark: `/#about`, `/#how`, `/#work`, `/#faq` still scroll to those sections on `/`.
-- F4. Diligence: visitor opens `/pricing` or `/case-studies` from nav or hero secondary CTA → reads tiers or attributable work → Book a call.
+- F4. Diligence: visitor opens `/pricing` or `/case-studies` from nav or hero secondary CTA → reads tiers or attributable work → Book a call or Get a price estimate.
 - F5. Inner-page nav: from `/labs` or `/pricing`, Services/Process/About go to real paths, not `/labs#how`.
+- F6. Diligence on `/pricing`: published tiers plus a Get a price estimate control that mounts the same Typeform tab (not a new checkout and not a second embed copy).
 
 ### Acceptance Examples
 
@@ -93,12 +95,14 @@ The 2026-08-29 visual-labs plan already shipped the Immersive Canvas hero, `/lab
 - AE6. When `/pricing` is requested, published tiers include a sub-$5k diagnostic and the $5k–$30k build band, and Offer JSON-LD is present. Covers R11 / R15.
 - AE7. When a case-study page has no client-approved metric, it does not invent one; it may show stack, year, and public repo only. Covers R12 / R6.
 - AE8. After merge, `pnpm test:e2e` and Lighthouse CI still gate `/` and `/labs` at mobile Performance ≥90. Covers R8.
+- AE9. When Get a price estimate is clicked on `/` or `/pricing`, the lightbox opens on the form tab and the Typeform surface for `wKVKIBe7` (Widget or `data-tf-live="01M18GV8E73N64HYJ21HRDZA0X"`) is in the DOM. Covers R17 / F1 / F6.
 
 ### Success Criteria
 
 - A1 can tell in one screen what is sold, who it is for, what it costs (homepage price line: diagnostic + $5k–$30k), and how to book.
 - Critical audit items 1–6 and 9–11 from the priority table are addressed in code (contrast, aria-live, dead domains, sameAs, NAP, H1 rewrite, page split, pricing, cookie banner). Case studies and testimonials ship only as templates plus attributable `SHIPPED_WORK` until real client quotes exist.
 - No Lighthouse Performance gate regression. No `/oci` or `/company` collision.
+- Get a price estimate on `/` and `/pricing` mounts the existing Typeform tab for `wKVKIBe7` (R17).
 
 ### Scope Boundaries
 
@@ -131,6 +135,7 @@ The 2026-08-29 visual-labs plan already shipped the Immersive Canvas hero, `/lab
 - Superdesign canvas: [dobeu.net SMB landing reposition](https://superdesign.dev/teams/3b3b069d-0163-4382-8d2e-b0892848cc08/projects/4f848575-e467-48a9-946d-9f5be31e891b) — baseline [Current homepage](https://p.superdesign.dev/draft/904b6f3a-ffd5-4173-b6c9-b2584daaaee8), branch [SMB Outcome](https://p.superdesign.dev/draft/b10739c0-8364-4009-b019-75bec69bdf78), branch [Case-study](https://p.superdesign.dev/draft/3d4c9015-e5c4-4a98-8174-8370ffd86273)
 - Competitor extracts: `.superdesign/website/biz-mech.com/`, `.superdesign/website/aiconsultantnyc.com/`
 - Brand ethics: `AUDIT.md` (Proof.tsx removal)
+- Design fallback: Anima MCP (`Anima` namespace) if Superdesign credits are exhausted — same SMB Outcome direction, implement in existing React/Tailwind, do not port generated HTML (KTD9)
 
 ---
 
@@ -146,9 +151,10 @@ The 2026-08-29 visual-labs plan already shipped the Immersive Canvas hero, `/lab
 - KTD6. Proof policy matches `AUDIT.md`: no fabricated quotes. `SHIPPED_WORK` may power product case studies (name, stack, year, public repo). Metric headlines require `approved: true`. Do not ship illustrative placeholder numbers on the hero or as a labeled stand-in.
 - KTD7. Cookie-banner fix: keep the existing bottom card. While `!consent.decided`, pad `StickyMobileCTA` by the banner height on every viewport — do not hide the sticky bar. Also keep first-paint hero CTAs clear of the banner (hero cluster padding / safe area), including `md+`. `StickyMobileCTA` remains homepage-only. Chosen over a top banner: less homepage layout shift; preserves the current consent component.
 - KTD8. Git preview is off (`vercel.json` `deploymentEnabled.main` only). Ship as independently safe `main` merges (trust/a11y first, then IA) or a protected CLI preview. Do not assume a PR preview URL.
-- KTD9. Superdesign drafts are direction. Implement with existing Tailwind tokens, Nunito, and `DobeuMark` — do not port generated HTML. Preferred direction after review: SMB Outcome draft for hero/IA; Case-study draft for the proof row pattern.
+- KTD9. Superdesign drafts are direction. Implement with existing Tailwind tokens, Nunito, and `DobeuMark` — do not port generated HTML. SMB Outcome is the locked hero/IA direction (`session-settled: user-directed — chosen over Case-study-led homepage: operator picked SMB Outcome as preferred`). Case-study draft remains the proof-row pattern only.
 - KTD10. Schema ownership: U2 owns root Person/Organization `sameAs` + NAP in `app/layout.tsx`. U6 owns page-level ProfessionalService / Service / Offer / BreadcrumbList plus homepage title and keywords removal. SearchAction cleanup (`/?s=` has no search route) is optional follow-up, not a U6 blocker. Do not emit a second Person graph per page. FAQPage stays with the FAQ UI.
 - KTD11. Analytics consolidation is out of scope. Providers stay feature-flagged by `NEXT_PUBLIC_*`. CSP shrink is a follow-up after a code+rebuild+env sequence, not this plan.
+- KTD12. Reuse the shipped `#202` Typeform path — `components/landing/TypeformTab.tsx` inside `LightboxProvider` (already `next/dynamic`, `ssr: false`). Do not paste the Typeform snippet into `app/layout.tsx` or a static marketing page (eager `embed.js` would regress Lighthouse). Default the public form id to `TYPEFORM_BUDGET_FORM_ID` (`wKVKIBe7`) so the widget mounts when env is unset. The live embed id `01M18GV8E73N64HYJ21HRDZA0X` may drive `data-tf-live` inside `TypeformTab` only; it must still identify form `wKVKIBe7`. Webhook + `typeform_budget_intakes` stay review-first (no auto-price, no `processLead`). (`session-settled: user-directed — chosen over a second standalone Typeform page: keep the existing lightbox tab live on every new marketing shell`)
 
 ### Assumptions
 
@@ -297,22 +303,25 @@ Phase B (IA + proof + schema + tests): U4 → U5 → U6 → U7.
 ### U3. Outcome-led homepage copy and hero CTA swap
 
 **Goal:** First screen sells the meal, not the stack.
-**Requirements:** R7, R8, R11. Covers F1.
+**Requirements:** R7, R8, R11, R17. Covers F1, AE9.
 **Dependencies:** U1 (contrast surfaces exist), U2 (NAP/location chips consistent)
 **Files:**
 - `lib/jeremy-data.ts` (`TYPEWRITER_PHRASES`, `HERO_CAPABILITY_CARDS`, `SHOW_LABS_HERO_CTA`, `GTM_PILLARS`, plus migrated `SERVICES` / process / FAQ copy)
 - `components/landing/Hero.tsx`
+- `components/landing/TypeformTab.tsx`
+- `components/landing/LightboxProvider.tsx`
 - `components/landing/Services.tsx`
 - `components/landing/HowItWorks.tsx`
 - `components/landing/FAQ.tsx`
 - `components/landing/FinalCTA.tsx`
 - `app/page.tsx` (title/description — final polish in U6)
 **Approach:**
-1. Rewrite H1/subhead per audit Angle 1. If the typewriter stays, rotate vertical outcomes (dispatch, compliance paperwork, inventory reconciliation, invoicing), not "autonomous AI coding agents."
+1. Rewrite H1/subhead per audit Angle 1 / SMB Outcome. If the typewriter stays, rotate vertical outcomes (dispatch, compliance paperwork, inventory reconciliation, invoicing), not "autonomous AI coding agents."
 2. Capability cards use `GTM_PILLARS` pain language, not stack labels. Default `SHOW_LABS_HERO_CTA` to false. Secondary button links to `/pricing` until ≥1 attributable case-study page is live (metric-less counts), then `/case-studies` — U5 flips that flag when the index ships.
-3. Keep Book a call → `useLightbox("book")` and the ghost form CTA. Do not add a third competing primary.
+3. Book a call → `useLightbox("book")`. Get a price estimate / price-line CTA / former ghost form CTA → `useLightbox("form")` so `TypeformTab` mounts. Do not add a third competing primary.
 4. Publish a first-screen price line (diagnostic + $5k–$30k) matching the Superdesign SMB Outcome draft. Do not port HTML.
 5. Move hardcoded `Services` / `HowItWorks` / `FAQ` arrays into `jeremy-data.ts` or `marketing-data.ts` (KTD4) so U4 pillar pages reuse the same source.
+6. In `TypeformTab`, default to `TYPEFORM_BUDGET_FORM_ID` (`wKVKIBe7`) and keep the live embed id `01M18GV8E73N64HYJ21HRDZA0X` functional (KTD12). Do not eager-load `embed.js` in the root layout.
 **Patterns to follow:** existing `track("cta_click", …)` on hero buttons; `useMotionProps`.
 **Execution note:** Update smoke selectors in the same commit if they assert the old H1 or labs CTA; otherwise land U7 immediately after.
 **Test scenarios:**
@@ -321,12 +330,13 @@ Phase B (IA + proof + schema + tests): U4 → U5 → U6 → U7.
 - Happy path: secondary CTA href is `/pricing` or `/case-studies`, never `/labs`.
 - Edge: `NEXT_PUBLIC_SHOW_LABS_HERO_CTA=true` can still show labs for an operator override.
 - Integration: Book a call still opens the lightbox book tab.
-**Verification:** Homepage copy review against R7; lightbox still opens; `/labs` remains 200.
+- Integration: Get a price estimate opens the form tab and the Typeform surface for `wKVKIBe7` is present (Covers AE9).
+**Verification:** Homepage copy review against R7; both lightbox tabs open; `/labs` remains 200.
 
 ### U4. Commercial routes, nav, and sitemap entries
 
 **Goal:** Services, pricing, about, and process are real indexable pages; inner-page nav works.
-**Requirements:** R10, R11, R13, R14. Covers AE5, AE6, F3, F5.
+**Requirements:** R10, R11, R13, R14, R17. Covers AE5, AE6, AE9, F3, F5, F6.
 **Dependencies:** U3 (shared copy), U2 (NAP)
 **Files:**
 - `app/services/page.tsx`
@@ -345,7 +355,7 @@ Phase B (IA + proof + schema + tests): U4 → U5 → U6 → U7.
 **Approach:**
 1. Add static pages that reuse `Services`, `HowItWorks`, `Founder` excerpts plus a page-level `<h1>` outside the reused block. Reused sections take `variant="standalone"` (or equivalent) so they do not emit `#work` / `#how` / `#about`. Pillar slugs match extended `GTM_PILLARS` / `PILLAR_PAGES` ids. `generateStaticParams` for pillars. Keep homepage section `id`s and give them `scroll-margin-top` ≥ 60px.
 2. Each new page, including `app/services/[pillar]/page.tsx`, exports `generateMetadata` with `alternates.canonical`.
-3. Pricing page: four tiers (diagnostic sub-$5k, single workflow, full build $5k–$30k, month-to-month after launch). CTA is the existing lightbox, not a new checkout.
+3. Pricing page: four tiers (diagnostic sub-$5k, single workflow, full build $5k–$30k, month-to-month after launch). Wrap the page in `LightboxProvider`. Primary estimate CTA opens `useLightbox("form")` — same `TypeformTab`, no second embed copy and no checkout.
 4. Change nav labels Work → Services (`/services`), Process → `/process`, About → `/about`, add Pricing → `/pricing`. Omit `/labs` from primary SMB nav; keep it in footer / Universe. Footer Site column matches. FAQ stays `/#faq` from inner pages (homepage FAQ).
 5. Append new URLs to the hand-maintained sitemap list. Per-URL `lastModified` from a content date constant, not `new Date()`.
 **Patterns to follow:** `app/labs/page.tsx` shell; `getSiteUrl()` + `alternates.canonical`; never `app/company`.
@@ -356,6 +366,7 @@ Phase B (IA + proof + schema + tests): U4 → U5 → U6 → U7.
 - Edge: `/#about` on `/` still reveals `#about` below the sticky nav (`scroll-margin-top`).
 - Edge: primary nav has no Labs item; footer or Universe still links `/labs`.
 - Integration: from `/pricing`, clicking Process goes to `/process`, not `/pricing#how`.
+- Integration: Get a price estimate on `/pricing` opens the form tab and mounts `wKVKIBe7` (Covers AE9 / F6).
 - Error: no new rewrite in `vercel.json`.
 **Verification:** `curl` sitemap lists the new loc values with `https://dobeu.net` hosts; pages are statically generated in the build manifest (not λ/dynamic).
 
@@ -467,7 +478,7 @@ Manual (required for UI units): first-visit mobile `/` with cookies cleared — 
 
 - U1: AE1, AE2, AE4 pass.
 - U2: AE3 plus sameAs/NAP consistency.
-- U3: F1 uses outcome copy; first screen shows the price line; labs is not the hero secondary.
+- U3: F1 uses outcome copy; first screen shows the price line; labs is not the hero secondary; AE9 Typeform estimate path works.
 - U4: AE5, AE6 routes exist and nav is absolute.
 - U5: AE7 holds for every slug.
 - U6: Offer/ProfessionalService present; keywords meta gone.
