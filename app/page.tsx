@@ -3,11 +3,13 @@ import dynamic from "next/dynamic";
 import { Hero } from "@/components/landing/Hero";
 import { JsonLd } from "@/components/landing/JsonLd";
 import { MarketingShell } from "@/components/landing/MarketingShell";
-import { Services } from "@/components/landing/Services";
 import { SubBrandsStrip } from "@/components/landing/SubBrandsStrip";
 import { NAP, PRICE_RANGE } from "@/lib/jeremy-data";
 import { professionalServiceJsonLd } from "@/lib/marketing-schema";
 
+const Services = dynamic(() =>
+  import("@/components/landing/Services").then((m) => m.Services)
+);
 const HowItWorks = dynamic(() =>
   import("@/components/landing/HowItWorks").then((m) => m.HowItWorks)
 );

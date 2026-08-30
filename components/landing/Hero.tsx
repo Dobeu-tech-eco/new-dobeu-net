@@ -175,12 +175,8 @@ export function Hero() {
       <HeroShaderBackground />
 
       <div className="container relative z-10 max-w-6xl">
-        <motion.div
-          initial={mp.initial}
-          animate={mp.animate}
-          transition={{ duration: 0.5 }}
-          className="mx-auto flex max-w-4xl flex-col items-center text-center"
-        >
+        {/* LCP copy is static. motion + opacity:0 delayed Lighthouse until hydration. */}
+        <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
             {SITE_IDENTITY.brandName}
           </p>
@@ -221,15 +217,12 @@ export function Hero() {
             </span>
           </p>
 
-          <motion.p
-            initial={mp.initial}
-            animate={mp.animate}
-            transition={{ duration: 0.5, delay: 0.2 }}
+          <p
             className="mt-6 max-w-2xl text-base md:text-lg text-muted-foreground leading-relaxed"
             data-testid="hero-diagnostic"
           >
             {HERO_COPY.diagnostic}
-          </motion.p>
+          </p>
 
           <motion.ul
             initial={mp.initial}
@@ -345,7 +338,7 @@ export function Hero() {
               </Button>
             )}
           </motion.div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
