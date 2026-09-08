@@ -11,10 +11,20 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
     trace: "on-first-retry"
   },
+  expect: {
+    timeout: 10_000,
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.02
+    }
+  },
   projects: [
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] }
+    },
+    {
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 5"] }
     }
   ],
   webServer: {

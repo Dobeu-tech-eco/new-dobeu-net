@@ -40,7 +40,19 @@ export function HeroShaderBackground() {
 
   useEffect(() => {
     const paletteElement = paletteRef.current;
-    if (!paletteElement || reduceMotion !== false || !supportsWebGl()) return;
+    const prefersMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 768px)").matches;
+
+    if (
+      !paletteElement ||
+      reduceMotion !== false ||
+      prefersMobile ||
+      !supportsWebGl()
+    ) {
+      setCanRenderShader(false);
+      return;
+    }
 
     const readPalette = () => {
       const swatches = paletteElement.children;

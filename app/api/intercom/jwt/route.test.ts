@@ -34,7 +34,7 @@ vi.mock("next/headers", () => ({
 import { NextRequest } from "next/server";
 import { GET } from "@/app/api/intercom/jwt/route";
 
-const VISITOR_COOKIE = "dobeu_intercom_visitor";
+const LEGACY_VISITOR_COOKIE = "dobeu_intercom_visitor";
 
 function makeRequest(headers: Record<string, string> = {}): NextRequest {
   return new NextRequest("http://localhost/api/intercom/jwt", { headers });
@@ -46,10 +46,10 @@ beforeEach(() => {
   createIntercomUserJwt.mockReset();
   cookieGet.mockReset();
   vi.stubEnv("INTERCOM_API_SECRET", "test-secret");
-  // Defaults: not rate limited, anonymous visitor with an existing cookie.
+  // Defaults: not rate limited, anonymous visitor, no legacy cookie.
   checkRateLimit.mockResolvedValue({ limited: false });
   getUser.mockResolvedValue({ data: { user: null } });
-  cookieGet.mockReturnValue({ value: "existing-visitor-id" });
+  cookieGet.mockReturnValue(undefined);
   createIntercomUserJwt.mockReturnValue("signed.jwt.token");
 });
 
@@ -121,30 +121,29 @@ describe("GET /api/intercom/jwt", () => {
     expect(res.headers.get("set-cookie")).toBeNull();
   });
 
-  it("reuses an existing visitor cookie for anonymous callers without setting a new one", async () => {
+  it("returns 204 with no body for anonymous callers and never signs a visitor JWT", async () => {
     const res = await GET(makeRequest());
 
-    expect(res.status).toBe(200);
-    expect(createIntercomUserJwt).toHaveBeenCalledWith({ user_id: "existing-visitor-id" });
+    expect(res.status).toBe(204);
+    expect(await res.text()).toBe("");
+    expect(createIntercomUserJwt).not.toHaveBeenCalled();
     expect(res.headers.get("set-cookie")).toBeNull();
   });
 
-  it("mints a new visitor id and sets an httpOnly cookie when none exists", async () => {
-    cookieGet.mockReturnValue(undefined);
+  it("clears a legacy visitor cookie when an anonymous caller still carries one", async () => {
+    cookieGet.mockReturnValue({ value: "legacy-visitor-id" });
 
     const res = await GET(makeRequest());
 
-    expect(res.status).toBe(200);
-    const [[jwtArg]] = createIntercomUserJwt.mock.calls;
-    expect((jwtArg as { user_id: string }).user_id).toMatch(/^[0-9a-f-]{36}$/);
-
-    const setCookie = res.headers.get("set-cookie");
-    expect(setCookie).toContain(`${VISITOR_COOKIE}=`);
-    expect(setCookie).toContain("HttpOnly");
-    expect(setCookie?.toLowerCase()).toContain("samesite=lax");
+    expect(res.status).toBe(204);
+    expect(createIntercomUserJwt).not.toHaveBeenCalled();
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain(`${LEGACY_VISITOR_COOKIE}=;`);
+    expect(setCookie.toLowerCase()).toContain("max-age=0");
   });
 
-  it("returns 500 when JWT signing produces no token", async () => {
+  it("returns 500 when JWT signing produces no token for an authenticated user", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "user-123", email: "jeremy@example.com" } } });
     createIntercomUserJwt.mockReturnValue(undefined);
 
     const res = await GET(makeRequest());

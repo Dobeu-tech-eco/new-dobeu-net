@@ -4,9 +4,14 @@ import { Widget } from "@typeform/embed-react";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { track } from "@/lib/analytics";
+import {
+  resolveTypeformFormId,
+  TYPEFORM_LIVE_EMBED_ID,
+  TYPEFORM_PUBLIC_FORM_ID,
+} from "@/lib/jeremy-data";
 
 export function TypeformTab() {
-  const formId = process.env.NEXT_PUBLIC_TYPEFORM_FORM_ID;
+  const formId = resolveTypeformFormId();
 
   if (!formId) {
     return (
@@ -24,9 +29,14 @@ export function TypeformTab() {
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div
+      className="rounded-lg border border-border overflow-hidden"
+      data-testid="typeform-widget"
+      data-tf-live={TYPEFORM_LIVE_EMBED_ID}
+      data-tf-form={formId}
+    >
       <Widget
-        id={formId}
+        id={formId || TYPEFORM_PUBLIC_FORM_ID}
         style={{ height: 560 }}
         className="w-full"
         onSubmit={() => track("typeform_submitted", { form_id: formId })}

@@ -4,7 +4,11 @@ export function isTypeformWebhookConfigured(): boolean {
   return Boolean(process.env.TYPEFORM_WEBHOOK_SECRET);
 }
 
-export function verifyTypeformSignature(rawBody: string, header: string | null, secret: string): boolean {
+export function verifyTypeformSignature(
+  rawBody: string | Uint8Array,
+  header: string | null,
+  secret: string,
+): boolean {
   if (!header) return false;
   const expected = `sha256=${createHmac("sha256", secret).update(rawBody).digest("base64")}`;
   const a = Buffer.from(expected, "utf8");

@@ -4,10 +4,14 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { resetAnalyticsUser } from "@/lib/analytics";
+import { shutdownIntercom } from "@/lib/intercom";
 
 export function LogoutButton() {
   const router = useRouter();
   async function handle() {
+    // Clear the Messenger session before the auth session so the next person
+    // on this device cannot read the previous user's conversations.
+    shutdownIntercom();
     const supabase = createClient();
     await supabase.auth.signOut();
     // Detach analytics identity so the next visitor on this device is anonymous.

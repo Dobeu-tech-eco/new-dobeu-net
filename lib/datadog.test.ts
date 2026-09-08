@@ -224,6 +224,17 @@ describe("version + env tagging", () => {
     expect(rumMock.init).toHaveBeenCalledWith(expect.objectContaining({ version: "2.0.0" }));
   });
 
+  it("does not truncate an explicit version longer than 7 characters", async () => {
+    setConfigured();
+    process.env.NEXT_PUBLIC_DATADOG_VERSION = "release-2026-08-29";
+    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA = "abcdef1234567890";
+    const { initDatadog } = await freshImport();
+    await initDatadog();
+    expect(rumMock.init).toHaveBeenCalledWith(
+      expect.objectContaining({ version: "release-2026-08-29" })
+    );
+  });
+
   it("falls back to NEXT_PUBLIC_VERCEL_ENV for env", async () => {
     setConfigured();
     process.env.NEXT_PUBLIC_VERCEL_ENV = "preview";
@@ -284,6 +295,24 @@ describe("redactUrl", () => {
     );
   });
 
+  it("redacts PKCE codes on relative auth-callback paths", async () => {
+    const { redactUrl } = await freshImport();
+    expect(redactUrl("/auth/callback?code=pkce-secret&next=/portal")).toBe(
+      "/auth/callback?code=REDACTED&next=%2Fportal"
+    );
+  });
+
+  it("redacts http.url on a server log context without mutating the input", async () => {
+    const { redactLogContext } = await import("@/lib/datadog-redact");
+    const context = {
+      http: { url: "/auth/callback?code=pkce-secret", method: "GET" },
+      nextjs: { routePath: "/auth/callback" }
+    };
+    const redacted = redactLogContext(context);
+    expect(redacted.http).toEqual({ url: "/auth/callback?code=REDACTED", method: "GET" });
+    expect(context.http.url).toBe("/auth/callback?code=pkce-secret");
+  });
+
   it("leaves clean URLs untouched", async () => {
     const { redactUrl } = await freshImport();
     const url = "https://dobeu.net/pricing?ref=blog";
@@ -341,10 +370,27 @@ describe("setDatadogConsent", () => {
     const { setDatadogConsent } = await freshImport();
     await setDatadogConsent(true);
     rumMock.setTrackingConsent.mockClear();
+    rumMock.clearUser.mockClear();
+    logsMock.clearUser.mockClear();
     await setDatadogConsent(false);
     expect(rumMock.setTrackingConsent).toHaveBeenCalledWith("not-granted");
     expect(logsMock.setTrackingConsent).toHaveBeenCalledWith("not-granted");
     expect(rumMock.clearUser).toHaveBeenCalled();
+    expect(logsMock.clearUser).toHaveBeenCalled();
+  });
+
+  it("does not leave tracking granted if consent is withdrawn during init", async () => {
+    setConfigured();
+    const { setDatadogConsent } = await freshImport();
+    const grant = setDatadogConsent(true);
+    await setDatadogConsent(false);
+    await grant;
+    const lastRumConsent = rumMock.setTrackingConsent.mock.calls.at(-1)?.[0];
+    expect(lastRumConsent).not.toBe("granted");
+    if (rumMock.init.mock.calls.length > 0) {
+      expect(lastRumConsent).toBe("not-granted");
+      expect(logsMock.clearUser).toHaveBeenCalled();
+    }
   });
 });
 

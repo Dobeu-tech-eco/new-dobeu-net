@@ -13,10 +13,15 @@ import {
   CalendarCheck,
   BarChart3,
   Ticket,
-  Building2
+  Building2,
+  ClipboardList,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
+import {
+  isAdminEmail,
+  requiresAal2Stepup,
+  requiresMfaEnrollment,
+} from "@/lib/utils";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
@@ -32,15 +37,20 @@ const NAV = [
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/tickets", label: "Tickets", icon: Ticket },
   { href: "/admin/invoices", label: "Invoices", icon: Receipt },
+  { href: "/admin/intakes", label: "Intakes", icon: ClipboardList },
   { href: "/admin/leads", label: "Leads", icon: Inbox },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 }
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await createClient();
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
 
   if (!user || !isAdminEmail(user.email)) {
@@ -51,7 +61,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // this on every /admin/* request, but enforce here too since admin pages read
   // via service role. An admin without an AAL2-capable session (unenrolled or
   // not yet stepped up) is redirected to enroll/verify — never just nagged.
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const { data: aal } =
+    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   const assurance = aal ?? null;
   if (requiresMfaEnrollment(assurance, true) || requiresAal2Stepup(assurance)) {
     redirect("/portal/settings/mfa?next=/admin");
@@ -59,7 +70,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      <AnalyticsIdentify user_id={user.id} email={user.email ?? undefined} is_admin />
+      <AnalyticsIdentify
+        user_id={user.id}
+        email={user.email ?? undefined}
+        is_admin
+      />
       <IntercomIdentify
         user_id={user.id}
         email={user.email ?? undefined}
@@ -69,7 +84,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           user_id: user.id,
           email: user.email ?? undefined,
           name: intercomNameFromUser(user),
-          created_at: Math.floor(new Date(user.created_at).getTime() / 1000)
+          created_at: Math.floor(new Date(user.created_at).getTime() / 1000),
         })}
       />
       <aside className="md:w-64 md:min-h-screen border-b md:border-b-0 md:border-r border-accent/40 bg-card/60">
@@ -77,12 +92,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin" className="flex items-center gap-2">
             <DobeuMark className="h-8 w-8" />
             <span className="font-display text-lg font-bold lowercase">
-              dobeu <span className="text-accent text-xs uppercase tracking-wider">admin</span>
+              dobeu{" "}
+              <span className="text-accent text-xs uppercase tracking-wider">
+                admin
+              </span>
             </span>
           </Link>
           <ThemeToggle />
         </div>
-        <nav aria-label="Admin" className="px-2 pb-2 md:pb-6 flex md:block gap-1 overflow-x-auto">
+        <nav
+          aria-label="Admin"
+          className="px-2 pb-2 md:pb-6 flex md:block gap-1 overflow-x-auto"
+        >
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -101,7 +122,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             aria-label="Portal view"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
           >
-            <LayoutDashboard className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Portal view</span>
+            <LayoutDashboard className="h-4 w-4" aria-hidden="true" />{" "}
+            <span className="hidden sm:inline">Portal view</span>
           </Link>
           <LogoutButton />
         </nav>

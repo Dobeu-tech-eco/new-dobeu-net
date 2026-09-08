@@ -31,6 +31,10 @@
  *   - added `companies`, `company_roles`, `company_members`, `digital_assets`,
  *     `asset_entitlements`, `admin_audit_log`
  *   - added nullable `projects.company_id` + `work_orders.company_id`
+ *
+ * 2026-08-29 (review-first budget intake): synced with
+ * `20260829010000_typeform_budget_intakes.sql`
+ *   - added service-role-only `typeform_budget_intakes`
  */
 
 export type Json =
@@ -58,6 +62,10 @@ export type WorkOrderStatus =
   | "cancelled";
 
 export type WorkOrderPriority = "low" | "normal" | "high";
+
+export type TypeformBudgetIntakeStatus = "new" | "reviewed" | "archived";
+
+export type TypeformBudgetMappingStatus = "mapped" | "needs_review";
 
 export interface Database {
   public: {
@@ -250,12 +258,16 @@ export interface Database {
           size_bytes: number | null;
           uploaded_at: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["work_order_attachments"]["Row"]> & {
+        Insert: Partial<
+          Database["public"]["Tables"]["work_order_attachments"]["Row"]
+        > & {
           work_order_id: string;
           storage_path: string;
           filename: string;
         };
-        Update: Partial<Database["public"]["Tables"]["work_order_attachments"]["Row"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["work_order_attachments"]["Row"]
+        >;
         Relationships: [];
       };
       companies: {
@@ -281,7 +293,9 @@ export interface Database {
           rank: number;
           created_at: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["company_roles"]["Row"]> & {
+        Insert: Partial<
+          Database["public"]["Tables"]["company_roles"]["Row"]
+        > & {
           key: string;
           label: string;
           rank: number;
@@ -300,7 +314,9 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["company_members"]["Row"]> & {
+        Insert: Partial<
+          Database["public"]["Tables"]["company_members"]["Row"]
+        > & {
           company_id: string;
           user_id: string;
         };
@@ -318,7 +334,9 @@ export interface Database {
           active: boolean;
           created_at: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["digital_assets"]["Row"]> & {
+        Insert: Partial<
+          Database["public"]["Tables"]["digital_assets"]["Row"]
+        > & {
           title: string;
           storage_path: string;
         };
@@ -335,10 +353,51 @@ export interface Database {
           stripe_checkout_session_id: string | null;
           granted_at: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["asset_entitlements"]["Row"]> & {
+        Insert: Partial<
+          Database["public"]["Tables"]["asset_entitlements"]["Row"]
+        > & {
           asset_id: string;
         };
-        Update: Partial<Database["public"]["Tables"]["asset_entitlements"]["Row"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["asset_entitlements"]["Row"]
+        >;
+        Relationships: [];
+      };
+      typeform_budget_intakes: {
+        Row: {
+          id: string;
+          form_id: string;
+          response_token: string;
+          event_id: string | null;
+          submitted_at: string | null;
+          received_at: string;
+          updated_at: string;
+          status: TypeformBudgetIntakeStatus;
+          mapping_status: TypeformBudgetMappingStatus;
+          mapping_warnings: Json;
+          email: string | null;
+          name: string | null;
+          company: string | null;
+          service_family_ref: string | null;
+          service_family_label: string | null;
+          budget_band_ref: string | null;
+          budget_band_label: string | null;
+          project_summary: string | null;
+          raw_payload: Json;
+          review_notes: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+        };
+        Insert: Partial<
+          Database["public"]["Tables"]["typeform_budget_intakes"]["Row"]
+        > & {
+          form_id: string;
+          response_token: string;
+          raw_payload: Json;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["typeform_budget_intakes"]["Row"]
+        >;
         Relationships: [];
       };
       admin_audit_log: {
@@ -351,7 +410,9 @@ export interface Database {
           data: Json | null;
           created_at: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["admin_audit_log"]["Row"]> & {
+        Insert: Partial<
+          Database["public"]["Tables"]["admin_audit_log"]["Row"]
+        > & {
           action: string;
           target_type: string;
         };

@@ -13,18 +13,21 @@ export async function register(): Promise<void> {
   // No agent to boot: Vercel Functions ship logs over HTTP intake / Log Drain.
 }
 
-export const onRequestError: Instrumentation.onRequestError = async (
+export const onRequestError: Instrumentation.onRequestError = (
   error,
   request,
   context
 ) => {
-  const { logServerError } = await import("./lib/datadog-server");
-  await logServerError(error, {
-    http: { url: request.path, method: request.method },
-    nextjs: {
-      routerKind: context.routerKind,
-      routePath: context.routePath,
-      routeType: context.routeType
-    }
-  });
+  // Fire-and-forget: Next.js awaits a returned Promise, and the intake has a
+  // 2s timeout. Do not hold the error response open for Datadog.
+  void import("./lib/datadog-server").then(({ logServerError }) =>
+    logServerError(error, {
+      http: { url: request.path, method: request.method },
+      nextjs: {
+        routerKind: context.routerKind,
+        routePath: context.routePath,
+        routeType: context.routeType
+      }
+    })
+  );
 };

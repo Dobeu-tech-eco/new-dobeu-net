@@ -45,7 +45,7 @@ Required environment variables (see `.env.example` for the full list):
 | `ADMIN_EMAILS` | `/admin` gating | Comma-separated. v1 default: `jeremyw@dobeu.net` |
 | `APOLLO_API_KEY` | Lead capture, contact upsert | Server only |
 | `NEXT_PUBLIC_APOLLO_MEETINGS_URL` | Booking lightbox | Apollo Meetings hosted URL. Leave blank for fallback flow |
-| `NEXT_PUBLIC_TYPEFORM_FORM_ID` | "Tell me more" tab | Embed id of the qualified intake form |
+| `NEXT_PUBLIC_TYPEFORM_FORM_ID` | "Tell me more" tab | Must be the review-first budget form `wKVKIBe7` |
 | `NEXT_PUBLIC_POSTHOG_KEY` / `_HOST` | Product analytics | https://us.i.posthog.com (default) |
 | `NEXT_PUBLIC_MIXPANEL_TOKEN` | Funnel analytics | |
 | `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | Acquisition | `G-XXXXXXX` |
@@ -132,7 +132,7 @@ new-dobeu-net/
 | `/api/lead` | public POST | Lead capture: Supabase + Apollo + Resend fan-out (Zod-validated, rate-limited) |
 | `/api/webhooks/stripe` | Stripe sig | Invoice status sync (`invoice.paid/payment_failed/finalized/voided`) |
 | `/api/webhooks/calendly` | Calendly HMAC | Booking → lead pipeline |
-| `/api/typeform/webhook` | Typeform HMAC | Typeform submission → lead pipeline |
+| `/api/typeform/webhook` | Typeform HMAC | Signed budget submission → durable review queue (no pricing, email, or lead fan-out) |
 | `/api/github-repo` | public GET | `/repos` data source (owner/repo validated, rate-limited) |
 | `/api/agent` | admin only | Embedded Claude Agent SDK surface |
 

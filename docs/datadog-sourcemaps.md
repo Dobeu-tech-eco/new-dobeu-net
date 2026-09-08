@@ -23,12 +23,13 @@ three must match**:
 | Value | Set in RUM by | Set at upload by |
 | --- | --- | --- |
 | `service` | `NEXT_PUBLIC_DATADOG_SERVICE` (default `dobeu-net`) | `--service` |
-| `version` | short (7 char) commit SHA in `lib/datadog.ts` | `--release-version` |
+| `version` | `NEXT_PUBLIC_DATADOG_VERSION`, else short (7 char) commit SHA in `lib/datadog.ts` | `--release-version` (same env / SHA rule in `scripts/upload-sourcemaps.mjs`) |
 | path prefix | where Next serves the chunk | `--minified-path-prefix=/_next/static` |
 
 Both sides derive the version from the same commit SHA
 (`VERCEL_GIT_COMMIT_SHA` → first 7 characters), so they stay in lockstep with no
-manual step. Override both by setting `NEXT_PUBLIC_DATADOG_VERSION`.
+manual step. Override both by setting `NEXT_PUBLIC_DATADOG_VERSION` — that
+value is used **verbatim** (it is not truncated to 7 characters).
 
 ## Setup checklist
 
