@@ -1,0 +1,72 @@
+name: OCI function image build
+
+# Validates that containers/function/Dockerfile still builds and the
+# resulting container answers its health check. This is a build-and-smoke-test
+# only — it never pushes to Vercel Container Registry (that stays the manual
+# `pnpm vcr:push-function` step, which needs Docker Desktop + a VCR login the
+# CI runner doesn't have). No secrets required.
+on:
+  pull_request:
+    paths:
+      - "containers/function/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "containers/function/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oci-function-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t new-dobeu-net-oci:ci ./containers/function
+
+      - name: Run container
+        run: docker run -d --name oci-smoke -p 8080:80 new-dobeu-net-oci:ci
+
+      - name: Wait for container to be ready
+        run: |
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8080/health > /dev/null; then
+              echo "Container is healthy"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Container never became healthy" >&2
+          docker logs oci-smoke
+          exit 1
+
+      - name: Verify health/root responses
+        run: |
+          set -euo pipefail
+          curl -sf http://localhost:8080/health | tee /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json
+          curl -sf http://localhost:8080/ | tee /tmp/root.json
+          grep -q '"ok":true' /tmp/root.json
+          # /oci prefix stripping (path.mjs toServicePath) — mirrors path.test.ts
+          curl -sf http://localhost:8080/oci/health | tee /tmp/oci-health.json
+          grep -q '"ok":true' /tmp/oci-health.json
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs oci-smoke || true
+
+      - name: Clean up
+        if: always()
+        run: docker rm -f oci-smoke || true

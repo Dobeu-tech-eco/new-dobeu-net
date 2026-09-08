@@ -1,0 +1,53 @@
+name: Dependency audit
+
+# `pnpm audit` against the public advisory DB — no secrets required.
+# NON-BLOCKING (continue-on-error): as of 2026-09-08 this repo already has
+# 16 high-severity advisories, all transitive dev-only build tooling pulled
+# in by @sentry/nextjs -> @sentry/webpack-plugin -> webpack -> schema-utils
+# -> ajv -> fast-uri (GHSA-5jgf-p345-68v8 and siblings; fixed in fast-uri
+# >=3.1.6). None of that reaches the runtime bundle. Gating this job would
+# fail every PR today for something outside this change's control, so it
+# reports instead of blocking until those are cleared (Dependabot's
+# github-actions/npm updates above should surface the fix).
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: pnpm audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit (high+critical) — reports only, does not fail the job
+        continue-on-error: true
+        run: pnpm audit --audit-level=high
