@@ -23,8 +23,11 @@ const SERVICE = process.env.NEXT_PUBLIC_DATADOG_SERVICE || "dobeu-net";
 const MINIFIED_PATH_PREFIX = "/_next/static";
 
 function shortSha() {
+  // MUST mirror the version logic in lib/datadog.ts readEnv(), which always
+  // slices to 7 chars — including an explicit NEXT_PUBLIC_DATADOG_VERSION
+  // override. If these diverge, Datadog cannot pair a stack trace with its map.
   const explicit = process.env.NEXT_PUBLIC_DATADOG_VERSION;
-  if (explicit) return explicit;
+  if (explicit) return explicit.slice(0, 7);
   const sha =
     process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || process.env.COMMIT_SHA;
   if (sha) return sha.slice(0, 7);
