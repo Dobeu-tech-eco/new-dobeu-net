@@ -1,14 +1,9 @@
 name: Dependency audit
 
 # `pnpm audit` against the public advisory DB — no secrets required.
-# NON-BLOCKING (continue-on-error): as of 2026-09-08 this repo already has
-# 16 high-severity advisories, all transitive dev-only build tooling pulled
-# in by @sentry/nextjs -> @sentry/webpack-plugin -> webpack -> schema-utils
-# -> ajv -> fast-uri (GHSA-5jgf-p345-68v8 and siblings; fixed in fast-uri
-# >=3.1.6). None of that reaches the runtime bundle. Gating this job would
-# fail every PR today for something outside this change's control, so it
-# reports instead of blocking until those are cleared (Dependabot's
-# github-actions/npm updates above should surface the fix).
+# NON-BLOCKING (continue-on-error): this job reports advisories but does not fail the workflow.
+# The repo may contain outstanding high/critical findings (often transitive dev tooling); gating would fail PRs until those are remediated.
+# Keep this report-only until the dependency tree is cleaned up, then remove `continue-on-error` to enforce.
 on:
   pull_request:
   push:
