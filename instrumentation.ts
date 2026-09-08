@@ -19,7 +19,7 @@ export const onRequestError: Instrumentation.onRequestError = async (
   context
 ) => {
   const { logServerError } = await import("./lib/datadog-server");
-  await logServerError(error, {
+  void logServerError(error, {
     http: { url: request.path, method: request.method },
     nextjs: {
       routerKind: context.routerKind,
