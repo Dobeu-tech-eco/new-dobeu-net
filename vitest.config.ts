@@ -23,10 +23,10 @@ export default defineConfig({
       ],
       // No `thresholds` yet — deliberately. Coverage has never been measured
       // in this repo, so a number picked blind would either fail every PR or
-      // be meaninglessly low. Run `pnpm test:ci -- --coverage` once, read the
-      // text-summary, then set thresholds at or just under the real figure
-      // and raise them over time. CLAUDE.md's stated 80% target is where
-      // this should land, not where it should start.
+      // be meaninglessly low. Run `pnpm test:coverage`, read the text-summary,
+      // then set thresholds at or just under the real figure and raise them over time.
+      // Pick an initial number based on reality, then ratchet it upward over time.
+      // (A long-term target like ~80% can be reasonable, but it's intentionally not enforced yet.)
     },
   },
   resolve: {
