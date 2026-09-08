@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # Application dependencies (pnpm, package.json at repo root).
+  # This repo integrates Stripe, Supabase, Sentry, and Resend directly, so
+  # security-relevant bumps here matter — group non-major updates to keep
+  # the PR count sane and let majors land individually for review.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # GitHub Actions used by ci.yml, claude.yml, and claude-code-review.yml.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # containers/function/Dockerfile — the OCI Vercel Function service (node:20-alpine).
+  - package-ecosystem: "docker"
+    directory: "/containers/function"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
