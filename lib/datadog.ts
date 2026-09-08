@@ -276,6 +276,7 @@ export async function setDatadogConsent(granted: boolean): Promise<void> {
   datadogRum?.setTrackingConsent("not-granted");
   datadogLogs?.setTrackingConsent("not-granted");
   datadogRum?.clearUser();
+  datadogLogs?.clearUser();
 }
 
 /** Attach the current user (e.g. post-login) so events are user-correlated. */
