@@ -33,13 +33,12 @@ export const FOUNDER = {
 } as const;
 
 /**
- * No phone is published yet. This is deliberately an empty string rather than
- * a placeholder token, so nothing can leak a fake value into chrome or JSON-LD
- * if a future consumer forgets the guard. Drop the real number in here (E.164
- * in JSON-LD, formatted in chrome) and `hasPublishablePhone()` flips to true
- * on its own with no other change required.
+ * Published phone. Two shapes because they are consumed differently:
+ * `PHONE_E164` is what schema.org/JSON-LD and `tel:` hrefs require;
+ * `PHONE_DISPLAY` is what humans read in page chrome. Keep them in sync.
  */
-export const PHONE_NOT_PUBLISHED = "";
+export const PHONE_E164 = "+18483187664";
+export const PHONE_DISPLAY = "(848) 318-7664";
 
 /**
  * Single NAP / site identity. Footer, founder line, and root JSON-LD must
@@ -49,8 +48,9 @@ export const SITE_IDENTITY = {
   legalName: "Dobeu Tech Solutions LLC",
   brandName: "Dobeu Tech Solutions",
   email: "jeremyw@dobeu.net",
-  /** Not yet published. Gate every render on `hasPublishablePhone()`. */
-  phone: PHONE_NOT_PUBLISHED as string,
+  /** E.164 — use for `tel:` hrefs and JSON-LD. Display form: `PHONE_DISPLAY`. */
+  phone: PHONE_E164 as string,
+  phoneDisplay: PHONE_DISPLAY as string,
   locality: "New York",
   region: "NY",
   areaServed: "NYC & NJ metro",
