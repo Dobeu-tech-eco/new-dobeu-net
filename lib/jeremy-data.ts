@@ -33,13 +33,24 @@ export const FOUNDER = {
 } as const;
 
 /**
+ * No phone is published yet. This is deliberately an empty string rather than
+ * a placeholder token, so nothing can leak a fake value into chrome or JSON-LD
+ * if a future consumer forgets the guard. Drop the real number in here (E.164
+ * in JSON-LD, formatted in chrome) and `hasPublishablePhone()` flips to true
+ * on its own with no other change required.
+ */
+export const PHONE_NOT_PUBLISHED = "";
+
+/**
  * Single NAP / site identity. Footer, founder line, and root JSON-LD must
- * read from here. No invented street address.
+ * read from here. No invented street address, no invented phone number.
  */
 export const SITE_IDENTITY = {
   legalName: "Dobeu Tech Solutions LLC",
   brandName: "Dobeu Tech Solutions",
   email: "jeremyw@dobeu.net",
+  /** Not yet published. Gate every render on `hasPublishablePhone()`. */
+  phone: PHONE_NOT_PUBLISHED as string,
   locality: "New York",
   region: "NY",
   areaServed: "NYC & NJ metro",
@@ -47,6 +58,13 @@ export const SITE_IDENTITY = {
 } as const;
 
 export const NAP = SITE_IDENTITY;
+
+/** True only once a real number is filled in. Empty string stays unpublished. */
+export function hasPublishablePhone(
+  phone: string = SITE_IDENTITY.phone,
+): boolean {
+  return phone.trim().length > 0;
+}
 
 /** Hosts that must never appear in public chrome or JSON-LD sameAs. */
 export const DEAD_HOSTS = ["dobeu.cloud", "dobeutech.com", "dobeu.dev"] as const;
@@ -178,7 +196,15 @@ export const SHIPPED_WORK = [
   },
 ] as const;
 
-export type ShippedWork = (typeof SHIPPED_WORK)[number];
+/**
+ * Case-study entry. `anonymizedContext` describes a client by shape rather
+ * than by name ("a 40-truck logistics operator") for work covered by an NDA
+ * or a handshake. Optional and unpopulated — only ever fill it from a real
+ * engagement, never from a plausible-sounding one.
+ */
+export type ShippedWork = (typeof SHIPPED_WORK)[number] & {
+  readonly anonymizedContext?: string;
+};
 
 export const HAS_ATTRIBUTABLE_CASE_STUDIES = SHIPPED_WORK.length > 0;
 
@@ -341,6 +367,10 @@ export const MARKETING_FAQS = [
     a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. You get a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing.",
   },
   {
+    q: "Does the Ops Teardown fee count toward the build?",
+    a: "Yes. Hire me for a custom build within 60 days of delivery and the full $1,500 comes straight off your first invoice: a $15k build invoices at $13.5k. If you take the fixed-price website package instead, $500 comes off it — that package is already scoped and priced tight, so a full credit would eat it. After 60 days the credit expires, because by then the scope I mapped has moved. And if you don't hire me at all, you keep the document and owe nothing else.",
+  },
+  {
     q: "What's the difference between Book a call and Get a price estimate?",
     a: "Book a call is a 30-minute discovery conversation. Get a price estimate opens a short Typeform so I can review scope, budget band, and fit before we talk — it is not an instant quote or checkout.",
   },
@@ -377,10 +407,14 @@ export const MARKETING_FAQS = [
 export const PRICING_TIERS = [
   {
     id: "diagnostic",
-    name: "Diagnostic",
-    price: "Under $5k",
-    summary: "A scoped look at the process that is actually breaking.",
-    detail: "Workshops, workflow maps, and a written recommendation — not a slide deck.",
+    name: "Ops Teardown",
+    price: "$1,500 flat",
+    duration: "5 business days",
+    summary: "One week, one fixed fee, a written teardown of the loop that is actually costing you.",
+    detail:
+      "I sit with the people doing the work, map the loop end to end, and hand back a document: where the hours go, what to automate first, the hours and price band to build it, and what to leave alone.",
+    excludes:
+      "Not a build — no code ships that week. Not a retainer, and not an obligation to hire me. If you do hire me for a custom build, the full fee comes off it.",
   },
   {
     id: "workflow",
@@ -399,12 +433,78 @@ export const PRICING_TIERS = [
   },
   {
     id: "retainer",
-    name: "Month-to-month",
-    price: "After launch",
+    name: "Care plan",
+    price: "From $149/mo",
     summary: "Keep the system current once it is in production.",
-    detail: "Optional. Only when there is a live system to maintain.",
+    detail:
+      "Three tiers — Watch, Tune, Extend. Business hours, real hours of work, no lock-in. Only when there is a live system to maintain.",
   },
 ] as const;
+
+/**
+ * Post-build care plans. Sold only once there is a live system to maintain —
+ * never as an acquisition offer. Deliberately framed as an escalating bundle
+ * of hours and response windows, not a managed-ops SLA: one operator cannot
+ * honestly promise 24/7 coverage, so no copy here implies it.
+ */
+export const CARE_PLAN = {
+  name: "Keep It Running",
+  eyebrow: "After launch",
+  intro:
+    "Once a system is live, someone has to keep it live. Month to month, cancel any time, and only sold when there is something of mine in production to look after.",
+  honesty:
+    "I'm one person, not a 24/7 NOC. Every response window below is business hours, Monday to Friday. If you need overnight coverage, say so on the call and I'll tell you to hire someone else.",
+} as const;
+
+export const CARE_PLAN_TIERS = [
+  {
+    id: "watch",
+    name: "Watch",
+    price: "$149/mo",
+    summary: "Keep the lights on. Updates, monitoring, and someone who picks up when it breaks.",
+    includes: [
+      "Dependency and security updates",
+      "Uptime and error monitoring on what I built",
+      "Next business day response when something breaks",
+      "A one-paragraph health note each month",
+    ],
+  },
+  {
+    id: "tune",
+    name: "Tune",
+    price: "$219/mo",
+    summary: "Watch, plus two hours a month for the small changes that keep piling up.",
+    includes: [
+      "Everything in Watch",
+      "2 hours/month of changes — copy, fields, reports, integrations",
+      "Same business day response when something breaks",
+      "Unused hours roll over one month, then expire",
+    ],
+  },
+  {
+    id: "extend",
+    name: "Extend",
+    price: "$299/mo",
+    summary: "Enough hours to keep shipping improvements instead of just holding the line.",
+    includes: [
+      "Everything in Tune",
+      "4 hours/month of changes",
+      "A 30-minute review each quarter of what to automate next",
+      "Your work scheduled ahead of new-client work",
+    ],
+  },
+] as const;
+
+export type CarePlanTier = (typeof CARE_PLAN_TIERS)[number];
+
+/**
+ * Why this site has no testimonials. Every signal named here is one a visitor
+ * can check without taking my word for it — which is the whole point.
+ */
+export const TRUST_POSITION = {
+  heading: "No testimonials. Check the work instead.",
+  body: "There are no client logos or five-star quotes on this site, because I won't publish proof I can't back. What I can point at is checkable: the code is public on GitHub, the price bands are published on the pricing page instead of quoted case by case, and every invoice runs through Stripe. Verify any of it before you send me a dollar.",
+} as const;
 
 export const FOUNDER_STATS = [
   { value: "2019", label: "Building since" },
