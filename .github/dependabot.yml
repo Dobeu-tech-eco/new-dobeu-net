@@ -29,12 +29,23 @@ updates:
       prefix: "chore"
       include: "scope"
 
-  # containers/function/Dockerfile — the OCI Vercel Function service (node:20-alpine).
+  # containers/function/Dockerfile — the OCI Vercel Function service (node:24-alpine).
+  #
+  # Major bumps are ignored on purpose. The Node major is a coupled, deliberate
+  # decision across package.json `engines.node`, .nvmrc, and the CI setup-node
+  # step (see CLAUDE.md). A Dockerfile-only major bump would put the container on
+  # a different major than the app builds and tests against. Bumping Node is a
+  # repo-wide change, not a Dockerfile change — done deliberately, as in the
+  # 20 -> 24 bump that accompanied this rule.
   - package-ecosystem: "docker"
     directory: "/containers/function"
     schedule:
       interval: "weekly"
       day: "monday"
+    ignore:
+      - dependency-name: "node"
+        update-types:
+          - "version-update:semver-major"
     commit-message:
       prefix: "chore"
       include: "scope"
