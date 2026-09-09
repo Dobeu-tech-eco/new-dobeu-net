@@ -56,7 +56,7 @@ const FAQS = [
     a: "That range is for custom software and automation work scoped after a discovery call — every project is different, so the price is too. This is different: it's a pre-defined, capped scope (5 pages, one intake round, one revision round), so it can be priced up front instead of estimated.",
   },
   {
-    q: "What makes this worth more than a $1,500–$2,000 website builder package?",
+    q: "What makes this worth more than a cheap website builder package?",
     a: "Those packages are typically built on page-builder templates. This is hand-built on the same production stack (Next.js + Vercel) used for the custom engagements on this site — real code, proper performance and SEO fundamentals, and full ownership transfer at delivery, not a locked-in platform.",
   },
   {

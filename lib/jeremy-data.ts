@@ -33,11 +33,13 @@ export const FOUNDER = {
 } as const;
 
 /**
- * Placeholder for the published phone number. Never render this string.
- * Swap it for the real number (E.164 in JSON-LD, formatted in chrome) and
- * `hasPublishablePhone()` starts returning true on its own.
+ * No phone is published yet. This is deliberately an empty string rather than
+ * a placeholder token, so nothing can leak a fake value into chrome or JSON-LD
+ * if a future consumer forgets the guard. Drop the real number in here (E.164
+ * in JSON-LD, formatted in chrome) and `hasPublishablePhone()` flips to true
+ * on its own with no other change required.
  */
-export const PHONE_PLACEHOLDER = "TBD-OWNER-PHONE";
+export const PHONE_NOT_PUBLISHED = "";
 
 /**
  * Single NAP / site identity. Footer, founder line, and root JSON-LD must
@@ -48,7 +50,7 @@ export const SITE_IDENTITY = {
   brandName: "Dobeu Tech Solutions",
   email: "jeremyw@dobeu.net",
   /** Not yet published. Gate every render on `hasPublishablePhone()`. */
-  phone: PHONE_PLACEHOLDER as string,
+  phone: PHONE_NOT_PUBLISHED as string,
   locality: "New York",
   region: "NY",
   areaServed: "NYC & NJ metro",
@@ -57,11 +59,11 @@ export const SITE_IDENTITY = {
 
 export const NAP = SITE_IDENTITY;
 
-/** True only once a real number replaces the placeholder. */
+/** True only once a real number is filled in. Empty string stays unpublished. */
 export function hasPublishablePhone(
   phone: string = SITE_IDENTITY.phone,
 ): boolean {
-  return phone.trim().length > 0 && phone !== PHONE_PLACEHOLDER;
+  return phone.trim().length > 0;
 }
 
 /** Hosts that must never appear in public chrome or JSON-LD sameAs. */
@@ -431,10 +433,11 @@ export const PRICING_TIERS = [
   },
   {
     id: "retainer",
-    name: "Month-to-month",
-    price: "After launch",
+    name: "Care plan",
+    price: "From $149/mo",
     summary: "Keep the system current once it is in production.",
-    detail: "Optional. Only when there is a live system to maintain.",
+    detail:
+      "Three tiers — Watch, Tune, Extend. Business hours, real hours of work, no lock-in. Only when there is a live system to maintain.",
   },
 ] as const;
 
