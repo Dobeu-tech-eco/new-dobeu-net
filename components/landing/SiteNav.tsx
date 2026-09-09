@@ -30,6 +30,16 @@ const AVAILABILITY_STYLES = {
 export function SiteNav() {
   const { open } = useLightbox();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // The mobile menu is a full-width overlay. Any other fixed-position CTA
+  // (notably StickyMobileCTA, which is a sibling under the server-rendered
+  // MarketingShell and so shares no client state with this component) must
+  // step aside while it is open, or the user sees two stacked "Book a call"
+  // buttons. A body class is the least-coupled channel between them.
+  useEffect(() => {
+    document.body.classList.toggle("mobile-nav-open", mobileOpen);
+    return () => document.body.classList.remove("mobile-nav-open");
+  }, [mobileOpen]);
   const [brandsOpen, setBrandsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const brandsRef = useRef<HTMLLIElement>(null);
