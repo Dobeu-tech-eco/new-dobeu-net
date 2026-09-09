@@ -247,3 +247,20 @@
 body.mobile-nav-open .sticky-mobile-cta {
   display: none;
 }
+
+/* Intercom's launcher is fixed to the bottom-right corner with its own inline
+   styles, so on mobile it lands directly on top of the sticky "Book a call"
+   bar and hides the label. StickyMobileCTA publishes its height as
+   --sticky-cta-offset (same pattern as --cookie-banner-offset); lift the
+   launcher by that amount while the bar is up, and let it fall back when it
+   isn't. Mobile only — desktop has no sticky bar and Intercom sits clear.
+   !important is required to beat Intercom's inline positioning.
+   Both selectors are needed: the lightweight launcher renders first, and the
+   iframe replaces it once the full messenger loads. */
+@media (max-width: 767px) {
+  .intercom-lightweight-app-launcher,
+  iframe.intercom-launcher-frame {
+    bottom: calc(20px + var(--sticky-cta-offset, 0px)) !important;
+    transition: bottom 200ms ease;
+  }
+}
