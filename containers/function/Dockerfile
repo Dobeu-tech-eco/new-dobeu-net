@@ -7,7 +7,7 @@
 # - Handle SIGTERM for graceful scale-in
 # - Build for linux/amd64 (and optionally arm64)
 
-FROM node:20-alpine
+FROM node:26-alpine
 
 WORKDIR /app
 
