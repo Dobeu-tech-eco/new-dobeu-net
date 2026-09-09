@@ -1,0 +1,48 @@
+name: Dependency audit
+
+# `pnpm audit` against the public advisory DB — no secrets required.
+# NON-BLOCKING (continue-on-error): this job reports advisories but does not fail the workflow.
+# The repo may contain outstanding high/critical findings (often transitive dev tooling); gating would fail PRs until those are remediated.
+# Keep this report-only until the dependency tree is cleaned up, then remove `continue-on-error` to enforce.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: pnpm audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit (high+critical) — reports only, does not fail the job
+        continue-on-error: true
+        run: pnpm audit --audit-level=high

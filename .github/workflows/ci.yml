@@ -41,6 +41,22 @@ jobs:
       - name: Verify
         run: pnpm verify
 
+      # Reports coverage; does not gate. vitest.config.ts intentionally sets no
+      # thresholds yet — see the comment there. Read the text-summary in this
+      # job's log, or download the lcov artifact, to establish the real number
+      # before turning this into a gate.
+      - name: Coverage (report only)
+        run: pnpm test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: notify vercel
         if: always()
         uses: vercel/repository-dispatch/actions/status@v1
