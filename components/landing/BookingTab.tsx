@@ -91,7 +91,11 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
           <InlineWidget
             url={calendlyUrl}
             pageSettings={pageSettings}
-            styles={{ height: 680, width: "100%" }}
+            // 680px is taller than a phone viewport once the dialog header,
+            // tabs and footer are added, which pushed the top of the dialog
+            // off-screen. Clamp to the shorter of 680px and 60% of the dynamic
+            // viewport so the header stays reachable without zooming out.
+            styles={{ height: "min(680px, 60dvh)", width: "100%" }}
           />
         )}
       </div>

@@ -54,7 +54,7 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
       {children}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[92dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="gradient-text">Let&apos;s talk about your project</DialogTitle>
             <DialogDescription>

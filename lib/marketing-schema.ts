@@ -4,6 +4,7 @@ import {
   NAP,
   PRICE_RANGE,
   type GtmPillar,
+  hasPublishablePhone,
 } from "@/lib/jeremy-data";
 
 export function professionalServiceJsonLd(opts?: {
@@ -19,6 +20,9 @@ export function professionalServiceJsonLd(opts?: {
     legalName: NAP.legalName,
     url: opts?.url ?? SITE_URL,
     email: NAP.email,
+    // Omit the key entirely rather than emit an empty string when no number
+    // is published — schema.org consumers treat "" as a malformed value.
+    ...(hasPublishablePhone() ? { telephone: NAP.phone } : {}),
     areaServed: NAP.areaServed,
     address: {
       "@type": "PostalAddress",

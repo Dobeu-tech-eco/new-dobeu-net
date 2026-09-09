@@ -7,6 +7,7 @@ import {
   FOUNDER,
   NAP,
   SITE_IDENTITY,
+  hasPublishablePhone,
 } from "@/lib/jeremy-data";
 
 const FOOTER_LINKS = {
@@ -17,6 +18,9 @@ const FOOTER_LINKS = {
   ],
   Contact: [
     { label: NAP.email, href: `mailto:${NAP.email}`, external: true },
+    ...(hasPublishablePhone()
+      ? [{ label: NAP.phoneDisplay, href: `tel:${NAP.phone}`, external: true }]
+      : []),
     { label: "LinkedIn", href: FOUNDER.linkedin, external: true },
     { label: "Status", href: "https://status.dobeu.net", external: true },
   ],
@@ -52,6 +56,7 @@ export function SiteFooter() {
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
               {SITE_IDENTITY.legalName} · {NAP.locality}, {NAP.region} · {NAP.email}
+              {hasPublishablePhone() ? ` · ${NAP.phoneDisplay}` : ""}
             </p>
           </div>
 
