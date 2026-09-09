@@ -28,7 +28,7 @@ export function StickyMobileCTA() {
 
   return (
     <div
-      className="md:hidden fixed inset-x-0 z-40 p-3 glass border-t border-border/60 animate-fade-up"
+      className="sticky-mobile-cta md:hidden fixed inset-x-0 z-40 p-3 glass border-t border-border/60 animate-fade-up"
       style={{ bottom: "var(--cookie-banner-offset, 0px)" }}
       role="region"
       aria-label="Quick book a call"

@@ -238,3 +238,12 @@
     display: none;
   }
 }
+
+/* The mobile nav is a full-width overlay with its own "Book a call" button.
+   StickyMobileCTA is a fixed sibling that shares no client state with SiteNav
+   (MarketingShell is a server component), so without this the two render
+   stacked on top of each other once the user has scrolled past 600px.
+   SiteNav toggles `.mobile-nav-open` on <body> while the menu is open. */
+body.mobile-nav-open .sticky-mobile-cta {
+  display: none;
+}
