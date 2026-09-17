@@ -1,0 +1,4 @@
+{
+	"name": "new-dobeu-net",
+	"image": "mcr.microsoft.com/devcontainers/javascript-node:5.1-24-bookworm"
+}
