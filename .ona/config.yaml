@@ -1,0 +1,29 @@
+tasks:
+  install-dependencies:
+    name: Install dependencies
+    command: pnpm install --frozen-lockfile
+    triggeredBy:
+      - manual
+      - postDevcontainerStart
+      - prebuild
+
+  build:
+    name: Build
+    command: pnpm build
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+services:
+  nextjs-development-server:
+    name: Next.js development server
+    commands:
+      start: |
+        set -e
+        ona environment port open 3000 --admission creator_only --name "Next.js development server"
+        exec pnpm dev --hostname 0.0.0.0
+      ready: curl -fsS http://localhost:3000 >/dev/null
+    triggeredBy:
+      - manual
+      - postEnvironmentStart
