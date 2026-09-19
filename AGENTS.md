@@ -1,35 +1,144 @@
 # AGENTS.md
 
-Guidance for Codex (and any other `AGENTS.md`-reading agent) in this repository.
+Quick reference for AI agents working in this repository. Read [`CLAUDE.md`](./CLAUDE.md) first; it remains the source of truth for architecture, security constraints, environment variables, and workflow status.
 
-**Canonical instructions live in [`CLAUDE.md`](./CLAUDE.md).** Read that file first and treat it as the single source of truth for architecture, commands, security notes, and workflow status.
+## Repository shape
 
-This file is intentionally a thin pointer because some tools discover instructions by filename. Do not duplicate architectural guidance here.
+- Single Next.js 15 App Router application; this is **not a monorepo**.
+- `pnpm-workspace.yaml` only configures allowed dependency builds and security overrides.
+- Runtime: Node 24 (`.nvmrc`, `package.json#engines`).
+- Package manager: pnpm 10.34.1 (`package.json#packageManager`).
 
-Sibling pointer files:
+## Setup and run
+
+```bash
+pnpm install --frozen-lockfile  # install exactly from pnpm-lock.yaml
+pnpm dev                        # development server at http://localhost:3000
+pnpm build                      # production Next.js build + Datadog source-map step
+pnpm start                      # serve an existing production build
+pnpm build:strict               # build and fail on selected Next.js warnings
+```
+
+The marketing site and non-secret-dependent tests work without `.env.local`. Supabase-backed portal/admin flows require the environment variables documented in `CLAUDE.md`.
+
+## Tests
+
+### Vitest
+
+Tests are colocated under `app/`, `components/`, `containers/`, `hooks/`, and `lib/` as `*.test.ts(x)` or `*.spec.ts(x)`.
+
+```bash
+pnpm test                                      # watch mode
+pnpm test:ci                                   # all tests, one run
+pnpm test:coverage                             # one run + text/lcov coverage
+pnpm test:ci lib/leads.test.ts                  # one test file
+pnpm test:ci -t "processLead"                   # tests matching a name
+pnpm test:ci containers/function/path.test.ts
+```
+
+For `lib/actions/*.test.ts`, use `buildStubClient()` from `lib/actions/__test-helpers.ts`; do not mock the Supabase module directly.
+
+### Playwright
+
+`playwright.config.ts` starts `pnpm dev` automatically and runs desktop Chromium plus mobile Chrome projects.
+
+```bash
+pnpm test:e2e
+pnpm test:e2e:ui
+pnpm exec playwright test e2e/smoke.spec.ts
+pnpm exec playwright test e2e/smoke.spec.ts --grep "homepage loads with outcome hero"
+pnpm exec playwright test --project=chromium
+```
+
+`e2e/tickets.spec.ts` skips its authenticated portal flow unless the required Supabase E2E variables are present.
+
+## Lint, format, and verification
+
+```bash
+pnpm lint        # Next.js ESLint rules
+pnpm lint:fix    # ESLint autofix
+pnpm format      # Prettier write across the repository
+pnpm type-check  # TypeScript without emit
+pnpm verify      # type-check + lint + test:ci + build:strict
+```
+
+- Run `pnpm lint`, `pnpm type-check`, and relevant tests before committing.
+- Run `pnpm verify` before opening or merging a PR.
+- Run `pnpm format` when files need formatting; it rewrites matching files rather than checking only.
+
+## Pull requests
+
+### Branches and commits
+
+- Base normal changes on `main`.
+- No automated branch-naming rule is configured. Prefer `<type>/<short-kebab-case>`, for example `feat/typeform-estimate-pipeline`, `fix/mobile-nav`, or `chore/dependency-audit`.
+- Use Conventional Commits: `<type>(optional-scope): <imperative summary>`.
+- Common repository types include `feat`, `fix`, `chore`, and `ci`.
+- Keep the first line concise; example: `fix(ci): restore visual snapshot baselines`.
+- `main` requires linear history. Rebase or squash; do not introduce merge commits.
+
+### Merge gates
+
+Treat these GitHub PR jobs as required before merge:
+
+| Check                | What it runs                                                                   |
+| -------------------- | ------------------------------------------------------------------------------ |
+| `Verify`             | Frozen install, then `pnpm verify`; coverage is uploaded but has no threshold. |
+| `E2E`                | Installs Chromium and runs `pnpm test:e2e`.                                    |
+| `Lighthouse`         | Runs `pnpm build` and `pnpm lighthouse:ci`.                                    |
+| `Build & smoke test` | Additional path-filtered check for changes under `containers/function/**`.     |
+
+`Dependency audit / pnpm audit` is report-only (`continue-on-error`). GitHub branch protection currently exposes no required status-check contexts, so agents must still use the workflow results above as the merge gates.
+
+## Key directories
+
+| Path                   | Purpose                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| `app/`                 | App Router pages, layouts, route handlers, marketing pages, portal, and admin surfaces. |
+| `components/`          | Shared UI; `landing/`, `portal/`, `admin/`, `brand/`, and shadcn primitives in `ui/`.   |
+| `lib/`                 | Domain logic, integrations, analytics, Supabase clients, and shared helpers.            |
+| `lib/actions/`         | Authenticated server actions and their colocated tests/test helpers.                    |
+| `hooks/`               | Client React hooks and hook tests.                                                      |
+| `e2e/`                 | Playwright smoke, portal-flow, and visual tests.                                        |
+| `containers/function/` | Separate OCI HTTP service, Dockerfile, and path-routing tests.                          |
+| `supabase/migrations/` | Ordered, additive database migrations and RLS policies.                                 |
+| `public/`              | Static assets and public metadata.                                                      |
+| `scripts/`             | Strict build, source-map upload, agent, environment, and operator scripts.              |
+| `docs/`                | Deployment, observability, tracking, audits, plans, and verification notes.             |
+| `.github/workflows/`   | CI, E2E/Lighthouse, dependency audit, OCI, and snapshot workflows.                      |
+| `.ona/`                | Ona tasks and development-service configuration.                                        |
+
+## High-value repository rules
+
+- Read `BRAINSTORM.md` and `PLAN.md` before changing product scope; use `STATUS.md` for shipped phase status.
+- Do not add `next.config.js`; `next.config.ts` is the only Next configuration.
+- Never hand-edit `lib/database.types.ts`; regenerate it with `pnpm db:types` after schema changes.
+- Keep migrations ordered and additive.
+- Validate API inputs with Zod.
+- Use the `@/*` path alias for root-relative imports.
+- Keep heavy embeds behind `next/dynamic`.
+- When adding third-party browser resources, update the CSP in `next.config.ts`.
+
+## Learned agent preferences
+
+- When the user attaches a plan from `.cursor/plans/` and says to implement it, do not edit the plan file or recreate its todos; mark the existing todos `in_progress` as work proceeds.
+- Before reproposing or refreshing a plan, reread `git status`, the current diff, and the relevant source files.
+- Preserve unrelated working-tree changes. Do not clean up `.reports/`, `_tmp_16_<hash>`, new `.jules/*.md`, or untracked operator scripts without confirming ownership.
+
+## Cloud environment notes
+
+- Startup installs dependencies with `pnpm install --frozen-lockfile`.
+- The cloud environment and repository both use Node 24; do not change the Node policy casually. Update `package.json`, `.nvmrc`, and CI together when a deliberate major upgrade is required.
+- The app runs without `.env.local`: `/` works, while `/portal` and `/admin` redirect to `/login?error=supabase_not_configured`.
+- Local Supabase is unavailable without Docker and `supabase/config.toml`; remote Supabase variables are required for DB-backed flows.
+- Live Supabase names are `VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY`, and `VERCEL_SUPABASE_SERVICE_ROLE_KEY`.
+- `scripts/pull-vercel-env.sh` links Vercel project `new-dobeu-net` on team `dobeutechnology` and writes `.env.local` when `VERCEL_TOKEN` is available.
+- For GitHub API access to `Dobeu-tech-eco/new-dobeu-net`, use the connected Composio GitHub account `github_big-lain` (`dobeutech`).
+- `lib/agent/` needs `COMPOSIO_API_KEY` and `ANTHROPIC_API_KEY`; without its optional keys or SDK packages, the agent surface degrades gracefully.
+
+## Related agent files
+
 - `GEMINI.md`
 - `.github/copilot-instructions.md`
-- `.codex/AGENTS.md` — Codex CLI baseline and ECC tooling
-- `.codex/autonomous-loop.md` — full autonomous loop protocol (Grok Build + MCP)
-
-If guidance changes, update `CLAUDE.md` and keep this file minimal.
-
-## Learned preferences
-
-These are durable workflow preferences observed across multiple sessions. They are operational (not architectural), so they live here instead of `CLAUDE.md`.
-
-- When the user attaches a plan file from `.cursor/plans/` and says "implement the plan as specified", do NOT edit the plan file itself; its todos are pre-created — mark them `in_progress` as you work and do not recreate them.
-- Before reproposing or refreshing any plan, re-read the current codebase first (git status + diff + relevant files). The user has repeatedly corrected attempts to update a plan from prior-session memory or stale context with "review codebase and update plan accordingly".
-
-## Cursor Cloud specific instructions
-
-Standard lint/test/build/dev/verify commands live in `CLAUDE.md` and `package.json` — use those. Notes below are only the non-obvious cloud caveats.
-
-- **Dependencies** are refreshed automatically on VM startup (`pnpm install --frozen-lockfile`). All five gates pass clean: `pnpm type-check`, `pnpm lint`, `pnpm test:ci` (280 tests), `pnpm build`.
-- **Node version:** the VM ships Node 22 while `engines.node` pins `20.x`. pnpm prints a harmless `Unsupported engine` warning; every gate and the dev server still pass. Do not "fix" this by editing `engines` — see the Node version policy in `CLAUDE.md`.
-- **The app runs with no `.env.local` / no secrets.** `lib/supabase/middleware.ts` bails gracefully when Supabase env is absent, so `pnpm dev` serves the marketing landing at `/` and `POST /api/lead` returns `{ ok: true, lead_id: null }` (the `processLead` fan-out is best-effort — the Supabase insert fails silently). This is enough to demo the core lead-capture flow end-to-end. `/portal` and `/admin` redirect to `/login?error=supabase_not_configured` until real env vars exist.
-- **No Docker and no `supabase/config.toml`** on the VM, so `pnpm supabase start` (local Postgres/Auth) is not available out of the box. DB-backed flows (real lead persistence, magic-link auth, portal/admin data) need real Supabase env vars.
-- **Supabase env var names:** the live code reads `VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY`, `VERCEL_SUPABASE_SERVICE_ROLE_KEY` (see `lib/supabase/server.ts`). The `NEXT_PUBLIC_SUPABASE_*` names in `.env.example` are stale — don't rely on them.
-- **Vercel env pull:** project `new-dobeu-net` on team `dobeutechnology`. With `VERCEL_TOKEN` in Cloud Agent secrets, install runs `bash scripts/pull-vercel-env.sh` to link the project and write `.env.local` (same as `vercel env pull .env.local`). Without the token, the app still serves the marketing landing; portal/admin need pulled Supabase vars.
-- **GitHub (Composio):** use the **Composio dash** MCP for repo/API access — not Vercel Connect. GitHub is already connected; for `Dobeu-tech-eco/new-dobeu-net` use account `github_big-lain` (`dobeutech`) when Composio asks which GitHub account to use. Example tools: `GITHUB_GET_A_REPOSITORY`, `GITHUB_GET_REPOSITORY_CONTENT`, `GITHUB_LIST_COMMITS`.
-- **In-app agent:** `lib/agent/` uses `COMPOSIO_API_KEY` + `ANTHROPIC_API_KEY` when set; run heavier jobs via `pnpm tsx scripts/agent.ts "<prompt>"`.
+- `.codex/AGENTS.md`
+- `.codex/autonomous-loop.md`
