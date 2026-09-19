@@ -1,4 +1,24 @@
 {
 	"name": "new-dobeu-net",
-	"image": "mcr.microsoft.com/devcontainers/javascript-node:5.1-24-bookworm"
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
+		"ghcr.io/devcontainers/features/powershell:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"bradlc.vscode-tailwindcss",
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"ms-azuretools.vscode-docker",
+				"ms-playwright.playwright",
+				"ms-vscode.powershell",
+				"redhat.vscode-yaml"
+			]
+		}
+	},
+	"remoteUser": "node"
 }
