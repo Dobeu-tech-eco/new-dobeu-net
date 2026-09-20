@@ -105,9 +105,9 @@ function hashIp(ip: string): string {
 function getClientIp(request: Request): string {
   const realIp = request.headers.get("x-real-ip")?.trim();
   if (realIp) return realIp;
-  // First entry in x-forwarded-for is the original client; each proxy hop
-  // appends its own IP after it, so the last entry is the nearest proxy, not
-  // the client. Matches the same resolution used in app/api/github-repo/route.ts.
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  // The first entry in x-forwarded-for can be spoofed by the client. We use
+  // the last entry (added by the nearest proxy) to prevent IP spoofing,
+  // prioritizing security over exact client IP matching.
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
   return forwarded || "unknown";
 }

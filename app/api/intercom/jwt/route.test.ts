@@ -87,9 +87,9 @@ describe("GET /api/intercom/jwt", () => {
     );
   });
 
-  it("falls back to the first x-forwarded-for hop, then 'unknown'", async () => {
+  it("falls back to the last x-forwarded-for hop, then 'unknown'", async () => {
     await GET(makeRequest({ "x-forwarded-for": "9.9.9.9, 8.8.8.8" }));
-    expect(checkRateLimit).toHaveBeenLastCalledWith("intercom-jwt:9.9.9.9", expect.anything());
+    expect(checkRateLimit).toHaveBeenLastCalledWith("intercom-jwt:8.8.8.8", expect.anything());
 
     await GET(makeRequest());
     expect(checkRateLimit).toHaveBeenLastCalledWith("intercom-jwt:unknown", expect.anything());

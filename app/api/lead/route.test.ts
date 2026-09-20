@@ -42,18 +42,17 @@ describe("POST /api/lead", () => {
     expect(arg.ipHash).toMatch(/^ip_/);
   });
 
-  it("prioritizes x-real-ip over x-forwarded-for and takes the FIRST x-forwarded-for entry (original client)", async () => {
+  it("prioritizes x-real-ip over x-forwarded-for and takes the LAST x-forwarded-for entry (anti-spoofing)", async () => {
     const res = await POST(new Request("http://localhost/api/lead", {
       method: "POST",
       body: JSON.stringify({ email: "x@y.com" }),
       headers: { "x-forwarded-for": "1.1.1.1, 2.2.2.2" }
     }));
     expect(res.status).toBe(200);
-    // The first x-forwarded-for entry is the original client; later entries are
-    // proxy hops (matches getClientIp in the route and app/api/github-repo).
+    // The last x-forwarded-for entry is used to prevent IP spoofing, though it may be a proxy hop.
     const { createHash } = await import("node:crypto");
-    const hash1111 = createHash("sha256").update("1.1.1.1").digest("hex").slice(0, 16);
-    expect(mockedProcessLead.mock.calls[0][0].ipHash).toBe("ip_" + hash1111);
+    const hash2222 = createHash("sha256").update("2.2.2.2").digest("hex").slice(0, 16);
+    expect(mockedProcessLead.mock.calls[0][0].ipHash).toBe("ip_" + hash2222);
   });
 
   it("defaults source to 'other' when omitted", async () => {
