@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, type RefObject } from "react";
+import { useInView } from "motion/react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -109,28 +110,11 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
-function useInViewport<T extends Element>(ref: RefObject<T | null>) {
-  const [isInView, setIsInView] = useState(true);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting),
-      { threshold: 0 },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [ref]);
-
-  return isInView;
-}
-
 function ActivityTicker() {
   const [events, setEvents] = useState<GitHubEvent[]>([]);
   const [idx, setIdx] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInViewport(ref);
+  const isInView = useInView(ref);
 
   useEffect(() => {
     fetch("/api/github-activity")
@@ -188,12 +172,24 @@ function scrollToService(serviceId: string) {
   });
 }
 
+function HeroTypewriter({ paused }: { paused: boolean }) {
+  const typeText = useTypewriter(TYPEWRITER_PHRASES, 52, 2400, paused);
+  return (
+    <span className="text-primary" data-testid="hero-typewriter">
+      {typeText}
+      <span
+        className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle animate-pulse"
+        aria-hidden="true"
+      />
+    </span>
+  );
+}
+
 export function Hero() {
   const { open } = useLightbox();
 
   const ref = useRef<HTMLElement>(null);
-  const isInView = useInViewport(ref);
-  const typeText = useTypewriter(TYPEWRITER_PHRASES, 52, 2400, !isInView);
+  const isInView = useInView(ref);
   const secondaryHref = HAS_ATTRIBUTABLE_CASE_STUDIES ? "/case-studies" : "/pricing";
 
   function trackAndOpen(target: "book" | "form" | "email", label: string) {
@@ -244,13 +240,8 @@ export function Hero() {
             aria-hidden="true"
           >
             I ship{" "}
-            <span className="text-primary" data-testid="hero-typewriter">
-              {typeText}
-              <span
-                className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle animate-pulse"
-                aria-hidden="true"
-              />
-            </span>
+    {/* ⚡ Bolt: Isolated high-frequency typewriter re-renders to a leaf component */}
+    <HeroTypewriter paused={!isInView} />
           </p>
 
           <p
