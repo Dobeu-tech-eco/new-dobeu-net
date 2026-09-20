@@ -1,11 +1,45 @@
 tasks:
   install-dependencies:
     name: Install dependencies
-    command: pnpm install --frozen-lockfile
+    command: |
+      pnpm install --frozen-lockfile
+      pnpm exec playwright install chromium
     triggeredBy:
       - manual
       - postDevcontainerStart
       - prebuild
+
+  type-check:
+    name: Type-check
+    command: pnpm type-check
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  lint:
+    name: Lint
+    command: pnpm lint
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  unit-tests:
+    name: Unit tests
+    command: pnpm test:ci
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  coverage:
+    name: Test coverage
+    command: pnpm test:coverage
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
 
   build:
     name: Build
@@ -15,15 +49,85 @@ tasks:
     triggeredBy:
       - manual
 
+  verify:
+    name: Verify
+    command: pnpm build:strict
+    dependsOn:
+      - type-check
+      - lint
+      - unit-tests
+    triggeredBy:
+      - manual
+
+  end-to-end-tests:
+    name: End-to-end tests
+    command: pnpm test:e2e
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  lighthouse:
+    name: Lighthouse
+    command: pnpm lighthouse:ci
+    dependsOn:
+      - build
+    triggeredBy:
+      - manual
+
+  oci-image-smoke-test:
+    name: OCI image smoke test
+    command: |
+      set -eu
+      image_name="new-dobeu-net-oci:dev"
+      container_name="new-dobeu-net-oci-smoke"
+      docker build --tag "${image_name}" ./containers/function
+      docker container rm --force "${container_name}" >/dev/null 2>&1 || true
+      docker run --detach --name "${container_name}" --publish 127.0.0.1:8081:80 "${image_name}"
+      cleanup() {
+        docker container rm --force "${container_name}" >/dev/null 2>&1 || true
+      }
+      trap cleanup EXIT
+      attempt=0
+      until curl -fsS http://localhost:8081/health | grep -q '"ok":true'; do
+        attempt=$((attempt + 1))
+        if [ "${attempt}" -ge 30 ]; then
+          docker logs "${container_name}"
+          exit 1
+        fi
+        sleep 1
+      done
+      curl -fsS http://localhost:8081/ | grep -q '"ok":true'
+      curl -fsS http://localhost:8081/oci/health | grep -q '"ok":true'
+    triggeredBy:
+      - manual
+
 services:
   nextjs-development-server:
     name: Next.js development server
     commands:
       start: |
         set -e
+        until [ -x node_modules/.bin/next ]; do sleep 1; done
         ona environment port open 3000 --admission creator_only --name "Next.js development server"
+        export ONA_EXPOSED_HOST="$(ona environment port get 3000 -f URL | cut -c 9-)"
         exec pnpm dev --hostname 0.0.0.0
       ready: curl -fsS http://localhost:3000 >/dev/null
+    triggeredBy:
+      - manual
+      - postEnvironmentStart
+
+  oci-function:
+    name: OCI function
+    commands:
+      start: |
+        set -e
+        ona environment port open 8080 --admission creator_only --name "OCI function"
+        docker build --tag new-dobeu-net-oci:dev ./containers/function
+        docker container rm --force new-dobeu-net-oci-dev >/dev/null 2>&1 || true
+        exec docker run --rm --name new-dobeu-net-oci-dev --publish 0.0.0.0:8080:80 new-dobeu-net-oci:dev
+      ready: curl -fsS http://localhost:8080/health | grep -q '"ok":true'
+      stop: docker stop new-dobeu-net-oci-dev
     triggeredBy:
       - manual
       - postEnvironmentStart

@@ -120,6 +120,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: process.env.ONA_EXPOSED_HOST
+    ? [process.env.ONA_EXPOSED_HOST]
+    : [],
   reactStrictMode: true,
   poweredByHeader: false,
   // Emit browser source maps so Datadog RUM stack traces deminify.
