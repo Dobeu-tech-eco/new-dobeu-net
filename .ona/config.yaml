@@ -1,29 +1,119 @@
 tasks:
   install-dependencies:
     name: Install dependencies
-    command: pnpm install --frozen-lockfile
+    description: Install locked Node.js dependencies and the Playwright Chromium browser
+    command: |
+      set -e
+      pnpm install --frozen-lockfile
+      pnpm exec playwright install chromium
     triggeredBy:
       - manual
       - postDevcontainerStart
       - prebuild
+    prebuildRequiresSuccess: true
+
+  type-check:
+    name: Type check
+    description: Check the TypeScript project without emitting files
+    command: pnpm type-check
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  lint:
+    name: Lint
+    description: Run the Next.js ESLint checks
+    command: pnpm lint
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  unit-tests:
+    name: Unit tests
+    description: Run the Vitest suite once
+    command: pnpm test:ci
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  test-coverage:
+    name: Test coverage
+    description: Run Vitest and generate the coverage report
+    command: pnpm test:coverage
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
 
   build:
     name: Build
+    description: Create the production Next.js build
     command: pnpm build
     dependsOn:
       - install-dependencies
     triggeredBy:
       - manual
 
+  verify:
+    name: Verify
+    description: Run the complete pre-merge type, lint, test, and strict-build gate
+    command: pnpm verify
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  end-to-end-tests:
+    name: End-to-end tests
+    description: Run the Playwright browser test suite
+    command: pnpm test:e2e
+    dependsOn:
+      - install-dependencies
+    triggeredBy:
+      - manual
+
+  lighthouse:
+    name: Lighthouse
+    description: Run the documented Lighthouse CI performance checks
+    command: pnpm lighthouse:ci
+    dependsOn:
+      - build
+    triggeredBy:
+      - manual
+
+  build-oci-container:
+    name: Build OCI container
+    description: Build the Vercel container-function image locally
+    command: docker build --tag new-dobeu-net-oci:dev containers/function
+    triggeredBy:
+      - manual
+
 services:
   nextjs-development-server:
     name: Next.js development server
+    description: Run the web application in development mode
     commands:
       start: |
         set -e
-        ona environment port open 3000 --admission creator_only --name "Next.js development server"
+        ona environment port open 3000 --admission creator_only --name "Next.js development server" --protocol http
         exec pnpm dev --hostname 0.0.0.0
       ready: curl -fsS http://localhost:3000 >/dev/null
+    triggeredBy:
+      - manual
+      - postEnvironmentStart
+
+  oci-function-development-server:
+    name: OCI function development server
+    description: Run the Vercel container-function HTTP app locally
+    commands:
+      start: |
+        set -e
+        ona environment port open 8080 --admission creator_only --name "OCI function development server" --protocol http
+        exec env HOST=0.0.0.0 PORT=8080 node containers/function/server.mjs
+      ready: curl -fsS http://localhost:8080/health >/dev/null
     triggeredBy:
       - manual
       - postEnvironmentStart
