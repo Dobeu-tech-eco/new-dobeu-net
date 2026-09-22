@@ -108,7 +108,6 @@ function getClientIp(request: Request): string {
   // First entry in x-forwarded-for is the original client; each proxy hop
   // appends its own IP after it, so the last entry is the nearest proxy, not
   // the client. Matches the same resolution used in app/api/github-repo/route.ts.
-  // Warning: Do not use .pop() to get the rightmost IP, this targets the proxy's IP and causes a Denial of Service (DoS) in multi-proxy setups.
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwarded || "unknown";
 }
