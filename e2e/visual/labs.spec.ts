@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { gotoLanding, seedCookieConsent } from "../helpers";
+import { seedCookieConsent, settleFonts } from "../helpers";
 
 test.describe("Labs visual regression", () => {
   test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await seedCookieConsent(page);
     await page.goto("/labs");
-    await page.evaluate(() => document.fonts.ready);
+    await settleFonts(page);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
