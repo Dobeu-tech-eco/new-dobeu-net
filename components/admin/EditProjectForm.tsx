@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProject } from "@/lib/actions/projects";
@@ -99,7 +100,8 @@ export function EditProjectForm({ project }: { project: ProjectInput }) {
         </p>
       )}
       <div className="flex justify-end">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} aria-busy={pending}>
+          {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
           {pending ? "Saving…" : "Save changes"}
         </Button>
       </div>
