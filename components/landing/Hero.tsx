@@ -49,7 +49,6 @@ function HeroBackdrop() {
 import { track } from "@/lib/analytics";
 import {
   FOUNDER,
-  HAS_ATTRIBUTABLE_CASE_STUDIES,
   HERO_CAPABILITY_CARDS,
   HERO_COPY,
   NAP,
@@ -162,7 +161,7 @@ function ActivityTicker() {
             aria-label={`Latest activity: ${ev.message} in ${ev.repo}`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" aria-hidden="true" />
-            <span className="font-mono text-[11px] text-primary flex-shrink-0 hidden sm:inline">
+            <span className="font-mono text-xs text-primary flex-shrink-0 hidden sm:inline">
               {ev.repo}
             </span>
             <span className="hidden sm:inline text-border" aria-hidden="true">/</span>
@@ -194,7 +193,6 @@ export function Hero() {
   const ref = useRef<HTMLElement>(null);
   const isInView = useInViewport(ref);
   const typeText = useTypewriter(TYPEWRITER_PHRASES, 52, 2400, !isInView);
-  const secondaryHref = HAS_ATTRIBUTABLE_CASE_STUDIES ? "/case-studies" : "/pricing";
 
   function trackAndOpen(target: "book" | "form" | "email", label: string) {
     track("cta_click", { cta_label: label, cta_location: "hero", target });
@@ -227,14 +225,16 @@ export function Hero() {
             </div>
           </div>
 
+          {/* Greeting is a warm intro, not a headline — the value prop owns the h1. */}
+          <p className="mb-3 font-display text-lg md:text-xl font-semibold text-muted-foreground">
+            {HERO_COPY.greeting}
+          </p>
+
           <h1
             id="hero-heading"
             className="font-display font-extrabold tracking-tight leading-[1.02]"
           >
-            <span className="block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-muted-foreground">
-              {HERO_COPY.greeting}{" "}
-            </span>
-            <span className="mt-2 block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-foreground">
+            <span className="block text-4xl sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem] text-foreground">
               {HERO_COPY.outcome}
             </span>
           </h1>
@@ -299,7 +299,7 @@ export function Hero() {
             ))}
             <span className="flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-border flex-shrink-0" aria-hidden="true" />
-              <span className="text-accent font-semibold">No agency overhead</span>
+              <span className="text-accent-text font-semibold">No agency overhead</span>
             </span>
           </div>
 
@@ -307,13 +307,7 @@ export function Hero() {
             className="mt-5 text-sm font-medium text-foreground"
             data-testid="hero-price-line"
           >
-            <button
-              type="button"
-              onClick={() => trackAndOpen("form", "Price line — hero")}
-              className="underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-            >
-              {PRICE_RANGE.line} · {HERO_COPY.estimateCta}
-            </button>
+            {PRICE_RANGE.line}
           </p>
 
           <div className="mt-9 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center">
@@ -336,16 +330,6 @@ export function Hero() {
               data-testid="hero-estimate-cta"
             >
               {HERO_COPY.estimateCta}
-            </Button>
-            <Button
-              size="lg"
-              variant="ghost"
-              asChild
-              className="w-full sm:w-auto rounded-full font-medium px-7 text-foreground"
-            >
-              <Link href={secondaryHref}>
-                {HAS_ATTRIBUTABLE_CASE_STUDIES ? "See shipped work" : "View pricing"}
-              </Link>
             </Button>
             {SHOW_LABS_HERO_CTA && (
               <Button

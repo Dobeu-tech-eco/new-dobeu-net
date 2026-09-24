@@ -81,6 +81,9 @@
 
     --accent: var(--dobeu-amber-500);
     --accent-foreground: var(--dobeu-ink-900);
+    /* Accent used as TEXT: coral amber (#F59555) fails AA on light surfaces
+       (~2.3:1), so darken to an accessible amber (~4.7:1 on white/cream). */
+    --accent-text: 28 91% 37%;
 
     --muted: 240 8% 96%;
     --muted-foreground: 243 6% 40%;
@@ -123,6 +126,8 @@
 
     --accent: var(--dobeu-violet-400);
     --accent-foreground: var(--dobeu-ink-900);
+    /* On the void canvas the lavender accent already clears AA as text. */
+    --accent-text: var(--dobeu-violet-400);
 
     --muted: 243 22% 17%;
     --muted-foreground: 243 8% 68%;

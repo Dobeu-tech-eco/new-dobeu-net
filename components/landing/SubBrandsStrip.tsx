@@ -48,7 +48,7 @@ export function SubBrandsStrip() {
                 className="group flex items-center gap-2 rounded-full border border-border/60 bg-background/60 hover:border-primary/50 hover:bg-primary/5 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200"
               >
                 {/* Category badge */}
-                <span className="hidden sm:inline-flex rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase tracking-wide">
+                <span className="hidden sm:inline-flex rounded-sm bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary uppercase tracking-wide">
                   {brand.category}
                 </span>
                 <span>{brand.label}</span>

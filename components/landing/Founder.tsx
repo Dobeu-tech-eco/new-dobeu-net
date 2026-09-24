@@ -42,7 +42,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
         >
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/20 px-3 py-1 text-[11px] font-semibold text-green-700 dark:text-green-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/20 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
                 Available now
               </span>
@@ -130,7 +130,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">dobeu.net</p>
-                <p className="text-[11px] text-muted-foreground">Principal engineering & AI studio</p>
+                <p className="text-xs text-muted-foreground">Principal engineering & AI studio</p>
               </div>
             </motion.div>
           </motion.div>
@@ -164,7 +164,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
               transition={{ duration: 0.35, delay: 0.46 }}
               type="button"
               onClick={() => open("book")}
-              className="group mt-6 flex items-center gap-2 text-sm font-semibold text-primary hover:underline underline-offset-4 transition-colors"
+              className="group mt-6 inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-primary hover:underline underline-offset-4 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Book a 30-min call
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />

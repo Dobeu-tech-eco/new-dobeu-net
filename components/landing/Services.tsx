@@ -75,7 +75,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                   </span>
                   <div className="flex items-center gap-2.5">
                     {s.tag && (
-                      <span className="text-[10px] uppercase tracking-widest font-bold text-accent bg-accent/10 rounded-full px-2.5 py-0.5">
+                      <span className="text-xs uppercase tracking-widest font-bold text-accent-text bg-accent/10 rounded-full px-2.5 py-0.5">
                         {s.tag}
                       </span>
                     )}
@@ -121,7 +121,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
             aria-label="Get a price estimate for a project that doesn't fit a category"
           >
             <div className="flex items-center gap-4 text-left">
-              <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0 group-hover:bg-accent/16 transition-colors duration-200">
+              <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-accent/10 text-accent-text shrink-0 group-hover:bg-accent/16 transition-colors duration-200">
                 <MessageSquare className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
@@ -131,7 +131,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                 </p>
               </div>
             </div>
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-accent shrink-0 ml-6 group-hover:underline underline-offset-4">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-accent-text shrink-0 ml-6 group-hover:underline underline-offset-4">
               Get a price estimate
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
             </span>
