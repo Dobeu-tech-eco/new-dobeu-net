@@ -66,7 +66,7 @@ export function SiteFooter() {
           >
             {Object.entries(FOOTER_LINKS).map(([group, links]) => (
               <div key={group}>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                   {group}
                 </p>
                 <ul className="space-y-2">

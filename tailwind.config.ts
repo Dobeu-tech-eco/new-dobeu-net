@@ -85,6 +85,9 @@ const colors = {
     DEFAULT: "hsl(var(--accent))",
     foreground: "hsl(var(--accent-foreground))"
   },
+  // AA-safe accent for text labels (darker amber in light mode). Use
+  // `text-accent-text` instead of `text-accent` whenever the accent is words.
+  "accent-text": "hsl(var(--accent-text))",
   muted: {
     DEFAULT: "hsl(var(--muted))",
     foreground: "hsl(var(--muted-foreground))"

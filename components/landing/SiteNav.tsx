@@ -14,12 +14,12 @@ const NAV_LINKS = PRIMARY_NAV_LINKS;
 
 const AVAILABILITY_STYLES = {
   open: {
-    dot: "bg-green-400 shadow-[0_0_5px_1px_rgba(74,222,128,0.5)]",
-    badge: "text-green-400 border-green-400/20 bg-green-400/6",
+    dot: "bg-green-500 shadow-[0_0_5px_1px_rgba(74,222,128,0.5)]",
+    badge: "text-green-700 dark:text-green-400 border-green-500/25 bg-green-500/10",
   },
   limited: {
-    dot: "bg-amber-400 shadow-[0_0_5px_1px_rgba(251,191,36,0.5)]",
-    badge: "text-amber-400 border-amber-400/20 bg-amber-400/6",
+    dot: "bg-amber-500 shadow-[0_0_5px_1px_rgba(251,191,36,0.5)]",
+    badge: "text-amber-700 dark:text-amber-400 border-amber-500/25 bg-amber-500/10",
   },
   closed: {
     dot: "bg-muted-foreground",
@@ -81,7 +81,7 @@ export function SiteNav() {
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/"
-              className="flex items-center gap-2.5 flex-shrink-0 group"
+              className="flex items-center gap-2.5 flex-shrink-0 group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Dobeu home"
             >
               <DobeuMark className="h-7 w-7" />
@@ -96,7 +96,7 @@ export function SiteNav() {
             {/* Availability pill — restrained */}
             <span
               className={cn(
-                "hidden lg:inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium leading-none",
+                "hidden lg:inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium leading-none",
                 avStyle.badge
               )}
               aria-label={`Availability: ${AVAILABILITY.label}`}
@@ -115,7 +115,7 @@ export function SiteNav() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150"
+                  className="rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 >
                   {link.label}
                 </Link>
@@ -129,7 +129,7 @@ export function SiteNav() {
                 onClick={() => setBrandsOpen((v) => !v)}
                 aria-expanded={brandsOpen}
                 aria-haspopup="true"
-                className="flex items-center gap-1 rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150"
+                className="flex items-center gap-1 rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               >
                 Universe
                 <ChevronDown
@@ -147,7 +147,7 @@ export function SiteNav() {
                   className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-60 rounded-xl border border-border bg-elevated shadow-lg overflow-hidden"
                 >
                   <div className="px-4 py-2.5 border-b border-border/40">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
                       The Dobeu Universe
                     </p>
                   </div>
@@ -155,7 +155,7 @@ export function SiteNav() {
                     href="/labs"
                     role="menuitem"
                     onClick={() => setBrandsOpen(false)}
-                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors group"
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
@@ -172,7 +172,7 @@ export function SiteNav() {
                       target={brand.href.startsWith("http") ? "_blank" : undefined}
                       rel={brand.href.startsWith("http") ? "noopener noreferrer" : undefined}
                       onClick={() => setBrandsOpen(false)}
-                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors group"
+                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
@@ -197,7 +197,7 @@ export function SiteNav() {
               href={FOUNDER.github}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden lg:flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              className="hidden lg:flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               aria-label="Jeremy's GitHub"
             >
               <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
@@ -218,7 +218,7 @@ export function SiteNav() {
             {/* Mobile toggle */}
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-foreground hover:bg-muted/60 transition-colors"
+              className="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-foreground hover:bg-muted/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen((v) => !v)}
@@ -252,7 +252,7 @@ export function SiteNav() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="flex items-center rounded-lg px-2 py-3 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                      className="flex items-center rounded-lg px-2 py-3 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       onClick={() => setMobileOpen(false)}
                     >
                       {link.label}
@@ -262,12 +262,12 @@ export function SiteNav() {
 
                 {/* Universe in mobile */}
                 <li className="pt-3 mt-1 border-t border-border/30">
-                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                  <p className="px-2 py-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
                     The Dobeu Universe
                   </p>
                   <Link
                     href="/labs"
-                    className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     onClick={() => setMobileOpen(false)}
                   >
                     <span>Labs</span>
@@ -278,7 +278,7 @@ export function SiteNav() {
                       href={brand.href}
                       target={brand.href.startsWith("http") ? "_blank" : undefined}
                       rel={brand.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                      className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       onClick={() => setMobileOpen(false)}
                     >
                       <span>{brand.label}</span>
