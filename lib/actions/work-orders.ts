@@ -31,7 +31,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser, requireAdmin, AuthError } from "@/lib/actions/auth";
-import type { WorkOrderStatus } from "@/lib/database.types";
+import type { Database, WorkOrderStatus } from "@/lib/database.types";
 import { sendEmail } from "@/lib/resend";
 import {
   workOrderReceivedToAdmin,
@@ -493,7 +493,7 @@ export async function updateWorkOrderStatus(
 
   // Stamp the per-status timestamp so the client timeline can render it.
   const now = new Date().toISOString();
-  const stamp: Record<string, string> = { status };
+  const stamp: Database["public"]["Tables"]["work_orders"]["Update"] = { status };
   if (status === "in_progress") stamp.in_progress_at = now;
   else if (status === "delivered") stamp.delivered_at = now;
   else if (status === "closed") stamp.closed_at = now;
@@ -501,10 +501,7 @@ export async function updateWorkOrderStatus(
 
   const { data, error } = await admin
     .from("work_orders")
-    // Cast: the `*_at` columns land in lib/database.types.ts via the central
-    // `pnpm db:types` regen (migration 20260618000000); stale types until then.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .update(stamp as any)
+    .update(stamp)
     .eq("id", id)
     .select("id,title,service_type,created_by")
     .single();
