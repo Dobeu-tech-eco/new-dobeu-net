@@ -1,144 +1,118 @@
 # AGENTS.md
 
-Quick reference for AI agents working in this repository. Read [`CLAUDE.md`](./CLAUDE.md) first; it remains the source of truth for architecture, security constraints, environment variables, and workflow status.
+Repository guide for AI coding agents working on `new-dobeu-net`.
 
-## Repository shape
+## Read first
 
-- Single Next.js 15 App Router application; this is **not a monorepo**.
-- `pnpm-workspace.yaml` only configures allowed dependency builds and security overrides.
-- Runtime: Node 24 (`.nvmrc`, `package.json#engines`).
-- Package manager: pnpm 10.34.1 (`package.json#packageManager`).
+- [`CLAUDE.md`](./CLAUDE.md) is the canonical source for architecture, security constraints, environment variables, and workflow status.
+- [`BRAINSTORM.md`](./BRAINSTORM.md) and [`PLAN.md`](./PLAN.md) define product scope and accepted decisions.
+- This is one Next.js application with one root `package.json`; it is not a multi-package monorepo.
+- Run every command below from the repository root.
 
-## Setup and run
-
-```bash
-pnpm install --frozen-lockfile  # install exactly from pnpm-lock.yaml
-pnpm dev                        # development server at http://localhost:3000
-pnpm build                      # production Next.js build + Datadog source-map step
-pnpm start                      # serve an existing production build
-pnpm build:strict               # build and fail on selected Next.js warnings
-```
-
-The marketing site and non-secret-dependent tests work without `.env.local`. Supabase-backed portal/admin flows require the environment variables documented in `CLAUDE.md`.
-
-## Tests
-
-### Vitest
-
-Tests are colocated under `app/`, `components/`, `containers/`, `hooks/`, and `lib/` as `*.test.ts(x)` or `*.spec.ts(x)`.
-
-```bash
-pnpm test                                      # watch mode
-pnpm test:ci                                   # all tests, one run
-pnpm test:coverage                             # one run + text/lcov coverage
-pnpm test:ci lib/leads.test.ts                  # one test file
-pnpm test:ci -t "processLead"                   # tests matching a name
-pnpm test:ci containers/function/path.test.ts
-```
-
-For `lib/actions/*.test.ts`, use `buildStubClient()` from `lib/actions/__test-helpers.ts`; do not mock the Supabase module directly.
-
-### Playwright
-
-`playwright.config.ts` starts `pnpm dev` automatically and runs desktop Chromium plus mobile Chrome projects.
-
-```bash
-pnpm test:e2e
-pnpm test:e2e:ui
-pnpm exec playwright test e2e/smoke.spec.ts
-pnpm exec playwright test e2e/smoke.spec.ts --grep "homepage loads with outcome hero"
-pnpm exec playwright test --project=chromium
-```
-
-`e2e/tickets.spec.ts` skips its authenticated portal flow unless the required Supabase E2E variables are present.
-
-## Lint, format, and verification
-
-```bash
-pnpm lint        # Next.js ESLint rules
-pnpm lint:fix    # ESLint autofix
-pnpm format      # Prettier write across the repository
-pnpm type-check  # TypeScript without emit
-pnpm verify      # type-check + lint + test:ci + build:strict
-```
-
-- Run `pnpm lint`, `pnpm type-check`, and relevant tests before committing.
-- Run `pnpm verify` before opening or merging a PR.
-- Run `pnpm format` when files need formatting; it rewrites matching files rather than checking only.
-
-## Pull requests
-
-### Branches and commits
-
-- Base normal changes on `main`.
-- No automated branch-naming rule is configured. Prefer `<type>/<short-kebab-case>`, for example `feat/typeform-estimate-pipeline`, `fix/mobile-nav`, or `chore/dependency-audit`.
-- Use Conventional Commits: `<type>(optional-scope): <imperative summary>`.
-- Common repository types include `feat`, `fix`, `chore`, and `ci`.
-- Keep the first line concise; example: `fix(ci): restore visual snapshot baselines`.
-- `main` requires linear history. Rebase or squash; do not introduce merge commits.
-
-### Merge gates
-
-Treat these GitHub PR jobs as required before merge:
-
-| Check                | What it runs                                                                   |
-| -------------------- | ------------------------------------------------------------------------------ |
-| `Verify`             | Frozen install, then `pnpm verify`; coverage is uploaded but has no threshold. |
-| `E2E`                | Installs Chromium and runs `pnpm test:e2e`.                                    |
-| `Lighthouse`         | Runs `pnpm build` and `pnpm lighthouse:ci`.                                    |
-| `Build & smoke test` | Additional path-filtered check for changes under `containers/function/**`.     |
-
-`Dependency audit / pnpm audit` is report-only (`continue-on-error`). GitHub branch protection currently exposes no required status-check contexts, so agents must still use the workflow results above as the merge gates.
-
-## Key directories
-
-| Path                   | Purpose                                                                                 |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| `app/`                 | App Router pages, layouts, route handlers, marketing pages, portal, and admin surfaces. |
-| `components/`          | Shared UI; `landing/`, `portal/`, `admin/`, `brand/`, and shadcn primitives in `ui/`.   |
-| `lib/`                 | Domain logic, integrations, analytics, Supabase clients, and shared helpers.            |
-| `lib/actions/`         | Authenticated server actions and their colocated tests/test helpers.                    |
-| `hooks/`               | Client React hooks and hook tests.                                                      |
-| `e2e/`                 | Playwright smoke, portal-flow, and visual tests.                                        |
-| `containers/function/` | Separate OCI HTTP service, Dockerfile, and path-routing tests.                          |
-| `supabase/migrations/` | Ordered, additive database migrations and RLS policies.                                 |
-| `public/`              | Static assets and public metadata.                                                      |
-| `scripts/`             | Strict build, source-map upload, agent, environment, and operator scripts.              |
-| `docs/`                | Deployment, observability, tracking, audits, plans, and verification notes.             |
-| `.github/workflows/`   | CI, E2E/Lighthouse, dependency audit, OCI, and snapshot workflows.                      |
-| `.ona/`                | Ona tasks and development-service configuration.                                        |
-
-## High-value repository rules
-
-- Read `BRAINSTORM.md` and `PLAN.md` before changing product scope; use `STATUS.md` for shipped phase status.
-- Do not add `next.config.js`; `next.config.ts` is the only Next configuration.
-- Never hand-edit `lib/database.types.ts`; regenerate it with `pnpm db:types` after schema changes.
-- Keep migrations ordered and additive.
-- Validate API inputs with Zod.
-- Use the `@/*` path alias for root-relative imports.
-- Keep heavy embeds behind `next/dynamic`.
-- When adding third-party browser resources, update the CSP in `next.config.ts`.
-
-## Learned agent preferences
-
-- When the user attaches a plan from `.cursor/plans/` and says to implement it, do not edit the plan file or recreate its todos; mark the existing todos `in_progress` as work proceeds.
-- Before reproposing or refreshing a plan, reread `git status`, the current diff, and the relevant source files.
-- Preserve unrelated working-tree changes. Do not clean up `.reports/`, `_tmp_16_<hash>`, new `.jules/*.md`, or untracked operator scripts without confirming ownership.
-
-## Cloud environment notes
-
-- Startup installs dependencies with `pnpm install --frozen-lockfile`.
-- The cloud environment and repository both use Node 24; do not change the Node policy casually. Update `package.json`, `.nvmrc`, and CI together when a deliberate major upgrade is required.
-- The app runs without `.env.local`: `/` works, while `/portal` and `/admin` redirect to `/login?error=supabase_not_configured`.
-- Local Supabase is unavailable without Docker and `supabase/config.toml`; remote Supabase variables are required for DB-backed flows.
-- Live Supabase names are `VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY`, and `VERCEL_SUPABASE_SERVICE_ROLE_KEY`.
-- `scripts/pull-vercel-env.sh` links Vercel project `new-dobeu-net` on team `dobeutechnology` and writes `.env.local` when `VERCEL_TOKEN` is available.
-- For GitHub API access to `Dobeu-tech-eco/new-dobeu-net`, use the connected Composio GitHub account `github_big-lain` (`dobeutech`).
-- `lib/agent/` needs `COMPOSIO_API_KEY` and `ANTHROPIC_API_KEY`; without its optional keys or SDK packages, the agent surface degrades gracefully.
-
-## Related agent files
+Sibling agent files:
 
 - `GEMINI.md`
 - `.github/copilot-instructions.md`
-- `.codex/AGENTS.md`
-- `.codex/autonomous-loop.md`
+- `.codex/AGENTS.md` — Codex CLI and ECC baseline
+- `.codex/autonomous-loop.md` — autonomous-loop protocol
+
+## Setup and run
+
+Requirements: Node 24 (`.nvmrc`; `package.json` requires `>=24`) and pnpm 10.34.1.
+
+| Task                                                | Command                          |
+| --------------------------------------------------- | -------------------------------- |
+| Install exactly from the lockfile                   | `pnpm install --frozen-lockfile` |
+| Install after intentionally changing dependencies   | `pnpm install`                   |
+| Start development server on `http://localhost:3000` | `pnpm dev`                       |
+| Create a production build                           | `pnpm build`                     |
+| Start the production build                          | `pnpm start`                     |
+| Build and fail on selected Next.js warnings         | `pnpm build:strict`              |
+
+The public site and lead-form demo run without `.env.local`. `/portal` and `/admin` require Supabase configuration and otherwise redirect to `/login?error=supabase_not_configured`.
+
+## Tests
+
+| Task                                         | Command                                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------------------- |
+| Vitest watch mode                            | `pnpm test`                                                                  |
+| All unit/component tests once                | `pnpm test:ci`                                                               |
+| One Vitest file                              | `pnpm test:ci lib/leads.test.ts`                                             |
+| Tests matching a name in one file            | `pnpm test:ci lib/leads.test.ts -t "Supabase failures"`                      |
+| Coverage report                              | `pnpm test:coverage`                                                         |
+| Install the CI Playwright browser            | `pnpm exec playwright install --with-deps chromium`                          |
+| All Playwright tests                         | `pnpm test:e2e`                                                              |
+| One Playwright spec/project                  | `pnpm test:e2e e2e/smoke.spec.ts --project=chromium`                         |
+| One Playwright test by name                  | `pnpm test:e2e e2e/smoke.spec.ts --project=chromium --grep "homepage loads"` |
+| Playwright UI mode                           | `pnpm test:e2e:ui`                                                           |
+| Mobile Lighthouse checks for `/` and `/labs` | `pnpm lighthouse:ci`                                                         |
+
+- Vitest includes `*.test.ts(x)` and `*.spec.ts(x)` outside `e2e/`.
+- Playwright specs live in `e2e/`; its config starts `pnpm dev` automatically.
+- For `lib/actions/*.test.ts`, use `buildStubClient()` from `lib/actions/__test-helpers.ts` instead of mocking Supabase modules.
+- Pass test filters directly after the script name. Do not add an extra `--`; it prevents the current Vitest/Playwright commands from filtering as intended.
+
+## Before committing
+
+| Task                           | Command           |
+| ------------------------------ | ----------------- |
+| Format the repository in place | `pnpm format`     |
+| Lint                           | `pnpm lint`       |
+| Autofix lint findings          | `pnpm lint:fix`   |
+| Type-check                     | `pnpm type-check` |
+| Full local merge gate          | `pnpm verify`     |
+
+`pnpm verify` runs type-check, lint, one-shot Vitest, and the strict production build. Review the diff after `pnpm format` because it writes the whole repository.
+
+## Pull requests
+
+- Branches: no branch-name pattern is enforced. Follow the repository convention `<type>/<kebab-case>`, normally `feat/...`, `fix/...`, or `chore/...`.
+- Protected history: change `main` through a PR; do not force-push or delete it. Keep history linear and resolve review threads.
+- Commits: use Conventional Commits — `<type>(<optional-scope>): <imperative summary>`.
+  - Examples: `feat(offerings): add entry ladder`, `fix(ci): regenerate visual baselines`, `chore: update agent guidance`.
+- Keep each PR focused and add or update tests for behavioral changes.
+- Run `pnpm verify` before requesting review.
+
+PR workflows to keep green:
+
+| Check              | Source                                     | What it runs                              |
+| ------------------ | ------------------------------------------ | ----------------------------------------- |
+| Verify             | `.github/workflows/ci.yml`                 | install, `pnpm verify`, coverage report   |
+| E2E                | `.github/workflows/ci.yml`                 | Chromium install and `pnpm test:e2e`      |
+| Lighthouse         | `.github/workflows/ci.yml`                 | `pnpm build` and `pnpm lighthouse:ci`     |
+| Build & smoke test | `.github/workflows/oci-function-build.yml` | only for `containers/function/**` changes |
+
+Coverage and dependency audit currently report results but do not enforce thresholds. GitHub currently has no required-status-check contexts configured; agents should still treat Verify, E2E, Lighthouse, and any path-specific OCI check as merge gates.
+
+## Key directories
+
+| Path                   | Purpose                                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| `app/`                 | Next.js App Router pages, layouts, route handlers, public site, portal, and admin surfaces |
+| `components/`          | Shared React UI; landing, portal, admin, brand, and shadcn primitives                      |
+| `lib/`                 | Domain logic, integrations, Supabase clients, analytics, and server actions                |
+| `hooks/`               | Shared client hooks                                                                        |
+| `e2e/`                 | Playwright smoke, authenticated-flow, and visual-regression tests                          |
+| `supabase/migrations/` | Ordered, additive database migrations                                                      |
+| `containers/function/` | Separate OCI container service, Dockerfile, server, and tests                              |
+| `scripts/`             | Build, deployment, environment, agent, and operator utilities                              |
+| `public/`              | Static assets and crawler/AI metadata                                                      |
+| `docs/`                | Deployment, observability, reviews, audits, and implementation plans                       |
+| `types/`               | Project-wide TypeScript declarations                                                       |
+| `.github/workflows/`   | CI, review, dependency-audit, OCI, and snapshot workflows                                  |
+
+`lib/database.types.ts` is generated. Regenerate it with `pnpm db:types`; do not edit it by hand.
+
+## Environment notes
+
+- Local Supabase is not available from this checkout without Docker and a `supabase/config.toml`. Database-backed flows need real Supabase variables.
+- Live Supabase code uses `VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_URL`, `NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY`, and `VERCEL_SUPABASE_SERVICE_ROLE_KEY`.
+- Pull Vercel-managed values with `vercel env pull .env.local`; cloud setup may run `bash scripts/pull-vercel-env.sh` when `VERCEL_TOKEN` is available.
+- For GitHub repository/API access, use the connected Composio GitHub account `github_big-lain` (`dobeutech`) for `Dobeu-tech-eco/new-dobeu-net`.
+- `lib/agent/` uses `COMPOSIO_API_KEY` and `ANTHROPIC_API_KEY`. Its standalone `scripts/agent.ts` entry point also needs the optional agent SDK packages and a TypeScript runner; those are not installed by the current `package.json`.
+
+## Learned workflow preferences
+
+- When the user attaches a plan from `.cursor/plans/` and says to implement it as specified, do not edit or recreate the plan. Mark its existing todos `in_progress` as work proceeds.
+- Before proposing or refreshing a plan, re-read the current codebase: check git status, the diff, and the relevant files. Do not plan from stale session context.
+- Preserve unrelated working-tree changes. Do not clean up scratch files or untracked content without confirming ownership and intent.
