@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   createDeliverableUploadUrl,
@@ -104,7 +105,8 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
         </p>
       )}
       <div className="flex justify-end">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} aria-busy={pending}>
+          {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
           {pending ? "Uploading…" : "Upload deliverable"}
         </Button>
       </div>
