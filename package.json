@@ -81,7 +81,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9.18.0",
     "eslint-config-next": "^15.5.4",
-    "jsdom": "^25.0.1",
+    "jsdom": "^30.0.1",
     "pg": "^8.21.0",
     "postcss": "^8.5.23",
     "prettier": "^3.4.2",
