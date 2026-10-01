@@ -1,3 +1,3 @@
-## 2026-05-22 - [Lazy Loading Hidden Third-Party Embeds]
-**Learning:** Heavy third-party integrations like Calendly (`react-calendly`) and Typeform (`@typeform/embed-react`) were being statically imported and eagerly loaded on the main landing page, even though they were hidden inside a Dialog (lightbox) and Tabs components that the user might never open. Statically importing these inflates the First Load JS size.
-**Action:** When heavy third-party components are conditionally rendered or hidden behind UI interactions (like modals, lightboxes, or non-default tabs), always use `next/dynamic` to lazy load them. This defers downloading their JavaScript payload until the user actually interacts with that specific UI element, significantly reducing the initial bundle size.
+## 2024-10-01 - WebGL Shader Off-screen Optimization
+**Learning:** Continuous WebGL shaders (like GrainGradient) consume CPU/GPU cycles even when off-screen.
+**Action:** Always pause high-frequency loops by setting `speed` to 0 when elements are off-screen using an intersection observer like `useInView` from `framer-motion` (or `motion/react`), attaching the ref to an always-rendered parent container.
