@@ -203,11 +203,12 @@ export function LoginForm() {
           variant="outline"
           className="w-full"
           disabled={submitting || onCooldown}
+          aria-busy={submitting}
           onClick={() => sendMagicLink(email)}
         >
           {submitting ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
               Sending…
             </>
           ) : onCooldown ? (
@@ -269,10 +270,11 @@ export function LoginForm() {
         size="lg"
         className="w-full"
         disabled={submitting || (!isPassword && onCooldown)}
+        aria-busy={submitting}
       >
         {submitting ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
             {isPassword ? "Signing in…" : "Sending…"}
           </>
         ) : isPassword ? (
