@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { archiveIntake, markIntakeReviewed } from "@/lib/actions/intakes";
 
@@ -130,19 +131,26 @@ export function IntakeReviewActions({
         </p>
       ) : (
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" disabled={pending}>
-            {pending
-              ? "Saving…"
-              : status === "reviewed"
-                ? "Save review"
-                : "Mark reviewed"}
+          <Button type="submit" disabled={pending} aria-busy={pending}>
+            {pending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                Saving…
+              </>
+            ) : status === "reviewed" ? (
+              "Save review"
+            ) : (
+              "Mark reviewed"
+            )}
           </Button>
           <Button
             type="button"
             variant="destructive"
             disabled={pending}
+            aria-busy={pending}
             onClick={() => run("archive")}
           >
+            {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
             Archive intake
           </Button>
         </div>
