@@ -34,9 +34,10 @@ export function AcceptQuoteForm({
       <Button
         onClick={onAccept}
         disabled={pending}
+        aria-busy={pending}
         aria-label={`Accept quote of ${quoteLabel} and create invoice`}
       >
-        {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
         {pending ? "Accepting…" : "Accept quote & create invoice"}
       </Button>
       {error && (
