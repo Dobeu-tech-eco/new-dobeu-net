@@ -222,8 +222,8 @@ export function NewWorkOrderDialog() {
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
-              {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={pending} aria-busy={pending}>
+              {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
               {pending ? "Submitting…" : "Submit ticket"}
             </Button>
           </DialogFooter>
