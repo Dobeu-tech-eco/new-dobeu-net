@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
+import { useReducedMotion, useInView } from "motion/react";
 
 const GrainGradient = dynamic(
   () =>
@@ -35,6 +35,8 @@ function supportsWebGl() {
 export function HeroShaderBackground() {
   const reduceMotion = useReducedMotion();
   const paletteRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(containerRef);
   const [palette, setPalette] = useState<ShaderPalette | null>(null);
   const [canRenderShader, setCanRenderShader] = useState(false);
 
@@ -77,6 +79,7 @@ export function HeroShaderBackground() {
 
   return (
     <div
+      ref={containerRef}
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-background"
       data-testid="hero-shader-background"
@@ -102,7 +105,8 @@ export function HeroShaderBackground() {
           softness={0.65}
           intensity={0.58}
           noise={0.1}
-          speed={0.2}
+          // ⚡ Bolt: Pause the rAF loop when off-screen to save CPU/GPU resources
+          speed={isInView ? 0.2 : 0}
           scale={1.1}
           maxPixelCount={900_000}
         />
