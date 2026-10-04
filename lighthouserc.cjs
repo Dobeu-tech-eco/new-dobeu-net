@@ -1,8 +1,10 @@
 /** @type {import('@lhci/cli').Config} */
+const lighthousePort = process.env.LIGHTHOUSE_PORT || "3000";
+
 module.exports = {
   ci: {
     collect: {
-      url: ["http://localhost:3000/", "http://localhost:3000/labs"],
+      url: [`http://localhost:${lighthousePort}/`, `http://localhost:${lighthousePort}/labs`],
       numberOfRuns: 3,
       settings: {
         formFactor: "mobile",
@@ -15,7 +17,7 @@ module.exports = {
           disabled: false,
         },
       },
-      startServerCommand: "pnpm start",
+      startServerCommand: `pnpm exec next start --port ${lighthousePort}`,
       startServerReadyPattern: "Ready",
       startServerReadyTimeout: 120_000,
     },
