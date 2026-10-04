@@ -22,8 +22,10 @@ Requirements: Node 24 (`.nvmrc`; `package.json` requires `>=24`) and pnpm 10.34.
 
 | Task                                                | Command                          |
 | --------------------------------------------------- | -------------------------------- |
+| Enable the pinned package manager when needed       | `corepack enable`                |
 | Install exactly from the lockfile                   | `pnpm install --frozen-lockfile` |
 | Install after intentionally changing dependencies   | `pnpm install`                   |
+| Create an optional local environment file           | `cp .env.example .env.local`     |
 | Start development server on `http://localhost:3000` | `pnpm dev`                       |
 | Create a production build                           | `pnpm build`                     |
 | Start the production build                          | `pnpm start`                     |
@@ -66,8 +68,8 @@ The public site and lead-form demo run without `.env.local`. `/portal` and `/adm
 
 ## Pull requests
 
-- Branches: no branch-name pattern is enforced. Follow the repository convention `<type>/<kebab-case>`, normally `feat/...`, `fix/...`, or `chore/...`.
-- Protected history: change `main` through a PR; do not force-push or delete it. Keep history linear and resolve review threads.
+- Branches: no branch-name pattern is enforced. Use a short, descriptive name; when a task prescribes one, use it exactly.
+- Protected history: change `main` through a PR; do not force-push or delete it. Keep history linear.
 - Commits: use Conventional Commits — `<type>(<optional-scope>): <imperative summary>`.
   - Examples: `feat(offerings): add entry ladder`, `fix(ci): regenerate visual baselines`, `chore: update agent guidance`.
 - Keep each PR focused and add or update tests for behavioral changes.
