@@ -122,6 +122,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Keep long-lived development services isolated from concurrent builds.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // Emit browser source maps so Datadog RUM stack traces deminify.
   // scripts/upload-sourcemaps.mjs uploads them to Datadog and then deletes
   // them from .next/static, so they are never served to the public.
