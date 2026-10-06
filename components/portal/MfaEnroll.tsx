@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { Loader2 } from "lucide-react";
 
 /**
  * One-time TOTP enrollment. Shows the QR (SVG data-URL from Supabase) + a
@@ -62,9 +63,17 @@ export function MfaEnroll({ onEnrolled }: { onEnrolled?: () => void }) {
       <button
         onClick={startEnroll}
         disabled={busy}
-        className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
+        aria-busy={busy}
+        className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
       >
-        {busy ? "Starting…" : "Enable two-factor authentication"}
+        {busy ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            Starting…
+          </>
+        ) : (
+          "Enable two-factor authentication"
+        )}
       </button>
     );
   }
@@ -100,9 +109,17 @@ export function MfaEnroll({ onEnrolled }: { onEnrolled?: () => void }) {
         <button
           onClick={verify}
           disabled={busy || code.length !== 6}
-          className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
+          aria-busy={busy}
+          className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
         >
-          {busy ? "Verifying…" : "Verify & enable"}
+          {busy ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+              Verifying…
+            </>
+          ) : (
+            "Verify & enable"
+          )}
         </button>
       </div>
     </div>

@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { Loader2 } from "lucide-react";
 
 /** Code-only AAL2 challenge against the user's existing verified TOTP factor. */
 export function MfaStepUp({ next }: { next: string }) {
@@ -58,9 +59,17 @@ export function MfaStepUp({ next }: { next: string }) {
       <button
         type="submit"
         disabled={busy || code.length !== 6}
-        className="w-full rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
+        aria-busy={busy}
+        className="inline-flex w-full items-center justify-center rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
       >
-        {busy ? "Verifying…" : "Continue to admin"}
+        {busy ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            Verifying…
+          </>
+        ) : (
+          "Continue to admin"
+        )}
       </button>
     </form>
   );
