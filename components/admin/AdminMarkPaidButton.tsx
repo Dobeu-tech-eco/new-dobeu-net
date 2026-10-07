@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { markInvoicePaidManually } from "@/lib/actions/invoices";
 
 export function AdminMarkPaidButton({ invoiceId }: { invoiceId: string }) {
@@ -10,7 +11,11 @@ export function AdminMarkPaidButton({ invoiceId }: { invoiceId: string }) {
 
   function onClick() {
     setError(null);
-    if (!confirm("Mark this invoice as paid manually? Use only for cash / wire / check payments outside Stripe.")) {
+    if (
+      !confirm(
+        "Mark this invoice as paid manually? Use only for cash / wire / check payments outside Stripe.",
+      )
+    ) {
       return;
     }
     startTransition(async () => {
@@ -29,6 +34,9 @@ export function AdminMarkPaidButton({ invoiceId }: { invoiceId: string }) {
         aria-busy={pending}
         aria-describedby={error ? `mark-paid-error-${invoiceId}` : undefined}
       >
+        {pending && (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+        )}
         {pending ? "Marking…" : "Mark paid manually"}
       </Button>
       {error && (

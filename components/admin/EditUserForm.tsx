@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateUser } from "@/lib/actions/users";
@@ -23,7 +24,7 @@ export function EditUserForm({ user }: { user: UserInput }) {
     const payload = {
       id: user.id,
       full_name: String(formData.get("full_name") ?? "") || null,
-      company: String(formData.get("company") ?? "") || null
+      company: String(formData.get("company") ?? "") || null,
     };
     startTransition(async () => {
       const result = await updateUser(payload);
@@ -49,7 +50,12 @@ export function EditUserForm({ user }: { user: UserInput }) {
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="company">Company</Label>
-        <Input id="company" name="company" maxLength={160} defaultValue={user.company ?? ""} />
+        <Input
+          id="company"
+          name="company"
+          maxLength={160}
+          defaultValue={user.company ?? ""}
+        />
       </div>
       {error && (
         <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
@@ -62,7 +68,10 @@ export function EditUserForm({ user }: { user: UserInput }) {
         </p>
       )}
       <div className="flex justify-end">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} aria-busy={pending}>
+          {pending && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+          )}
           {pending ? "Saving…" : "Save changes"}
         </Button>
       </div>

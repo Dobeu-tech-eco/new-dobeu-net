@@ -3,13 +3,20 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { deleteProject } from "@/lib/actions/projects";
 
 /**
  * Two-step confirm: first click arms the button, second click within ~5s deletes.
  * Avoids a dependency on a confirmation modal primitive for one button.
  */
-export function DeleteProjectButton({ id, title }: { id: string; title: string }) {
+export function DeleteProjectButton({
+  id,
+  title,
+}: {
+  id: string;
+  title: string;
+}) {
   const router = useRouter();
   const [armed, setArmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +52,19 @@ export function DeleteProjectButton({ id, title }: { id: string; title: string }
           <p className="text-sm text-destructive font-medium">
             Confirm delete &ldquo;{title}&rdquo;?
           </p>
-          <Button type="button" variant="destructive" disabled={pending} onClick={handleDelete}>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            aria-busy={pending}
+            onClick={handleDelete}
+          >
+            {pending && (
+              <Loader2
+                className="mr-2 h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
+            )}
             {pending ? "Deleting…" : "Yes, delete"}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setArmed(false)}>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { createProject } from "@/lib/actions/projects";
 
@@ -36,7 +37,7 @@ export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
         | "active"
         | "delivered"
         | "closed",
-      total_cents: Number(formData.get("total_cents") ?? 0)
+      total_cents: Number(formData.get("total_cents") ?? 0),
     };
     startTransition(async () => {
       const result = await createProject(payload);
@@ -59,7 +60,8 @@ export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
         <DialogHeader>
           <DialogTitle>New project</DialogTitle>
           <DialogDescription>
-            Create a project for an existing user. The user sees it in their portal immediately.
+            Create a project for an existing user. The user sees it in their
+            portal immediately.
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
@@ -84,11 +86,22 @@ export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" required minLength={2} maxLength={160} />
+            <Input
+              id="title"
+              name="title"
+              required
+              minLength={2}
+              maxLength={160}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" maxLength={8000} rows={3} />
+            <Textarea
+              id="description"
+              name="description"
+              maxLength={8000}
+              rows={3}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -122,10 +135,20 @@ export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
             </p>
           )}
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} aria-busy={pending}>
+              {pending && (
+                <Loader2
+                  className="mr-2 h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              )}
               {pending ? "Creating…" : "Create project"}
             </Button>
           </DialogFooter>

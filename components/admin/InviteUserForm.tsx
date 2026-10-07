@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { inviteUser } from "@/lib/actions/users";
@@ -16,7 +17,7 @@ export function InviteUserForm() {
     setOkMsg(null);
     const payload = {
       email: String(formData.get("email") ?? ""),
-      full_name: String(formData.get("full_name") ?? "") || null
+      full_name: String(formData.get("full_name") ?? "") || null,
     };
     startTransition(async () => {
       const result = await inviteUser(payload);
@@ -45,7 +46,12 @@ export function InviteUserForm() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="invite_full_name">Name (optional)</Label>
-          <Input id="invite_full_name" name="full_name" maxLength={160} autoComplete="off" />
+          <Input
+            id="invite_full_name"
+            name="full_name"
+            maxLength={160}
+            autoComplete="off"
+          />
         </div>
       </div>
       {error && (
@@ -59,7 +65,10 @@ export function InviteUserForm() {
         </p>
       )}
       <div className="flex justify-end">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} aria-busy={pending}>
+          {pending && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+          )}
           {pending ? "Sending…" : "Send invite"}
         </Button>
       </div>

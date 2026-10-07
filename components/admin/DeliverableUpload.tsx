@@ -2,13 +2,14 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import {
   createDeliverableUploadUrl,
   recordDeliverable,
   MAX_DELIVERABLE_BYTES,
-  ALLOWED_DELIVERABLE_MIME
+  ALLOWED_DELIVERABLE_MIME,
 } from "@/lib/actions/files";
 
 const BUCKET = "project-files";
@@ -43,7 +44,7 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
       // 1. Mint a signed upload URL (admin).
       const urlRes = await createDeliverableUploadUrl({
         project_id: projectId,
-        filename: file.name
+        filename: file.name,
       });
       if (!urlRes.ok) {
         setError(urlRes.error);
@@ -55,7 +56,7 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
         .uploadToSignedUrl(urlRes.data.path, urlRes.data.token, file, {
-          contentType: mime
+          contentType: mime,
         });
       if (uploadError) {
         setError(uploadError.message);
@@ -68,7 +69,7 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
         storage_path: urlRes.data.path,
         filename: file.name,
         mime,
-        size_bytes: file.size
+        size_bytes: file.size,
       });
       if (!recordRes.ok) {
         setError(recordRes.error);
@@ -91,7 +92,9 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
           type="file"
           className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:opacity-90"
         />
-        <p className="text-xs text-muted-foreground">PDF, images, Office docs, zip. 25MB max.</p>
+        <p className="text-xs text-muted-foreground">
+          PDF, images, Office docs, zip. 25MB max.
+        </p>
       </div>
       {error && (
         <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
@@ -104,7 +107,10 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
         </p>
       )}
       <div className="flex justify-end">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} aria-busy={pending}>
+          {pending && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+          )}
           {pending ? "Uploading…" : "Upload deliverable"}
         </Button>
       </div>

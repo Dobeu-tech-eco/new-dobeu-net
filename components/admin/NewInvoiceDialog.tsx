@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { createInvoice } from "@/lib/actions/invoices";
 
@@ -28,7 +29,7 @@ interface ProjectOption {
 
 export function NewInvoiceDialog({
   users,
-  projects
+  projects,
 }: {
   users: UserOption[];
   projects: ProjectOption[];
@@ -39,8 +40,11 @@ export function NewInvoiceDialog({
   const [selectedUserId, setSelectedUserId] = useState("");
 
   const userProjects = useMemo(
-    () => projects.filter((p) => !selectedUserId || p.ownerUserId === selectedUserId),
-    [projects, selectedUserId]
+    () =>
+      projects.filter(
+        (p) => !selectedUserId || p.ownerUserId === selectedUserId,
+      ),
+    [projects, selectedUserId],
   );
 
   async function handleSubmit(formData: FormData) {
@@ -48,7 +52,8 @@ export function NewInvoiceDialog({
     const user_id = String(formData.get("user_id") ?? "");
     const project_id = String(formData.get("project_id") ?? "");
     const dollars = Number(formData.get("amount") ?? 0);
-    const description = (String(formData.get("description") ?? "").trim() || null) as string | null;
+    const description = (String(formData.get("description") ?? "").trim() ||
+      null) as string | null;
     if (!user_id) {
       setError("Pick a recipient.");
       return;
@@ -65,7 +70,7 @@ export function NewInvoiceDialog({
       user_id,
       project_id,
       amount_cents: Math.round(dollars * 100),
-      description
+      description,
     };
     startTransition(async () => {
       const result = await createInvoice(payload);
@@ -88,7 +93,8 @@ export function NewInvoiceDialog({
         <DialogHeader>
           <DialogTitle>New Stripe invoice</DialogTitle>
           <DialogDescription>
-            Creates a Stripe-hosted invoice and emails the payment link to the recipient.
+            Creates a Stripe-hosted invoice and emails the payment link to the
+            recipient.
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
@@ -164,10 +170,20 @@ export function NewInvoiceDialog({
           )}
 
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} aria-busy={pending}>
+              {pending && (
+                <Loader2
+                  className="mr-2 h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              )}
               {pending ? "Creating in Stripe…" : "Create Stripe invoice"}
             </Button>
           </DialogFooter>

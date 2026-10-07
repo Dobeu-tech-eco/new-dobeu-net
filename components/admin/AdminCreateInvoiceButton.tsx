@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { createInvoiceForWorkOrder } from "@/lib/actions/invoices";
 import { formatCurrency } from "@/lib/utils";
 
@@ -12,7 +13,7 @@ import { formatCurrency } from "@/lib/utils";
  */
 export function AdminCreateInvoiceButton({
   workOrderId,
-  amountCents
+  amountCents,
 }: {
   workOrderId: string;
   amountCents: number;
@@ -24,13 +25,15 @@ export function AdminCreateInvoiceButton({
     setError(null);
     if (
       !confirm(
-        `Create a Stripe invoice for ${formatCurrency(amountCents)}? The client will be emailed a hosted payment link.`
+        `Create a Stripe invoice for ${formatCurrency(amountCents)}? The client will be emailed a hosted payment link.`,
       )
     ) {
       return;
     }
     startTransition(async () => {
-      const result = await createInvoiceForWorkOrder({ work_order_id: workOrderId });
+      const result = await createInvoiceForWorkOrder({
+        work_order_id: workOrderId,
+      });
       if (!result.ok) setError(result.error);
     });
   }
@@ -41,9 +44,16 @@ export function AdminCreateInvoiceButton({
         onClick={onClick}
         disabled={pending}
         aria-busy={pending}
-        aria-describedby={error ? `create-invoice-error-${workOrderId}` : undefined}
+        aria-describedby={
+          error ? `create-invoice-error-${workOrderId}` : undefined
+        }
       >
-        {pending ? "Creating invoice…" : `Create Stripe invoice (${formatCurrency(amountCents)})`}
+        {pending && (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+        )}
+        {pending
+          ? "Creating invoice…"
+          : `Create Stripe invoice (${formatCurrency(amountCents)})`}
       </Button>
       {error && (
         <p
