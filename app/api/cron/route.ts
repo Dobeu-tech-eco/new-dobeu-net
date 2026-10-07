@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,14 @@ export async function GET(req: Request) {
   const authHeader = req.headers.get("Authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || !authHeader) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
+
+  const expected = Buffer.from(`Bearer ${cronSecret}`, "utf8");
+  const provided = Buffer.from(authHeader, "utf8");
+
+  if (expected.length !== provided.length || !timingSafeEqual(expected, provided)) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
