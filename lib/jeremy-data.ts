@@ -99,11 +99,14 @@ export const HERO_COPY = {
   outcome: "AI that keeps your trucks, kitchens, and sites running.",
   diagnostic:
     "If ops still live in spreadsheets, you don't have an AI problem. You have a process problem.",
-  estimateCta: "Get a price estimate",
+  estimateCta: "Send the job",
+  estimateHint: "I'll reply with a price band. Not an instant quote.",
   bookCta: "Book a call",
+  promise: "Dispatch that actually dispatches.",
+  proof: "Prices are published. Invoices go through Stripe. The code lands in your repo.",
 } as const;
 
-/** Typewriter rotation — vertical outcomes, not stack slogans. */
+/** Exported for tests. The hero shows HERO_COPY.promise and no longer rotates these. */
 export const TYPEWRITER_PHRASES = [
   "dispatch that actually dispatches.",
   "compliance paperwork that files itself.",
@@ -269,11 +272,12 @@ export const GTM_PILLARS = [
   {
     id: "ai-agents",
     slug: "ai-agents",
-    headline: "AI agents that replace workflows",
-    pain: "Dispatch, paperwork, and follow-ups still live in inboxes.",
+    buyerTitle: "Dispatch that runs",
+    headline: "AI agents for the dispatch loop",
+    pain: "Routes, tickets, and follow-ups still live in inboxes. Dispatch first — the same loop shows up in a kitchen, on a site, or at a desk.",
     description:
-      "Claude + Composio + MCP integrations. Workflows that take work off your plate — from triage to fulfillment.",
-    detail: "Autonomous pipelines, tool-calling agents, LLM-powered ops.",
+      "I take one repeating loop off the inbox and make it run without a person chasing it. The stack stays on this page, under the job.",
+    detail: "Claude, Composio, and MCP when the loop needs tools.",
     cta: "Automate it",
     icon: "Bot" as const,
     tag: undefined as string | undefined,
@@ -281,11 +285,12 @@ export const GTM_PILLARS = [
   {
     id: "fullstack",
     slug: "fullstack",
-    headline: "Full-stack apps from idea to live",
-    pain: "The ops tool you need does not exist yet — and a template will not cut it.",
+    buyerTitle: "The tool you don't have",
+    headline: "The app the crew actually opens",
+    pain: "The job runs in a spreadsheet because the tool you need does not exist, and a template will not cut it.",
     description:
-      "Next.js, Supabase, Vercel. MVPs, internal tools, client portals. Production-grade from day one.",
-    detail: "App Router, auth, billing, CI/CD — the complete stack.",
+      "Internal tools, portals, and the one app your people will open on a shift. Built to stay in your repo.",
+    detail: "Next.js, Supabase, and Vercel. Auth, billing, and a path to production.",
     cta: "Ship it",
     icon: "Code2" as const,
     tag: undefined as string | undefined,
@@ -293,11 +298,12 @@ export const GTM_PILLARS = [
   {
     id: "brand",
     slug: "brand",
-    headline: "Brand systems that convert",
-    pain: "Your site looks like a template, not a product operators trust.",
+    buyerTitle: "A front door people trust",
+    headline: "A site that looks like the operation",
+    pain: "The site looks rented. Operators and their customers can tell.",
     description:
-      "Figma libraries with Code Connect. Design tokens that round-trip through Tailwind, Framer, and Webflow.",
-    detail: "Tokens, typography, component libraries that scale.",
+      "The public site and the documents match the work, whether that work is trucks, kitchens, or a desk.",
+    detail: "Design tokens, type, and a component library. Figma when you want the source.",
     cta: "Build the brand",
     icon: "Palette" as const,
     tag: "Design",
@@ -305,11 +311,12 @@ export const GTM_PILLARS = [
   {
     id: "growth",
     slug: "growth",
-    headline: "Growth engineering pipelines",
-    pain: "Traffic without conversion is just noise.",
+    buyerTitle: "Invoices that go out",
+    headline: "Billing and the numbers that matter",
+    pain: "Work gets done and the invoice, the follow-up, or the margin is still a guess.",
     description:
-      "Programmatic SEO, GA4/PostHog/Mixpanel attribution, lifecycle automation, paid-ads infra.",
-    detail: "Turn traffic into pipeline — measurably.",
+      "Get paid on time and see which jobs actually pay. This is not a traffic dashboard.",
+    detail: "Lifecycle email, attribution, and the reporting you can check.",
     cta: "Fix the funnel",
     icon: "LineChart" as const,
     tag: undefined as string | undefined,
@@ -322,10 +329,10 @@ export function getServicePillar(slug: string): GtmPillar | undefined {
   return GTM_PILLARS.find((pillar) => pillar.slug === slug || pillar.id === slug);
 }
 
-/** Hero capability cards — pain language, not stack labels. */
+/** Hero capability cards — buyer titles and pains, not stripped headlines. */
 export const HERO_CAPABILITY_CARDS = GTM_PILLARS.map((pillar) => ({
   id: pillar.id,
-  label: pillar.headline.replace(/ that .+$/i, "").replace(/ pipelines$/i, ""),
+  label: pillar.buyerTitle,
   description: pillar.pain,
   icon: pillar.icon,
 }));
@@ -334,7 +341,7 @@ export const MARKETING_SERVICES = GTM_PILLARS.map((pillar, index) => ({
   id: pillar.id,
   num: String(index + 1).padStart(2, "0"),
   icon: pillar.icon,
-  title: pillar.headline,
+  title: pillar.buyerTitle,
   description: pillar.description,
   detail: pillar.detail,
   tag: pillar.tag,
@@ -371,8 +378,8 @@ export const MARKETING_FAQS = [
     a: "Yes. Hire me for a custom build within 60 days of delivery and the full $1,500 comes straight off your first invoice: a $15k build invoices at $13.5k. If you take the fixed-price website package instead, $500 comes off it — that package is already scoped and priced tight, so a full credit would eat it. After 60 days the credit expires, because by then the scope I mapped has moved. And if you don't hire me at all, you keep the document and owe nothing else.",
   },
   {
-    q: "What's the difference between Book a call and Get a price estimate?",
-    a: "Book a call is a 30-minute discovery conversation. Get a price estimate opens a short Typeform so I can review scope, budget band, and fit before we talk — it is not an instant quote or checkout.",
+    q: "What's the difference between Book a call and Send the job?",
+    a: "Book a call is a 30-minute conversation. Send the job opens a short form so I can review the work and reply with a price band. It does not quote you instantly and it does not start a checkout.",
   },
   {
     q: "How fast can you start?",
@@ -419,9 +426,10 @@ export const PRICING_TIERS = [
   {
     id: "workflow",
     name: "Single workflow",
-    price: "Scoped sprint",
+    price: "Quoted after the call",
     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
-    detail: "Fixed scope after discovery. Typical for a first engagement.",
+    detail:
+      "One loop, fixed price after we talk. I don't publish a band until the scope is real.",
   },
   {
     id: "full-build",
@@ -509,7 +517,7 @@ export const TRUST_POSITION = {
 export const FOUNDER_STATS = [
   { value: "2019", label: "Building since" },
   { value: "NYC", label: SITE_IDENTITY.areaServed },
-  { value: "4", label: "Service pillars" },
+  { value: "Stripe", label: "Invoices" },
 ] as const;
 
 export const FOUNDER_REASONS = [

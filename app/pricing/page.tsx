@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { EstimateCtas } from "@/components/landing/EstimateCtas";
 import { JsonLd } from "@/components/landing/JsonLd";
 import { MarketingPageHeader, MarketingShell } from "@/components/landing/MarketingShell";
-import { NAP, PRICE_RANGE, PRICING_TIERS } from "@/lib/jeremy-data";
+import { HERO_COPY, NAP, PRICE_RANGE, PRICING_TIERS } from "@/lib/jeremy-data";
 import { serviceOfferJsonLd } from "@/lib/marketing-schema";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Typical engagement ${PRICE_RANGE.display} for operators in ${NAP.areaServed}. Get a price estimate — not an instant checkout.`,
+  description: `Typical engagement ${PRICE_RANGE.display} for operators in ${NAP.areaServed}. ${HERO_COPY.estimateCta} and I reply with a band — not an instant checkout.`,
   alternates: { canonical: "/pricing" },
 };
 
@@ -19,10 +19,10 @@ export default function PricingPage() {
       <MarketingPageHeader
         eyebrow="Pricing"
         title="Clear bands. No procurement theater."
-        description={`${PRICE_RANGE.line}. Get a price estimate and I review fit before we talk numbers on a call.`}
+        description={`${PRICE_RANGE.line}. ${HERO_COPY.estimateCta} and I reply with a band before we talk numbers.`}
       />
 
-      <section className="container max-w-6xl pb-16">
+      <section className="container max-w-6xl pb-[calc(5rem+var(--cookie-banner-offset,0px))]">
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {PRICING_TIERS.map((tier) => (
             <li
@@ -46,9 +46,9 @@ export default function PricingPage() {
           ))}
         </ul>
 
-        <div className="mt-10 space-y-4">
-          <p className="text-sm text-muted-foreground max-w-xl">
-            The estimate form is review-first. It does not price work automatically or start a checkout.
+        <div className="mt-10 max-w-xl">
+          <p className="mb-4 text-sm text-muted-foreground">
+            This form does not price the job or start a checkout. I read it and reply with a band.
           </p>
           <EstimateCtas location="pricing" estimateTestId="pricing-estimate-cta" />
         </div>
