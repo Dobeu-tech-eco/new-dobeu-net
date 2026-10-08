@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { Linkedin, Mail, ArrowRight } from "lucide-react";
 import { DobeuMark } from "@/components/brand/DobeuMark";
-import { FOUNDER, FOUNDER_REASONS, FOUNDER_STATS, NAP, SHIPPED_WORK } from "@/lib/jeremy-data";
+import { FOUNDER, FOUNDER_REASONS, NAP, SHIPPED_WORK, TRUST_POSITION } from "@/lib/jeremy-data";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { useMotionProps, FADE_UP, SCALE_IN } from "@/hooks/use-motion-props";
 
@@ -12,7 +12,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
   const mpUp = useMotionProps(FADE_UP);
   const mpScale = useMotionProps(SCALE_IN);
   const isHome = variant === "home";
-  const shippedNames = SHIPPED_WORK.map((item) => item.name).join(", ");
+  const TrustHeading = isHome ? "h3" : "h2";
 
   return (
     <section
@@ -38,9 +38,9 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
           whileInView={mpUp.whileInView}
           viewport={mpUp.viewport}
           transition={{ duration: 0.45, delay: 0.05 }}
-          className="flex flex-col md:flex-row md:items-end gap-8 md:gap-16 mb-14 md:mb-16 pb-10 border-b border-border/25"
+          className="flex flex-col md:flex-row md:items-start gap-8 md:gap-16 mb-14 md:mb-16 pb-10 border-b border-border/25"
         >
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/20 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
@@ -83,13 +83,13 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
             </div>
           </div>
 
-          <div className="flex items-end gap-8 md:gap-10 shrink-0">
-            {FOUNDER_STATS.map((s) => (
-              <div key={s.label} className="text-right md:text-right">
-                <p className="font-display text-3xl md:text-4xl font-extrabold text-foreground leading-none">{s.value}</p>
-                <p className="text-xs text-muted-foreground mt-1.5">{s.label}</p>
-              </div>
-            ))}
+          <div className="min-w-0 md:max-w-md md:text-right">
+            <TrustHeading className="font-display text-base md:text-lg font-semibold tracking-tight leading-snug text-foreground text-balance">
+              {TRUST_POSITION.heading}
+            </TrustHeading>
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              {TRUST_POSITION.body}
+            </p>
           </div>
         </motion.div>
 
@@ -109,7 +109,25 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
             <p className="text-base text-muted-foreground leading-relaxed mb-6">
               I&apos;ve been shipping software since {FOUNDER.since} — for logistics operators,
               hospitality teams, and founders building things that didn&apos;t exist yet. Public
-              shipped work includes {shippedNames}.
+              shipped work includes{" "}
+              {SHIPPED_WORK.map((item, index) => {
+                const separator =
+                  index === 0 ? "" : index === SHIPPED_WORK.length - 1 ? ", and " : ", ";
+                return (
+                  <span key={item.slug}>
+                    {separator}
+                    <a
+                      href={item.github}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-foreground underline decoration-border underline-offset-2 hover:text-primary transition-colors"
+                    >
+                      {item.name}
+                    </a>
+                  </span>
+                );
+              })}
+              .
             </p>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Every client I take on gets my full attention. That means I turn down more

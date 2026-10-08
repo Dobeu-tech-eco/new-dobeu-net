@@ -36,6 +36,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Impeccable writes Claude's design hook here as a machine-local override
+.claude/settings.local.json
+
 # Local env files — never commit
 .env
 .env*.local

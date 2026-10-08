@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { RouteLight } from "@/components/motion/RouteLight";
 import { FOUNDER, NAP, ORGANIZATION_SAME_AS, PERSON_SAME_AS, SITE_IDENTITY } from "@/lib/jeremy-data";
 import { getSiteUrl, safeJsonLdStringify } from "@/lib/utils";
 import "./globals.css";
@@ -71,12 +72,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       data-brand="net"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={nunito.variable}
     >
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <a href="#main" className="skip-link">Skip to main content</a>
         <ThemeProvider>
+          <RouteLight />
           <AnalyticsProvider>{children}</AnalyticsProvider>
           <Toaster position="bottom-right" theme="system" richColors closeButton />
         </ThemeProvider>

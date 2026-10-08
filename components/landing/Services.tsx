@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { Bot, Code2, Palette, LineChart, ArrowRight, MessageSquare } from "lucide-react";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
-import { MARKETING_SERVICES } from "@/lib/jeremy-data";
+import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
 
 const ICONS = {
   Bot,
@@ -35,23 +35,18 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
           >
             <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
-                Services
-              </p>
               <h2
                 id="work-heading"
                 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance"
               >
-                Four things, done well —
+                Dispatch, paperwork,
                 <br />
-                <span className="text-muted-foreground">built on partnership.</span>
+                <span className="text-muted-foreground">reconciliation, invoicing.</span>
               </h2>
             </div>
             <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
-              Most engagements blend a few of these. What you&apos;re really
-              hiring is a partner — not a checklist. I take on a small number of
-              clients at a time, transfer everything into your hands, and stay on
-              as a long-term IT advisor well past launch.
+              These are the jobs. Most engagements mix a few. I take a small
+              number at a time.
             </p>
           </motion.div>
         )}
@@ -99,7 +94,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                   {s.detail}
                 </p>
 
-                <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden="true">
+                <div className="absolute bottom-8 right-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200" aria-hidden="true">
                   <ArrowRight className="h-4 w-4 text-primary" />
                 </div>
               </motion.article>
@@ -118,7 +113,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
             type="button"
             onClick={() => open("form")}
             className="group w-full rounded-2xl border border-dashed border-border hover:border-primary/25 bg-transparent hover:bg-primary/[0.03] px-8 py-6 flex items-center justify-between transition-all duration-200"
-            aria-label="Get a price estimate for a project that doesn't fit a category"
+            aria-label={HERO_COPY.estimateCta}
           >
             <div className="flex items-center gap-4 text-left">
               <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-accent/10 text-accent-text shrink-0 group-hover:bg-accent/16 transition-colors duration-200">
@@ -127,12 +122,12 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
               <div>
                 <p className="font-semibold text-sm text-foreground">Something else?</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Got a project that doesn&apos;t fit a category? Get a price estimate and I&apos;ll review it.
+                  Doesn&apos;t fit a category? {HERO_COPY.estimateCta} and I&apos;ll reply with a price band.
                 </p>
               </div>
             </div>
             <span className="flex items-center gap-1.5 text-xs font-semibold text-accent-text shrink-0 ml-6 group-hover:underline underline-offset-4">
-              Get a price estimate
+              {HERO_COPY.estimateCta}
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
             </span>
           </button>

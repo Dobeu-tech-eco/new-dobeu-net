@@ -46,7 +46,7 @@ export function CookieBanner() {
     const node = bannerRef.current;
     if (!node) return;
     const apply = () => {
-      const extra = 16; // matches bottom-4
+      const extra = 0; // flush to the bottom edge; the floating card used 16 to match bottom-4
       root.style.setProperty("--cookie-banner-offset", `${Math.ceil(node.getBoundingClientRect().height + extra)}px`);
     };
     apply();
@@ -145,51 +145,43 @@ export function CookieBanner() {
     );
   }
 
-  // First-visit banner
+  // First-visit banner — one compact row, flush to the bottom edge.
   return (
     <div
       role="dialog"
       aria-labelledby="cookie-banner-title"
-      aria-describedby="cookie-banner-desc"
       ref={bannerRef}
       data-testid="cookie-banner"
-      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 rounded-xl border border-border bg-card p-4 shadow-2xl"
+      className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-2 border-t border-border bg-card px-3 py-2 shadow sm:gap-3 sm:px-4"
     >
-      <p id="cookie-banner-title" className="font-semibold text-sm mb-1">
-        We use cookies
-      </p>
-      <p id="cookie-banner-desc" className="text-xs text-muted-foreground mb-3">
-        Analytics, chat, and marketing cookies only fire after you opt in. See our{" "}
+      <p id="cookie-banner-title" className="min-w-0 text-xs leading-snug text-muted-foreground">
+        Optional cookies stay off until you choose.{" "}
         <Link href="/cookies" className="underline hover:text-foreground">
           Cookie policy
-        </Link>{" "}
-        and{" "}
-        <Link href="/privacy" className="underline hover:text-foreground">
-          Privacy policy
         </Link>
-        .
-      </p>
-      <div className="flex gap-2 flex-wrap">
+        {" · "}
         <button
-          className="rounded-md bg-primary text-primary-foreground text-xs font-semibold py-1.5 px-3 hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          onClick={acceptAll}
-        >
-          Accept all
-        </button>
-        <button
-          className="rounded-md border border-border text-xs font-semibold py-1.5 px-3 hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          onClick={declineAll}
-        >
-          Decline
-        </button>
-        <button
-          className="rounded-md border border-border text-xs font-semibold py-1.5 px-3 hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="underline hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           onClick={() => {
             setDraft({ analytics: false, support: false, marketing: false });
             setShowPrefs(true);
           }}
         >
           Manage
+        </button>
+      </p>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          className="inline-flex h-8 items-center justify-center rounded-md px-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          onClick={declineAll}
+        >
+          Decline
+        </button>
+        <button
+          className="inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          onClick={acceptAll}
+        >
+          Accept all
         </button>
       </div>
     </div>

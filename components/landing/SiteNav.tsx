@@ -81,11 +81,11 @@ export function SiteNav() {
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/"
-              className="flex items-center gap-2.5 flex-shrink-0 group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="dobeu-logo-lock flex items-center gap-2.5 flex-shrink-0 group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Dobeu home"
             >
               <DobeuMark className="h-7 w-7" />
-              <span className="font-display text-[1.1rem] tracking-tight lowercase leading-none hidden sm:inline select-none">
+              <span className="font-display text-[1.1rem] tracking-tight lowercase leading-none select-none">
                 <span className="font-extrabold text-[hsl(var(--brand-indigo-slate))] group-hover:text-primary transition-colors duration-200">
                   dobeu
                 </span>

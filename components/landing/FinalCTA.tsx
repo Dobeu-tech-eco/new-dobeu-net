@@ -77,13 +77,14 @@ export function FinalCTA() {
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => trackAndOpen("form", "Get a price estimate — final CTA")}
+                  onClick={() => trackAndOpen("form", `${HERO_COPY.estimateCta} — final CTA`)}
                   className="w-full sm:w-auto rounded-full font-medium px-8"
                 >
                   <ClipboardList className="mr-2 h-4 w-4" aria-hidden="true" />
                   {HERO_COPY.estimateCta}
                 </Button>
               </div>
+              <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
             </div>
 
             <div

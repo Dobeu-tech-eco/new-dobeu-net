@@ -52,6 +52,8 @@ describe("jeremy-data marketing source", () => {
     expect(PRICE_RANGE.line).toMatch(/\$5k/);
     expect(PRICE_RANGE.line).toMatch(/\$30k/);
     expect(TYPEWRITER_PHRASES.join(" ")).not.toMatch(/autonomous AI coding agents/i);
+    expect(HERO_COPY.promise).toBe("Dispatch that actually dispatches.");
+    expect(HERO_COPY.estimateCta).toBe("Send the job");
   });
 
   it("excludes dead hosts from public chrome data", () => {
@@ -76,6 +78,7 @@ describe("jeremy-data marketing source", () => {
   it("replaces the unverifiable 50+ claim", () => {
     const stats = JSON.stringify(FOUNDER_STATS);
     expect(stats).not.toContain("50+");
+    expect(stats).not.toContain("Service pillars");
     expect(stats).toContain("2019");
   });
 

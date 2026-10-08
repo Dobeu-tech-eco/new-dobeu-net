@@ -21,24 +21,27 @@ export function EstimateCtas({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-      <Button
-        size="lg"
-        onClick={() => trackAndOpen("book", `Book a call — ${location}`)}
-        className="group rounded-full font-semibold"
-      >
-        {HERO_COPY.bookCta}
-        <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-      </Button>
-      <Button
-        size="lg"
-        variant="outline"
-        onClick={() => trackAndOpen("form", `Get a price estimate — ${location}`)}
-        className="rounded-full font-medium"
-        data-testid={estimateTestId}
-      >
-        {HERO_COPY.estimateCta}
-      </Button>
+    <div>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <Button
+          size="lg"
+          onClick={() => trackAndOpen("book", `Book a call — ${location}`)}
+          className="group rounded-full font-semibold"
+        >
+          {HERO_COPY.bookCta}
+          <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+        </Button>
+        <Button
+          size="lg"
+          variant="outline"
+          onClick={() => trackAndOpen("form", `${HERO_COPY.estimateCta} — ${location}`)}
+          className="rounded-full font-medium"
+          data-testid={estimateTestId}
+        >
+          {HERO_COPY.estimateCta}
+        </Button>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
     </div>
   );
 }
