@@ -100,13 +100,13 @@ export function SiteNav() {
                 "hidden lg:inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium leading-none",
                 avStyle.badge
               )}
-              aria-label="Availability: Available now"
+              aria-label={`Availability: ${AVAILABILITY.label}`}
             >
               <span
                 className={cn("h-1.5 w-1.5 rounded-full animate-pulse flex-shrink-0", avStyle.dot)}
                 aria-hidden="true"
               />
-              Available now
+              {AVAILABILITY.label}
             </span>
           </div>
 
@@ -241,10 +241,10 @@ export function SiteNav() {
                   "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium",
                   avStyle.badge
                 )}
-                aria-label="Availability: Available now"
+                aria-label={`Availability: ${AVAILABILITY.label}`}
               >
                 <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", avStyle.dot)} aria-hidden="true" />
-                Available now
+                {AVAILABILITY.label}
               </span>
             </div>
 

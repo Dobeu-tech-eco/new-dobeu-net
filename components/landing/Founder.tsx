@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { Linkedin, Mail, ArrowRight } from "lucide-react";
 import { DobeuMark } from "@/components/brand/DobeuMark";
-import { FOUNDER, FOUNDER_REASONS, NAP, SHIPPED_WORK, TRUST_POSITION } from "@/lib/jeremy-data";
+import { AVAILABILITY, FOUNDER, FOUNDER_REASONS, NAP, SHIPPED_WORK, TRUST_POSITION } from "@/lib/jeremy-data";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { useMotionProps, FADE_UP, SCALE_IN } from "@/hooks/use-motion-props";
 
@@ -42,9 +42,12 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/20 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-400">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/20 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-400"
+                aria-label={`Availability: ${AVAILABILITY.label}`}
+              >
                 <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
-                Available now
+                {AVAILABILITY.label}
               </span>
             </div>
             {isHome ? (
