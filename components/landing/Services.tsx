@@ -5,13 +5,20 @@ import { motion } from "motion/react";
 import { Bot, Code2, Palette, LineChart, ArrowRight, MessageSquare } from "lucide-react";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
-import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
+import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
 
 const ICONS = {
   Bot,
   Code2,
   Palette,
   LineChart,
+} as const;
+
+const HOME_OUTCOMES: Record<string, string> = {
+  "ai-agents": `One loop off the inbox, running without a chase — usually in the ${PRICE_RANGE.display} band.`,
+  fullstack: `The app the crew opens on shift, kept in your repo — usually in the ${PRICE_RANGE.display} band.`,
+  brand: `A front door that matches the work — usually in the ${PRICE_RANGE.display} band.`,
+  growth: `Invoices go out on time and margins stay visible, through Stripe — usually in the ${PRICE_RANGE.display} band.`,
 } as const;
 
 export function Services({ variant = "home" }: { variant?: "home" | "standalone" }) {
@@ -35,6 +42,9 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
           >
             <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+                {HERO_COPY.diagnostic}
+              </p>
               <h2
                 id="work-heading"
                 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance"
@@ -46,7 +56,8 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
             </div>
             <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
               These are the jobs. Most engagements mix a few. I take a small
-              number at a time.
+              number at a time. From multi-fleet dispatch to the kitchen, the
+              site, and the desk — one loop at a time.
             </p>
           </motion.div>
         )}
@@ -62,7 +73,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                 whileInView={mp.whileInView}
                 viewport={mp.viewport}
                 transition={{ duration: 0.4, delay: i * 0.06 }}
-                className="group relative bg-background p-8 md:p-10 hover:bg-card transition-colors duration-200 scroll-mt-20"
+                className="group relative bg-background p-8 md:p-10 hover:bg-card transition-colors duration-200 scroll-mt-20 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background"
               >
                 <div className="flex items-start justify-between mb-8">
                   <span className="font-mono text-[3.5rem] font-bold text-border leading-none select-none tabular-nums">
@@ -80,19 +91,45 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                   </div>
                 </div>
 
-                <h3 className="font-display text-lg md:text-xl font-bold mb-3 tracking-tight text-foreground">
-                  <Link href={`/services/${s.id}`} className="hover:text-primary transition-colors">
-                    {s.title}
-                  </Link>
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-5">
-                  {s.description}
-                </p>
+                {isHome ? (
+                  <>
+                    <h3 className="font-display text-lg md:text-xl font-bold mb-3 tracking-tight text-foreground group-hover:text-primary transition-colors">
+                      {s.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+                      {s.description}
+                    </p>
 
-                <p className="inline-flex items-center gap-1.5 text-xs font-medium text-primary tracking-wide">
-                  <span className="h-1 w-1 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
-                  {s.detail}
-                </p>
+                    <p className="inline-flex items-center gap-1.5 text-xs font-medium text-primary tracking-wide mb-4">
+                      <span className="h-1 w-1 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
+                      {HOME_OUTCOMES[s.id] ?? s.description}
+                    </p>
+
+                    <Link
+                      href={`/services/${s.id}`}
+                      aria-label={`${s.title} — See what this loop looks like`}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 group-hover:underline after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none"
+                    >
+                      See what this loop looks like
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-display text-lg md:text-xl font-bold mb-3 tracking-tight text-foreground">
+                      <Link href={`/services/${s.id}`} className="hover:text-primary transition-colors">
+                        {s.title}
+                      </Link>
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+                      {s.description}
+                    </p>
+
+                    <p className="inline-flex items-center gap-1.5 text-xs font-medium text-primary tracking-wide">
+                      <span className="h-1 w-1 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
+                      {s.detail}
+                    </p>
+                  </>
+                )}
 
                 <div className="absolute bottom-8 right-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200" aria-hidden="true">
                   <ArrowRight className="h-4 w-4 text-primary" />

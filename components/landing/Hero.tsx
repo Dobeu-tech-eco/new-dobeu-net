@@ -6,14 +6,12 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
+import { BOOK_MICROCOPY } from "@/components/landing/EstimateCtas";
 import { track } from "@/lib/analytics";
 import {
-  FOUNDER,
   HERO_COPY,
-  NAP,
   PRICE_RANGE,
   SHOW_LABS_HERO_CTA,
-  SITE_IDENTITY,
 } from "@/lib/jeremy-data";
 
 const HeroShaderBackground = dynamic(
@@ -68,22 +66,6 @@ export function Hero() {
       <div className="container relative z-10 max-w-6xl">
         {/* LCP copy is static. motion + opacity:0 delayed Lighthouse until hydration. */}
         <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
-            {SITE_IDENTITY.brandName}
-          </p>
-
-          <p className="text-sm leading-relaxed text-foreground">
-            {HERO_COPY.proof}
-          </p>
-          <p className="mb-5 mt-2 flex items-center gap-2.5 text-xs text-muted-foreground">
-            <span>{NAP.areaServed}</span>
-            <span
-              className="h-1 w-1 flex-shrink-0 rounded-full bg-border"
-              aria-hidden="true"
-            />
-            <span>Since {FOUNDER.since}</span>
-          </p>
-
           {/* Greeting is a warm intro, not a headline — the value prop owns the h1. */}
           <p className="mb-3 font-display text-lg font-semibold text-muted-foreground md:text-xl">
             {HERO_COPY.greeting}
@@ -106,13 +88,6 @@ export function Hero() {
           </p>
 
           <p
-            className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg"
-            data-testid="hero-diagnostic"
-          >
-            {HERO_COPY.diagnostic}
-          </p>
-
-          <p
             className="mt-4 text-sm font-medium text-foreground"
             data-testid="hero-price-line"
           >
@@ -121,28 +96,36 @@ export function Hero() {
 
           <div
             id="hero-ctas"
-            className="mt-5 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center"
+            className="mt-5 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-start sm:justify-center"
           >
-            <Button
-              size="lg"
-              onClick={() => trackAndOpen("book", "Book a call — hero")}
-              className="group w-full rounded-full bg-primary px-7 font-semibold text-primary-foreground shadow-amber-glow/20 hover:bg-primary/90 sm:w-auto"
-            >
-              {HERO_COPY.bookCta}
-              <ArrowRight
-                className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => trackAndOpen("form", "Send the job — hero")}
-              className="w-full rounded-full px-7 font-medium sm:w-auto"
-              data-testid="hero-estimate-cta"
-            >
-              {HERO_COPY.estimateCta}
-            </Button>
+            <div className="flex flex-col items-center gap-1">
+              <Button
+                size="lg"
+                onClick={() => trackAndOpen("book", "Book a call — hero")}
+                className="group w-full rounded-full bg-primary px-7 font-semibold text-primary-foreground shadow-amber-glow/20 hover:bg-primary/90 sm:w-auto"
+                aria-describedby="book-microcopy-hero"
+              >
+                {HERO_COPY.bookCta}
+                <ArrowRight
+                  className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </Button>
+              <p id="book-microcopy-hero" className="text-xs text-muted-foreground">
+                {BOOK_MICROCOPY}
+              </p>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => trackAndOpen("form", "Send the job — hero")}
+                className="w-full rounded-full px-7 font-medium sm:w-auto"
+                data-testid="hero-estimate-cta"
+              >
+                {HERO_COPY.estimateCta}
+              </Button>
+            </div>
             {SHOW_LABS_HERO_CTA && (
               <Button
                 size="lg"
@@ -158,6 +141,38 @@ export function Hero() {
           <p className="mt-2 text-xs text-muted-foreground">
             {HERO_COPY.estimateHint}
           </p>
+
+          <ul
+            aria-label="Why you can trust this"
+            className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
+          >
+            <li>
+              <Link
+                href="/pricing"
+                className="inline-flex items-center rounded-full border border-border px-3 py-1 transition-colors hover:border-primary hover:text-foreground"
+              >
+                Published $5k–$30k
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/#faq"
+                className="inline-flex items-center rounded-full border border-border px-3 py-1 transition-colors hover:border-primary hover:text-foreground"
+              >
+                Stripe invoices
+              </Link>
+            </li>
+            <li>
+              <a
+                href="https://github.com/Dobeu-tech-eco"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-full border border-border px-3 py-1 transition-colors hover:border-primary hover:text-foreground"
+              >
+                Code in your repo
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </section>

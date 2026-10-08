@@ -56,7 +56,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
         has_message: !!payload.message
       });
       setSubmitted(true);
-      toast.success("Got it. I'll reply within 24 hours.");
+      toast.success("Got it — I'll reply with a price band within 24 hours.");
       onSuccess?.();
     } catch (err) {
       track("lead_capture_failed", { source });
@@ -72,10 +72,10 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
     return (
       <div className="py-8 text-center">
         <p className="text-lg font-semibold">
-          Thanks — you&apos;re on the list.
+          Job received.
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          I personally read every message. Expect a reply within 24 hours.
+          I personally read every job and reply with a price band within 24 hours. Not an instant quote.
         </p>
       </div>
     );
@@ -138,10 +138,8 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Sending…
           </>
-        ) : compact ? (
-          "Get in touch"
         ) : (
-          "Send it"
+          "Send the job"
         )}
       </Button>
       <p className="text-xs text-muted-foreground text-center">

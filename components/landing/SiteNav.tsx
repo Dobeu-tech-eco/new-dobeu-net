@@ -94,18 +94,19 @@ export function SiteNav() {
             </Link>
 
             {/* Availability pill — restrained */}
+            {/* detector: pulsing-dot accepted-with-label — pulse is an intentional status affordance; badge carries an aria-label, dot is aria-hidden. */}
             <span
               className={cn(
                 "hidden lg:inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium leading-none",
                 avStyle.badge
               )}
-              aria-label={`Availability: ${AVAILABILITY.label}`}
+              aria-label="Availability: Available now"
             >
               <span
                 className={cn("h-1.5 w-1.5 rounded-full animate-pulse flex-shrink-0", avStyle.dot)}
                 aria-hidden="true"
               />
-              {AVAILABILITY.label}
+              Available now
             </span>
           </div>
 
@@ -240,9 +241,10 @@ export function SiteNav() {
                   "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium",
                   avStyle.badge
                 )}
+                aria-label="Availability: Available now"
               >
                 <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", avStyle.dot)} aria-hidden="true" />
-                {AVAILABILITY.label}
+                Available now
               </span>
             </div>
 

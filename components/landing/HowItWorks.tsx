@@ -42,7 +42,7 @@ export function HowItWorks({ variant = "home" }: { variant?: "home" | "standalon
               className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance"
             >
               Three steps.{" "}
-              <span className="text-muted-foreground">No theater.</span>
+              <span className="text-muted-foreground">No runaround.</span>
             </h2>
           </motion.div>
         )}
@@ -111,7 +111,7 @@ export function HowItWorks({ variant = "home" }: { variant?: "home" | "standalon
           transition={{ duration: 0.4, delay: 0.38 }}
           className="mt-14 text-xs text-muted-foreground text-center max-w-sm mx-auto leading-relaxed"
         >
-          No long contracts. No kickoff theater. If I&apos;m booked, I&apos;ll
+          No long contracts. No kickoff runaround. If I&apos;m booked, I&apos;ll
           tell you — and I&apos;ll recommend someone good.
         </motion.p>
       </div>

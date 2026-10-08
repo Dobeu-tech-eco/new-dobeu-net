@@ -100,18 +100,34 @@ export function StickyMobileCTA() {
       data-testid="sticky-mobile-cta"
     >
       <div className="flex items-center gap-2">
-        <Button onClick={() => open("book")} size="lg" className="min-w-0 flex-1 px-3">
+        <Button
+          onClick={() => open("book")}
+          size="lg"
+          className="min-w-0 flex-1 px-3"
+          title="Book a call — 30 min, no pitch."
+          aria-describedby="sticky-book-microcopy"
+        >
           {HERO_COPY.bookCta}
+          <span className="sr-only"> — 30 min, no pitch.</span>
         </Button>
         <Button
           onClick={() => open("form")}
           size="lg"
           variant="outline"
           className="min-w-0 flex-1 px-3"
+          title="Send the job — I reply with a price band."
+          aria-describedby="sticky-send-microcopy"
         >
           {HERO_COPY.estimateCta}
+          <span className="sr-only"> — I reply with a price band.</span>
         </Button>
       </div>
+      <p id="sticky-book-microcopy" className="sr-only">
+        30 min, no pitch.
+      </p>
+      <p id="sticky-send-microcopy" className="sr-only">
+        I reply with a price band.
+      </p>
     </div>
   );
 }
