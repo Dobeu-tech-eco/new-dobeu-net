@@ -27,7 +27,12 @@ beforeEach(() => {
 
 describe("POST /api/lead", () => {
   it("accepts a valid body and returns lead + apollo ids", async () => {
-    const res = await POST(makeRequest({ email: "a@b.com", source: "form" }, "10.0.0.1"));
+    const res = await POST(
+      makeRequest(
+        { email: "a@b.com", source: "form", message: "Dispatch still lives in the inbox." },
+        "10.0.0.1",
+      ),
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       ok: true,
@@ -37,7 +42,11 @@ describe("POST /api/lead", () => {
 
     expect(mockedProcessLead).toHaveBeenCalledTimes(1);
     const arg = mockedProcessLead.mock.calls[0][0];
-    expect(arg).toMatchObject({ email: "a@b.com", source: "form" });
+    expect(arg).toMatchObject({
+      email: "a@b.com",
+      source: "form",
+      message: "Dispatch still lives in the inbox.",
+    });
     // ipHash derived from x-real-ip / x-forwarded-for (light non-crypto hash, ip_ prefix).
     expect(arg.ipHash).toMatch(/^ip_/);
   });
@@ -75,6 +84,15 @@ describe("POST /api/lead", () => {
     const json = await res.json();
     expect(json.error).toBe("Invalid input");
     expect(json.details.fieldErrors.email).toBeDefined();
+    expect(mockedProcessLead).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when Send the job has no project summary", async () => {
+    const res = await POST(makeRequest({ email: "a@b.com", source: "form", message: "   " }, "10.0.0.6"));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toBe("Invalid input");
+    expect(json.details.fieldErrors.message).toBeDefined();
     expect(mockedProcessLead).not.toHaveBeenCalled();
   });
 

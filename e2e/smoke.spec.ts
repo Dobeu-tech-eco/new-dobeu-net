@@ -177,7 +177,8 @@ test.describe("API routes", () => {
       data: {
         email: "smoke-test@example.com",
         name: "Smoke Test",
-        source: "form"
+        source: "form",
+        message: "Dispatch still lives in the inbox."
       }
     });
     expect(res.ok()).toBe(true);

@@ -160,7 +160,7 @@ export function Hero() {
             </li>
             <li>
               <Link
-                href="/#faq"
+                href="/#about"
                 className="inline-flex items-center rounded-full border border-border px-3 py-1 transition-colors hover:border-primary hover:text-foreground"
               >
                 Stripe invoices

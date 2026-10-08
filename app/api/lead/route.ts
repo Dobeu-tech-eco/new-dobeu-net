@@ -9,18 +9,28 @@ import { processLead } from "@/lib/leads";
 // caller can't stuff an arbitrarily large object into leads.raw_payload.
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
 
-const LeadSchema = z.object({
-  email: z.string().email().max(254),
-  name: z.string().max(200).optional().nullable(),
-  company: z.string().max(200).optional().nullable(),
-  message: z.string().max(2000).optional().nullable(),
-  source: z.enum(["book", "form", "email", "typeform", "other"]).default("other"),
-  utm: z
-    .object(Object.fromEntries(UTM_KEYS.map((k) => [k, z.string().max(200).optional()])))
-    .partial()
-    .default({}),
-  referrer: z.string().max(2048).optional().nullable()
-});
+const LeadSchema = z
+  .object({
+    email: z.string().email().max(254),
+    name: z.string().max(200).optional().nullable(),
+    company: z.string().max(200).optional().nullable(),
+    message: z.string().max(2000).optional().nullable(),
+    source: z.enum(["book", "form", "email", "typeform", "other"]).default("other"),
+    utm: z
+      .object(Object.fromEntries(UTM_KEYS.map((k) => [k, z.string().max(200).optional()])))
+      .partial()
+      .default({}),
+    referrer: z.string().max(2048).optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.source !== "form") return;
+    if ((data.message ?? "").trim().length > 0) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["message"],
+      message: "Tell me about the job.",
+    });
+  });
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

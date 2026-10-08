@@ -282,6 +282,11 @@ body.mobile-nav-open .sticky-mobile-cta {
     bottom: calc(20px + var(--sticky-cta-offset, 0px)) !important;
     transition: bottom 200ms ease;
   }
+
+  /* The sticky bar is fixed, so the last section would sit underneath it. */
+  main#main {
+    padding-bottom: var(--sticky-cta-offset, 0px);
+  }
 }
 
 /* Instrument light.
