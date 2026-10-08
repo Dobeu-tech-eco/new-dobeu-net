@@ -145,53 +145,43 @@ export function CookieBanner() {
     );
   }
 
-  // First-visit banner — full-width bar flush to the bottom edge.
+  // First-visit banner — one compact row, flush to the bottom edge.
   return (
     <div
       role="dialog"
       aria-labelledby="cookie-banner-title"
-      aria-describedby="cookie-banner-desc"
       ref={bannerRef}
       data-testid="cookie-banner"
-      className="fixed inset-x-0 bottom-0 z-50 flex flex-col gap-3 rounded-none border-t border-border bg-card px-4 py-3 shadow md:flex-row md:items-center md:justify-between"
+      className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-2 border-t border-border bg-card px-3 py-2 shadow sm:gap-3 sm:px-4"
     >
-      <div className="min-w-0">
-        <p id="cookie-banner-title" className="font-semibold text-sm mb-1">
-          We use cookies
-        </p>
-        <p id="cookie-banner-desc" className="text-xs text-muted-foreground">
-          Analytics, chat, and marketing cookies only fire after you opt in. See our{" "}
-          <Link href="/cookies" className="underline hover:text-foreground">
-            Cookie policy
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="underline hover:text-foreground">
-            Privacy policy
-          </Link>
-          .
-        </p>
-      </div>
-      <div className="flex shrink-0 flex-wrap gap-2">
+      <p id="cookie-banner-title" className="min-w-0 text-xs leading-snug text-muted-foreground">
+        Optional cookies stay off until you choose.{" "}
+        <Link href="/cookies" className="underline hover:text-foreground">
+          Cookie policy
+        </Link>
+        {" · "}
         <button
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          onClick={acceptAll}
-        >
-          Accept all
-        </button>
-        <button
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-3 text-xs font-semibold transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          onClick={declineAll}
-        >
-          Decline
-        </button>
-        <button
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-3 text-xs font-semibold transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="underline hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           onClick={() => {
             setDraft({ analytics: false, support: false, marketing: false });
             setShowPrefs(true);
           }}
         >
           Manage
+        </button>
+      </p>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          className="inline-flex h-8 items-center justify-center rounded-md px-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          onClick={declineAll}
+        >
+          Decline
+        </button>
+        <button
+          className="inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          onClick={acceptAll}
+        >
+          Accept all
         </button>
       </div>
     </div>

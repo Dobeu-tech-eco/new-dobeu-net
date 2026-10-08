@@ -63,9 +63,9 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
         <div className="rounded-lg border border-border bg-muted/40 p-4 flex gap-3">
           <CalendarClock className="h-5 w-5 text-primary mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <p className="font-semibold text-sm">Calendly not yet wired.</p>
+            <p className="font-semibold text-sm">I&apos;ll send time options within a few hours.</p>
             <p className="text-xs text-muted-foreground">
-              Drop your details and I&apos;ll send time options within a few hours.
+              Leave your name and a way to reach you.
             </p>
           </div>
         </div>

@@ -85,7 +85,7 @@ export function SiteNav() {
               aria-label="Dobeu home"
             >
               <DobeuMark className="h-7 w-7" />
-              <span className="font-display text-[1.1rem] tracking-tight lowercase leading-none hidden sm:inline select-none">
+              <span className="font-display text-[1.1rem] tracking-tight lowercase leading-none select-none">
                 <span className="font-extrabold text-[hsl(var(--brand-indigo-slate))] group-hover:text-primary transition-colors duration-200">
                   dobeu
                 </span>

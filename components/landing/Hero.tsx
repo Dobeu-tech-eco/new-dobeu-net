@@ -3,13 +3,12 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowRight, Bot, Code2, LineChart, Palette } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
 import {
   FOUNDER,
-  HERO_CAPABILITY_CARDS,
   HERO_COPY,
   NAP,
   PRICE_RANGE,
@@ -48,20 +47,6 @@ function HeroBackdrop() {
       <div className="absolute inset-0 hidden md:block md:bg-gradient-to-r md:from-background/70 md:via-background/25 md:to-transparent dark:md:from-background/70 dark:md:via-background/20 dark:md:to-transparent" />
     </div>
   );
-}
-
-const CAPABILITY_ICONS = {
-  Bot,
-  Code2,
-  Palette,
-  LineChart,
-} as const;
-
-function scrollToService(serviceId: string) {
-  document.getElementById(`service-${serviceId}`)?.scrollIntoView({
-    behavior: "smooth",
-    block: "start",
-  });
 }
 
 export function Hero() {
@@ -117,7 +102,7 @@ export function Hero() {
             className="mt-4 max-w-2xl text-base leading-relaxed text-foreground md:text-lg"
             data-testid="hero-promise"
           >
-            I ship {HERO_COPY.promise}
+            {HERO_COPY.promise}
           </p>
 
           <p
@@ -173,59 +158,6 @@ export function Hero() {
           <p className="mt-2 text-xs text-muted-foreground">
             {HERO_COPY.estimateHint}
           </p>
-
-          <ul
-            className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2 md:mt-36 lg:grid-cols-4"
-            aria-label="Core capabilities"
-          >
-            {HERO_CAPABILITY_CARDS.map((card) => {
-              const Icon = CAPABILITY_ICONS[card.icon];
-              return (
-                <li key={card.id}>
-                  <button
-                    type="button"
-                    onClick={() => scrollToService(card.id)}
-                    className="group flex h-full w-full flex-col items-start rounded-2xl border border-border bg-card/70 p-4 text-left shadow-sm backdrop-blur transition-all duration-200 hover:border-primary/35 hover:bg-card hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/16">
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <span className="font-display text-sm font-bold tracking-tight text-foreground">
-                      {card.label}
-                    </span>
-                    <span className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      {card.description}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-            {["Building since 2019", NAP.areaServed, "Stripe-verified"].map(
-              (item, i) => (
-                <span key={item} className="flex items-center gap-2">
-                  {i > 0 && (
-                    <span
-                      className="h-1 w-1 flex-shrink-0 rounded-full bg-border"
-                      aria-hidden="true"
-                    />
-                  )}
-                  {item}
-                </span>
-              ),
-            )}
-            <span className="flex items-center gap-2">
-              <span
-                className="h-1 w-1 flex-shrink-0 rounded-full bg-border"
-                aria-hidden="true"
-              />
-              <span className="font-semibold text-accent-text">
-                No agency overhead
-              </span>
-            </span>
-          </div>
         </div>
       </div>
     </section>

@@ -3,7 +3,6 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const LeadForm = dynamic(
   () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
@@ -13,10 +12,6 @@ const LeadForm = dynamic(
 const BookingTab = dynamic(
   () => import("@/components/landing/BookingTab").then((m) => m.BookingTab),
   { ssr: false, loading: () => <p className="text-sm text-muted-foreground py-4">Loading scheduler…</p> }
-);
-const TypeformTab = dynamic(
-  () => import("@/components/landing/TypeformTab").then((m) => m.TypeformTab),
-  { ssr: false, loading: () => <p className="text-sm text-muted-foreground py-4">Loading form…</p> }
 );
 
 type Tab = "book" | "form" | "email";
@@ -34,6 +29,36 @@ export function useLightbox(): LightboxCtx {
   return ctx;
 }
 
+const COPY: Record<Tab, { title: string; description: string }> = {
+  book: {
+    title: "Book a call",
+    description: "Thirty minutes. I come back with a price band.",
+  },
+  form: {
+    title: "Send the job",
+    description: "I read this and reply with a price band. It is not an instant quote.",
+  },
+  email: {
+    title: "Send a note",
+    description: "Email is enough. I reply with a price band if the job is a fit.",
+  },
+};
+
+function DialogBody({ tab, onClose }: { tab: Tab; onClose: () => void }) {
+  switch (tab) {
+    case "book":
+      return <BookingTab onClose={onClose} />;
+    case "form":
+      return <LeadForm source="form" onSuccess={onClose} />;
+    case "email":
+      return <LeadForm source="email" onSuccess={onClose} />;
+    default: {
+      const unreachable: never = tab;
+      return unreachable;
+    }
+  }
+}
+
 export function LightboxProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [tab, setTab] = React.useState<Tab>("book");
@@ -48,6 +73,7 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
   // ⚡ Bolt: Memoize context value to prevent unnecessary re-renders of consuming components
   // when internal state (like isOpen or tab) changes.
   const value = React.useMemo(() => ({ open, close }), [open, close]);
+  const copy = COPY[tab];
 
   return (
     <Ctx.Provider value={value}>
@@ -56,28 +82,11 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-2xl max-h-[92dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="gradient-text">Let&apos;s talk about your project</DialogTitle>
-            <DialogDescription>
-              Three ways in — book a call, send the details, or just drop your email. Whichever fits.
-            </DialogDescription>
+            <DialogTitle>{copy.title}</DialogTitle>
+            <DialogDescription>{copy.description}</DialogDescription>
           </DialogHeader>
 
-          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-2">
-            <TabsList>
-              <TabsTrigger value="book">Book a call</TabsTrigger>
-              <TabsTrigger value="form">Tell me more</TabsTrigger>
-              <TabsTrigger value="email">Just email</TabsTrigger>
-            </TabsList>
-            <TabsContent value="book">
-              <BookingTab onClose={close} />
-            </TabsContent>
-            <TabsContent value="form">
-              <TypeformTab />
-            </TabsContent>
-            <TabsContent value="email">
-              <LeadForm source="email" onSuccess={close} />
-            </TabsContent>
-          </Tabs>
+          <DialogBody tab={tab} onClose={close} />
         </DialogContent>
       </Dialog>
     </Ctx.Provider>

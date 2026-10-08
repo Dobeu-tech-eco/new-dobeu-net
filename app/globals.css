@@ -325,39 +325,20 @@ main#main.page-light-in {
 }
 
 .scroll-lamp {
-  display: none;
+  display: block;
   pointer-events: none;
   position: fixed;
   z-index: 1;
   left: 0;
   right: 0;
   top: 3.75rem;
-  height: 4.5rem;
+  height: 1.25rem;
   border-radius: 0;
   background: linear-gradient(
     to bottom,
     hsl(var(--dobeu-violet-500) / 0.07),
-    transparent 85%
+    transparent 40%
   );
-  box-shadow: 0 22px 36px -24px hsl(240 32% 8% / 0.18);
-}
-
-@supports (animation-timeline: scroll()) {
-  .scroll-lamp {
-    display: block;
-    animation: scroll-lamp linear both;
-    animation-timeline: scroll(root block);
-    animation-range: 0 100%;
-  }
-}
-
-@keyframes scroll-lamp {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(0, 56vh, 0);
-  }
 }
 
 @supports (animation-timeline: view()) {
@@ -385,9 +366,7 @@ main#main.page-light-in {
 @media (max-width: 767px) {
   .scroll-lamp {
     top: 3.75rem;
-    height: 3.25rem;
-    opacity: 0.85;
-    box-shadow: 0 16px 28px -20px hsl(240 32% 8% / 0.14);
+    height: 1.25rem;
   }
 }
 

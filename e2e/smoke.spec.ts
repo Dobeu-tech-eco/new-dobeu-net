@@ -23,18 +23,19 @@ test.describe("Landing page smoke tests", () => {
     await seedCookieConsent(page);
     await page.goto("/");
     await page.locator("#top").getByRole("button", { name: /book a call/i }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByRole("tab", { name: /book a call/i })).toHaveAttribute("data-state", "active");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText(/Book a call/i);
   });
 
-  test("estimate CTA mounts the Typeform tab", async ({ page }) => {
+  test("estimate CTA opens the price-band form", async ({ page }) => {
     await seedCookieConsent(page);
     await page.goto("/");
     await page.getByTestId("hero-estimate-cta").click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole("tab", { name: /tell me more/i })).toHaveAttribute("data-state", "active");
-    await expect(dialog.getByTestId("typeform-widget")).toHaveAttribute("data-tf-form", "wKVKIBe7");
+    await expect(dialog).toContainText(/price band/i);
+    await expect(dialog.getByRole("textbox").first()).toBeVisible();
   });
 
   test("/labs page loads with demo grid", async ({ page }) => {
@@ -92,14 +93,15 @@ test.describe("Commercial routes", () => {
     await expect(nav.getByRole("link", { name: /pricing/i })).toBeVisible();
   });
 
-  test("/pricing estimate mounts Typeform", async ({ page }) => {
+  test("/pricing estimate opens the price-band form", async ({ page }) => {
     await seedCookieConsent(page);
     await page.goto("/pricing");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.getByTestId("pricing-estimate-cta").click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByTestId("typeform-widget")).toHaveAttribute("data-tf-form", "wKVKIBe7");
+    await expect(dialog).toContainText(/price band/i);
+    await expect(dialog.getByRole("textbox").first()).toBeVisible();
   });
 
   for (const path of ["/services", "/about", "/process", "/case-studies", "/pricing"]) {

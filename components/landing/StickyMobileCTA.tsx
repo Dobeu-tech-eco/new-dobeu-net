@@ -96,12 +96,22 @@ export function StickyMobileCTA() {
       className="sticky-mobile-cta md:hidden fixed inset-x-0 z-40 p-3 glass border-t border-border/60 animate-fade-up"
       style={{ bottom: "var(--cookie-banner-offset, 0px)" }}
       role="region"
-      aria-label="Quick book a call"
+      aria-label={`${HERO_COPY.bookCta} and ${HERO_COPY.estimateCta}`}
       data-testid="sticky-mobile-cta"
     >
-      <Button onClick={() => open("book")} size="lg" className="w-full">
-        {HERO_COPY.bookCta}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button onClick={() => open("book")} size="lg" className="min-w-0 flex-1 px-3">
+          {HERO_COPY.bookCta}
+        </Button>
+        <Button
+          onClick={() => open("form")}
+          size="lg"
+          variant="outline"
+          className="min-w-0 flex-1 px-3"
+        >
+          {HERO_COPY.estimateCta}
+        </Button>
+      </div>
     </div>
   );
 }

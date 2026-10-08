@@ -29,11 +29,11 @@ export default function HomePage() {
     <MarketingShell stickyCta>
       <JsonLd data={professionalServiceJsonLd()} />
       <Hero />
-      <SubBrandsStrip />
       <Services />
       <HowItWorks />
       <Founder />
       <FAQ />
+      <SubBrandsStrip />
       <FinalCTA />
     </MarketingShell>
   );

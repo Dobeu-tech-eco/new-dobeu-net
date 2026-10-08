@@ -35,23 +35,18 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
           >
             <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
-                Services
-              </p>
               <h2
                 id="work-heading"
                 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance"
               >
-                Four things, done well —
+                Dispatch, paperwork,
                 <br />
-                <span className="text-muted-foreground">built on partnership.</span>
+                <span className="text-muted-foreground">reconciliation, invoicing.</span>
               </h2>
             </div>
             <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
-              Most engagements blend a few of these. What you&apos;re really
-              hiring is a partner — not a checklist. I take on a small number of
-              clients at a time, transfer everything into your hands, and stay on
-              as a long-term IT advisor well past launch.
+              These are the jobs. Most engagements mix a few. I take a small
+              number at a time.
             </p>
           </motion.div>
         )}
