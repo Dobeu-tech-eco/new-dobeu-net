@@ -62,9 +62,7 @@ export function StickyMobileCTA() {
   }, []);
 
   // Publish this bar's height so other fixed chrome can sit above it, mirroring
-  // how CookieBanner publishes --cookie-banner-offset. Intercom's launcher is
-  // the consumer: it defaults to the bottom-right corner and would otherwise
-  // land on top of the Book a call button.
+  // how CookieBanner publishes --cookie-banner-offset.
   useLayoutEffect(() => {
     const root = document.documentElement;
     const clear = () => root.style.removeProperty("--sticky-cta-offset");

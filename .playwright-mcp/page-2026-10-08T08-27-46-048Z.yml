@@ -1,0 +1,424 @@
+- generic:
+  - link [aria-hidden]:
+    - /url: "#main"
+    - text: Skip to main content
+  - banner [aria-hidden]:
+    - generic:
+      - navigation:
+        - generic:
+          - link:
+            - /url: /
+            - generic: dobeu.net
+          - generic: Taking projects
+        - list:
+          - listitem:
+            - link:
+              - /url: /services
+              - text: Services
+          - listitem:
+            - link:
+              - /url: /process
+              - text: Process
+          - listitem:
+            - link:
+              - /url: /about
+              - text: About
+          - listitem:
+            - link:
+              - /url: /pricing
+              - text: Pricing
+          - listitem:
+            - link:
+              - /url: /#faq
+              - text: FAQ
+          - listitem:
+            - button: Universe
+        - generic:
+          - link:
+            - /url: https://github.com/Dobeu-tech-eco
+            - generic: dobeutech
+          - button:
+            - generic: Toggle theme
+          - button: Book a call
+  - main:
+    - region [aria-hidden]:
+      - generic:
+        - generic:
+          - paragraph: Dobeu Tech Solutions
+          - paragraph: Prices are published. Invoices go through Stripe. The code lands in your repo.
+          - paragraph:
+            - generic: NYC & NJ metro
+            - generic: Since 2019
+          - paragraph: Hi. I'm Jeremy.
+          - heading [level=1]:
+            - generic: AI that keeps your trucks, kitchens, and sites running.
+          - paragraph: I ship Dispatch that actually dispatches.
+          - paragraph: If ops still live in spreadsheets, you don't have an AI problem. You have a process problem.
+          - paragraph: $5k–$30k typical engagement
+          - generic:
+            - button: Book a call
+            - button: Send the job
+          - paragraph: I'll reply with a price band. Not an instant quote.
+          - list:
+            - listitem:
+              - button:
+                - generic: Dispatch that runs
+                - generic: Routes, tickets, and follow-ups still live in inboxes. Dispatch first — the same loop shows up in a kitchen, on a site, or at a desk.
+            - listitem:
+              - button:
+                - generic: The tool you don't have
+                - generic: The job runs in a spreadsheet because the tool you need does not exist, and a template will not cut it.
+            - listitem:
+              - button:
+                - generic: A front door people trust
+                - generic: The site looks rented. Operators and their customers can tell.
+            - listitem:
+              - button:
+                - generic: Invoices that go out
+                - generic: Work gets done and the invoice, the follow-up, or the margin is still a guess.
+          - generic:
+            - generic: Building since 2019
+            - generic: NYC & NJ metro
+            - generic: Stripe-verified
+            - generic: No agency overhead
+    - region [aria-hidden]:
+      - generic:
+        - generic:
+          - generic: The Dobeu Universe
+          - generic:
+            - link:
+              - /url: https://dobeu.net
+              - generic: Studio
+              - generic: dobeu.net
+          - generic:
+            - link:
+              - /url: https://dobeu.space
+              - generic: Labs
+              - generic: dobeu.space
+          - generic:
+            - link:
+              - /url: https://github.com/Dobeu-tech-eco
+              - generic: Open Source
+              - generic: dobeutech
+    - region [aria-hidden]:
+      - generic:
+        - generic:
+          - generic:
+            - paragraph: Services
+            - heading [level=2]: Four things, done well — built on partnership.
+          - paragraph: Most engagements blend a few of these. What you're really hiring is a partner — not a checklist. I take on a small number of clients at a time, transfer everything into your hands, and stay on as a long-term IT advisor well past launch.
+        - generic:
+          - article:
+            - generic: "01"
+            - heading [level=3]:
+              - link:
+                - /url: /services/ai-agents
+                - text: Dispatch that runs
+            - paragraph: I take one repeating loop off the inbox and make it run without a person chasing it. The stack stays on this page, under the job.
+            - paragraph: Claude, Composio, and MCP when the loop needs tools.
+          - article:
+            - generic: "02"
+            - heading [level=3]:
+              - link:
+                - /url: /services/fullstack
+                - text: The tool you don't have
+            - paragraph: Internal tools, portals, and the one app your people will open on a shift. Built to stay in your repo.
+            - paragraph: Next.js, Supabase, and Vercel. Auth, billing, and a path to production.
+          - article:
+            - generic:
+              - generic: "03"
+              - generic: Design
+            - heading [level=3]:
+              - link:
+                - /url: /services/brand
+                - text: A front door people trust
+            - paragraph: The public site and the documents match the work, whether that work is trucks, kitchens, or a desk.
+            - paragraph: Design tokens, type, and a component library. Figma when you want the source.
+          - article:
+            - generic: "04"
+            - heading [level=3]:
+              - link:
+                - /url: /services/growth
+                - text: Invoices that go out
+            - paragraph: Get paid on time and see which jobs actually pay. This is not a traffic dashboard.
+            - paragraph: Lifecycle email, attribution, and the reporting you can check.
+        - generic:
+          - button:
+            - generic:
+              - generic:
+                - paragraph: Something else?
+                - paragraph: Doesn't fit a category? Send the job and I'll reply with a price band.
+            - generic: Send the job
+    - region [aria-hidden]:
+      - generic:
+        - generic:
+          - paragraph: The process
+          - heading [level=2]: Three steps. No theater.
+        - list:
+          - listitem:
+            - generic:
+              - generic: "1"
+              - generic:
+                - heading [level=3]: 30-min discovery
+                - paragraph: We talk through what you're trying to ship, what's in the way, and whether I'm the right person. No pitch, no slide deck — just an honest conversation.
+          - listitem:
+            - generic:
+              - generic: "2"
+              - generic:
+                - heading [level=3]: Scoped proposal
+                - paragraph: "Within 48 hours you get a one-pager: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine — no obligation to that point."
+          - listitem:
+            - generic:
+              - generic: "3"
+              - generic:
+                - heading [level=3]: Ship in 2–6 weeks
+                - paragraph: Daily Loom updates, your private portal for files and invoices, async-first communication. Most projects ship in a single sprint with zero theater.
+        - paragraph: No long contracts. No kickoff theater. If I'm booked, I'll tell you — and I'll recommend someone good.
+    - region [aria-hidden]:
+      - generic:
+        - paragraph: The operator
+        - generic:
+          - generic:
+            - generic: Available now
+            - heading [level=2]: Jeremy Williams
+            - paragraph: Founder & Principal Engineer — NYC & NJ metro
+            - generic:
+              - link:
+                - /url: https://www.linkedin.com/in/jeremy-williams
+                - text: LinkedIn
+              - link:
+                - /url: mailto:jeremyw@dobeu.net
+                - text: Email
+          - generic:
+            - generic:
+              - paragraph: "2019"
+              - paragraph: Building since
+            - generic:
+              - paragraph: NYC
+              - paragraph: NYC & NJ metro
+            - generic:
+              - paragraph: Stripe
+              - paragraph: Invoices
+        - generic:
+          - generic:
+            - heading [level=3]: Why one person, not an agency?
+            - paragraph: I've been shipping software since 2019 — for logistics operators, hospitality teams, and founders building things that didn't exist yet. Public shipped work includes Monty AI, Unified AI v1, StatMiner, DTS Contract Engine, IT Consult Funnel, LastPlate.
+            - paragraph: Every client I take on gets my full attention. That means I turn down more than I accept. If I'm the right person for your project, you'll know it by end of the discovery call.
+            - generic [aria-hidden]:
+              - generic:
+                - paragraph: dobeu.net
+                - paragraph: Principal engineering & AI studio
+          - generic:
+            - generic:
+              - generic:
+                - paragraph: You talk to the person doing the work.
+                - paragraph: No account managers between you and the build.
+              - generic:
+                - paragraph: Decisions get made in hours, not weeks.
+                - paragraph: No agency layers, no rebrand committees.
+              - generic:
+                - paragraph: Modern stack from day one.
+                - paragraph: Nothing you'll have to rewrite in 18 months.
+            - button: Book a 30-min call
+    - region "Everything you need to know.":
+      - generic [aria-hidden]:
+        - generic:
+          - generic:
+            - paragraph: Questions
+            - heading [level=2]: Everything you need to know.
+            - paragraph:
+              - text: Still have questions? Drop me a line at
+              - link:
+                - /url: mailto:jeremyw@dobeu.net
+                - text: jeremyw@dobeu.net
+              - text: .
+            - generic:
+              - generic: "10"
+              - text: questions answered
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=3]:
+                  - button: What's the typical engagement size?
+              - generic:
+                - heading [level=3]:
+                  - button: Does the Ops Teardown fee count toward the build?
+              - generic:
+                - heading [level=3]:
+                  - button: What's the difference between Book a call and Send the job?
+              - generic:
+                - heading [level=3]:
+                  - button: How fast can you start?
+              - generic:
+                - heading [level=3]:
+                  - button: Do you do retainers?
+              - generic:
+                - heading [level=3]:
+                  - button: Where will the code live?
+              - generic:
+                - heading [level=3]:
+                  - button: Do you sign NDAs?
+              - generic:
+                - heading [level=3]:
+                  - button: Do you take equity?
+              - generic:
+                - heading [level=3]:
+                  - button: Will I be able to maintain what you build?
+              - generic:
+                - heading [level=3]:
+                  - button: Why "dobeu"?
+    - region [aria-hidden]:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - paragraph: Ready to ship?
+              - heading [level=2]: Let's build the thing.
+              - paragraph: 30 minutes. No pitch. We'll figure out together whether I'm the right person to ship what you're trying to ship.
+              - paragraph: $5k–$30k typical engagement
+              - generic:
+                - button: Book a call
+                - button: Send the job
+              - paragraph: I'll reply with a price band. Not an instant quote.
+            - generic [aria-hidden]: →
+  - contentinfo [aria-hidden]:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - paragraph: dobeu.net
+          - paragraph: AI automation and custom software for operators in NYC & NJ metro. One person, modern stack.
+          - paragraph: Dobeu Tech Solutions LLC · New York, NY · jeremyw@dobeu.net · (848) 318-7664
+        - navigation:
+          - generic:
+            - paragraph: Site
+            - list:
+              - listitem:
+                - link:
+                  - /url: /services
+                  - text: Services
+              - listitem:
+                - link:
+                  - /url: /process
+                  - text: Process
+              - listitem:
+                - link:
+                  - /url: /about
+                  - text: About
+              - listitem:
+                - link:
+                  - /url: /pricing
+                  - text: Pricing
+              - listitem:
+                - link:
+                  - /url: /case-studies
+                  - text: Case studies
+              - listitem:
+                - link:
+                  - /url: /#faq
+                  - text: FAQ
+              - listitem:
+                - link:
+                  - /url: /labs
+                  - text: Labs
+              - listitem:
+                - link:
+                  - /url: /repos
+                  - text: Repos
+          - generic:
+            - paragraph: Account
+            - list:
+              - listitem:
+                - link:
+                  - /url: /login
+                  - text: Log in
+              - listitem:
+                - link:
+                  - /url: /portal
+                  - text: Client portal
+          - generic:
+            - paragraph: Contact
+            - list:
+              - listitem:
+                - link:
+                  - /url: mailto:jeremyw@dobeu.net
+                  - text: jeremyw@dobeu.net
+              - listitem:
+                - link:
+                  - /url: tel:+18483187664
+                  - text: (848) 318-7664
+              - listitem:
+                - link:
+                  - /url: https://www.linkedin.com/in/jeremy-williams
+                  - text: LinkedIn
+              - listitem:
+                - link:
+                  - /url: https://status.dobeu.net
+                  - text: Status
+          - generic:
+            - paragraph: Legal
+            - list:
+              - listitem:
+                - link:
+                  - /url: /terms
+                  - text: Terms
+              - listitem:
+                - link:
+                  - /url: /privacy
+                  - text: Privacy
+              - listitem:
+                - link:
+                  - /url: /cookies
+                  - text: Cookies
+              - listitem:
+                - link:
+                  - /url: /optin/sms
+                  - text: SMS Opt-In
+              - listitem:
+                - link:
+                  - /url: /marketing-opt-out
+                  - text: Marketing Opt-Out
+      - generic:
+        - paragraph: © 2026 Dobeu Tech Solutions LLC. All rights reserved.
+        - generic:
+          - link:
+            - /url: /privacy
+            - text: Privacy
+          - link:
+            - /url: /terms
+            - text: Terms
+          - button: Cookie preferences
+  - dialog [aria-hidden]:
+    - generic:
+      - paragraph: We use cookies
+      - paragraph:
+        - text: Analytics, chat, and marketing cookies only fire after you opt in. See our
+        - link:
+          - /url: /cookies
+          - text: Cookie policy
+        - text: and
+        - link:
+          - /url: /privacy
+          - text: Privacy policy
+        - text: .
+    - generic:
+      - button: Accept all
+      - button: Decline
+      - button: Manage
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f4e482] [cursor=pointer]
+  - alert
+  - dialog [ref=f4e488]:
+    - generic [ref=f4e489]:
+      - heading "Let's talk about your project" [level=2] [ref=f4e490]
+      - paragraph [ref=f4e491]: Three ways in — book a call, send the details, or just drop your email. Whichever fits.
+    - generic [ref=f4e492]:
+      - tablist [ref=f4e493]:
+        - tab "Book a call" [ref=f4e494] [cursor=pointer]
+        - tab "Tell me more" [active] [selected] [ref=f4e495] [cursor=pointer]
+        - tab "Just email" [ref=f4e496] [cursor=pointer]
+      - tabpanel "Tell me more" [ref=f4e528]:
+        - iframe [ref=f4e532]:
+          - progressbar "Form progress" [ref=f6e11]
+    - button "Close" [ref=f4e523] [cursor=pointer]

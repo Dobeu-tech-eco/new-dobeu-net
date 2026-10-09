@@ -1,0 +1,148 @@
+- generic [active] [ref=f7e1]:
+  - link "Skip to main content" [ref=f7e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=f7e3]:
+    - navigation "Primary" [ref=f7e5]:
+      - link "Dobeu home" [ref=f7e7] [cursor=pointer]:
+        - /url: /
+        - img "Dobeu mark" [ref=f7e8]
+      - generic [ref=f7e12]:
+        - button "Toggle theme" [ref=f7e13] [cursor=pointer]
+        - button "Open menu" [ref=f7e15] [cursor=pointer]
+  - main [ref=f7e17]:
+    - generic [ref=f7e18]:
+      - paragraph [ref=f7e19]: Pricing
+      - heading "Clear bands. No procurement theater." [level=1] [ref=f7e20]
+      - paragraph [ref=f7e21]: $5k–$30k typical engagement. Send the job and I reply with a band before we talk numbers.
+    - generic [ref=f7e22]:
+      - list [ref=f7e23]:
+        - listitem [ref=f7e24]:
+          - paragraph [ref=f7e25]: Ops Teardown
+          - paragraph [ref=f7e26]: $1,500 flat
+          - paragraph [ref=f7e27]: One week, one fixed fee, a written teardown of the loop that is actually costing you.
+          - paragraph [ref=f7e28]: "I sit with the people doing the work, map the loop end to end, and hand back a document: where the hours go, what to automate first, the hours and price band to build it, and what to leave alone."
+        - listitem [ref=f7e29]:
+          - paragraph [ref=f7e30]: Single workflow
+          - paragraph [ref=f7e31]: Quoted after the call
+          - paragraph [ref=f7e32]: One painful loop — dispatch, invoicing, intake — automated end to end.
+          - paragraph [ref=f7e33]: One loop, fixed price after we talk. I don't publish a band until the scope is real.
+        - listitem [ref=f7e34]:
+          - paragraph [ref=f7e35]: Full build
+          - paragraph [ref=f7e36]: $5k–$30k
+          - paragraph [ref=f7e37]: The ops app, portal, or agent stack you will keep running.
+          - paragraph [ref=f7e38]: Most engagements land here. Fixed-scope, fixed-price after the call.
+        - listitem [ref=f7e39]:
+          - paragraph [ref=f7e40]: Care plan
+          - paragraph [ref=f7e41]: From $149/mo
+          - paragraph [ref=f7e42]: Keep the system current once it is in production.
+          - paragraph [ref=f7e43]: Three tiers — Watch, Tune, Extend. Business hours, real hours of work, no lock-in. Only when there is a live system to maintain.
+      - generic [ref=f7e44]:
+        - paragraph [ref=f7e45]: This form does not price the job or start a checkout. I read it and reply with a band.
+        - generic [ref=f7e46]:
+          - generic [ref=f7e47]:
+            - button "Book a call" [ref=f7e48] [cursor=pointer]
+            - button "Send the job" [ref=f7e49] [cursor=pointer]
+          - paragraph [ref=f7e50]: I'll reply with a price band. Not an instant quote.
+  - contentinfo [ref=f7e51]:
+    - generic [ref=f7e52]:
+      - generic [ref=f7e53]:
+        - generic [ref=f7e54]:
+          - generic [ref=f7e55]:
+            - img "Dobeu mark" [ref=f7e56]
+            - paragraph [ref=f7e61]: dobeu.net
+          - paragraph [ref=f7e62]: AI automation and custom software for operators in NYC & NJ metro. One person, modern stack.
+          - paragraph [ref=f7e63]: Dobeu Tech Solutions LLC · New York, NY · jeremyw@dobeu.net · (848) 318-7664
+        - navigation "Footer navigation" [ref=f7e64]:
+          - generic [ref=f7e65]:
+            - paragraph [ref=f7e66]: Site
+            - list [ref=f7e67]:
+              - listitem [ref=f7e68]:
+                - link "Services" [ref=f7e69] [cursor=pointer]:
+                  - /url: /services
+              - listitem [ref=f7e70]:
+                - link "Process" [ref=f7e71] [cursor=pointer]:
+                  - /url: /process
+              - listitem [ref=f7e72]:
+                - link "About" [ref=f7e73] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=f7e74]:
+                - link "Pricing" [ref=f7e75] [cursor=pointer]:
+                  - /url: /pricing
+              - listitem [ref=f7e76]:
+                - link "Case studies" [ref=f7e77] [cursor=pointer]:
+                  - /url: /case-studies
+              - listitem [ref=f7e78]:
+                - link "FAQ" [ref=f7e79] [cursor=pointer]:
+                  - /url: /#faq
+              - listitem [ref=f7e80]:
+                - link "Labs" [ref=f7e81] [cursor=pointer]:
+                  - /url: /labs
+              - listitem [ref=f7e82]:
+                - link "Repos" [ref=f7e83] [cursor=pointer]:
+                  - /url: /repos
+          - generic [ref=f7e84]:
+            - paragraph [ref=f7e85]: Account
+            - list [ref=f7e86]:
+              - listitem [ref=f7e87]:
+                - link "Log in" [ref=f7e88] [cursor=pointer]:
+                  - /url: /login
+              - listitem [ref=f7e89]:
+                - link "Client portal" [ref=f7e90] [cursor=pointer]:
+                  - /url: /portal
+          - generic [ref=f7e91]:
+            - paragraph [ref=f7e92]: Contact
+            - list [ref=f7e93]:
+              - listitem [ref=f7e94]:
+                - link "jeremyw@dobeu.net" [ref=f7e95] [cursor=pointer]:
+                  - /url: mailto:jeremyw@dobeu.net
+              - listitem [ref=f7e96]:
+                - link "(848) 318-7664" [ref=f7e97] [cursor=pointer]:
+                  - /url: tel:+18483187664
+              - listitem [ref=f7e98]:
+                - link "LinkedIn" [ref=f7e99] [cursor=pointer]:
+                  - /url: https://www.linkedin.com/in/jeremy-williams
+              - listitem [ref=f7e100]:
+                - link "Status" [ref=f7e101] [cursor=pointer]:
+                  - /url: https://status.dobeu.net
+          - generic [ref=f7e102]:
+            - paragraph [ref=f7e103]: Legal
+            - list [ref=f7e104]:
+              - listitem [ref=f7e105]:
+                - link "Terms" [ref=f7e106] [cursor=pointer]:
+                  - /url: /terms
+              - listitem [ref=f7e107]:
+                - link "Privacy" [ref=f7e108] [cursor=pointer]:
+                  - /url: /privacy
+              - listitem [ref=f7e109]:
+                - link "Cookies" [ref=f7e110] [cursor=pointer]:
+                  - /url: /cookies
+              - listitem [ref=f7e111]:
+                - link "SMS Opt-In" [ref=f7e112] [cursor=pointer]:
+                  - /url: /optin/sms
+              - listitem [ref=f7e113]:
+                - link "Marketing Opt-Out" [ref=f7e114] [cursor=pointer]:
+                  - /url: /marketing-opt-out
+      - generic [ref=f7e115]:
+        - paragraph [ref=f7e116]: © 2026 Dobeu Tech Solutions LLC. All rights reserved.
+        - generic [ref=f7e117]:
+          - link "Privacy" [ref=f7e118] [cursor=pointer]:
+            - /url: /privacy
+          - link "Terms" [ref=f7e119] [cursor=pointer]:
+            - /url: /terms
+          - button "Cookie preferences" [ref=f7e120] [cursor=pointer]
+  - dialog [ref=f7e121]:
+    - generic [ref=f7e122]:
+      - paragraph [ref=f7e123]: We use cookies
+      - paragraph [ref=f7e124]:
+        - text: Analytics, chat, and marketing cookies only fire after you opt in. See our
+        - link "Cookie policy" [ref=f7e125] [cursor=pointer]:
+          - /url: /cookies
+        - text: and
+        - link "Privacy policy" [ref=f7e126] [cursor=pointer]:
+          - /url: /privacy
+        - text: .
+    - generic [ref=f7e127]:
+      - button "Accept all" [ref=f7e128] [cursor=pointer]
+      - button "Decline" [ref=f7e129] [cursor=pointer]
+      - button "Manage" [ref=f7e130] [cursor=pointer]
+  - region "Notifications alt+T"

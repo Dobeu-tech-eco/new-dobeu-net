@@ -1,0 +1,1570 @@
+[     971ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[   80028ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[   98696ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[   99168ms] [WARNING] Skipping auto-scroll behavior due to `position: sticky` or `position: fixed` on element: JSHandle@node @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/components/layout-router.js:99
+[  186892ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[  188786ms] [LOG] [Fast Refresh] done in 1895ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[  191590ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[  192783ms] [LOG] [Fast Refresh] done in 1192ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[  227103ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[  280276ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[  292987ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[  296615ms] [LOG] [Fast Refresh] done in 3628ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[  296733ms] [WARNING] Skipping auto-scroll behavior due to `position: sticky` or `position: fixed` on element: JSHandle@node @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/components/layout-router.js:99
+[  306679ms] [WARNING] Skipping auto-scroll behavior due to `position: sticky` or `position: fixed` on element: JSHandle@node @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/components/layout-router.js:99
+[  328971ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[  345398ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[  346079ms] [LOG] [Fast Refresh] done in 683ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[  351503ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[  367172ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[  371758ms] [LOG] [Fast Refresh] done in 4586ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[  375751ms] [WARNING] Skipping auto-scroll behavior due to `position: sticky` or `position: fixed` on element: JSHandle@node @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/components/layout-router.js:99
+[  391666ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[  392150ms] [LOG] [Fast Refresh] done in 483ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 1802177ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 1817011ms] [LOG] [Fast Refresh] done in 14834ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 1837025ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 1839574ms] [LOG] [Fast Refresh] done in 2549ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 1858647ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 1859424ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 1859511ms] [LOG] [Fast Refresh] done in 87ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 1860392ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 1862145ms] [LOG] [Fast Refresh] done in 1753ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 1862967ms] [LOG] [Fast Refresh] done in 2574ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 1948533ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 1950256ms] [LOG] [Fast Refresh] done in 1723ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 2095717ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 2109242ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 2109512ms] [LOG] [Fast Refresh] done in 270ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 2111984ms] [LOG] [Fast Refresh] done in 2743ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 2270435ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 2275001ms] [LOG] [Fast Refresh] done in 4566ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[ 2379368ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[ 2382421ms] [LOG] [Fast Refresh] done in 3053ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[104458990ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[104469188ms] [LOG] [Fast Refresh] done in 10199ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[104492970ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[104494028ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[104494202ms] [ERROR] %o
+
+%s ReferenceError: FOUNDER_STATS is not defined
+    at Founder (webpack-internal:///(app-pages-browser)/./components/landing/Founder.tsx:176:39)
+    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23584:20)
+    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:6793:22)
+    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:9247:19)
+    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10858:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:872:30)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15727:22)
+    at workLoopSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15547:41)
+    at renderRootSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15527:11)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15034:44)
+    at performSyncWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16831:7)
+    at flushSyncWorkAcrossRoots_impl (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16677:21)
+    at flushSyncWork$1 (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15297:12)
+    at Object.scheduleRefresh (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:114:9)
+    at eval (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:265:17)
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:254:26)
+    at applyUpdate (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:139:31)
+    at statusHandler (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:156:13)
+    at setStatus (http://localhost:3000/_next/static/chunks/webpack.js?v=1791349856128:503:55)
+    at http://localhost:3000/_next/static/chunks/webpack.js?v=1791349856128:672:21 The above error occurred in the <Founder> component. It was handled by the <ErrorBoundaryHandler> error boundary. @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/react-client-callbacks/error-boundary-callbacks.js:67
+[104494206ms] [ERROR] [dobeu] unhandled error: ReferenceError: FOUNDER_STATS is not defined
+    at Founder (webpack-internal:///(app-pages-browser)/./components/landing/Founder.tsx:176:39)
+    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23584:20)
+    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:6793:22)
+    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:9247:19)
+    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10858:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:872:30)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15727:22)
+    at workLoopSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15547:41)
+    at renderRootSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15527:11)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15034:44)
+    at performSyncWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16831:7)
+    at flushSyncWorkAcrossRoots_impl (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16677:21)
+    at flushSyncWork$1 (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15297:12)
+    at Object.scheduleRefresh (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:114:9)
+    at eval (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:265:17)
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:254:26)
+    at applyUpdate (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:139:31)
+    at statusHandler (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:156:13)
+    at setStatus (http://localhost:3000/_next/static/chunks/webpack.js?v=1791349856128:503:55)
+    at http://localhost:3000/_next/static/chunks/webpack.js?v=1791349856128:672:21 @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:56
+[104494211ms] [ERROR] [dobeu] unhandled error: ReferenceError: FOUNDER_STATS is not defined
+    at Founder (webpack-internal:///(app-pages-browser)/./components/landing/Founder.tsx:176:39)
+    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23584:20)
+    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:6793:22)
+    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:9247:19)
+    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10858:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:872:30)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15727:22)
+    at workLoopSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15547:41)
+    at renderRootSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15527:11)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15034:44)
+    at performSyncWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16831:7)
+    at flushSyncWorkAcrossRoots_impl (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16677:21)
+    at flushSyncWork$1 (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15297:12)
+    at Object.scheduleRefresh (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:114:9)
+    at eval (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:265:17)
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:254:26)
+    at applyUpdate (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:139:31)
+    at statusHandler (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:156:13)
+    at setStatus (http://localhost:3000/_next/static/chunks/webpack.js?v=1791349856128:503:55)
+    at http://localhost:3000/_next/static/chunks/webpack.js?v=1791349856128:672:21 @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:56
+[104494213ms] [LOG] [Fast Refresh] done in 185ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[104495569ms] [LOG] [Fast Refresh] done in 1540ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[104497419ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/about?_rsc=rBw_JL1FkfwBnNry:0
+[104498675ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[104514008ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[104515422ms] [LOG] [Fast Refresh] done in 1414ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[104523967ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[104524256ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[104524343ms] [LOG] [Fast Refresh] done in 87ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[104525692ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:111
+[104526332ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[104528983ms] [LOG] [Fast Refresh] done in 2651ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[104532609ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/about?_rsc=rBw_JL1FkfwBnNry:0
+[104532650ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/about:0
+[104533024ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/react-dom@19.2.6_react@19.2.6/node_modules/react-dom/cjs/react-dom-client.development.js:28004
+[104533130ms] [LOG] [HMR] connected @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:45
+[104899445ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[104906034ms] [LOG] [Fast Refresh] done in 6595ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[104912685ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[104914699ms] [LOG] [Fast Refresh] done in 2014ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[105260542ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[105262462ms] [LOG] [Fast Refresh] done in 1919ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[149974091ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[149986129ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[149986943ms] [LOG] [Fast Refresh] done in 814ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[149988240ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[149988681ms] [LOG] [Fast Refresh] done in 441ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[149989216ms] [LOG] [Fast Refresh] done in 976ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[149992049ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[149993280ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[149993452ms] [LOG] [Fast Refresh] done in 172ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[149995093ms] [LOG] [Fast Refresh] done in 1813ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[149997179ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[149999625ms] [LOG] [Fast Refresh] done in 2446ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[150004124ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[150007809ms] [LOG] [Fast Refresh] done in 3685ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[150011615ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[150013478ms] [LOG] [Fast Refresh] done in 1863ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[150094457ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[150099663ms] [LOG] [Fast Refresh] done in 5206ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[150102429ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[150104425ms] [LOG] [Fast Refresh] done in 1997ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[150108119ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[150109684ms] [LOG] [Fast Refresh] done in 1565ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[150112473ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[150115725ms] [LOG] [Fast Refresh] done in 3251ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[151650898ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[151654770ms] [ERROR] ./components/landing/EstimateCtas.tsx
+Error:   × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:31:1]
+ 28 │   }
+ 29 │ 
+ 30 │   return (
+ 31 │ <<<<<<< HEAD
+    · ───────
+ 32 │     <div className={className}>
+ 33 │       <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
+ 34 │         <div className="flex flex-1 flex-col gap-1">
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    · ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·  ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·   ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·    ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·     ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·      ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·       ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:89:1]
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+ 88 │   );
+ 89 │ }
+    · ▲
+    ╰────
+  × Unexpected eof
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:89:3]
+ 87 │     </div>
+ 88 │   );
+ 89 │ }
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/EstimateCtas.tsx
+./components/landing/FinalCTA.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151654790ms] [ERROR] ./components/landing/EstimateCtas.tsx
+Error:   × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:31:1]
+ 28 │   }
+ 29 │ 
+ 30 │   return (
+ 31 │ <<<<<<< HEAD
+    · ───────
+ 32 │     <div className={className}>
+ 33 │       <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
+ 34 │         <div className="flex flex-1 flex-col gap-1">
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    · ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·  ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·   ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·    ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·     ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·      ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·       ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:89:1]
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+ 88 │   );
+ 89 │ }
+    · ▲
+    ╰────
+  × Unexpected eof
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:89:3]
+ 87 │     </div>
+ 88 │   );
+ 89 │ }
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/EstimateCtas.tsx
+./app/pricing/page.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151654909ms] [LOG] {file: Object} @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[151657123ms] [ERROR] ./components/landing/FinalCTA.tsx
+Error:   × Expression expected
+    ╭─[/workspace/components/landing/FinalCTA.tsx:54:1]
+ 51 │                 {PRICE_RANGE.line}
+ 52 │               </p>
+ 53 │ 
+ 54 │ <<<<<<< HEAD
+    ·  ──
+ 55 │               <EstimateCtas location="final_cta" />
+ 56 │ =======
+ 57 │               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/FinalCTA.tsx:54:1]
+ 51 │                 {PRICE_RANGE.line}
+ 52 │               </p>
+ 53 │ 
+ 54 │ <<<<<<< HEAD
+    ·    ──
+ 55 │               <EstimateCtas location="final_cta" />
+ 56 │ =======
+ 57 │               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/FinalCTA.tsx:54:1]
+ 51 │                 {PRICE_RANGE.line}
+ 52 │               </p>
+ 53 │ 
+ 54 │ <<<<<<< HEAD
+    ·      ──
+ 55 │               <EstimateCtas location="final_cta" />
+ 56 │ =======
+ 57 │               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/FinalCTA.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151657127ms] [ERROR] ./components/landing/Hero.tsx
+Error:   × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Hero.tsx:9:1]
+  6 │ import { ArrowRight } from "lucide-react";
+  7 │ import { Button } from "@/components/ui/button";
+  8 │ import { useLightbox } from "@/components/landing/LightboxProvider";
+  9 │ <<<<<<< HEAD
+    · ───────
+ 10 │ import { BOOK_MICROCOPY } from "@/components/landing/EstimateCtas";
+ 11 │ import { track } from "@/lib/analytics";
+ 12 │ import {
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Hero.tsx:16:1]
+ 13 │   HERO_COPY,
+ 14 │   PRICE_RANGE,
+ 15 │   SHOW_LABS_HERO_CTA,
+ 16 │ =======
+    · ───────
+ 17 │ import { track } from "@/lib/analytics";
+ 18 │ import {
+ 19 │   FOUNDER,
+    ╰────
+  × Expected ',', got '{'
+    ╭─[/workspace/components/landing/Hero.tsx:17:1]
+ 14 │   PRICE_RANGE,
+ 15 │   SHOW_LABS_HERO_CTA,
+ 16 │ =======
+ 17 │ import { track } from "@/lib/analytics";
+    ·        ─
+ 18 │ import {
+ 19 │   FOUNDER,
+ 20 │   HERO_COPY,
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/Hero.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151657127ms] [ERROR] ./components/landing/LightboxProvider.tsx
+Error:   × Merge conflict marker encountered.
+   ╭─[/workspace/components/landing/LightboxProvider.tsx:6:1]
+ 3 │ import * as React from "react";
+ 4 │ import dynamic from "next/dynamic";
+ 5 │ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+ 6 │ <<<<<<< HEAD
+   · ───────
+ 7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+ 8 │ =======
+ 9 │ >>>>>>> origin/main
+   ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:8:1]
+  5 │ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+  6 │ <<<<<<< HEAD
+  7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+  8 │ =======
+    · ───────
+  9 │ >>>>>>> origin/main
+ 10 │ 
+ 11 │ const LeadForm = dynamic(
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:9:1]
+  6 │ <<<<<<< HEAD
+  7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+  8 │ =======
+  9 │ >>>>>>> origin/main
+    · ───────
+ 10 │ 
+ 11 │ const LeadForm = dynamic(
+ 12 │   () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:43:1]
+ 40 │   },
+ 41 │   form: {
+ 42 │     title: "Send the job",
+ 43 │ <<<<<<< HEAD
+    · ───────
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:45:1]
+ 42 │     title: "Send the job",
+ 43 │ <<<<<<< HEAD
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+    · ───────
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+ 47 │ >>>>>>> origin/main
+ 48 │   },
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:47:1]
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+ 47 │ >>>>>>> origin/main
+    · ───────
+ 48 │   },
+ 49 │   email: {
+ 50 │     title: "Send a note",
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/LightboxProvider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151657127ms] [ERROR] ./components/landing/Services.tsx
+Error:   × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Services.tsx:8:1]
+  5 │ import { Bot, Code2, Palette, LineChart, ArrowRight, MessageSquare } from "lucide-react";
+  6 │ import { useLightbox } from "@/components/landing/LightboxProvider";
+  7 │ import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
+  8 │ <<<<<<< HEAD
+    · ───────
+  9 │ import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
+ 10 │ =======
+ 11 │ import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Services.tsx:10:1]
+  7 │ import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
+  8 │ <<<<<<< HEAD
+  9 │ import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
+ 10 │ =======
+    · ───────
+ 11 │ import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
+ 12 │ >>>>>>> origin/main
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Services.tsx:12:1]
+  9 │ import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
+ 10 │ =======
+ 11 │ import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
+ 12 │ >>>>>>> origin/main
+    · ───────
+ 13 │ 
+ 14 │ const ICONS = {
+ 15 │   Bot,
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/Services.tsx:49:1]
+ 46 │             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
+ 47 │           >
+ 48 │             <div className="max-w-xl">
+ 49 │ <<<<<<< HEAD
+    ·  ──
+ 50 │               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+ 51 │                 {HERO_COPY.diagnostic}
+ 52 │               </p>
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/Services.tsx:49:1]
+ 46 │             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
+ 47 │           >
+ 48 │             <div className="max-w-xl">
+ 49 │ <<<<<<< HEAD
+    ·    ──
+ 50 │               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+ 51 │                 {HERO_COPY.diagnostic}
+ 52 │               </p>
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/Services.tsx:49:1]
+ 46 │             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
+ 47 │           >
+ 48 │             <div className="max-w-xl">
+ 49 │ <<<<<<< HEAD
+    ·      ──
+ 50 │               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+ 51 │                 {HERO_COPY.diagnostic}
+ 52 │               </p>
+    ╰────
+  × Expected ';', got 'className'
+    ╭─[/workspace/components/landing/Services.tsx:50:1]
+ 47 │           >
+ 48 │             <div className="max-w-xl">
+ 49 │ <<<<<<< HEAD
+ 50 │               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+    ·                  ─────────
+ 51 │                 {HERO_COPY.diagnostic}
+ 52 │               </p>
+ 53 │ =======
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/Services.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151657127ms] [ERROR] ./components/landing/StickyMobileCTA.tsx
+Error:   × Expression expected
+     ╭─[/workspace/components/landing/StickyMobileCTA.tsx:103:1]
+ 100 │       data-testid="sticky-mobile-cta"
+ 101 │     >
+ 102 │       <div className="flex items-center gap-2">
+ 103 │ <<<<<<< HEAD
+     ·  ──
+ 104 │         <Button
+ 105 │           onClick={() => open("book")}
+ 106 │           size="lg"
+     ╰────
+  × Expression expected
+     ╭─[/workspace/components/landing/StickyMobileCTA.tsx:103:1]
+ 100 │       data-testid="sticky-mobile-cta"
+ 101 │     >
+ 102 │       <div className="flex items-center gap-2">
+ 103 │ <<<<<<< HEAD
+     ·    ──
+ 104 │         <Button
+ 105 │           onClick={() => open("book")}
+ 106 │           size="lg"
+     ╰────
+  × Expression expected
+     ╭─[/workspace/components/landing/StickyMobileCTA.tsx:103:1]
+ 100 │       data-testid="sticky-mobile-cta"
+ 101 │     >
+ 102 │       <div className="flex items-center gap-2">
+ 103 │ <<<<<<< HEAD
+     ·      ──
+ 104 │         <Button
+ 105 │           onClick={() => open("book")}
+ 106 │           size="lg"
+     ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/StickyMobileCTA.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151657128ms] [ERROR] ./lib/jeremy-data.ts
+Error:   × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:429:1]
+ 426 │   {
+ 427 │     id: "workflow",
+ 428 │     name: "Single workflow",
+ 429 │ <<<<<<< HEAD
+     · ───────
+ 430 │     price: "Price band after the call",
+ 431 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 432 │     detail:
+     ╰────
+  × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:434:1]
+ 431 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 432 │     detail:
+ 433 │       "One loop, fixed price after we talk. I reply with a price band once the scope is real.",
+ 434 │ =======
+     · ───────
+ 435 │     price: "Quoted after the call",
+ 436 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 437 │     detail:
+     ╰────
+  × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:439:1]
+ 436 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 437 │     detail:
+ 438 │       "One loop, fixed price after we talk. I don't publish a band until the scope is real.",
+ 439 │ >>>>>>> origin/main
+     · ───────
+ 440 │   },
+ 441 │   {
+ 442 │     id: "full-build",
+     ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./lib/jeremy-data.ts
+./components/landing/FAQ.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151657139ms] [LOG] {file: Object} @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[151657333ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[151659313ms] [ERROR] ./components/landing/LightboxProvider.tsx
+Error:   × Merge conflict marker encountered.
+   ╭─[/workspace/components/landing/LightboxProvider.tsx:6:1]
+ 3 │ import * as React from "react";
+ 4 │ import dynamic from "next/dynamic";
+ 5 │ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+ 6 │ <<<<<<< HEAD
+   · ───────
+ 7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+ 8 │ =======
+ 9 │ >>>>>>> origin/main
+   ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:8:1]
+  5 │ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+  6 │ <<<<<<< HEAD
+  7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+  8 │ =======
+    · ───────
+  9 │ >>>>>>> origin/main
+ 10 │ 
+ 11 │ const LeadForm = dynamic(
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:9:1]
+  6 │ <<<<<<< HEAD
+  7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+  8 │ =======
+  9 │ >>>>>>> origin/main
+    · ───────
+ 10 │ 
+ 11 │ const LeadForm = dynamic(
+ 12 │   () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:43:1]
+ 40 │   },
+ 41 │   form: {
+ 42 │     title: "Send the job",
+ 43 │ <<<<<<< HEAD
+    · ───────
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:45:1]
+ 42 │     title: "Send the job",
+ 43 │ <<<<<<< HEAD
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+    · ───────
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+ 47 │ >>>>>>> origin/main
+ 48 │   },
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:47:1]
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+ 47 │ >>>>>>> origin/main
+    · ───────
+ 48 │   },
+ 49 │   email: {
+ 50 │     title: "Send a note",
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/LightboxProvider.tsx
+./components/landing/SiteNav.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659313ms] [ERROR] ./lib/jeremy-data.ts
+Error:   × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:429:1]
+ 426 │   {
+ 427 │     id: "workflow",
+ 428 │     name: "Single workflow",
+ 429 │ <<<<<<< HEAD
+     · ───────
+ 430 │     price: "Price band after the call",
+ 431 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 432 │     detail:
+     ╰────
+  × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:434:1]
+ 431 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 432 │     detail:
+ 433 │       "One loop, fixed price after we talk. I reply with a price band once the scope is real.",
+ 434 │ =======
+     · ───────
+ 435 │     price: "Quoted after the call",
+ 436 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 437 │     detail:
+     ╰────
+  × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:439:1]
+ 436 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 437 │     detail:
+ 438 │       "One loop, fixed price after we talk. I don't publish a band until the scope is real.",
+ 439 │ >>>>>>> origin/main
+     · ───────
+ 440 │   },
+ 441 │   {
+ 442 │     id: "full-build",
+     ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./lib/jeremy-data.ts
+./components/landing/SiteFooter.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659314ms] [ERROR] ./components/landing/EstimateCtas.tsx
+Error:   × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:31:1]
+ 28 │   }
+ 29 │ 
+ 30 │   return (
+ 31 │ <<<<<<< HEAD
+    · ───────
+ 32 │     <div className={className}>
+ 33 │       <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
+ 34 │         <div className="flex flex-1 flex-col gap-1">
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    · ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·  ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·   ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·    ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·     ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·      ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'>'}` or `&gt;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:84:1]
+ 81 │         >
+ 82 │           {HERO_COPY.estimateCta}
+ 83 │         </Button>
+ 84 │ >>>>>>> origin/main
+    ·       ▲
+ 85 │       </div>
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+    ╰────
+  × Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:89:1]
+ 86 │       <p className="mt-3 text-xs text-muted-foreground">{HERO_COPY.estimateHint}</p>
+ 87 │     </div>
+ 88 │   );
+ 89 │ }
+    · ▲
+    ╰────
+  × Unexpected eof
+    ╭─[/workspace/components/landing/EstimateCtas.tsx:89:3]
+ 87 │     </div>
+ 88 │   );
+ 89 │ }
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/EstimateCtas.tsx
+./app/pricing/page.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659314ms] [ERROR] ./components/landing/FinalCTA.tsx
+Error:   × Expression expected
+    ╭─[/workspace/components/landing/FinalCTA.tsx:54:1]
+ 51 │                 {PRICE_RANGE.line}
+ 52 │               </p>
+ 53 │ 
+ 54 │ <<<<<<< HEAD
+    ·  ──
+ 55 │               <EstimateCtas location="final_cta" />
+ 56 │ =======
+ 57 │               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/FinalCTA.tsx:54:1]
+ 51 │                 {PRICE_RANGE.line}
+ 52 │               </p>
+ 53 │ 
+ 54 │ <<<<<<< HEAD
+    ·    ──
+ 55 │               <EstimateCtas location="final_cta" />
+ 56 │ =======
+ 57 │               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/FinalCTA.tsx:54:1]
+ 51 │                 {PRICE_RANGE.line}
+ 52 │               </p>
+ 53 │ 
+ 54 │ <<<<<<< HEAD
+    ·      ──
+ 55 │               <EstimateCtas location="final_cta" />
+ 56 │ =======
+ 57 │               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/FinalCTA.tsx
+./app/page.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659314ms] [ERROR] ./components/landing/Hero.tsx
+Error:   × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Hero.tsx:9:1]
+  6 │ import { ArrowRight } from "lucide-react";
+  7 │ import { Button } from "@/components/ui/button";
+  8 │ import { useLightbox } from "@/components/landing/LightboxProvider";
+  9 │ <<<<<<< HEAD
+    · ───────
+ 10 │ import { BOOK_MICROCOPY } from "@/components/landing/EstimateCtas";
+ 11 │ import { track } from "@/lib/analytics";
+ 12 │ import {
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Hero.tsx:16:1]
+ 13 │   HERO_COPY,
+ 14 │   PRICE_RANGE,
+ 15 │   SHOW_LABS_HERO_CTA,
+ 16 │ =======
+    · ───────
+ 17 │ import { track } from "@/lib/analytics";
+ 18 │ import {
+ 19 │   FOUNDER,
+    ╰────
+  × Expected ',', got '{'
+    ╭─[/workspace/components/landing/Hero.tsx:17:1]
+ 14 │   PRICE_RANGE,
+ 15 │   SHOW_LABS_HERO_CTA,
+ 16 │ =======
+ 17 │ import { track } from "@/lib/analytics";
+    ·        ─
+ 18 │ import {
+ 19 │   FOUNDER,
+ 20 │   HERO_COPY,
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/Hero.tsx
+./app/page.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659314ms] [ERROR] ./components/landing/LightboxProvider.tsx
+Error:   × Merge conflict marker encountered.
+   ╭─[/workspace/components/landing/LightboxProvider.tsx:6:1]
+ 3 │ import * as React from "react";
+ 4 │ import dynamic from "next/dynamic";
+ 5 │ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+ 6 │ <<<<<<< HEAD
+   · ───────
+ 7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+ 8 │ =======
+ 9 │ >>>>>>> origin/main
+   ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:8:1]
+  5 │ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+  6 │ <<<<<<< HEAD
+  7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+  8 │ =======
+    · ───────
+  9 │ >>>>>>> origin/main
+ 10 │ 
+ 11 │ const LeadForm = dynamic(
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:9:1]
+  6 │ <<<<<<< HEAD
+  7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+  8 │ =======
+  9 │ >>>>>>> origin/main
+    · ───────
+ 10 │ 
+ 11 │ const LeadForm = dynamic(
+ 12 │   () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:43:1]
+ 40 │   },
+ 41 │   form: {
+ 42 │     title: "Send the job",
+ 43 │ <<<<<<< HEAD
+    · ───────
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:45:1]
+ 42 │     title: "Send the job",
+ 43 │ <<<<<<< HEAD
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+    · ───────
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+ 47 │ >>>>>>> origin/main
+ 48 │   },
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:47:1]
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+ 47 │ >>>>>>> origin/main
+    · ───────
+ 48 │   },
+ 49 │   email: {
+ 50 │     title: "Send a note",
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/LightboxProvider.tsx
+./components/landing/MarketingShell.tsx
+./app/page.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659320ms] [ERROR] ./components/landing/Services.tsx
+Error:   × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Services.tsx:8:1]
+  5 │ import { Bot, Code2, Palette, LineChart, ArrowRight, MessageSquare } from "lucide-react";
+  6 │ import { useLightbox } from "@/components/landing/LightboxProvider";
+  7 │ import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
+  8 │ <<<<<<< HEAD
+    · ───────
+  9 │ import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
+ 10 │ =======
+ 11 │ import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Services.tsx:10:1]
+  7 │ import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
+  8 │ <<<<<<< HEAD
+  9 │ import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
+ 10 │ =======
+    · ───────
+ 11 │ import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
+ 12 │ >>>>>>> origin/main
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/Services.tsx:12:1]
+  9 │ import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
+ 10 │ =======
+ 11 │ import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
+ 12 │ >>>>>>> origin/main
+    · ───────
+ 13 │ 
+ 14 │ const ICONS = {
+ 15 │   Bot,
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/Services.tsx:49:1]
+ 46 │             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
+ 47 │           >
+ 48 │             <div className="max-w-xl">
+ 49 │ <<<<<<< HEAD
+    ·  ──
+ 50 │               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+ 51 │                 {HERO_COPY.diagnostic}
+ 52 │               </p>
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/Services.tsx:49:1]
+ 46 │             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
+ 47 │           >
+ 48 │             <div className="max-w-xl">
+ 49 │ <<<<<<< HEAD
+    ·    ──
+ 50 │               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+ 51 │                 {HERO_COPY.diagnostic}
+ 52 │               </p>
+    ╰────
+  × Expression expected
+    ╭─[/workspace/components/landing/Services.tsx:49:1]
+ 46 │             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
+ 47 │           >
+ 48 │             <div className="max-w-xl">
+ 49 │ <<<<<<< HEAD
+    ·      ──
+ 50 │               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+ 51 │                 {HERO_COPY.diagnostic}
+ 52 │               </p>
+    ╰────
+  × Expected ';', got 'className'
+    ╭─[/workspace/components/landing/Services.tsx:50:1]
+ 47 │           >
+ 48 │             <div className="max-w-xl">
+ 49 │ <<<<<<< HEAD
+ 50 │               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+    ·                  ─────────
+ 51 │                 {HERO_COPY.diagnostic}
+ 52 │               </p>
+ 53 │ =======
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/Services.tsx
+./app/page.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659320ms] [ERROR] ./components/landing/StickyMobileCTA.tsx
+Error:   × Expression expected
+     ╭─[/workspace/components/landing/StickyMobileCTA.tsx:103:1]
+ 100 │       data-testid="sticky-mobile-cta"
+ 101 │     >
+ 102 │       <div className="flex items-center gap-2">
+ 103 │ <<<<<<< HEAD
+     ·  ──
+ 104 │         <Button
+ 105 │           onClick={() => open("book")}
+ 106 │           size="lg"
+     ╰────
+  × Expression expected
+     ╭─[/workspace/components/landing/StickyMobileCTA.tsx:103:1]
+ 100 │       data-testid="sticky-mobile-cta"
+ 101 │     >
+ 102 │       <div className="flex items-center gap-2">
+ 103 │ <<<<<<< HEAD
+     ·    ──
+ 104 │         <Button
+ 105 │           onClick={() => open("book")}
+ 106 │           size="lg"
+     ╰────
+  × Expression expected
+     ╭─[/workspace/components/landing/StickyMobileCTA.tsx:103:1]
+ 100 │       data-testid="sticky-mobile-cta"
+ 101 │     >
+ 102 │       <div className="flex items-center gap-2">
+ 103 │ <<<<<<< HEAD
+     ·      ──
+ 104 │         <Button
+ 105 │           onClick={() => open("book")}
+ 106 │           size="lg"
+     ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/StickyMobileCTA.tsx
+./components/landing/MarketingShell.tsx
+./app/page.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659320ms] [ERROR] ./lib/jeremy-data.ts
+Error:   × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:429:1]
+ 426 │   {
+ 427 │     id: "workflow",
+ 428 │     name: "Single workflow",
+ 429 │ <<<<<<< HEAD
+     · ───────
+ 430 │     price: "Price band after the call",
+ 431 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 432 │     detail:
+     ╰────
+  × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:434:1]
+ 431 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 432 │     detail:
+ 433 │       "One loop, fixed price after we talk. I reply with a price band once the scope is real.",
+ 434 │ =======
+     · ───────
+ 435 │     price: "Quoted after the call",
+ 436 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 437 │     detail:
+     ╰────
+  × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:439:1]
+ 436 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 437 │     detail:
+ 438 │       "One loop, fixed price after we talk. I don't publish a band until the scope is real.",
+ 439 │ >>>>>>> origin/main
+     · ───────
+ 440 │   },
+ 441 │   {
+ 442 │     id: "full-build",
+     ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./lib/jeremy-data.ts
+./app/layout.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151659325ms] [LOG] {file: Object} @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[151748010ms] [ERROR] ./components/landing/LightboxProvider.tsx
+Error:   × Merge conflict marker encountered.
+   ╭─[/workspace/components/landing/LightboxProvider.tsx:6:1]
+ 3 │ import * as React from "react";
+ 4 │ import dynamic from "next/dynamic";
+ 5 │ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+ 6 │ <<<<<<< HEAD
+   · ───────
+ 7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+ 8 │ =======
+ 9 │ >>>>>>> origin/main
+   ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:8:1]
+  5 │ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+  6 │ <<<<<<< HEAD
+  7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+  8 │ =======
+    · ───────
+  9 │ >>>>>>> origin/main
+ 10 │ 
+ 11 │ const LeadForm = dynamic(
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:9:1]
+  6 │ <<<<<<< HEAD
+  7 │ import { HERO_COPY } from "@/lib/jeremy-data";
+  8 │ =======
+  9 │ >>>>>>> origin/main
+    · ───────
+ 10 │ 
+ 11 │ const LeadForm = dynamic(
+ 12 │   () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:43:1]
+ 40 │   },
+ 41 │   form: {
+ 42 │     title: "Send the job",
+ 43 │ <<<<<<< HEAD
+    · ───────
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:45:1]
+ 42 │     title: "Send the job",
+ 43 │ <<<<<<< HEAD
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+    · ───────
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+ 47 │ >>>>>>> origin/main
+ 48 │   },
+    ╰────
+  × Merge conflict marker encountered.
+    ╭─[/workspace/components/landing/LightboxProvider.tsx:47:1]
+ 44 │     description: HERO_COPY.estimateHint,
+ 45 │ =======
+ 46 │     description: "I read this and reply with a price band. It is not an instant quote.",
+ 47 │ >>>>>>> origin/main
+    · ───────
+ 48 │   },
+ 49 │   email: {
+ 50 │     title: "Send a note",
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/landing/LightboxProvider.tsx
+./components/landing/SiteNav.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151748010ms] [ERROR] ./lib/jeremy-data.ts
+Error:   × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:429:1]
+ 426 │   {
+ 427 │     id: "workflow",
+ 428 │     name: "Single workflow",
+ 429 │ <<<<<<< HEAD
+     · ───────
+ 430 │     price: "Price band after the call",
+ 431 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 432 │     detail:
+     ╰────
+  × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:434:1]
+ 431 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 432 │     detail:
+ 433 │       "One loop, fixed price after we talk. I reply with a price band once the scope is real.",
+ 434 │ =======
+     · ───────
+ 435 │     price: "Quoted after the call",
+ 436 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 437 │     detail:
+     ╰────
+  × Merge conflict marker encountered.
+     ╭─[/workspace/lib/jeremy-data.ts:439:1]
+ 436 │     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+ 437 │     detail:
+ 438 │       "One loop, fixed price after we talk. I don't publish a band until the scope is real.",
+ 439 │ >>>>>>> origin/main
+     · ───────
+ 440 │   },
+ 441 │   {
+ 442 │     id: "full-build",
+     ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./lib/jeremy-data.ts
+./components/landing/SiteFooter.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[151748011ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[151758789ms] [LOG] [Fast Refresh] done in 10778ms @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[151761109ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[157919558ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[157923015ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:56
+[157923025ms] [LOG] [Fast Refresh] done in 3487ms @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[157925103ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:56
+[157925120ms] [LOG] {file: Object} @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[157925991ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:56
+[157926002ms] [LOG] {file: Object} @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[157957611ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/about?_rsc=rBw_JL1FkfwBnNry:0
+[157961386ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/about?_rsc=rBw_JL1FkfwBnNry:0
+[157961723ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/about:0
+[157964269ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/react-dom@19.2.6_react@19.2.6/node_modules/react-dom/cjs/react-dom-client.development.js:28004
+[157964408ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+    at processResult (file:///workspace/node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/webpack/bundle5.js:29:407086)
+    at <unknown> (file:///workspace/node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/webpack/bundle5.js:29:408881)
+    at <unknown> (file:///workspace/node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///workspace/node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///workspace/node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[157964418ms] [LOG] [HMR] connected @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:45
+[157964420ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2) @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157964467ms] [LOG] {file: Object} @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[157964496ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157964498ms] [LOG] {file: Object} @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[157965238ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2) @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157965239ms] [LOG] {file: Object} @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[157965321ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2) @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157965521ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2) @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157965526ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2) @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157965531ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2) @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157965557ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2) @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157966049ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157966049ms] [LOG] {file: Object} @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/next-devtools/index.js:1630
+[157966073ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157966439ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157966442ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico:0
+[157995406ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[157995413ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[157996677ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[158006172ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[158006173ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[158007000ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[158012473ms] [ERROR] ./components/intercom/IntercomSecureBoot.tsx
+Error: 
+
+Caused by:
+    0: Failed to read source code from /workspace/components/intercom/IntercomSecureBoot.tsx
+    1: No such file or directory (os error 2)
+
+Import trace for requested module:
+./components/intercom/IntercomSecureBoot.tsx
+./components/analytics-provider.tsx @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/next-devtools/userspace/pages/pages-dev-overlay-setup.js:76
+[158012473ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[158017481ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/webpack/60c9da5c2543b377.webpack.hot-update.json:0
+[158017482ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[158019219ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206

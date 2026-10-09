@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-export type ConsentCategory = "analytics" | "support" | "marketing";
+export type ConsentCategory = "analytics" | "marketing";
 
 export interface ConsentState {
   decided: boolean;
   analytics: boolean;
-  support: boolean;
   marketing: boolean;
 }
 
@@ -29,17 +28,16 @@ function writeCookie(name: string, value: string, maxAge: number) {
 
 function readConsent(): ConsentState {
   const raw = parseCookie(COOKIE_NAME);
-  if (!raw) return { decided: false, analytics: false, support: false, marketing: false };
+  if (!raw) return { decided: false, analytics: false, marketing: false };
   try {
     const parsed = JSON.parse(raw);
     return {
       decided: true,
       analytics: Boolean(parsed.analytics),
-      support: Boolean(parsed.support),
       marketing: Boolean(parsed.marketing),
     };
   } catch {
-    return { decided: false, analytics: false, support: false, marketing: false };
+    return { decided: false, analytics: false, marketing: false };
   }
 }
 
@@ -61,14 +59,13 @@ export function useCookieConsent() {
   const [consent, setConsentState] = useState<ConsentState>({
     decided: false,
     analytics: false,
-    support: false,
     marketing: false,
   });
 
   useEffect(() => {
     // If DNT is set, treat as denied without prompting the user.
     if (isDNT()) {
-      setConsentState({ decided: true, analytics: false, support: false, marketing: false });
+      setConsentState({ decided: true, analytics: false, marketing: false });
       return;
     }
     setConsentState(readConsent());
@@ -78,7 +75,7 @@ export function useCookieConsent() {
     const sync = () =>
       setConsentState(
         isDNT()
-          ? { decided: true, analytics: false, support: false, marketing: false }
+          ? { decided: true, analytics: false, marketing: false }
           : readConsent()
       );
     window.addEventListener(CONSENT_EVENT, sync);
@@ -86,15 +83,15 @@ export function useCookieConsent() {
   }, []);
 
   const acceptAll = useCallback(() => {
-    const state: ConsentState = { decided: true, analytics: true, support: true, marketing: true };
-    writeCookie(COOKIE_NAME, JSON.stringify({ analytics: true, support: true, marketing: true }), COOKIE_MAX_AGE);
+    const state: ConsentState = { decided: true, analytics: true, marketing: true };
+    writeCookie(COOKIE_NAME, JSON.stringify({ analytics: true, marketing: true }), COOKIE_MAX_AGE);
     setConsentState(state);
     broadcastConsentChange();
   }, []);
 
   const declineAll = useCallback(() => {
-    const state: ConsentState = { decided: true, analytics: false, support: false, marketing: false };
-    writeCookie(COOKIE_NAME, JSON.stringify({ analytics: false, support: false, marketing: false }), COOKIE_MAX_AGE);
+    const state: ConsentState = { decided: true, analytics: false, marketing: false };
+    writeCookie(COOKIE_NAME, JSON.stringify({ analytics: false, marketing: false }), COOKIE_MAX_AGE);
     setConsentState(state);
     broadcastConsentChange();
   }, []);

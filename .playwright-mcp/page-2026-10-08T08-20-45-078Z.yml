@@ -1,0 +1,350 @@
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - navigation "Primary" [ref=e5]:
+      - generic [ref=e6]:
+        - link "Dobeu home" [ref=e7] [cursor=pointer]:
+          - /url: /
+          - img "Dobeu mark" [ref=e8]
+          - generic [ref=e12]: dobeu.net
+        - 'generic "Availability: Taking projects" [ref=e13]': Taking projects
+      - list [ref=e15]:
+        - listitem [ref=e16]:
+          - link "Services" [ref=e17] [cursor=pointer]:
+            - /url: /services
+        - listitem [ref=e18]:
+          - link "Process" [ref=e19] [cursor=pointer]:
+            - /url: /process
+        - listitem [ref=e20]:
+          - link "About" [ref=e21] [cursor=pointer]:
+            - /url: /about
+        - listitem [ref=e22]:
+          - link "Pricing" [ref=e23] [cursor=pointer]:
+            - /url: /pricing
+        - listitem [ref=e24]:
+          - link "FAQ" [ref=e25] [cursor=pointer]:
+            - /url: /#faq
+        - listitem [ref=e26]:
+          - button "Universe" [ref=e27] [cursor=pointer]
+      - generic [ref=e30]:
+        - link "Jeremy's GitHub" [ref=e31] [cursor=pointer]:
+          - /url: https://github.com/Dobeu-tech-eco
+          - generic [ref=e36]: dobeutech
+        - button "Toggle theme" [ref=e37] [cursor=pointer]
+        - button "Book a call" [ref=e39] [cursor=pointer]
+  - main [ref=e40]:
+    - region [ref=e41]:
+      - generic [ref=e43]:
+        - paragraph [ref=e44]: Dobeu Tech Solutions
+        - paragraph [ref=e45]: Prices are published. Invoices go through Stripe. The code lands in your repo.
+        - paragraph [ref=e46]:
+          - generic [ref=e47]: NYC & NJ metro
+          - generic [ref=e49]: Since 2019
+        - paragraph [ref=e50]: Hi. I'm Jeremy.
+        - heading "AI that keeps your trucks, kitchens, and sites running." [level=1] [ref=e51]
+        - paragraph [ref=e53]: I ship Dispatch that actually dispatches.
+        - paragraph [ref=e54]: If ops still live in spreadsheets, you don't have an AI problem. You have a process problem.
+        - paragraph [ref=e55]: $5k–$30k typical engagement
+        - generic [ref=e56]:
+          - button "Book a call" [ref=e57] [cursor=pointer]
+          - button "Send the job" [ref=e58] [cursor=pointer]
+        - paragraph [ref=e59]: I'll reply with a price band. Not an instant quote.
+        - list "Core capabilities" [ref=e60]:
+          - listitem [ref=e61]:
+            - button "Dispatch that runs Routes, tickets, and follow-ups still live in inboxes. Dispatch first — the same loop shows up in a kitchen, on a site, or at a desk." [ref=e62] [cursor=pointer]:
+              - generic [ref=e67]: Dispatch that runs
+              - generic [ref=e68]: Routes, tickets, and follow-ups still live in inboxes. Dispatch first — the same loop shows up in a kitchen, on a site, or at a desk.
+          - listitem [ref=e69]:
+            - button "The tool you don't have The job runs in a spreadsheet because the tool you need does not exist, and a template will not cut it." [ref=e70] [cursor=pointer]:
+              - generic [ref=e76]: The tool you don't have
+              - generic [ref=e77]: The job runs in a spreadsheet because the tool you need does not exist, and a template will not cut it.
+          - listitem [ref=e78]:
+            - button "A front door people trust The site looks rented. Operators and their customers can tell." [ref=e79] [cursor=pointer]:
+              - generic [ref=e87]: A front door people trust
+              - generic [ref=e88]: The site looks rented. Operators and their customers can tell.
+          - listitem [ref=e89]:
+            - button "Invoices that go out Work gets done and the invoice, the follow-up, or the margin is still a guess." [ref=e90] [cursor=pointer]:
+              - generic [ref=e95]: Invoices that go out
+              - generic [ref=e96]: Work gets done and the invoice, the follow-up, or the margin is still a guess.
+        - generic [ref=e97]:
+          - generic [ref=e98]: Building since 2019
+          - generic [ref=e99]: NYC & NJ metro
+          - generic [ref=e101]: Stripe-verified
+          - generic [ref=e103]: No agency overhead
+    - region "The Dobeu Universe" [ref=e106]:
+      - generic [ref=e108]:
+        - generic [ref=e109]: The Dobeu Universe
+        - link "Studio dobeu.net" [ref=e111] [cursor=pointer]:
+          - /url: https://dobeu.net
+          - generic [ref=e112]: Studio
+          - generic [ref=e113]: dobeu.net
+        - link "Labs dobeu.space" [ref=e119] [cursor=pointer]:
+          - /url: https://dobeu.space
+          - generic [ref=e120]: Labs
+          - generic [ref=e121]: dobeu.space
+        - link "Open Source dobeutech" [ref=e127] [cursor=pointer]:
+          - /url: https://github.com/Dobeu-tech-eco
+          - generic [ref=e128]: Open Source
+          - generic [ref=e129]: dobeutech
+    - region [ref=e134]:
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - paragraph [ref=e138]: Services
+            - heading "Four things, done well — built on partnership." [level=2] [ref=e139]: Four things, done well —built on partnership.
+          - paragraph [ref=e140]: Most engagements blend a few of these. What you're really hiring is a partner — not a checklist. I take on a small number of clients at a time, transfer everything into your hands, and stay on as a long-term IT advisor well past launch.
+        - generic [ref=e141]:
+          - article [ref=e142]:
+            - generic [ref=e143]: "01"
+            - heading [level=3] [ref=e150]:
+              - link "Dispatch that runs" [ref=e151] [cursor=pointer]:
+                - /url: /services/ai-agents
+            - paragraph [ref=e152]: I take one repeating loop off the inbox and make it run without a person chasing it. The stack stays on this page, under the job.
+            - paragraph [ref=e153]: Claude, Composio, and MCP when the loop needs tools.
+          - article [ref=e158]:
+            - generic [ref=e159]: "02"
+            - heading [level=3] [ref=e167]:
+              - link "The tool you don't have" [ref=e168] [cursor=pointer]:
+                - /url: /services/fullstack
+            - paragraph [ref=e169]: Internal tools, portals, and the one app your people will open on a shift. Built to stay in your repo.
+            - paragraph [ref=e170]: Next.js, Supabase, and Vercel. Auth, billing, and a path to production.
+          - article [ref=e175]:
+            - generic [ref=e176]:
+              - generic [ref=e177]: "03"
+              - generic [ref=e178]: Design
+            - heading [level=3] [ref=e187]:
+              - link "A front door people trust" [ref=e188] [cursor=pointer]:
+                - /url: /services/brand
+            - paragraph [ref=e189]: The public site and the documents match the work, whether that work is trucks, kitchens, or a desk.
+            - paragraph [ref=e190]: Design tokens, type, and a component library. Figma when you want the source.
+          - article [ref=e195]:
+            - generic [ref=e196]: "04"
+            - heading [level=3] [ref=e203]:
+              - link "Invoices that go out" [ref=e204] [cursor=pointer]:
+                - /url: /services/growth
+            - paragraph [ref=e205]: Get paid on time and see which jobs actually pay. This is not a traffic dashboard.
+            - paragraph [ref=e206]: Lifecycle email, attribution, and the reporting you can check.
+        - button "Send the job" [ref=e212] [cursor=pointer]:
+          - generic [ref=e217]:
+            - paragraph [ref=e218]: Something else?
+            - paragraph [ref=e219]: Doesn't fit a category? Send the job and I'll reply with a price band.
+    - region [ref=e223]:
+      - generic [ref=e224]:
+        - generic [ref=e225]:
+          - paragraph [ref=e226]: The process
+          - heading "Three steps. No theater." [level=2] [ref=e227]
+        - list [ref=e228]:
+          - listitem [ref=e229]:
+            - generic [ref=e231]:
+              - generic [ref=e232]: "1"
+              - generic [ref=e234]:
+                - heading "30-min discovery" [level=3] [ref=e238]
+                - paragraph [ref=e239]: We talk through what you're trying to ship, what's in the way, and whether I'm the right person. No pitch, no slide deck — just an honest conversation.
+          - listitem [ref=e240]:
+            - generic [ref=e242]:
+              - generic [ref=e243]: "2"
+              - generic [ref=e245]:
+                - heading "Scoped proposal" [level=3] [ref=e249]
+                - paragraph [ref=e250]: "Within 48 hours you get a one-pager: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine — no obligation to that point."
+          - listitem [ref=e251]:
+            - generic [ref=e252]:
+              - generic [ref=e253]: "3"
+              - generic [ref=e255]:
+                - heading "Ship in 2–6 weeks" [level=3] [ref=e261]
+                - paragraph [ref=e262]: Daily Loom updates, your private portal for files and invoices, async-first communication. Most projects ship in a single sprint with zero theater.
+        - paragraph [ref=e263]: No long contracts. No kickoff theater. If I'm booked, I'll tell you — and I'll recommend someone good.
+    - region [ref=e264]:
+      - generic [ref=e265]:
+        - paragraph [ref=e266]: The operator
+        - generic [ref=e267]:
+          - generic [ref=e268]:
+            - generic [ref=e269]: Available now
+            - heading "Jeremy Williams" [level=2] [ref=e272]
+            - paragraph [ref=e273]: Founder & Principal Engineer — NYC & NJ metro
+            - generic [ref=e274]:
+              - link "Jeremy on LinkedIn" [ref=e275] [cursor=pointer]:
+                - /url: https://www.linkedin.com/in/jeremy-williams
+                - text: LinkedIn
+              - link "Email Jeremy" [ref=e280] [cursor=pointer]:
+                - /url: mailto:jeremyw@dobeu.net
+                - text: Email
+          - generic [ref=e284]:
+            - generic [ref=e285]:
+              - paragraph [ref=e286]: "2019"
+              - paragraph [ref=e287]: Building since
+            - generic [ref=e288]:
+              - paragraph [ref=e289]: NYC
+              - paragraph [ref=e290]: NYC & NJ metro
+            - generic [ref=e291]:
+              - paragraph [ref=e292]: Stripe
+              - paragraph [ref=e293]: Invoices
+        - generic [ref=e294]:
+          - generic [ref=e295]:
+            - heading "Why one person, not an agency?" [level=3] [ref=e296]: Why one person,not an agency?
+            - paragraph [ref=e297]: I've been shipping software since 2019 — for logistics operators, hospitality teams, and founders building things that didn't exist yet. Public shipped work includes Monty AI, Unified AI v1, StatMiner, DTS Contract Engine, IT Consult Funnel, LastPlate.
+            - paragraph [ref=e298]: Every client I take on gets my full attention. That means I turn down more than I accept. If I'm the right person for your project, you'll know it by end of the discovery call.
+            - generic [ref=e305]:
+              - paragraph [ref=e306]: dobeu.net
+              - paragraph [ref=e307]: Principal engineering & AI studio
+          - generic [ref=e308]:
+            - generic [ref=e309]:
+              - generic [ref=e310]:
+                - paragraph [ref=e311]: You talk to the person doing the work.
+                - paragraph [ref=e312]: No account managers between you and the build.
+              - generic [ref=e313]:
+                - paragraph [ref=e314]: Decisions get made in hours, not weeks.
+                - paragraph [ref=e315]: No agency layers, no rebrand committees.
+              - generic [ref=e316]:
+                - paragraph [ref=e317]: Modern stack from day one.
+                - paragraph [ref=e318]: Nothing you'll have to rewrite in 18 months.
+            - button "Book a 30-min call" [ref=e319] [cursor=pointer]
+    - region [ref=e322]:
+      - generic [ref=e324]:
+        - generic [ref=e325]:
+          - paragraph [ref=e326]: Questions
+          - heading "Everything you need to know." [level=2] [ref=e327]: Everythingyou need to know.
+          - paragraph [ref=e328]:
+            - text: Still have questions? Drop me a line at
+            - link "jeremyw@dobeu.net" [ref=e329] [cursor=pointer]:
+              - /url: mailto:jeremyw@dobeu.net
+            - text: .
+          - generic [ref=e330]:
+            - generic [ref=e331]: "10"
+            - text: questions answered
+        - generic [ref=e333]:
+          - heading [level=3] [ref=e335]:
+            - button "What's the typical engagement size?" [ref=e336] [cursor=pointer]
+          - heading [level=3] [ref=e340]:
+            - button "Does the Ops Teardown fee count toward the build?" [ref=e341] [cursor=pointer]
+          - heading [level=3] [ref=e345]:
+            - button "What's the difference between Book a call and Send the job?" [ref=e346] [cursor=pointer]
+          - heading [level=3] [ref=e350]:
+            - button "How fast can you start?" [ref=e351] [cursor=pointer]
+          - heading [level=3] [ref=e355]:
+            - button "Do you do retainers?" [ref=e356] [cursor=pointer]
+          - heading [level=3] [ref=e360]:
+            - button "Where will the code live?" [ref=e361] [cursor=pointer]
+          - heading [level=3] [ref=e365]:
+            - button "Do you sign NDAs?" [ref=e366] [cursor=pointer]
+          - heading [level=3] [ref=e370]:
+            - button "Do you take equity?" [ref=e371] [cursor=pointer]
+          - heading [level=3] [ref=e375]:
+            - button "Will I be able to maintain what you build?" [ref=e376] [cursor=pointer]
+          - heading [level=3] [ref=e380]:
+            - button "Why \"dobeu\"?" [ref=e381] [cursor=pointer]
+    - region [ref=e384]:
+      - generic [ref=e387]:
+        - generic [ref=e388]:
+          - paragraph [ref=e389]: Ready to ship?
+          - heading "Let's build the thing." [level=2] [ref=e390]
+          - paragraph [ref=e391]: 30 minutes. No pitch. We'll figure out together whether I'm the right person to ship what you're trying to ship.
+          - paragraph [ref=e392]: $5k–$30k typical engagement
+          - generic [ref=e393]:
+            - button "Book a call" [ref=e394] [cursor=pointer]
+            - button "Send the job" [ref=e395] [cursor=pointer]
+          - paragraph [ref=e396]: I'll reply with a price band. Not an instant quote.
+        - generic [aria-hidden]: →
+  - contentinfo [ref=e397]:
+    - generic [ref=e398]:
+      - generic [ref=e399]:
+        - generic [ref=e400]:
+          - generic [ref=e401]:
+            - img "Dobeu mark" [ref=e402]
+            - paragraph [ref=e407]: dobeu.net
+          - paragraph [ref=e408]: AI automation and custom software for operators in NYC & NJ metro. One person, modern stack.
+          - paragraph [ref=e409]: Dobeu Tech Solutions LLC · New York, NY · jeremyw@dobeu.net · (848) 318-7664
+        - navigation "Footer navigation" [ref=e410]:
+          - generic [ref=e411]:
+            - paragraph [ref=e412]: Site
+            - list [ref=e413]:
+              - listitem [ref=e414]:
+                - link "Services" [ref=e415] [cursor=pointer]:
+                  - /url: /services
+              - listitem [ref=e416]:
+                - link "Process" [ref=e417] [cursor=pointer]:
+                  - /url: /process
+              - listitem [ref=e418]:
+                - link "About" [ref=e419] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=e420]:
+                - link "Pricing" [ref=e421] [cursor=pointer]:
+                  - /url: /pricing
+              - listitem [ref=e422]:
+                - link "Case studies" [ref=e423] [cursor=pointer]:
+                  - /url: /case-studies
+              - listitem [ref=e424]:
+                - link "FAQ" [ref=e425] [cursor=pointer]:
+                  - /url: /#faq
+              - listitem [ref=e426]:
+                - link "Labs" [ref=e427] [cursor=pointer]:
+                  - /url: /labs
+              - listitem [ref=e428]:
+                - link "Repos" [ref=e429] [cursor=pointer]:
+                  - /url: /repos
+          - generic [ref=e430]:
+            - paragraph [ref=e431]: Account
+            - list [ref=e432]:
+              - listitem [ref=e433]:
+                - link "Log in" [ref=e434] [cursor=pointer]:
+                  - /url: /login
+              - listitem [ref=e435]:
+                - link "Client portal" [ref=e436] [cursor=pointer]:
+                  - /url: /portal
+          - generic [ref=e437]:
+            - paragraph [ref=e438]: Contact
+            - list [ref=e439]:
+              - listitem [ref=e440]:
+                - link "jeremyw@dobeu.net" [ref=e441] [cursor=pointer]:
+                  - /url: mailto:jeremyw@dobeu.net
+              - listitem [ref=e442]:
+                - link "(848) 318-7664" [ref=e443] [cursor=pointer]:
+                  - /url: tel:+18483187664
+              - listitem [ref=e444]:
+                - link "LinkedIn" [ref=e445] [cursor=pointer]:
+                  - /url: https://www.linkedin.com/in/jeremy-williams
+              - listitem [ref=e446]:
+                - link "Status" [ref=e447] [cursor=pointer]:
+                  - /url: https://status.dobeu.net
+          - generic [ref=e448]:
+            - paragraph [ref=e449]: Legal
+            - list [ref=e450]:
+              - listitem [ref=e451]:
+                - link "Terms" [ref=e452] [cursor=pointer]:
+                  - /url: /terms
+              - listitem [ref=e453]:
+                - link "Privacy" [ref=e454] [cursor=pointer]:
+                  - /url: /privacy
+              - listitem [ref=e455]:
+                - link "Cookies" [ref=e456] [cursor=pointer]:
+                  - /url: /cookies
+              - listitem [ref=e457]:
+                - link "SMS Opt-In" [ref=e458] [cursor=pointer]:
+                  - /url: /optin/sms
+              - listitem [ref=e459]:
+                - link "Marketing Opt-Out" [ref=e460] [cursor=pointer]:
+                  - /url: /marketing-opt-out
+      - generic [ref=e461]:
+        - paragraph [ref=e462]: © 2026 Dobeu Tech Solutions LLC. All rights reserved.
+        - generic [ref=e463]:
+          - link "Privacy" [ref=e464] [cursor=pointer]:
+            - /url: /privacy
+          - link "Terms" [ref=e465] [cursor=pointer]:
+            - /url: /terms
+          - button "Cookie preferences" [ref=e466] [cursor=pointer]
+  - dialog [ref=e467]:
+    - generic [ref=e468]:
+      - paragraph [ref=e469]: We use cookies
+      - paragraph [ref=e470]:
+        - text: Analytics, chat, and marketing cookies only fire after you opt in. See our
+        - link "Cookie policy" [ref=e471] [cursor=pointer]:
+          - /url: /cookies
+        - text: and
+        - link "Privacy policy" [ref=e472] [cursor=pointer]:
+          - /url: /privacy
+        - text: .
+    - generic [ref=e473]:
+      - button "Accept all" [ref=e474] [cursor=pointer]
+      - button "Decline" [ref=e475] [cursor=pointer]
+      - button "Manage" [ref=e476] [cursor=pointer]
+  - region "Notifications alt+T"

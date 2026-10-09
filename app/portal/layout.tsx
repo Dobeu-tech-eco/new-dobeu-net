@@ -16,11 +16,8 @@ import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
-import { IntercomIdentify } from "@/components/portal/IntercomIdentify";
 import { AnalyticsIdentify } from "@/components/portal/AnalyticsIdentify";
 import { isAdminEmail } from "@/lib/utils";
-import { intercomNameFromUser } from "@/lib/intercom";
-import { createIntercomUserJwt } from "@/lib/intercom-jwt";
 
 const NAV = [
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
@@ -54,18 +51,6 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AnalyticsIdentify user_id={user.id} email={user.email ?? undefined} is_admin={isAdmin} />
-      <IntercomIdentify
-        user_id={user.id}
-        email={user.email ?? undefined}
-        name={intercomNameFromUser(user)}
-        created_at={user.created_at}
-        intercom_user_jwt={createIntercomUserJwt({
-          user_id: user.id,
-          email: user.email ?? undefined,
-          name: intercomNameFromUser(user),
-          created_at: Math.floor(new Date(user.created_at).getTime() / 1000),
-        })}
-      />
 
       {/* ── Sidebar ────────────────────────────────────────────────────── */}
       <aside className="md:w-60 md:min-h-screen md:flex md:flex-col border-b md:border-b-0 md:border-r border-border bg-card/40">

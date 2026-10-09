@@ -1,0 +1,25 @@
+Total messages: 23 (Errors: 1, Warnings: 0)
+
+[INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.21_@opentelemetry+api@1.9.1_@playwright+test@1.60.0_@types+node@22.19.19_reac_f57555baa6effde8efe1c7733fc2c924/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[ERROR] Loading the script 'http://localhost:8400/detect.js' violates the following Content Security Policy directive: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://app.posthog.com https://cdn.mxpnl.com https://*.googletagmanager.com https://www.google-analytics.com https://js.stripe.com https://embed.typeform.com https://*.apollo.io https://assets.calendly.com https://www.datadoghq-browser-agent.com https://va.vercel-scripts.com https://widget.intercom.io https://js.intercomcdn.com https://cdn.amplitude.com". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked. @ :0
+[STARTGROUP] %c[impeccable] 10 anti-patterns found color: oklch(84% 0.19 80.46); font-weight: bold @ /tmp/impeccable-detect.js:3550
+[LOG] %cdark-glow%c Zero-offset box-shadow glow (#4ade80) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %ctext-overflow%c span.truncate.max-w-[180px] overflows its box by 26px color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %ctight-leading%c line-height 1.11x (need >=1.3) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cradial-spotlight-glow%c radial-gradient spotlight glow "pointer-events-none" (#5c50d7 a0.09 → transparent) on 341x492 surface color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cgpt-thin-border-wide-shadow%c 1.01587px border + 50px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cflat-type-hierarchy%c Role sizes: body 16px, h1 16px, h3 16px (largest adjacent step 1.00:1; target 1.25:1) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cem-dash-overuse%c 11 em-dashes in body text color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %clayout-transition%c transition: height color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cpulsing-dot%c animate-pulse on tiny rounded-full element in header/nav color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cpulsing-dot%c animate-pulse on tiny rounded-full element color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cpulsing-dot%c animate-pulse on tiny rounded-full element color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cshape-assembled-illustration%c inline <svg> scene: 10 primitive shapes, ~500x500px, 5 fill colors color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cshape-assembled-illustration%c inline <svg> scene: 10 primitive shapes, ~500x500px, 5 fill colors color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %cshape-assembled-illustration%c inline <svg> scene: 10 primitive shapes, ~500x500px, 5 fill colors color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %ctheater-slop-phrase%c "No theater" color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %ckicker-above-heading%c kicker "Services" above h2 "Four things, done well —built on partnership." color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %ckicker-above-heading%c kicker "The process" above h2 "Three steps. No theater." color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %ckicker-above-heading%c kicker "Questions" above h2 "Everythingyou need to know." color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[LOG] %ckicker-above-heading%c kicker "Ready to ship?" above h2 "Let's build the thing." color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ /tmp/impeccable-detect.js:3556
+[ENDGROUP] console.groupEnd @ /tmp/impeccable-detect.js:3560

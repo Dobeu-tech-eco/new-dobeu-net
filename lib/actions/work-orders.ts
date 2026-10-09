@@ -222,11 +222,8 @@ export async function submitWorkOrder(
   // Emit a best-effort `work_order_created` event (non-fatal — mirrors
   // processLead's discipline; a failure here must never drop the work order).
   //
-  // NOTE: there is no server-side Intercom event helper in this codebase
-  // (lib/intercom.ts is the client-side Messenger SDK only). Customer.io is
-  // the established server-side event channel (lib/customerio.ts, used by the
-  // lead pipeline), so the event lands there. If/when a server Intercom event
-  // API is added, point this at it instead.
+  // Customer.io is the established server-side event channel
+  // (lib/customerio.ts, used by the lead pipeline), so the event lands there.
   try {
     if (user.email && isCustomerIoConfigured()) {
       const res = await cioTrack({

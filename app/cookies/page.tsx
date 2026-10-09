@@ -97,28 +97,10 @@ export default function CookiesPage() {
         </tbody>
       </table>
 
-      <h3>Support &amp; chat (opt-in)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Cookie / Key</th>
-            <th>Service</th>
-            <th>Duration</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>intercom-*</code></td>
-            <td>Intercom — live chat and messaging</td>
-            <td>9 months</td>
-          </tr>
-        </tbody>
-      </table>
-
       <h2>How to manage cookies</h2>
       <p>
-        When you first visit dobeu.net, a consent banner lets you accept or decline analytics and
-        support cookies. You can change your preference at any time by clicking{" "}
+        When you first visit dobeu.net, a consent banner lets you accept or decline analytics
+        cookies. You can change your preference at any time by clicking{" "}
         <strong>&ldquo;Cookie preferences&rdquo;</strong> in the footer.
       </p>
       <ul>

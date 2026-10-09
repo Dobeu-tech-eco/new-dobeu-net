@@ -74,7 +74,7 @@ export default function PrivacyPage() {
       </p>
       <ul>
         <li><strong>Contract</strong> — processing necessary to deliver our services to you (Art. 6(1)(b) GDPR).</li>
-        <li><strong>Consent</strong> — analytics, support chat, and marketing communications, which you opt into via the cookie banner or form checkboxes (Art. 6(1)(a) GDPR). You may withdraw consent at any time.</li>
+        <li><strong>Consent</strong> — analytics and marketing communications, which you opt into via the cookie banner or form checkboxes (Art. 6(1)(a) GDPR). You may withdraw consent at any time.</li>
         <li><strong>Legitimate interests</strong> — security monitoring, fraud prevention, and improving our services, where these interests are not overridden by your rights (Art. 6(1)(f) GDPR).</li>
         <li><strong>Legal obligation</strong> — compliance with applicable tax, accounting, and regulatory requirements (Art. 6(1)(c) GDPR).</li>
       </ul>
@@ -116,7 +116,6 @@ export default function PrivacyPage() {
           <tr><td>Amplitude</td><td>Product analytics and session replay (opt-in only)</td><td>US</td></tr>
           <tr><td>Google Analytics 4</td><td>Traffic analytics (opt-in only)</td><td>US / EU</td></tr>
           <tr><td>Apollo.io</td><td>CRM and lead management</td><td>US</td></tr>
-          <tr><td>Intercom</td><td>Customer support chat (opt-in only)</td><td>US</td></tr>
           <tr><td>Calendly</td><td>Booking and scheduling</td><td>US</td></tr>
           <tr><td>Typeform</td><td>Lead capture forms</td><td>EU</td></tr>
           <tr><td>Datadog</td><td>Observability and error monitoring (opt-in only)</td><td>US</td></tr>

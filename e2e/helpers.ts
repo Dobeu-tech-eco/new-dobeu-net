@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
 const CONSENT_VALUE = encodeURIComponent(
-  JSON.stringify({ analytics: false, support: false, marketing: false }),
+  JSON.stringify({ analytics: false, marketing: false }),
 );
 
 /** Skip first-visit cookie banner by seeding consent before React hydrates. */
