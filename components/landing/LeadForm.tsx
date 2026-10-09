@@ -10,6 +10,21 @@ import { track } from "@/lib/analytics";
 
 type Source = "book" | "form" | "email";
 
+function submitLabel(source: Source): string {
+  switch (source) {
+    case "form":
+      return "Send the job";
+    case "book":
+      return "Request times";
+    case "email":
+      return "Send the note";
+    default: {
+      const unreachable: never = source;
+      return unreachable;
+    }
+  }
+}
+
 function confirmation(source: Source): { toast: string; title: string; body: string } {
   switch (source) {
     case "book":
@@ -176,7 +191,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
             Sending…
           </>
         ) : (
-          "Send the job"
+          submitLabel(source)
         )}
       </Button>
       <p className="text-xs text-muted-foreground text-center">
