@@ -426,10 +426,10 @@ export const PRICING_TIERS = [
   {
     id: "workflow",
     name: "Single workflow",
-    price: "Quoted after the call",
+    price: "Band before the call",
     summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
     detail:
-      "One loop, fixed price after we talk. I don't publish a band until the scope is real.",
+      "One loop, fixed price once the scope is real. Send the job and I reply with a band before we talk numbers.",
   },
   {
     id: "full-build",

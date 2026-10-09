@@ -3,6 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { HERO_COPY } from "@/lib/jeremy-data";
 
 const LeadForm = dynamic(
   () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
@@ -36,7 +37,7 @@ const COPY: Record<Tab, { title: string; description: string }> = {
   },
   form: {
     title: "Send the job",
-    description: "I read this and reply with a price band. It is not an instant quote.",
+    description: HERO_COPY.estimateHint,
   },
   email: {
     title: "Send a note",

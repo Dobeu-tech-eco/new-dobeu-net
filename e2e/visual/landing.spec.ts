@@ -6,6 +6,14 @@ test.describe("Landing visual regression", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await gotoLanding(page);
     await page.evaluate(() => document.fonts.ready);
+    // The shader wrapper is `absolute inset-0`. Masking that box paints over
+    // the hero copy. Hide the wrapper so the baseline still records the type.
+    await page.addStyleTag({
+      content: [
+        '[data-testid="hero-shader-background"]{visibility:hidden!important}',
+        "nextjs-portal{display:none!important}",
+      ].join(""),
+    });
     await expect(page.locator("#hero-heading")).toBeVisible();
   });
 
@@ -13,7 +21,6 @@ test.describe("Landing visual regression", () => {
     const hero = page.locator("#top");
     await expect(hero).toHaveScreenshot("landing-hero.png", {
       animations: "disabled",
-      mask: [page.locator('[data-testid="hero-shader-background"]')],
     });
   });
 
@@ -21,7 +28,6 @@ test.describe("Landing visual regression", () => {
     await expect(page).toHaveScreenshot("landing-full-page.png", {
       fullPage: true,
       animations: "disabled",
-      mask: [page.locator('[data-testid="hero-shader-background"]')],
     });
   });
 });

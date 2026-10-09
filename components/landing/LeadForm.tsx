@@ -10,6 +10,48 @@ import { track } from "@/lib/analytics";
 
 type Source = "book" | "form" | "email";
 
+function submitLabel(source: Source): string {
+  switch (source) {
+    case "form":
+      return "Send the job";
+    case "book":
+      return "Request times";
+    case "email":
+      return "Send the note";
+    default: {
+      const unreachable: never = source;
+      return unreachable;
+    }
+  }
+}
+
+function confirmation(source: Source): { toast: string; title: string; body: string } {
+  switch (source) {
+    case "book":
+      return {
+        toast: "Got it — I'll send time options within a few hours.",
+        title: "Request received.",
+        body: "I'll send a few times that work. This is not a price quote.",
+      };
+    case "form":
+      return {
+        toast: "Got it — I'll reply with a price band within 24 hours.",
+        title: "Job received.",
+        body: "I personally read every job and reply with a price band within 24 hours. Not an instant quote.",
+      };
+    case "email":
+      return {
+        toast: "Got it — I'll reply by email.",
+        title: "Note received.",
+        body: "I personally read every note and reply if the job is a fit.",
+      };
+    default: {
+      const unreachable: never = source;
+      return unreachable;
+    }
+  }
+}
+
 interface Props {
   source: Source;
   onSuccess?: () => void;
@@ -37,6 +79,10 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       toast.error("Please enter a valid email address.");
       return;
     }
+    if (source === "form" && !payload.message) {
+      toast.error("Tell me about the job so I can reply with a price band.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -56,7 +102,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
         has_message: !!payload.message
       });
       setSubmitted(true);
-      toast.success("Got it. I'll reply within 24 hours.");
+      toast.success(confirmation(source).toast);
       onSuccess?.();
     } catch (err) {
       track("lead_capture_failed", { source });
@@ -69,13 +115,14 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
   }
 
   if (submitted) {
+    const copy = confirmation(source);
     return (
       <div className="py-8 text-center">
         <p className="text-lg font-semibold">
-          Thanks — you&apos;re on the list.
+          {copy.title}
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          I personally read every message. Expect a reply within 24 hours.
+          {copy.body}
         </p>
       </div>
     );
@@ -120,13 +167,18 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
 
           <div className="grid gap-2">
             <Label htmlFor={`message-${source}`}>
-              What&apos;s on your mind?
+              {source === "form" ? "What should I price?" : "What's on your mind?"}
             </Label>
             <Textarea
               id={`message-${source}`}
               name="message"
               rows={4}
-              placeholder="Briefly describe the project, deadline, or what you want to explore."
+              required={source === "form"}
+              placeholder={
+                source === "form"
+                  ? "The loop, who does it today, and what done looks like."
+                  : "Briefly describe the project, deadline, or what you want to explore."
+              }
             />
           </div>
         </>
@@ -138,10 +190,8 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Sending…
           </>
-        ) : compact ? (
-          "Get in touch"
         ) : (
-          "Send it"
+          submitLabel(source)
         )}
       </Button>
       <p className="text-xs text-muted-foreground text-center">

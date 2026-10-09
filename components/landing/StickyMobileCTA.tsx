@@ -2,7 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { BOOK_MICROCOPY, SEND_MICROCOPY } from "@/components/landing/EstimateCtas";
 import { useLightbox } from "@/components/landing/LightboxProvider";
+import { track } from "@/lib/analytics";
 import { HERO_COPY } from "@/lib/jeremy-data";
 
 /**
@@ -99,18 +101,48 @@ export function StickyMobileCTA() {
       aria-label={`${HERO_COPY.bookCta} and ${HERO_COPY.estimateCta}`}
       data-testid="sticky-mobile-cta"
     >
-      <div className="flex items-center gap-2">
-        <Button onClick={() => open("book")} size="lg" className="min-w-0 flex-1 px-3">
-          {HERO_COPY.bookCta}
-        </Button>
-        <Button
-          onClick={() => open("form")}
-          size="lg"
-          variant="outline"
-          className="min-w-0 flex-1 px-3"
-        >
-          {HERO_COPY.estimateCta}
-        </Button>
+      <div className="flex items-start gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <Button
+            onClick={() => {
+              track("cta_click", {
+                cta_label: "Book a call — sticky",
+                cta_location: "sticky_mobile",
+                target: "book",
+              });
+              open("book");
+            }}
+            size="lg"
+            className="min-w-0 w-full px-3"
+            aria-describedby="sticky-book-microcopy"
+          >
+            {HERO_COPY.bookCta}
+          </Button>
+          <p id="sticky-book-microcopy" className="text-center text-[11px] leading-tight text-muted-foreground">
+            {BOOK_MICROCOPY}
+          </p>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <Button
+            onClick={() => {
+              track("cta_click", {
+                cta_label: "Send the job — sticky",
+                cta_location: "sticky_mobile",
+                target: "form",
+              });
+              open("form");
+            }}
+            size="lg"
+            variant="outline"
+            className="min-w-0 w-full px-3"
+            aria-describedby="sticky-send-microcopy"
+          >
+            {HERO_COPY.estimateCta}
+          </Button>
+          <p id="sticky-send-microcopy" className="text-center text-[11px] leading-tight text-muted-foreground">
+            {SEND_MICROCOPY}
+          </p>
+        </div>
       </div>
     </div>
   );
