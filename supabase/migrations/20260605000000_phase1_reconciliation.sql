@@ -9,7 +9,7 @@
 -- is filled in and the mapping SQL is authored.
 --
 -- What this migration does (and why):
---   1. Drop `messages` + its RLS policies (gate-4 decision: Intercom owns chat).
+--   1. Drop `messages` + its RLS policies (no in-portal messaging; work-order tickets replace it).
 --   2. Neutralize RLS policies that key off `profiles.is_admin`
 --      (gate-6 decision: ADMIN_EMAILS env is the single admin source of truth;
 --      admin reads already flow through `createAdminClient()` -- service role,
@@ -29,7 +29,7 @@
 
 
 -- -----------------------------------------------------------------------------
--- 1. Drop `messages` (Intercom replaces it). Policies fall away with the table.
+-- 1. Drop `messages` (no in-app chat; work-order tickets replace it). Policies fall away with the table.
 -- -----------------------------------------------------------------------------
 drop table if exists public.messages cascade;
 

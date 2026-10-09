@@ -5,7 +5,7 @@
 --
 -- Inventory confirmed zero portal rows and absent v3 tables on legacy:
 --   contact_submissions = 0, client_files = 0, no leads/bookings/invoices
---   messages exists but v3 dropped (Intercom)
+--   messages exists but v3 dropped (no in-app chat)
 --   auth.users = 3 (optional Admin API import — import-auth-users.mjs)
 --
 -- Target schema already applied on ipmjokuezeuukhrilduq. Do NOT run INSERTs below.
@@ -28,7 +28,7 @@
 --   Absent on legacy (bonus existence query).
 
 -- legacy messages → public.messages
---   Legacy messages table exists; v3 dropped messages — Intercom owns chat.
+--   Legacy messages table exists; v3 dropped messages — no in-app chat.
 
 -- projects, invoices (portal), page_events, work_orders, services, purchases
 --   Not migrated — no confirmed rows / not v3-critical for cutover.

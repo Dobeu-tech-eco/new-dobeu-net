@@ -20,7 +20,7 @@ The remaining items are **operator/config actions and a human-gated data migrati
 | `20260616000000_phase5_drop_is_admin.sql` not applied to live Supabase | The column drop is `drop column if exists` — idempotent and backward-safe. App code and regenerated types no longer reference `is_admin`; the live DB simply carries one unused column until the migration runs. No runtime path reads or writes it (RLS/trigger dependence was already removed in the Phase 1 reconciliation migration). This is **schema drift to reconcile at deploy**, not a code defect. |
 | Legacy `db-dobeutech-unified` cutover not started | Target Vercel Supabase holds **empty user data** today — nothing to roll back, nothing the running app depends on. Gated on the user filling `.agent/migration/inventory.md` Findings. See §4. |
 | Mobile landing perf ≈ 80 (target 90) | Informational gate, not a build gate. Deferral rationale in §7. |
-| Stripe webhook URL / Intercom secret / Resend DKIM / Vercel↔GitHub re-link | Deploy-time configuration in third-party dashboards, not repository state. See §3. |
+| Stripe webhook URL / Resend DKIM / Vercel↔GitHub re-link | Deploy-time configuration in third-party dashboards, not repository state. See §3. |
 
 ---
 
@@ -35,15 +35,12 @@ Phases 0–3 were already live (HEAD `4cc72f2`). This session landed Phases **4 
   - `components/portal/MfaEnroll.tsx`, `MfaStatus.tsx`, `MfaStepUp.tsx` — enroll (QR + manual secret), status/disable, code-only step-up. Commits `996e1d2`, `ba6d8a9`.
   - `app/portal/settings/mfa/page.tsx` + 2FA section in `app/portal/settings/page.tsx`.
   - `app/admin/layout.tsx` — non-blocking "Enable 2FA" bootstrap banner. Commit `27be445`.
-- **Intercom Identity Verification (HMAC).**
-  - `lib/intercom-hmac.ts` (+ test) — `intercomUserHash(userId)`, server-only `node:crypto`, returns `undefined` when the secret is unset (graceful unverified boot). Commit `cfada0f`.
-  - `user_hash` wired into portal + admin layouts. Commit `487fded`.
 - **Rate-limit:** in-memory per-IP limiter on `/api/lead` retained as documented accepted-risk (Upstash is the upgrade path when traffic warrants).
 
 ### Phase 5 — Hygiene, a11y, perf, E2E
 - **Dead-export removal** (one micro-commit each, verified zero non-test importers): `identify` (`02369c0`), `logApolloActivity` (`9a4564d`), `isSupabaseConfigured` (`e82bb9c`), internal `STRIPE_API_VERSION` (`9126def`).
 - **`profiles.is_admin` drop:** migration `20260616000000_phase5_drop_is_admin.sql` authored + types regenerated. Commit `67cced5`. **Applied on live Vercel Supabase** (`ipmjokuezeuukhrilduq`, verified 2026-06-16 — see §3.1 ✅).
-- **Docs:** CI-runs-tests correction, `INTERCOM_IDENTITY_VERIFICATION_SECRET` env row, `.cmd` keep-list, `analytics-server` dangling reference dropped, `is_admin` "dropped" note. Commit `e9a2266`. `.cmd` trimmed to `start-dev.cmd` + `deploy-vercel.cmd`.
+- **Docs:** CI-runs-tests correction, `.cmd` keep-list, `analytics-server` dangling reference dropped, `is_admin` "dropped" note. Commit `e9a2266`. `.cmd` trimmed to `start-dev.cmd` + `deploy-vercel.cmd`.
 - **E2E:** `e2e/tickets.spec.ts` — client ticket submit→list journey (skips cleanly when Supabase env is empty). Commit `11385be`.
 - **A11y:** keyboard + ARIA fixes on ticket UIs (dialog roles, focus management, accessible names, focus rings). Commit `7864198`.
 - **Perf:** landing lazy-load + LCP fix → desktop Lighthouse ≥ 90. Commit `6e2b013`. Mobile landing ≈ 80 (deferred, §7).
@@ -60,10 +57,9 @@ Applied on Vercel Marketplace Supabase `ipmjokuezeuukhrilduq` (operator manual S
 - **Verify command:** `node .agent/scripts/apply-phase5-migration.mjs` → `is_admin column present: NO`
 - **SQL verify:** `select column_name from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='is_admin';` → **0 rows**
 
-### 3.2 Provision Intercom Identity Verification
-1. Vercel → Project → Settings → Environment Variables: add `INTERCOM_IDENTITY_VERIFICATION_SECRET` (server-only, all environments) and redeploy.
-2. Intercom → Settings → Security → **Identity Verification** → enable for **Web** and paste the **same** secret.
-3. Verify: load `/portal` as a signed-in user; Intercom should boot **verified** (no "unidentified" warning in the Intercom dashboard).
+### 3.2 Chat-widget identity verification — dropped
+
+The chat integration was removed, so this provisioning step no longer applies. No secret to set, nothing to verify.
 
 ### 3.3 Verify the Stripe webhook endpoint
 1. Stripe Dashboard → Developers → Webhooks → confirm an endpoint for `https://dobeu.net/api/webhooks/stripe`.
@@ -77,7 +73,7 @@ Applied on Vercel Marketplace Supabase `ipmjokuezeuukhrilduq` (operator manual S
 ### 3.5 Re-link Vercel ↔ GitHub
 - Vercel → Project → Settings → Git → confirm the GitHub connection so `main` auto-deploys post-merge. Reconnect if the integration shows detached.
 
-> **Top 3 by leverage:** (1) ~~apply the `is_admin` drop migration (§3.1)~~ ✅, (2) provision the Intercom HMAC secret in Vercel + Intercom (§3.2), (3) verify the Stripe webhook endpoint + signing-secret match (§3.3).
+> **Top 3 by leverage:** (1) ~~apply the `is_admin` drop migration (§3.1)~~ ✅, (2) ~~provision the chat HMAC secret in Vercel (§3.2)~~ — dropped with the chat integration, (3) verify the Stripe webhook endpoint + signing-secret match (§3.3).
 
 ---
 
@@ -143,6 +139,6 @@ Mobile landing Lighthouse Performance sits at **≈ 80** vs the **90** target; d
 ## Appendix — verification snapshot
 
 - Commits A–F present on `test/coverage` (`1652f00` → `6e2b013`); HEAD matches.
-- Artifacts confirmed on disk: `lib/intercom-hmac.ts`, `components/portal/Mfa{Enroll,Status,StepUp}.tsx`, `e2e/tickets.spec.ts`, `supabase/migrations/20260616000000_phase5_drop_is_admin.sql`.
+- Artifacts confirmed on disk: `components/portal/Mfa{Enroll,Status,StepUp}.tsx`, `e2e/tickets.spec.ts`, `supabase/migrations/20260616000000_phase5_drop_is_admin.sql`.
 - `.agent/migration/inventory.md` Findings sufficient for cutover (2026-06-17); decision in `cutover-decision.md`.
 - Run `pnpm verify` (type-check + lint + test:ci + build) before opening the PR to confirm the green snapshot at merge time.

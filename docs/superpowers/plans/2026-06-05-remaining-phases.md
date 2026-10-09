@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Harden auth (TOTP MFA + Intercom HMAC), complete the user-gated legacy DB cutover, finish Phase 5 hygiene/a11y/E2E, and merge `test/coverage` → `main` as a fully production-ready release.
+**Goal:** Harden auth (TOTP MFA), complete the user-gated legacy DB cutover, finish Phase 5 hygiene/a11y/E2E, and merge `test/coverage` → `main` as a fully production-ready release.
 
-**Architecture:** Phases 0–3 are live on `https://dobeu.net`. Remaining work is four mostly-independent code-side streams (MFA, HMAC, CI/E2E, dead-code/hygiene/a11y) that dispatch as parallel agents, plus one human-gated data migration, converging on a final merge. Server-side mutations stay on the existing Server Action pattern (`lib/actions/*`, Zod, discriminated `{ ok }` returns). Admin gate stays env-driven (`isAdminEmail`) with a new AAL2 layer. Intercom keeps its existing `user_hash` plumbing; only server-side signing is added.
+**Architecture:** Phases 0–3 are live on `https://dobeu.net`. Remaining work is three mostly-independent code-side streams (MFA, CI/E2E, dead-code/hygiene/a11y) that dispatch as parallel agents, plus one human-gated data migration, converging on a final merge. Server-side mutations stay on the existing Server Action pattern (`lib/actions/*`, Zod, discriminated `{ ok }` returns). Admin gate stays env-driven (`isAdminEmail`) with a new AAL2 layer.
 
-**Tech Stack:** Next.js 15 (App Router), TypeScript, Supabase (`@supabase/supabase-js` `auth.mfa.*`), `node:crypto` HMAC, Playwright (E2E), Vitest (unit), pnpm, Vercel.
+**Tech Stack:** Next.js 15 (App Router), TypeScript, Supabase (`@supabase/supabase-js` `auth.mfa.*`), Playwright (E2E), Vitest (unit), pnpm, Vercel.
 
 **Companion design doc:** `docs/superpowers/specs/2026-06-05-remaining-phases-design.md`
 
@@ -537,167 +537,13 @@ git add app/admin/layout.tsx
 git commit -m "feat(p4): admin enable-2FA bootstrap banner"
 ```
 
-> **NOTE (parallel-dispatch):** Task Group B also edits `app/admin/layout.tsx`. If B runs concurrently, run B **after** this commit (see Task Group H). This task does not touch `app/portal/layout.tsx`.
+> **NOTE (parallel-dispatch):** No other group edits `app/admin/layout.tsx`. This task does not touch `app/portal/layout.tsx`.
 
 ---
 
-## Task Group B: Phase 4 — Intercom HMAC
+## Task Group B: Phase 4 — chat-widget identity check (REMOVED)
 
-**Owns (wave 2, after A5):** `lib/intercom-hmac.ts`, `lib/intercom-hmac.test.ts`, `app/portal/layout.tsx`, `app/admin/layout.tsx`.
-
-### Task B1: Server-side HMAC helper (TDD)
-
-**Files:**
-- Create: `lib/intercom-hmac.ts`
-- Test: `lib/intercom-hmac.test.ts`
-
-- [ ] **Step 1: Write the failing test**
-
-`lib/intercom-hmac.test.ts`:
-
-```ts
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createHmac } from "node:crypto";
-
-describe("intercomUserHash", () => {
-  const ORIGINAL = process.env.INTERCOM_IDENTITY_VERIFICATION_SECRET;
-  afterEach(() => {
-    process.env.INTERCOM_IDENTITY_VERIFICATION_SECRET = ORIGINAL;
-    viResetModules();
-  });
-  beforeEach(() => {
-    viResetModules();
-  });
-
-  function viResetModules() {
-    // re-import fresh so the module reads the current env at call time
-  }
-
-  it("returns the HMAC-SHA256 hex digest of the user_id keyed by the secret", async () => {
-    process.env.INTERCOM_IDENTITY_VERIFICATION_SECRET = "test_secret_123";
-    const { intercomUserHash } = await import("@/lib/intercom-hmac");
-    const userId = "00000000-0000-0000-0000-000000000001";
-    const expected = createHmac("sha256", "test_secret_123").update(userId).digest("hex");
-    expect(intercomUserHash(userId)).toBe(expected);
-  });
-
-  it("returns undefined when the secret is unset (graceful no-op)", async () => {
-    delete process.env.INTERCOM_IDENTITY_VERIFICATION_SECRET;
-    const { intercomUserHash } = await import("@/lib/intercom-hmac");
-    expect(intercomUserHash("any-id")).toBeUndefined();
-  });
-});
-```
-
-> Note: the helper reads `process.env` at call time (not module load), so no module-cache juggling is required — the placeholder `viResetModules` is a no-op kept only so the test reads cleanly. If your vitest config caches env-at-import, the call-time read in Step 3 makes this moot.
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `pnpm test:ci -- lib/intercom-hmac.test.ts`
-Expected: FAIL — module `@/lib/intercom-hmac` not found.
-
-- [ ] **Step 3: Implement the helper**
-
-`lib/intercom-hmac.ts`:
-
-```ts
-import { createHmac } from "node:crypto";
-
-/**
- * Compute the Intercom Identity Verification hash for a user.
- *
- * Intercom hashes the identifier you send it. We send `user_id` (the Supabase
- * UUID) from both portal + admin layouts, so we HMAC that same value.
- *
- * Server-only (`node:crypto`). Kept SEPARATE from `lib/intercom.ts` because
- * that module is intentionally importable from the client; crypto must never
- * reach the client bundle.
- *
- * Returns `undefined` when `INTERCOM_IDENTITY_VERIFICATION_SECRET` is unset so
- * the caller boots Intercom unverified (dev / pre-provisioning) without throwing.
- */
-export function intercomUserHash(userId: string): string | undefined {
-  const secret = process.env.INTERCOM_IDENTITY_VERIFICATION_SECRET;
-  if (!secret) return undefined;
-  return createHmac("sha256", secret).update(userId).digest("hex");
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `pnpm test:ci -- lib/intercom-hmac.test.ts`
-Expected: PASS (2 tests).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add lib/intercom-hmac.ts lib/intercom-hmac.test.ts
-git commit -m "feat(p4): server-side Intercom HMAC user_hash"
-```
-
-### Task B2: Wire `user_hash` into portal + admin layouts
-
-**Files:**
-- Modify: `app/portal/layout.tsx`
-- Modify: `app/admin/layout.tsx`
-
-- [ ] **Step 1: Portal layout**
-
-In `app/portal/layout.tsx`, add the import:
-
-```tsx
-import { intercomUserHash } from "@/lib/intercom-hmac";
-```
-
-Find the existing `<IntercomIdentify ... />` usage. Compute the hash from the resolved `user.id` just before it and pass the prop:
-
-```tsx
-      <IntercomIdentify
-        user_id={user.id}
-        email={user.email ?? undefined}
-        name={intercomNameFromUser(user)}
-        created_at={user.created_at}
-        user_hash={intercomUserHash(user.id)}
-      />
-```
-
-- [ ] **Step 2: Admin layout**
-
-In `app/admin/layout.tsx`, add the same import and add `user_hash={intercomUserHash(user.id)}` to the existing `<IntercomIdentify ... />` block (which already passes `user_id={user.id}`).
-
-- [ ] **Step 3: Verify**
-
-Run: `pnpm type-check && pnpm lint`
-Expected: no errors (`IntercomIdentify` already accepts `user_hash?: string`).
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add app/portal/layout.tsx app/admin/layout.tsx
-git commit -m "feat(p4): pass Intercom user_hash from portal + admin layouts"
-```
-
-### Task B3: Document the env var
-
-**Files:**
-- Modify: `CLAUDE.md` (env table) — **defer to Task Group E owner if running in parallel** (single CLAUDE.md owner). If B runs solo, do it here.
-
-- [ ] **Step 1: Add the env row**
-
-In `CLAUDE.md` "Env vars" table, add:
-
-```markdown
-| `INTERCOM_IDENTITY_VERIFICATION_SECRET` | Server-side HMAC for Intercom Identity Verification (`lib/intercom-hmac.ts`). Unset → Intercom boots unverified. Must also be set in the Intercom workspace dashboard. |
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add CLAUDE.md
-git commit -m "docs: document INTERCOM_IDENTITY_VERIFICATION_SECRET"
-```
-
-> **Manual follow-up (user, not code):** set `INTERCOM_IDENTITY_VERIFICATION_SECRET` in Vercel **and** enable Identity Verification in the Intercom workspace (Settings → Security) with the same secret.
+**Status:** removed with the chat integration. The widget, its identity helper, the layout wiring, and the env var are all deleted — there is nothing to build, verify, or provision. The wave-2 slot this group owned no longer exists; dispatch the remaining groups only.
 
 ---
 
@@ -916,7 +762,7 @@ Expected: only a README/CLAUDE mention (no code import). If a code import exists
 
 - [ ] **Step 2: Remove the dangling doc reference** (default path — no importer): edit the README/CLAUDE line that references `lib/analytics-server.ts` to drop the claim.
 
-- [ ] **Step 3: Apply the pending CLAUDE.md edits owned by this group:** CI-runs-tests correction (from D1), `INTERCOM_IDENTITY_VERIFICATION_SECRET` env row (from B3), `.cmd` keep-list update, dead-code report note, and the `is_admin` "column kept" line → "column dropped".
+- [ ] **Step 3: Apply the pending CLAUDE.md edits owned by this group:** CI-runs-tests correction (from D1), `.cmd` keep-list update, dead-code report note, and the `is_admin` "column kept" line → "column dropped".
 
 - [ ] **Step 4: Commit**
 
@@ -1006,7 +852,7 @@ Expected: type-check + lint + `test:ci` + build all green.
 git push -u origin test/coverage
 gh pr create --base main --title "Phases 4-5 + legacy cutover: auth hardening, hygiene, production-ready" --body "$(cat <<'EOF'
 ## Summary
-- Phase 4: Supabase TOTP MFA (admin AAL2 gate) + Intercom HMAC identity verification
+- Phase 4: Supabase TOTP MFA (admin AAL2 gate)
 - Phase 5: dead-code removal, drop profiles.is_admin, .cmd cleanup, a11y on ticket UIs, ticket-flow E2E, Lighthouse >=90
 - Legacy db-dobeutech-unified cutover complete + soaked (or noted if deferred)
 - Docs corrected (CI runs tests; env table; is_admin dropped)
@@ -1015,7 +861,6 @@ gh pr create --base main --title "Phases 4-5 + legacy cutover: auth hardening, h
 - [ ] pnpm verify green
 - [ ] CI green on the PR
 - [ ] Admin /admin requires TOTP step-up
-- [ ] Intercom rejects mismatched user_hash
 - [ ] Ticket-flow E2E passes
 - [ ] Stripe webhook test event flips invoice status
 EOF
@@ -1036,16 +881,15 @@ Each row maps a task group to an independent agent. See the design doc §7 for t
 | 2 | D — CI/E2E | `e2e/tickets.spec.ts` | none (reports CLAUDE.md CI note to E) | 1 |
 | 3 | E — Dead code/hygiene | `.cmd` files, `supabase/migrations/*_drop_is_admin.sql`, `lib/database.types.ts`, `lib/*` exports, `CLAUDE.md`, `README.md` | `lib/utils.ts` (defer to wave 2), `CLAUDE.md` sole owner | 1 |
 | 4 | F — A11y/perf | `app/{portal,admin}/tickets/**` + ticket components | none | 1 |
-| 1 | B — Intercom HMAC | `lib/intercom-hmac.ts(.test)`, `app/portal/layout.tsx`, `app/admin/layout.tsx` | `app/admin/layout.tsx` (run after A5) | 2 |
 | — | C — Legacy cutover | `.agent/migration/**`, `lib/database.types.ts` (post-cutover) | `lib/database.types.ts` after E2 | gated on user |
 | — | G — Close-out | merge, `scripts/post-merge-smoke.md` | depends on all | final |
 
 **Dispatch rules:**
 - **Wave 1 (4 parallel agents):** A, D, E (skipping `lib/utils.ts` + the CLAUDE.md CI-note until handed off), F. C's inventory runs on the user's clock concurrently.
-- **Wave 2:** Agent 1 continues with B (touches `app/admin/layout.tsx` after A5 committed). E finishes `CLAUDE.md` (folding in B3's env row + D1's CI correction) and the deferred `lib/utils.ts#sleep` removal.
+- **Wave 2:** E finishes `CLAUDE.md` (folding in D1's CI correction) and the deferred `lib/utils.ts#sleep` removal.
 - **`lib/database.types.ts` single-writer rule:** E2 regenerates after dropping `is_admin`; C's post-cutover regen is the final authoritative run. No hand edits.
-- **`CLAUDE.md` single-owner rule:** Task Group E owns all CLAUDE.md edits; B and D report their doc changes to E.
-- **Final:** G after A, B, D, E, F merged and C soaked (or C explicitly deferred with a note).
+- **`CLAUDE.md` single-owner rule:** Task Group E owns all CLAUDE.md edits; D reports its doc changes to E.
+- **Final:** G after A, D, E, F merged and C soaked (or C explicitly deferred with a note).
 
 ---
 
@@ -1053,7 +897,7 @@ Each row maps a task group to an independent agent. See the design doc §7 for t
 
 **1. Spec coverage** — every design-doc section maps to a task group:
 - §4.1 MFA → Group A (A1 helper, A2 middleware gate, A3 components, A4 step-up+settings, A5 bootstrap banner). ✔
-- §4.2 Intercom HMAC → Group B (B1 helper+test, B2 wire layouts, B3 env doc). ✔
+- §4.2 chat-widget identity check → Group B — removed with the chat integration. ✔
 - §4.3 rate-limit → accepted-risk doc note folded into E4 CLAUDE.md edits. ✔
 - §5 legacy cutover → Group C (C1 user inventory, C2 mapping SQL, C3 execute). ✔
 - §6.1 CI (already done) → D1 doc correction. ✔  §6.2 dead code → E1. §6.3 drop is_admin → E2. §6.4 .cmd → E3. §6.5 a11y → F1. §6.6 E2E → D2. §6.7 Lighthouse → F2. §6.8 analytics-server → E4. ✔
@@ -1061,9 +905,9 @@ Each row maps a task group to an independent agent. See the design doc §7 for t
 
 **2. Placeholder scan** — no "TBD/implement later/add error handling" left as instructions. Every code step has complete code. The two `(USER)` steps (C1, G1) are genuine human actions, labeled, not placeholders. The E1/E2 deletions are conditional-on-verification by design (delete only confirmed-dead exports) with the exact grep commands given, not vague "remove dead code." ✔
 
-**3. Type consistency** — `requiresAal2Stepup({ currentLevel, nextLevel })` signature identical in A1 (def), A2 (use), design §4.1, §9. `intercomUserHash(userId: string): string | undefined` identical in B1 (def), B2 (use), design §4.2, §9. `IntercomIdentify` `user_hash?: string` prop matches the verified component signature. `formatCurrency(cents)` matches `lib/utils.ts`. Migration filename `20260616000000_phase5_drop_is_admin.sql` consistent between E2 and H. ✔
+**3. Type consistency** — `requiresAal2Stepup({ currentLevel, nextLevel })` signature identical in A1 (def), A2 (use), design §4.1, §9. `formatCurrency(cents)` matches `lib/utils.ts`. Migration filename `20260616000000_phase5_drop_is_admin.sql` consistent between E2 and H. ✔
 
-**4. Cross-group file-collision check** — `app/admin/layout.tsx` (A5 + B2): B2 sequenced wave 2. `lib/utils.ts` (A1 + E1): E defers. `lib/database.types.ts` (E2 + C): single-writer rule. `CLAUDE.md` (B3 + D1 + E4): single-owner (E). All collisions resolved in Group H, no two wave-1 agents share a file. ✔
+**4. Cross-group file-collision check** — `lib/utils.ts` (A1 + E1): E defers. `lib/database.types.ts` (E2 + C): single-writer rule. `CLAUDE.md` (D1 + E4): single-owner (E). All collisions resolved in Group H, no two wave-1 agents share a file. ✔
 
 ---
 

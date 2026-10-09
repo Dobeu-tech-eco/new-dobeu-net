@@ -112,7 +112,7 @@ pg_dump "$LEGACY_DATABASE_URL" \
 1. Run **`.agent/migration/mapping.sql`** on target (`insert into public.X select … from legacy_import.Y`).
    - **Leads:** skip — `contact_submissions` empty; no legacy `leads` table.
    - `profiles` insert: **omit `is_admin`** (column dropped on target).
-   - `messages`: excluded (Intercom owns chat).
+   - `messages`: excluded (no in-app chat; work-order tickets replace it).
    - Platform tables in EXCLUDED list: never insert.
 2. **Auth users** — only if `auth.users` count > 0 on legacy (check inventory-followup.sql §8). Scripted loop via Supabase Admin API (`auth.admin.createUser`) keyed off legacy `users` rows. `handle_new_user()` creates `profiles` rows; reconcile FKs after.
 3. **Storage** — copy objects for migrated `client_files` / `project_files` rows only; verify `project_files.storage_path` resolves in target `project-files` bucket.

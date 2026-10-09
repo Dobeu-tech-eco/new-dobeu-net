@@ -353,7 +353,7 @@ only (see `cutover-decision.md`).
 | contact_submissions | true | **confirmed** (screenshot + §3) |
 | invoices | false | **confirmed** (screenshot) |
 | leads | false | **confirmed** (screenshot; consistent with §3) |
-| messages | true | **confirmed** (screenshot; v3 dropped — Intercom) |
+| messages | true | **confirmed** (screenshot; v3 dropped — no in-app chat) |
 | page_events | — | **unknown** (not in screenshot) |
 | profiles | — | **unknown** |
 | project_files | — | **unknown** |
@@ -417,7 +417,7 @@ N — not produced; optional for NO-OP data cutover (see cutover-decision.md).
 - Portal file data: client_files exists but count = 0; no project_files on legacy
   (bonus query not scrolled — likely false).
 - v3 invoices, leads, bookings do NOT exist on legacy (confirmed).
-- messages exists on legacy but v3 dropped messages (Intercom owns chat).
+- messages exists on legacy but v3 dropped messages (no in-app chat).
 - auth.users = 3 — only user accounts worth considering for optional import.
 - Cutover decision (2026-06-17): NO data migration for public tables; optional
   minimal auth seeding only — see cutover-decision.md.

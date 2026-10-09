@@ -17,7 +17,7 @@ The original six-phase plan (repo init → landing/portal/admin parallel build �
 | 0–1 | Approval, repo init, tokens, Supabase schema, env scaffolding | ✅ Shipped |
 | 2A/B/C | Landing, auth + portal, admin + lead pipeline APIs | ✅ Shipped |
 | 3 | Stripe-hosted invoicing + webhook, work-order (tickets) UI, Resend wiring, Datadog | ✅ Shipped, live |
-| 4 | Supabase TOTP MFA (admin AAL2), Intercom identity verification | ✅ Code complete |
+| 4 | Supabase TOTP MFA (admin AAL2) | ✅ Code complete |
 | 5 | Lighthouse/a11y polish, CI tests, `profiles.is_admin` dropped on live | ✅ Shipped |
 | Legacy cutover | `db-dobeutech-unified` → Vercel Supabase | ✅ Decided NO-OP (zero portal rows); optional auth pre-seed only |
 

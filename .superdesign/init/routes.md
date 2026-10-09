@@ -32,4 +32,4 @@ File-based routing under `app/`. Root layout: `app/layout.tsx` (ThemeProvider + 
 
 ## Other (not marketing UI)
 
-API under `app/api/*` (lead, webhooks, github, files, agent, intercom, cron). `/oci` is a separate Vercel container service (middleware matcher skips it).
+API under `app/api/*` (lead, webhooks, github, files, agent, cron). `/oci` is a separate Vercel container service (middleware matcher skips it).

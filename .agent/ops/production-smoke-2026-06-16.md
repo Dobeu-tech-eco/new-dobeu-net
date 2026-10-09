@@ -12,6 +12,5 @@
 | `GET /admin/tickets` | redirect → login | **307 → `/login?next=/admin/tickets`** |
 | `GET /portal/settings/mfa` | redirect → login | **307 → `/login?next=/portal/settings/mfa`** |
 | `POST /api/webhooks/stripe` (no signature) | 400 | **400** |
-| `GET /api/intercom/jwt` | 200 + JWT | **200** + `{"token":"eyJ..."}` (visitor JWT when unauthenticated) |
 
 **Section B (manual E2E):** not run — requires signed-in client + admin accounts and live Stripe payment. See `scripts/post-merge-smoke.md` §B.

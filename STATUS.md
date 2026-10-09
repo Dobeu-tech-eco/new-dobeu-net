@@ -9,10 +9,10 @@ _Last updated: 2026-06-17 — Phases 4–5 shipped on `main`; live schema repair
 | Phase | Scope | Status |
 |---|---|---|
 | **0 — Launch** | Stack, brand v2, landing, portal/admin scaffolds, lead pipeline, analytics fan-out, security headers, magic-link auth, deploy to Vercel | ✅ Shipped (commits up to `2a80db8`) |
-| **1 — P0 + DB reconciliation** | `NEXT_PUBLIC_SITE_URL` guard, lead-table probe drop, intercom/admin-email dedup, draft reconciliation migration | ✅ Shipped (commit `9ceefa2`) — migration applied to Vercel Supabase in Phase 2 |
+| **1 — P0 + DB reconciliation** | `NEXT_PUBLIC_SITE_URL` guard, lead-table probe drop, admin-email dedup, draft reconciliation migration | ✅ Shipped (commit `9ceefa2`) — migration applied to Vercel Supabase in Phase 2 |
 | **2 — Server-action foundation + portal/admin CRUD + work-order schema deployed** | `lib/actions/{work-orders,projects,invoices,profile}.ts` + tests; admin/projects write-CRUD; portal/settings update form; legacy env cleanup | ✅ Shipped |
 | **3 — Stripe-hosted invoicing + work-order UI end-to-end + observability** | `lib/stripe.ts`, `/api/webhooks/stripe`, portal/admin `tickets` UIs, work-order Resend notifications, Datadog log drain | ✅ Shipped (live on `https://dobeu.net`, HEAD `4cc72f2`) |
-| **4 — Auth hardening** | Supabase TOTP MFA (admin AAL2 gate), Intercom HMAC identity verification, rate-limit (in-memory accepted-risk) | ✅ **Code complete** (`test/coverage`, commits `1652f00`→`487fded`) |
+| **4 — Auth hardening** | Supabase TOTP MFA (admin AAL2 gate), rate-limit (in-memory accepted-risk) | ✅ **Code complete** (`test/coverage`, commits `1652f00`→`487fded`) |
 | **5 — Polish** | Desktop Lighthouse ≥90, CI runs tests, a11y on ticket UIs, dead-code cleanup, drop `profiles.is_admin`, ticket E2E | ✅ **Shipped** — `profiles.is_admin` **dropped on live** (`ipmjokuezeuukhrilduq`, verified 2026-06-16) |
 
 ## Pending before production cutover (not code blockers)
@@ -20,7 +20,7 @@ _Last updated: 2026-06-17 — Phases 4–5 shipped on `main`; live schema repair
 These do not block the `test/coverage` → `main` merge; they gate full production cutover. Full detail + exact URLs/commands in the convergence doc.
 
 1. ~~**Apply `20260616000000_phase5_drop_is_admin.sql` to live Vercel Supabase**~~ — **done** (manual SQL + script verify: `is_admin column present: NO`).
-2. **Provision `INTERCOM_IDENTITY_VERIFICATION_SECRET`** in Vercel + enable Identity Verification in the Intercom workspace with the same secret (JWT path via `INTERCOM_API_SECRET` is live; legacy HMAC optional).
+2. ~~**Provision chat-widget identity secret**~~ — **dropped** (chat integration removed; nothing to provision).
 3. **Verify the Stripe webhook endpoint** (`/api/webhooks/stripe` subscribed to `invoice.paid`/`invoice.payment_failed`/`invoice.finalized`; signing secret matches `STRIPE_WEBHOOK_SECRET`).
 4. **Resend DKIM/SPF** verified for `dobeu.net`; **Vercel ↔ GitHub** re-linked for auto-deploy.
 5. **Legacy `db-dobeutech-unified` cutover** — **decided (2026-06-17):** NO data migration; Vercel Supabase authoritative. Inventory complete for cutover (`inventory.md` §1–§3, §8, bonus). See `.agent/migration/cutover-decision.md`. Optional: pre-seed 3 auth users via `import-auth-users.mjs`. Retire legacy after smoke + 7-day soak.
@@ -36,7 +36,7 @@ Per `.agent/migration/vercel-supabase-state.md` (verified 2026-06-17):
 - `20260616000000_phase5_drop_is_admin.sql` — **applied** (`profiles.is_admin` absent)
 - `20260617000000_live_schema_repair.sql` — **idempotent repair** for reported drift (`profiles.updated_at`, `profiles.stripe_customer_id`, `public.projects`); inspected 2026-06-17 — targets already present on live; operator copy at `.agent/migration/live-schema-repair.sql`
 - Tables present: `bookings`, `invoices`, `leads`, `page_events`, `profiles`, `project_files`, `projects`, `work_orders`, `work_order_attachments`
-- `messages` dropped (Intercom owns chat)
+- `messages` dropped (no in-app chat; work-order tickets replace it)
 - `invoices.hosted_invoice_url` column present (target of Phase 3 Stripe wiring)
 - Storage buckets: `project-files`, `work-order-attachments`
 
@@ -92,7 +92,7 @@ Hard blockers before Phase 3 can start:
 | Work-order UI (`/portal/tickets`, `/admin/tickets`) | ⏳ Phase 3 |
 | Wire Resend admin notification on `submitWorkOrder` | ⏳ Phase 3 (TODO marker in action) |
 | Datadog log drain hookup (Vercel → Datadog) | ⏳ Phase 3 |
-| Intercom HMAC server-side signing (Phase 4) | ⚠️ HMAC secret not yet provisioned |
+| Auth hardening follow-ups (Phase 4) | ✅ MFA shipped; chat-widget verification dropped with the chat integration |
 | Legacy `db-dobeutech-unified` data cutover | ✅ **Decided** — NO-OP data; see `cutover-decision.md` |
 
 ## Remaining Phases (4 + 5 + legacy cutover + close-out)
@@ -102,13 +102,12 @@ Hard blockers before Phase 3 can start:
 > Resend wire-up, `/portal/tickets` + `/admin/tickets`, admin invoices write
 > surface. Two stale notes corrected during the remaining-phases review:
 > **CI already runs `pnpm test:ci`** (`.github/workflows/ci.yml`), and the
-> Intercom `user_hash` plumbing already exists end-to-end (only server-side
-> HMAC signing + the env var are missing).
+> chat-widget identity plumbing noted below was later removed with the chat integration.
 
 Design + plan for everything after Phase 3 now live in:
 
-- **Design:** [`docs/superpowers/specs/2026-06-05-remaining-phases-design.md`](docs/superpowers/specs/2026-06-05-remaining-phases-design.md) — current-state audit, three sequencing approaches (recommends **B: parallel streams**), Phase 4 (TOTP MFA + Intercom HMAC) architecture, legacy-cutover design, Phase 5 scope, parallel-execution map, decision gates, success criteria.
-- **Plan:** [`docs/superpowers/plans/2026-06-05-remaining-phases.md`](docs/superpowers/plans/2026-06-05-remaining-phases.md) — bite-sized, TDD, exact-path task groups A–H (MFA, Intercom HMAC, legacy cutover, CI/E2E, dead-code/hygiene, a11y/perf, operational close-out, parallel dispatch map).
+- **Design:** [`docs/superpowers/specs/2026-06-05-remaining-phases-design.md`](docs/superpowers/specs/2026-06-05-remaining-phases-design.md) — current-state audit, three sequencing approaches (recommends **B: parallel streams**), Phase 4 (TOTP MFA) architecture, legacy-cutover design, Phase 5 scope, parallel-execution map, decision gates, success criteria.
+- **Plan:** [`docs/superpowers/plans/2026-06-05-remaining-phases.md`](docs/superpowers/plans/2026-06-05-remaining-phases.md) — bite-sized, TDD, exact-path task groups A–H (MFA, legacy cutover, CI/E2E, dead-code/hygiene, a11y/perf, operational close-out, parallel dispatch map).
 
 **Headline:** ~3–4 days of agent work (4 parallel wave-1 agents) + the user's
 inventory/cutover window. Only blocking human action: running the read-only
