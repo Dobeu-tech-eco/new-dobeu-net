@@ -100,7 +100,7 @@ export default function CookiesPage() {
       <h2>How to manage cookies</h2>
       <p>
         When you first visit dobeu.net, a consent banner lets you accept or decline analytics
-        cookies. You can change your preference at any time by clicking{" "}
+        and marketing cookies. You can change your preferences at any time by clicking{" "}
         <strong>&ldquo;Cookie preferences&rdquo;</strong> in the footer.
       </p>
       <ul>

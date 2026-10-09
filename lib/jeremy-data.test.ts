@@ -8,6 +8,7 @@ import {
   getShippedWork,
   HAS_ATTRIBUTABLE_CASE_STUDIES,
   HERO_COPY,
+  LEAD_REPLY_SLA,
   ORGANIZATION_SAME_AS,
   PERSON_SAME_AS,
   PRICE_RANGE,
@@ -54,6 +55,7 @@ describe("jeremy-data marketing source", () => {
     expect(TYPEWRITER_PHRASES.join(" ")).not.toMatch(/autonomous AI coding agents/i);
     expect(HERO_COPY.promise).toBe("Dispatch that actually dispatches.");
     expect(HERO_COPY.estimateCta).toBe("Send the job");
+    expect(LEAD_REPLY_SLA).toBe("reply with a price band within 24 hours");
   });
 
   it("excludes dead hosts from public chrome data", () => {

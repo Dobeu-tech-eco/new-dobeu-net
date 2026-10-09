@@ -820,7 +820,7 @@ git commit -m "perf: restore Lighthouse >=90 on landing + portal"
 
 ---
 
-## Task Group G: Operational close-out (FINAL — after A,B,D,E,F; C soaked)
+## Task Group G: Operational close-out (FINAL — after A,D,E,F; C soaked)
 
 **Owns:** merge commit, `scripts/post-merge-smoke.md` (checklist).
 
@@ -877,7 +877,7 @@ Each row maps a task group to an independent agent. See the design doc §7 for t
 
 | Agent | Task Group | Primary files owned | Overlap risk | Wave |
 |---|---|---|---|---|
-| 1 | A — MFA | `lib/utils.ts`, `lib/supabase/middleware.ts`, `components/portal/Mfa*.tsx`, `app/portal/settings/**`, `app/admin/layout.tsx` (banner) | shares `app/admin/layout.tsx` + `lib/utils.ts` with B/E | 1 |
+| 1 | A — MFA | `lib/utils.ts`, `lib/supabase/middleware.ts`, `components/portal/Mfa*.tsx`, `app/portal/settings/**`, `app/admin/layout.tsx` (banner) | shares `lib/utils.ts` with E | 1 |
 | 2 | D — CI/E2E | `e2e/tickets.spec.ts` | none (reports CLAUDE.md CI note to E) | 1 |
 | 3 | E — Dead code/hygiene | `.cmd` files, `supabase/migrations/*_drop_is_admin.sql`, `lib/database.types.ts`, `lib/*` exports, `CLAUDE.md`, `README.md` | `lib/utils.ts` (defer to wave 2), `CLAUDE.md` sole owner | 1 |
 | 4 | F — A11y/perf | `app/{portal,admin}/tickets/**` + ticket components | none | 1 |

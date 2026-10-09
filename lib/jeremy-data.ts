@@ -106,6 +106,9 @@ export const HERO_COPY = {
   proof: "Prices are published. Invoices go through Stripe. The code lands in your repo.",
 } as const;
 
+/** Shared clause for the lead-form success toast and the submitted state. */
+export const LEAD_REPLY_SLA = "reply with a price band within 24 hours";
+
 /** Exported for tests. The hero shows HERO_COPY.promise and no longer rotates these. */
 export const TYPEWRITER_PHRASES = [
   "dispatch that actually dispatches.",

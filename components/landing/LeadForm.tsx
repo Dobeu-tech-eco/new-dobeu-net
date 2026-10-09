@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { track } from "@/lib/analytics";
+import { LEAD_REPLY_SLA } from "@/lib/jeremy-data";
 
 type Source = "book" | "form" | "email";
 
@@ -56,7 +57,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
         has_message: !!payload.message
       });
       setSubmitted(true);
-      toast.success("Got it — I'll reply with a price band within 24 hours.");
+      toast.success(`Got it — I'll ${LEAD_REPLY_SLA}.`);
       onSuccess?.();
     } catch (err) {
       track("lead_capture_failed", { source });
@@ -75,7 +76,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
           Job received.
         </p>
         <p className="text-sm text-muted-foreground mt-2">
-          I personally read every job and reply with a price band within 24 hours. Not an instant quote.
+          I personally read every job and {LEAD_REPLY_SLA}. Not an instant quote.
         </p>
       </div>
     );

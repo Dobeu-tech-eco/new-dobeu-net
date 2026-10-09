@@ -73,7 +73,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                 whileInView={mp.whileInView}
                 viewport={mp.viewport}
                 transition={{ duration: 0.4, delay: i * 0.06 }}
-                className="group relative bg-background p-8 md:p-10 hover:bg-card transition-colors duration-200 scroll-mt-20 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background"
+                className="group relative bg-background p-8 md:p-10 hover:bg-card transition-colors duration-200 scroll-mt-20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background"
               >
                 <div className="flex items-start justify-between mb-8">
                   <span className="font-mono text-[3.5rem] font-bold text-border leading-none select-none tabular-nums">

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
-import { BOOK_MICROCOPY } from "@/components/landing/EstimateCtas";
+import { BOOK_MICROCOPY, SEND_MICROCOPY } from "@/components/landing/EstimateCtas";
 import { track } from "@/lib/analytics";
 import {
   HERO_COPY,
@@ -122,9 +122,13 @@ export function Hero() {
                 onClick={() => trackAndOpen("form", "Send the job — hero")}
                 className="w-full rounded-full px-7 font-medium sm:w-auto"
                 data-testid="hero-estimate-cta"
+                aria-describedby="send-microcopy-hero"
               >
                 {HERO_COPY.estimateCta}
               </Button>
+              <p id="send-microcopy-hero" className="text-xs text-muted-foreground">
+                {SEND_MICROCOPY}
+              </p>
             </div>
             {SHOW_LABS_HERO_CTA && (
               <Button
