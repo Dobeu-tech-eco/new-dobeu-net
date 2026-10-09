@@ -8,11 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `BRAINSTORM.md` and `PLAN.md` are the source of truth for scope, decisions, and verification gates; `STATUS.md` tracks phase progress (Phases 1–5 have shipped on `main`: admin CRUD server actions, Stripe-hosted invoicing + webhook, Resend email templates, `is_admin` column dropped). `AUDIT.md` is a landing-page accessibility/SEO audit from a v0 session. Public pages beyond the landing: `/privacy`, `/terms` (rewritten from `/tos`), `/cookies`, `/marketing-opt-out`, `/optin`, `/repos` (GitHub showcase), `/login`.
 
-Sibling agent-instruction files (`AGENTS.md`, `GEMINI.md`, `.github/copilot-instructions.md`) are **thin pointers only**. Do not duplicate architectural guidance there — update this file instead. They exist solely because Codex / Gemini CLI / Copilot look for those filenames.
+`AGENTS.md` is the scannable agent quick reference; `GEMINI.md` and `.github/copilot-instructions.md` remain thin discovery pointers. Keep detailed architecture and security guidance canonical here.
 
 ## Commands
 
-Package manager is **pnpm** (`packageManager: pnpm@10.34.1`, Node >=20). `pnpm-workspace.yaml` exists only to whitelist `onlyBuiltDependencies` (pnpm 10's allow-builds mechanism) — this is not a multi-package workspace.
+Package manager is **pnpm** (`packageManager: pnpm@10.34.1`, Node >=24). `pnpm-workspace.yaml` exists only to whitelist `onlyBuiltDependencies` (pnpm 10's allow-builds mechanism) — this is not a multi-package workspace.
 
 ```bash
 pnpm dev                       # dev server -> http://localhost:3000
@@ -38,7 +38,7 @@ pnpm db:types                  # regenerate lib/database.types.ts from local sch
 ```
 
 ## Testing
-- **Vitest** — `vitest.config.ts`, tests colocated as `*.test.ts(x)` under `app/`, `lib/`, and `hooks/`. Run a single file: `pnpm test:ci -- lib/leads.test.ts`. Focus by name: `pnpm test:ci -- -t "processLead"`.
+- **Vitest** — `vitest.config.ts`, tests colocated as `*.test.ts(x)` under `app/`, `lib/`, and `hooks/`. Run a single file: `pnpm test:ci lib/leads.test.ts`. Focus by name: `pnpm test:ci -t "processLead"`.
 - **Playwright** — `playwright.config.ts` + `e2e/*`. Smoke-only today. Run with `pnpm test:e2e` (or `pnpm test:e2e:ui` for UI mode).
 - CI runs `pnpm verify` in `.github/workflows/ci.yml` (type-check + lint + test:ci + strict build).
 
@@ -160,7 +160,7 @@ Datadog is the single pane: RUM + Session Replay + browser Logs client-side (`li
 - Path alias `@/*` -> repo root (e.g. `@/lib/supabase/server`).
 - shadcn/ui primitives live in `components/ui/`; brand mark in `components/brand/`.
 - Theming via `next-themes`, `attribute="class"`, three modes (Light/Dark/System); Dobeu Design System v2 tokens in `app/globals.css` and `tailwind.config.ts`.
-- **Node version policy** — `engines.node` is `>=20` in `package.json`; `.nvmrc` is `20`; CI reads `node-version-file: .nvmrc`. Bumping the major is a deliberate change requiring all of these updated together.
+- **Node version policy** — `engines.node` is `>=24` in `package.json`; `.nvmrc` is `24`; CI reads `node-version-file: .nvmrc`. Bumping the major is a deliberate change requiring all of these updated together.
 - **Edge runtime policy** — only use `export const runtime = "edge"` for routes that genuinely need per-request edge execution (auth-adjacent middleware, geo-personalization). Don't use it for static metadata routes (OG images, sitemap, robots) — Next.js will warn that static generation is disabled and the asset will be rebuilt per request. `pnpm verify` blocks regressions via `scripts/strict-build.mjs`. Stripe webhook is the inverse case: it must stay `nodejs`.
 - Env: run `vercel env pull .env.local` (Vercel-managed Supabase + analytics envs auto-fill). `NEXT_PUBLIC_*` keys are client-exposed; everything else is server-only.
 
