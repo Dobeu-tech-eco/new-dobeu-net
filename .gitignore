@@ -13,9 +13,11 @@ coverage
 playwright-report
 test-results
 playwright/.cache
+.lighthouseci/
 
 # Next.js
 .next/
+.next-dev/
 out/
 build
 dist

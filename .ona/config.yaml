@@ -78,7 +78,12 @@ tasks:
   lighthouse:
     name: Lighthouse
     description: Run the documented Lighthouse CI performance checks
-    command: pnpm lighthouse:ci
+    command: |
+      set -e
+      export CHROME_PATH="$(node -e 'console.log(require("@playwright/test").chromium.executablePath())')"
+      export LIGHTHOUSE_PORT=3001
+      export LHCI_BUILD_CONTEXT__CURRENT_HASH="$(GIT_CONFIG_GLOBAL=/dev/null git rev-parse HEAD)"
+      pnpm lighthouse:ci
     dependsOn:
       - build
     triggeredBy:
@@ -98,8 +103,8 @@ services:
     commands:
       start: |
         set -e
-        ona environment port open 3000 --admission creator_only --name "Next.js development server" --protocol http
-        exec pnpm dev --hostname 0.0.0.0
+        ona env port open 3000 --admission creator_only --name "Next.js development server" --protocol http --dont-wait
+        exec env NEXT_DIST_DIR=.next-dev pnpm dev --hostname 0.0.0.0
       ready: curl -fsS http://localhost:3000 >/dev/null
     triggeredBy:
       - manual
@@ -111,7 +116,7 @@ services:
     commands:
       start: |
         set -e
-        ona environment port open 8080 --admission creator_only --name "OCI function development server" --protocol http
+        ona env port open 8080 --admission creator_only --name "OCI function development server" --protocol http --dont-wait
         exec env HOST=0.0.0.0 PORT=8080 node containers/function/server.mjs
       ready: curl -fsS http://localhost:8080/health >/dev/null
     triggeredBy:
