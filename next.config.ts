@@ -144,7 +144,13 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [{ source: "/home", destination: "/", permanent: true }];
+    return [
+      { source: "/home", destination: "/", permanent: true },
+      { source: "/services/ai-agents", destination: "/services/on-the-shift", permanent: true },
+      { source: "/services/fullstack", destination: "/services/the-job", permanent: true },
+      { source: "/services/brand", destination: "/services/one-person", permanent: true },
+      { source: "/services/growth", destination: "/services/earned-product", permanent: true },
+    ];
   },
   async rewrites() {
     // Serve the Terms of Service at the canonical /tos URL (dobeu.net/tos)

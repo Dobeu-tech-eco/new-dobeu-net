@@ -1,6 +1,6 @@
 # Dobeu Tech Solutions — llms.txt
 
-> One-person digital services practice. AI agent development, full-stack web apps, brand & design systems, and growth engineering for founders.
+> One operator for small fleets. Partnership on the actual job. A product only if the work earns it. Not a faceless ticket mill, and not a brochure site.
 
 ## About
 - Founder: Jeremy Williams (jeremyw@dobeu.net)
@@ -8,24 +8,23 @@
 - Website: https://dobeu.net
 - LinkedIn: https://www.linkedin.com/in/jeremy-williams
 
-## Services
-- **AI agents & automation** — Claude, Composio, MCP integrations, agentic workflows
-- **Full-stack web apps** — Next.js, Supabase, Vercel, modern TypeScript stack
-- **Brand & design systems** — Figma + Code Connect + multi-target design tokens
-- **Marketing & growth engineering** — programmatic SEO, GA4/PostHog/Mixpanel, lifecycle automation
+## The work
+- Sit with the owners and the people on the shift — yards, dispatch, the trucks
+- Tailored systems for that fleet, kept in the client's repo
+- A product only after the partnership earns it
+- RouteReady is an example in the pipeline. It is not generally launched, and this site does not link to it
 
-## Engagement model
-- 30-minute discovery call (free, no pitch)
-- Fixed-scope, fixed-price proposal within 48 hours
-- Ship in 2–6 weeks with daily updates and a private client portal
+## Engagement
+- 30-minute call about the job, or a short note describing it
+- A written scope once the job is clear
 - Typical engagement size: $5k–$30k
+- A week with the fleet: $1,500, credited if the work continues
 
 ## Contact
-- Book a call: https://dobeu.net/#book
 - Email: jeremyw@dobeu.net
 - Portal (existing clients): https://dobeu.net/portal
 
-## Why hire one person
+## Why one person
 - You talk to the person doing the work
-- Decisions in hours not weeks
-- Modern stack from day one
+- The work is learned on the shift, not from a form
+- Not a ticket mill

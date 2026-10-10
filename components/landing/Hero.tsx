@@ -121,8 +121,8 @@ export function Hero() {
                 variant="outline"
                 onClick={() => trackAndOpen("form", "Send the job — hero")}
                 className="w-full rounded-full px-7 font-medium sm:w-auto"
-                data-testid="hero-estimate-cta"
                 aria-describedby="send-microcopy-hero"
+                data-testid="hero-estimate-cta"
               >
                 {HERO_COPY.estimateCta}
               </Button>
@@ -160,7 +160,7 @@ export function Hero() {
             </li>
             <li>
               <Link
-                href="/#faq"
+                href="/#about"
                 className="inline-flex items-center rounded-full border border-border px-3 py-1 transition-colors hover:border-primary hover:text-foreground"
               >
                 Stripe invoices

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 
-export function ConversionBridge({ label = "Want this for your product?" }: { label?: string }) {
+export function ConversionBridge({ label = "If the job is a fleet, tell me about it." }: { label?: string }) {
   const { open } = useLightbox();
 
   return (
@@ -15,7 +15,7 @@ export function ConversionBridge({ label = "Want this for your product?" }: { la
           Book a call
         </Button>
         <Button size="sm" variant="outline" className="rounded-full" onClick={() => open("form")}>
-          Tell me about your project
+          Tell me about the job
         </Button>
       </div>
     </div>

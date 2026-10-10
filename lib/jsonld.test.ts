@@ -15,12 +15,13 @@ describe("marketing JSON-LD builders", () => {
     expect(json.email).toBe("jeremyw@dobeu.net");
     expect(json.areaServed).toMatch(/NYC/);
     expect(json.priceRange).toMatch(/5k/);
+    expect(json.description).not.toMatch(/AI automation|AI agent/i);
     expect(JSON.stringify(json)).not.toContain("dobeu.cloud");
   });
 
   it("emits Service + Offer with 5000-30000 priceRange", () => {
-    const pillar = getServicePillar("ai-agents");
-    const json = serviceOfferJsonLd(pillar, "/services/ai-agents");
+    const pillar = getServicePillar("on-the-shift");
+    const json = serviceOfferJsonLd(pillar, "/services/on-the-shift");
     expect(json["@type"]).toBe("Service");
     expect(json.offers["@type"]).toBe("Offer");
     expect(json.offers.priceRange).toContain("5000");
@@ -32,10 +33,10 @@ describe("marketing JSON-LD builders", () => {
     const json = breadcrumbListJsonLd([
       { name: "Home", path: "/" },
       { name: "Services", path: "/services" },
-      { name: "AI agents", path: "/services/ai-agents" },
+      { name: "On the shift", path: "/services/on-the-shift" },
     ]);
     expect(json["@type"]).toBe("BreadcrumbList");
     expect(json.itemListElement).toHaveLength(3);
-    expect(json.itemListElement[2]?.item).toMatch(/\/services\/ai-agents$/);
+    expect(json.itemListElement[2]?.item).toMatch(/\/services\/on-the-shift$/);
   });
 });

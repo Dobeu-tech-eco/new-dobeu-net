@@ -22,13 +22,13 @@ export function ExperimentSlot({ experiment }: { experiment: LabExperimentEntry 
         <span className="text-foreground">{experiment.status === "live" ? "Live on site" : "Coming soon"}</span>
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-border/60 bg-background/60 p-4">
-        <p className="text-sm font-medium">Want this for your product?</p>
+        <p className="text-sm font-medium">If the job is a fleet, tell me about it.</p>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" className="rounded-full" onClick={() => open("book")}>
             Book a call
           </Button>
           <Button size="sm" variant="outline" className="rounded-full" onClick={() => open("form")}>
-            Start a project brief
+            Tell me about the job
           </Button>
         </div>
       </div>

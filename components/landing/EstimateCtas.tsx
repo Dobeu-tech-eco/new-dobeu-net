@@ -7,8 +7,8 @@ import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
 import { HERO_COPY } from "@/lib/jeremy-data";
 
-export const BOOK_MICROCOPY = "30 min, no pitch.";
-export const SEND_MICROCOPY = "I reply with a price band.";
+export const BOOK_MICROCOPY = "30 min on the actual job.";
+export const SEND_MICROCOPY = "I reply about the job.";
 
 export function EstimateCtas({
   location,

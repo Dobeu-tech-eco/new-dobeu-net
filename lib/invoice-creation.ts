@@ -111,9 +111,6 @@ export async function createInvoiceForUser(
   //
   // `user_id` is ALWAYS populated so the new RLS branch (user_id = auth.uid())
   // makes the invoice visible to the client even when `project_id` is NULL.
-  // Cast: `invoices.user_id` / nullable `project_id` land in lib/database.types.ts
-  // via the central `pnpm db:types` regen (migration 20260618000000) — until
-  // then the generated types are stale, so we cast the insert payload.
   const invoiceRow = {
     project_id: input.project_id ?? null,
     user_id: input.user_id,
@@ -125,8 +122,7 @@ export async function createInvoiceForUser(
   };
   const { data, error } = await admin
     .from("invoices")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .insert(invoiceRow as any)
+    .insert(invoiceRow)
     .select("id")
     .single();
 

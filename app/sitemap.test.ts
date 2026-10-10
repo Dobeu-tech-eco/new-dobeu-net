@@ -9,7 +9,7 @@ describe("sitemap", () => {
     expect(urls.some((u) => u.endsWith("/pricing"))).toBe(true);
     expect(urls.some((u) => u.endsWith("/services"))).toBe(true);
     expect(urls.some((u) => u.endsWith("/case-studies/lastplate"))).toBe(true);
-    expect(urls.some((u) => u.endsWith("/services/ai-agents"))).toBe(true);
+    expect(urls.some((u) => u.endsWith("/services/on-the-shift"))).toBe(true);
 
     const home = entries.find((e) => e.url.endsWith("/"));
     const privacy = entries.find((e) => e.url.endsWith("/privacy"));

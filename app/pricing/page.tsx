@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Typical engagement ${PRICE_RANGE.display} for operators in ${NAP.areaServed}. ${HERO_COPY.estimateCta} and I reply with a band — not an instant checkout.`,
+  description: `Typical engagement ${PRICE_RANGE.display} for fleet partnerships in ${NAP.areaServed}. ${HERO_COPY.estimateCta} and I reply about the job — not an instant checkout.`,
   alternates: { canonical: "/pricing" },
 };
 
@@ -18,8 +18,8 @@ export default function PricingPage() {
       <JsonLd data={serviceOfferJsonLd(undefined, "/pricing")} />
       <MarketingPageHeader
         eyebrow="Pricing"
-        title="Clear bands. No procurement theater."
-        description={`${PRICE_RANGE.line}. ${HERO_COPY.estimateCta} and I reply with a band before we talk numbers.`}
+        title="The number follows the job."
+        description={`${PRICE_RANGE.line}. ${HERO_COPY.estimateCta} and I reply about whether I can take the work.`}
       />
 
       <section className="container max-w-6xl pb-[calc(5rem+var(--cookie-banner-offset,0px))]">
@@ -48,7 +48,7 @@ export default function PricingPage() {
 
         <div className="mt-10 max-w-xl">
           <p className="mb-4 text-sm text-muted-foreground">
-            This form does not price the job or start a checkout. I read it and reply with a band.
+            This form does not price the job or start a checkout. I read it and reply about the work.
           </p>
           <EstimateCtas location="pricing" estimateTestId="pricing-estimate-cta" />
         </div>

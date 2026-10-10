@@ -26,11 +26,11 @@ const SITE_URL = getSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Dobeu Tech Solutions — Ship the agent. Ship the app. Ship the brand.",
+    default: "Dobeu Tech Solutions — Partnership on the fleet job.",
     template: "%s · Dobeu Tech Solutions"
   },
   description:
-    "One operator. Modern stack. Production-grade AI agents, full-stack web apps, brand systems, and growth engineering for founders who need it shipped, not pitched.",
+    "One operator for small fleets. Tailored work with the people on the shift. A product only if the work earns it. Not a faceless ticket mill.",
   authors: [{ name: "Jeremy Williams", url: SITE_URL }],
   creator: "Dobeu Tech Solutions",
   openGraph: {
@@ -38,15 +38,15 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Dobeu Tech Solutions",
-    title: "Dobeu Tech Solutions — Ship the agent. Ship the app. Ship the brand.",
+    title: "Dobeu Tech Solutions — Partnership on the fleet job.",
     description:
-      "Production-grade AI agents, full-stack web apps, brand systems, and growth engineering. One operator. Modern stack.",
+      "Tailored fleet work with the people on the shift. A product only if the work earns it. Not a faceless ticket mill.",
     images: [{ url: "/opengraph-image", width: 1200, height: 630 }]
   },
   twitter: {
     card: "summary_large_image",
     title: "Dobeu Tech Solutions",
-    description: "Ship the agent. Ship the app. Ship the brand."
+    description: "Partnership on the fleet job. Not a ticket mill."
   },
   robots: {
     index: true,
@@ -99,7 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   url: SITE_URL,
                   name: "Dobeu Tech Solutions",
                   description:
-                    "Production-grade AI agents, full-stack web apps, brand systems, and growth engineering.",
+                    "Partnership on fleet work with the people on the shift. A product only if the work earns it.",
                   publisher: { "@id": `${SITE_URL}/#organization` },
                   potentialAction: {
                     "@type": "SearchAction",

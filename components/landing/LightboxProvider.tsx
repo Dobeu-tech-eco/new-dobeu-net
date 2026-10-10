@@ -33,7 +33,7 @@ export function useLightbox(): LightboxCtx {
 const COPY: Record<Tab, { title: string; description: string }> = {
   book: {
     title: "Book a call",
-    description: "Thirty minutes. I come back with a price band.",
+    description: "Thirty minutes on the actual job. No pitch deck.",
   },
   form: {
     title: "Send the job",
@@ -41,7 +41,7 @@ const COPY: Record<Tab, { title: string; description: string }> = {
   },
   email: {
     title: "Send a note",
-    description: "Email is enough. I reply with a price band if the job is a fit.",
+    description: "Email is enough. I reply if the job is a fit.",
   },
 };
 

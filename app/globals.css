@@ -267,6 +267,14 @@ body.mobile-nav-open .sticky-mobile-cta {
   display: none;
 }
 
+/* The sticky bar is fixed and mobile-only, so the last section would sit underneath it.
+   StickyMobileCTA publishes its height as --sticky-cta-offset. */
+@media (max-width: 767px) {
+  main#main {
+    padding-bottom: var(--sticky-cta-offset, 0px);
+  }
+}
+
 /* Instrument light.
    The live nav lockup sits outside `main` and is not given a transition.
    `.dobeu-logo-lock` only marks that lockup so later motion cannot claim it.

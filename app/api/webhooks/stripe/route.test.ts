@@ -75,7 +75,7 @@ vi.mock("@/lib/supabase/server", () => ({
             ...terminal,
             // The route chains .neq("status", ...) as an idempotency guard after
             // .eq(); the filter doesn't change mock behavior, just pass through.
-            neq: (_col: string, _val: string) => terminal
+            neq: () => terminal
           };
         }
       }),

@@ -90,7 +90,7 @@ Hard blockers before Phase 3 can start:
 | `lib/stripe.ts` server client | ⏳ Phase 3 |
 | `/api/webhooks/stripe` handler + signature verification | ⏳ Phase 3 |
 | Work-order UI (`/portal/tickets`, `/admin/tickets`) | ⏳ Phase 3 |
-| Wire Resend admin notification on `submitWorkOrder` | ⏳ Phase 3 (TODO marker in action) |
+| Wire Resend admin notification on `submitWorkOrder` | ✅ Shipped |
 | Datadog log drain hookup (Vercel → Datadog) | ⏳ Phase 3 |
 | Auth hardening follow-ups (Phase 4) | ✅ MFA shipped; chat-widget verification dropped with the chat integration |
 | Legacy `db-dobeutech-unified` data cutover | ✅ **Decided** — NO-OP data; see `cutover-decision.md` |

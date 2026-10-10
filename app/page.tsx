@@ -10,6 +10,9 @@ import { professionalServiceJsonLd } from "@/lib/marketing-schema";
 const Services = dynamic(() =>
   import("@/components/landing/Services").then((m) => m.Services)
 );
+const Pipeline = dynamic(() =>
+  import("@/components/landing/Pipeline").then((m) => m.Pipeline)
+);
 const HowItWorks = dynamic(() =>
   import("@/components/landing/HowItWorks").then((m) => m.HowItWorks)
 );
@@ -18,9 +21,9 @@ const FAQ = dynamic(() => import("@/components/landing/FAQ").then((m) => m.FAQ))
 const FinalCTA = dynamic(() => import("@/components/landing/FinalCTA").then((m) => m.FinalCTA));
 
 export const metadata: Metadata = {
-  title: "AI Automation & Custom Software for Small Business | NYC & NJ | Dobeu",
+  title: "Partnership on the fleet job | Dobeu",
   description:
-    `Vertical AI ops for logistics, fleet, and food service in ${NAP.areaServed}. Typical engagement ${PRICE_RANGE.display}. Book a call or get a price estimate.`,
+    `Partnership on the actual fleet job in ${NAP.areaServed}. A product only if the work earns it. Typical engagement ${PRICE_RANGE.display}.`,
   alternates: { canonical: "/" },
 };
 
@@ -30,6 +33,7 @@ export default function HomePage() {
       <JsonLd data={professionalServiceJsonLd()} />
       <Hero />
       <Services />
+      <Pipeline />
       <HowItWorks />
       <Founder />
       <FAQ />

@@ -22,8 +22,8 @@ export default function TermsPage() {
 
       <h2>1. Services</h2>
       <p>
-        Dobeu provides custom software development, design systems, AI agent engineering, and
-        growth-engineering services. The specific scope, deliverables, timeline, fees, and intellectual
+        Dobeu provides tailored software and operational partnership for the work a client
+        actually runs, including fleet operations. The specific scope, deliverables, timeline, fees, and intellectual
         property assignment for each client engagement are set out in a separate signed Statement of Work
         (&ldquo;SOW&rdquo;) or proposal that is provided prior to commencement. In the event of a conflict
         between these Terms and an executed SOW, the SOW controls.
@@ -81,7 +81,7 @@ export default function TermsPage() {
       </p>
       <p>
         You grant Dobeu a limited, non-exclusive licence to use your name, logo, and general project
-        description (e.g., &ldquo;built a custom AI agent for [Client]&rdquo;) in our portfolio and
+        description (e.g., &ldquo;built dispatch tools for a small fleet&rdquo;) in our portfolio and
         marketing materials unless you request confidentiality in writing before project commencement.
       </p>
 

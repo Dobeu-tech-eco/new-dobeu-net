@@ -2,23 +2,23 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Bot, Code2, Palette, LineChart, ArrowRight, MessageSquare } from "lucide-react";
+import { Truck, ClipboardList, Handshake, Package, ArrowRight, MessageSquare } from "lucide-react";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
-import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
+import { HERO_COPY, MARKETING_SERVICES } from "@/lib/jeremy-data";
 
 const ICONS = {
-  Bot,
-  Code2,
-  Palette,
-  LineChart,
+  Truck,
+  ClipboardList,
+  Handshake,
+  Package,
 } as const;
 
 const HOME_OUTCOMES: Record<string, string> = {
-  "ai-agents": `One loop off the inbox, running without a chase — usually in the ${PRICE_RANGE.display} band.`,
-  fullstack: `The app the crew opens on shift, kept in your repo — usually in the ${PRICE_RANGE.display} band.`,
-  brand: `A front door that matches the work — usually in the ${PRICE_RANGE.display} band.`,
-  growth: `Invoices go out on time and margins stay visible, through Stripe — usually in the ${PRICE_RANGE.display} band.`,
+  "on-the-shift": "Hours in the yard and on dispatch, with the people who already do the work.",
+  "the-job": "A system for this fleet, kept in your repo. Larger than a brochure site.",
+  "one-person": "You talk to me. There is no queue, and no form that prices the job.",
+  "earned-product": "A product only after the partnership earns it. See what's in the pipeline.",
 } as const;
 
 export function Services({ variant = "home" }: { variant?: "home" | "standalone" }) {
@@ -49,15 +49,14 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                 id="work-heading"
                 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance"
               >
-                Dispatch, paperwork,
+                The yard, the board,
                 <br />
-                <span className="text-muted-foreground">reconciliation, invoicing.</span>
+                <span className="text-muted-foreground">the people on the shift.</span>
               </h2>
             </div>
             <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
-              These are the jobs. Most engagements mix a few. I take a small
-              number at a time. From multi-fleet dispatch to the kitchen, the
-              site, and the desk — one loop at a time.
+              Small fleets. I take a few at a time. Partnership first — a
+              brochure site is not the job.
             </p>
           </motion.div>
         )}
@@ -73,7 +72,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                 whileInView={mp.whileInView}
                 viewport={mp.viewport}
                 transition={{ duration: 0.4, delay: i * 0.06 }}
-                className="group relative bg-background p-8 md:p-10 hover:bg-card transition-colors duration-200 scroll-mt-20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background"
+                className="group relative bg-background p-8 md:p-10 hover:bg-card transition-colors duration-200 scroll-mt-20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-inset has-[:focus-visible]:ring-primary"
               >
                 <div className="flex items-start justify-between mb-8">
                   <span className="font-mono text-[3.5rem] font-bold text-border leading-none select-none tabular-nums">
@@ -107,10 +106,10 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
 
                     <Link
                       href={`/services/${s.id}`}
-                      aria-label={`${s.title} — See what this loop looks like`}
+                      aria-label={`${s.title} — See how this work goes`}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 group-hover:underline after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none"
                     >
-                      See what this loop looks like
+                      See how this work goes
                     </Link>
                   </>
                 ) : (
@@ -159,7 +158,7 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
               <div>
                 <p className="font-semibold text-sm text-foreground">Something else?</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Doesn&apos;t fit a category? {HERO_COPY.estimateCta} and I&apos;ll reply with a price band.
+                  Doesn&apos;t fit? {HERO_COPY.estimateCta} and I&apos;ll reply about whether I can take it.
                 </p>
               </div>
             </div>
