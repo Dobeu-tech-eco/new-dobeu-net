@@ -4,11 +4,11 @@ import { gotoLanding, seedCookieConsent } from "./helpers";
 test.describe("Landing page smoke tests", () => {
   test("homepage loads with outcome hero", async ({ page }) => {
     await gotoLanding(page);
-    await expect(page).toHaveTitle(/AI Automation|Small Business|Dobeu/i);
+    await expect(page).toHaveTitle(/Operations Software|Small Business|Dobeu/i);
     await expect(page.locator("main")).toBeVisible();
-    await expect(page.locator("#hero-heading")).toContainText(/trucks, kitchens, and sites/i);
-    await expect(page.locator("#hero-heading")).not.toContainText(/autonomous AI coding agents/i);
-    await expect(page.getByTestId("hero-price-line")).toContainText(/\$5k/);
+    await expect(page.locator("#hero-heading")).toContainText(/solution built for it/i);
+    await expect(page.locator("#hero-heading")).not.toContainText(/AI|automation/i);
+    await expect(page.getByText("RouteReady", { exact: true }).first()).toBeVisible();
   });
 
   test("hero has book and estimate CTAs", async ({ page }) => {

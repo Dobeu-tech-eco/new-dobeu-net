@@ -18,9 +18,9 @@ const FAQ = dynamic(() => import("@/components/landing/FAQ").then((m) => m.FAQ))
 const FinalCTA = dynamic(() => import("@/components/landing/FinalCTA").then((m) => m.FinalCTA));
 
 export const metadata: Metadata = {
-  title: "AI Automation & Custom Software for Small Business | NYC & NJ | Dobeu",
+  title: "Custom Operations Software for Small Business | Dobeu",
   description:
-    `Vertical AI ops for logistics, fleet, and food service in ${NAP.areaServed}. Typical engagement ${PRICE_RANGE.display}. Book a call or get a price estimate.`,
+    `Tailored operational systems for fleets and service businesses in ${NAP.areaServed}. We learn how your business runs, then build what it actually needs. Typical engagement ${PRICE_RANGE.display}.`,
   alternates: { canonical: "/" },
 };
 

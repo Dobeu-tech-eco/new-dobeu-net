@@ -42,22 +42,20 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
             className="mb-14 md:mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6"
           >
             <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">
+              <p className="max-w-lg text-sm font-semibold text-primary mb-4">
                 {HERO_COPY.diagnostic}
               </p>
               <h2
                 id="work-heading"
                 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance"
               >
-                Dispatch, paperwork,
+                Start with the constraint.
                 <br />
-                <span className="text-muted-foreground">reconciliation, invoicing.</span>
+                <span className="text-muted-foreground">Build only what solves it.</span>
               </h2>
             </div>
             <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
-              These are the jobs. Most engagements mix a few. I take a small
-              number at a time. From multi-fleet dispatch to the kitchen, the
-              site, and the desk — one loop at a time.
+              Every engagement starts with how your people work today. The result may be a field app, an operations portal, or a better handoff—but never technology for its own sake.
             </p>
           </motion.div>
         )}

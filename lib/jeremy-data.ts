@@ -92,18 +92,19 @@ export function resolveTypeformFormId(
 }
 
 // ---------------------------------------------------------------------------
-// Hero copy — SMB Outcome (locked implement direction)
+// Hero copy — operations-first positioning
 // ---------------------------------------------------------------------------
 export const HERO_COPY = {
   greeting: "Hi. I'm Jeremy.",
-  outcome: "AI that keeps your trucks, kitchens, and sites running.",
+  outcome: "Your operation deserves a solution built for it.",
   diagnostic:
-    "If ops still live in spreadsheets, you don't have an AI problem. You have a process problem.",
-  estimateCta: "Send the job",
-  estimateHint: "I'll reply with a price band. Not an instant quote.",
-  bookCta: "Book a call",
-  promise: "Dispatch that actually dispatches.",
-  proof: "Prices are published. Invoices go through Stripe. The code lands in your repo.",
+    "Where does work slow down, disappear, or become harder than it should be?",
+  estimateCta: "Show us the problem",
+  estimateHint: "We'll review it and tell you plainly whether we can help.",
+  bookCta: "Talk through your operation",
+  promise:
+    "We design and build tailored systems that make day-to-day work safer, clearer, and easier to run—from the field to the back office.",
+  proof: "Built for the operation you have, not the trend of the moment.",
 } as const;
 
 /** Exported for tests. The hero shows HERO_COPY.promise and no longer rotates these. */
