@@ -1,13 +1,14 @@
 "use client";
 
+import { useId } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
 import { HERO_COPY } from "@/lib/jeremy-data";
 
-export const BOOK_MICROCOPY = "30 min, no pitch.";
-export const SEND_MICROCOPY = "I reply with a price band.";
+export const BOOK_MICROCOPY = "30 min on the actual job.";
+export const SEND_MICROCOPY = "I reply about the job.";
 
 export function EstimateCtas({
   location,
@@ -21,6 +22,9 @@ export function EstimateCtas({
   className?: string;
 }) {
   const { open } = useLightbox();
+  const idBase = useId();
+  const bookMicrocopyId = `${idBase}-book`;
+  const sendMicrocopyId = `${idBase}-send`;
 
   function trackAndOpen(target: "book" | "form", label: string) {
     track("cta_click", { cta_label: label, cta_location: location, target });
@@ -35,13 +39,13 @@ export function EstimateCtas({
             size="lg"
             onClick={() => trackAndOpen("book", `Book a call — ${location}`)}
             className="group rounded-full font-semibold"
-            aria-describedby={`book-microcopy-${location}`}
+            aria-describedby={bookMicrocopyId}
             data-testid={bookTestId}
           >
             {HERO_COPY.bookCta}
             <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </Button>
-          <p id={`book-microcopy-${location}`} className="text-xs text-muted-foreground">
+          <p id={bookMicrocopyId} className="text-xs text-muted-foreground">
             {BOOK_MICROCOPY}
           </p>
         </div>
@@ -51,12 +55,12 @@ export function EstimateCtas({
             variant="outline"
             onClick={() => trackAndOpen("form", `${HERO_COPY.estimateCta} — ${location}`)}
             className="rounded-full font-medium"
-            aria-describedby={`send-microcopy-${location}`}
+            aria-describedby={sendMicrocopyId}
             data-testid={estimateTestId}
           >
             {HERO_COPY.estimateCta}
           </Button>
-          <p id={`send-microcopy-${location}`} className="text-xs text-muted-foreground">
+          <p id={sendMicrocopyId} className="text-xs text-muted-foreground">
             {SEND_MICROCOPY}
           </p>
         </div>

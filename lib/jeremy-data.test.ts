@@ -7,7 +7,12 @@ import {
   getServicePillar,
   getShippedWork,
   HAS_ATTRIBUTABLE_CASE_STUDIES,
+  GTM_PILLARS,
   HERO_COPY,
+  LEAD_REPLY_SLA,
+  MARKETING_FAQS,
+  PIPELINE,
+  PRICING_TIERS,
   ORGANIZATION_SAME_AS,
   PERSON_SAME_AS,
   PRICE_RANGE,
@@ -45,15 +50,45 @@ describe("jeremy-data marketing source", () => {
     expect(SHOW_LABS_HERO_CTA).toBe(false);
   });
 
-  it("uses an outcome H1, not a stack slogan", () => {
-    expect(HERO_COPY.outcome.toLowerCase()).not.toContain("autonomous ai coding agents");
+  it("uses a fleet-partnership H1, not an AI-automation slogan", () => {
+    expect(HERO_COPY.outcome).toBe("Partnership on the fleet job.");
+    expect(HERO_COPY.outcome.toLowerCase()).not.toMatch(/ai agent|ai automation|autonomous/);
     expect(HERO_COPY.greeting).toMatch(/Jeremy\.$/);
-    expect(HERO_COPY.diagnostic.toLowerCase()).toContain("spreadsheet");
+    expect(HERO_COPY.diagnostic.toLowerCase()).toContain("not a form-filling dev shop");
+    expect(HERO_COPY.promise.toLowerCase()).toContain("trucks");
     expect(PRICE_RANGE.line).toMatch(/\$5k/);
     expect(PRICE_RANGE.line).toMatch(/\$30k/);
-    expect(TYPEWRITER_PHRASES.join(" ")).not.toMatch(/autonomous AI coding agents/i);
-    expect(HERO_COPY.promise).toBe("Dispatch that actually dispatches.");
+    expect(TYPEWRITER_PHRASES.join(" ")).not.toMatch(/autonomous|ai agent|ai automation/i);
     expect(HERO_COPY.estimateCta).toBe("Send the job");
+    expect(LEAD_REPLY_SLA).toBe("reply about the job within 24 hours");
+    expect(LEAD_REPLY_SLA.toLowerCase()).not.toContain("price band");
+  });
+
+  it("teases RouteReady without a URL", () => {
+    expect(PIPELINE.eyebrow).toMatch(/pipeline/i);
+    expect(PIPELINE.name).toBe("RouteReady");
+    expect(PIPELINE.lede.toLowerCase()).toContain("owners");
+    expect(PIPELINE.body.toLowerCase()).toContain("not generally launched");
+    const blob = JSON.stringify(PIPELINE);
+    expect(blob).not.toMatch(/https?:\/\//i);
+    expect(blob.toLowerCase()).not.toMatch(/routeready[a-z0-9.-]*\.(com|net|io|app)/);
+    expect(blob.toLowerCase()).not.toContain("visit routeready");
+  });
+
+  it("does not sell an AI automation service in public copy", () => {
+    const blob = JSON.stringify({
+      HERO_COPY,
+      GTM_PILLARS,
+      PIPELINE,
+      MARKETING_FAQS,
+      PRICING_TIERS,
+      SHIPPED_WORK,
+      TYPEWRITER_PHRASES,
+    }).toLowerCase();
+    expect(blob).not.toMatch(/ai agent|ai automation|autonomous|coding agent/);
+    expect(blob).not.toContain("price band");
+    expect(getServicePillar("ai-agents")).toBeUndefined();
+    expect(getServicePillar("on-the-shift")?.headline.toLowerCase()).not.toMatch(/ai/);
   });
 
   it("excludes dead hosts from public chrome data", () => {
@@ -92,7 +127,7 @@ describe("jeremy-data marketing source", () => {
   });
 
   it("resolves service pillars by slug", () => {
-    expect(getServicePillar("ai-agents")?.headline).toMatch(/AI agents/i);
+    expect(getServicePillar("on-the-shift")?.headline).toMatch(/trucks/i);
     expect(getServicePillar("not-a-pillar")).toBeUndefined();
   });
 

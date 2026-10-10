@@ -18,7 +18,7 @@ The marketing landing + lead pipeline is production-grade and live. The gap is t
 | 1 | Schema | Migrate `db-dobeutech-unified` → Vercel-managed Supabase. Legacy is the source of truth until cutover; one-way cutover; retire legacy after a 7-day soak. |
 | 2 | Launch bar | Phased. Marketing/lead-capture already ships; pay-an-invoice flow is Phase 3 (second), not on the first-cutover critical path, but non-negotiable for the broader plan. |
 | 3 | Stripe model | **Stripe-hosted invoicing.** Admin clicks "Create Stripe Invoice"; we store `stripe_invoice_id` + `hosted_invoice_url`; Stripe sends the pay link; `/api/webhooks/stripe` flips local status. No custom invoice-builder UI. |
-| 4 | Messaging | Drop `messages` table + `/portal/messages`. Intercom owns chat. Add a **work-order ticketing system** (the headline new feature). |
+| 4 | Messaging | Drop `messages` table + `/portal/messages`. No in-app chat. Add a **work-order ticketing system** (the headline new feature). |
 | 5 | File uploads | Client uploads are **scoped to work-order submissions only** (`work_order_attachments`). Admin still uploads deliverables to `project_files` independently. |
 | 6 | Admin set | Single admin `jeremyw@dobeu.net`. **`ADMIN_EMAILS` is the only source of truth**; drop the `profiles.is_admin` DB mirror. Expandable later by editing one env var. |
 
@@ -42,7 +42,7 @@ The marketing landing + lead pipeline is production-grade and live. The gap is t
 | P0 — `NEXT_PUBLIC_SITE_URL` | `??` guard throws on empty-string env; sitemap/robots emit localhost | Fix guard + reconcile 20 Vercel envs (Phase 1) |
 | P0 — Schema drift | `20260521000000_initial_schema.sql` never applied to live DB; `lib/leads.ts` probes 3 table names | DB migration + lock-in (Phase 1) |
 | Build hardening | Node `20.x` pinned, `.nvmrc`, OG edge dropped, `strict-build.mjs` gating | Done (`2a80db8`) |
-| Auth | Supabase magic-link; admin gate = `ADMIN_EMAILS` in `lib/utils.ts` + duplicated in middleware | Consolidate; add TOTP MFA + Intercom HMAC (Phase 4) |
+| Auth | Supabase magic-link; admin gate = `ADMIN_EMAILS` in `lib/utils.ts` + duplicated in middleware | Consolidate; add TOTP MFA (Phase 4) |
 
 ---
 
@@ -50,7 +50,7 @@ The marketing landing + lead pipeline is production-grade and live. The gap is t
 
 **CEO lens.** The product story tightens: the site already converts visitors → leads; this plan closes the loop so a lead becomes a paying, serviced client without leaving the portal. The **work-order system is the strategic addition** — it turns a passive "download your files" portal into an active intake channel ("Create a Logo," "Update webpage," "Export Data") that generates new billable work from existing clients. That's expansion revenue with near-zero CAC. Payments-second is the right call: you can onboard clients and take work orders before the Stripe flow is wired, then monetize. Risk to watch: scope. The work-order system is deliberately minimal (quote → accept → invoice), not a full PM tool.
 
-**Design lens.** The work-order detail page should read as a **conversation-style status timeline** (open → quoted → accepted → in progress → delivered), not a form dump. Reuse the existing portal shell (sidebar, cards, sonner toasts, indigo/amber tokens). The "accept quote" moment is the emotional peak — make it a single confident button with the amount rendered via `formatCurrency`. Empty states matter (no tickets yet → a friendly "Need something? Submit a request" CTA). Replace the Messages nav item with **Tickets** (swap `MessagesSquare` for a `Ticket`/`ClipboardList` icon). Keep Intercom as the floating widget for ad-hoc chat.
+**Design lens.** The work-order detail page should read as a **conversation-style status timeline** (open → quoted → accepted → in progress → delivered), not a form dump. Reuse the existing portal shell (sidebar, cards, sonner toasts, indigo/amber tokens). The "accept quote" moment is the emotional peak — make it a single confident button with the amount rendered via `formatCurrency`. Empty states matter (no tickets yet → a friendly "Need something? Submit a request" CTA). Replace the Messages nav item with **Tickets** (swap `MessagesSquare` for a `Ticket`/`ClipboardList` icon). Ad-hoc client questions go through the work-order ticket flow.
 
 **DevEx lens.** Standardize on **Server Actions as the only mutation path** (per CLAUDE.md "no client-side Supabase writes"). One pattern: `"use server"` action → Zod validation → `createClient()` (RLS, user-scoped) for client actions or `createAdminClient()` for admin actions → `revalidatePath`. Centralize the admin gate so middleware and server actions share one `isAdminEmail`/`requireAdmin` helper. Delete the `LEAD_TABLES` loop so the data layer is honest about where rows go.
 
@@ -60,7 +60,7 @@ The marketing landing + lead pipeline is production-grade and live. The gap is t
 
 ## 4. Auth0 recommendation (STAY)
 
-**Stay on Supabase Auth.** The user deliberately migrated off Auth0 to eliminate its cost, and nothing in this scope needs Auth0's enterprise features. The cheaper, sufficient hardening is: (a) enable **Supabase TOTP MFA** for the single admin account, and (b) turn on **Intercom Identity Verification (HMAC)** so the support widget can't be spoofed. Both are Phase 4, ~1–2 days total, $0 added cost. **Revisit Auth0 only if** one of these triggers fires: (1) you need SSO/SAML for enterprise clients, (2) you onboard a team/multi-tenant model with role hierarchies beyond single-admin, or (3) compliance (SOC 2 / HIPAA) demands a managed IdP with audit logging Supabase can't satisfy. Until then, Auth0 migration work is explicitly **out of scope**.
+**Stay on Supabase Auth.** The user deliberately migrated off Auth0 to eliminate its cost, and nothing in this scope needs Auth0's enterprise features. The cheaper, sufficient hardening is: (a) enable **Supabase TOTP MFA** for the single admin account. Phase 4, ~1–2 days total, $0 added cost. **Revisit Auth0 only if** one of these triggers fires: (1) you need SSO/SAML for enterprise clients, (2) you onboard a team/multi-tenant model with role hierarchies beyond single-admin, or (3) compliance (SOC 2 / HIPAA) demands a managed IdP with audit logging Supabase can't satisfy. Until then, Auth0 migration work is explicitly **out of scope**.
 
 ---
 
@@ -99,7 +99,7 @@ Effort key: **S** ≈ ≤0.5 day, **M** ≈ 0.5–1.5 days, **L** ≈ 2–4 days
 | Admin CRUD: create/edit project, create user (invite), edit user, upload deliverable to `project_files` | `app/admin/users/*`, `app/admin/projects/*`, `lib/actions/{projects,users,files}.ts` | L |
 | **Deploy work-order schema + RLS** (already created in P1; verify + wire types) | `lib/database.types.ts` | S |
 | Replace portal `Messages` nav with `Tickets`; drop `app/portal/messages`; drop `messages` table | `app/portal/layout.tsx:30`, migration | S |
-| Hoist duplicated `intercomNameFromUser` into a shared util | `lib/intercom.ts` or `lib/utils.ts` (used by `app/{admin,portal}/layout.tsx`) | S |
+| Hoist the duplicated display-name helper into a shared util | `lib/utils.ts` (used by `app/{admin,portal}/layout.tsx`) | S |
 
 **Exit gate:** admin can create a project and upload a deliverable; client sees + downloads it; all mutations go through server actions; work-order tables live with RLS verified by a cross-tenant test (a second user cannot read another's tickets).
 
@@ -117,7 +117,7 @@ Effort key: **S** ≈ ≤0.5 day, **M** ≈ 0.5–1.5 days, **L** ≈ 2–4 days
 | Work-order server actions: `submitWorkOrder`, `quoteWorkOrder`, `acceptWorkOrderQuote`, `updateWorkOrderStatus` (see §7.4) | `lib/actions/work-orders.ts` | M |
 | Storage bucket `work-order-attachments` + signed-URL upload flow | migration + `lib/actions/work-orders.ts` | M |
 | **Linkage:** `acceptWorkOrderQuote` → admin queue → "Create Stripe Invoice" sets `work_orders.invoice_id` | `lib/actions/{work-orders,invoices}.ts` | M |
-| Notifications: create → Resend admin + Intercom `work_order_created`; transitions → Resend client | `lib/leads.ts` patterns reused, `lib/actions/work-orders.ts` | M |
+| Notifications: create → Resend admin; transitions → Resend client | `lib/leads.ts` patterns reused, `lib/actions/work-orders.ts` | M |
 | Observability: Datadog Log Drain hookup + Stripe webhook error alerting | `lib/datadog.ts`, Vercel/Datadog config | S |
 
 **Exit gate:** end-to-end — client submits a work order with a file → admin quotes it → client accepts → admin creates a Stripe invoice → client pays via Stripe-hosted page → webhook flips status to `paid` → both portal and admin reflect it. Stripe in test mode first, then live-key smoke with a $1 invoice.
@@ -127,10 +127,9 @@ Effort key: **S** ≈ ≤0.5 day, **M** ≈ 0.5–1.5 days, **L** ≈ 2–4 days
 | Item | Files | Effort |
 |---|---|---|
 | Enable Supabase TOTP MFA for admin; enforce on `/admin/*` | Supabase dashboard + `app/admin/layout.tsx` MFA assurance check | M |
-| Intercom Identity Verification (HMAC) | `lib/intercom.ts`, `components/portal/IntercomIdentify.tsx`, `INTERCOM_SECRET` env | S |
 | Replace in-memory rate-limit fallback with Upstash (or document accepted risk) | `app/api/lead/route.ts` | S |
 
-**Exit gate:** admin login requires TOTP; Intercom rejects unsigned identify; rate-limit is durable across instances.
+**Exit gate:** admin login requires TOTP; rate-limit is durable across instances.
 
 ### Phase 5 — Polish (~3–5 days)
 
@@ -211,7 +210,7 @@ Produce an inventory artifact (`.agent/migration/inventory.md`) listing every le
 | legacy `projects` | `projects` | Map `title`/`description`/`status` (normalize legacy status strings → `project_status` enum); `owner_user_id` re-pointed to migrated `auth.users.id`; `total_cents`/`stripe_link` if present. |
 | legacy `invoices` | `invoices` | Map `amount_cents`/`currency`/`status` (→ `invoice_status` enum); carry `stripe_invoice_id`/`stripe_payment_intent`; add new `hosted_invoice_url` (Phase 3) nullable. |
 | legacy `bookings` | `bookings` | Map `scheduled_at`/`email`/`name`/`status` (→ `booking_status`); carry `apollo_meeting_id`/`google_event_id`. |
-| legacy `messages` (if any) | **drop** | Decision 4 — Intercom replaces messaging. Do not migrate. |
+| legacy `messages` (if any) | **drop** | No in-app chat. Do not migrate. |
 | legacy analytics/events | `page_events` | Best-effort; map `event_name`/`properties`/`page_path`/`occurred_at`. Low value — migrate only if cheap. |
 
 **ID strategy:** generate a `uuid` map for legacy primary keys so FKs (`projects.owner_user_id`, `invoices.project_id`, `project_files.project_id`) resolve consistently. Keep the map in a temp table for the duration of the migration.
@@ -372,7 +371,7 @@ open → quoted → accepted → in_progress → delivered → closed
 
 ### 7.6 Notifications
 
-- **On create** (`submitWorkOrder`): Resend email to admin (`RESEND_REPLY_TO`) + Intercom event `work_order_created`. Customer.io optional.
+- **On create** (`submitWorkOrder`): Resend email to admin (`RESEND_REPLY_TO`). Customer.io optional.
 - **On quote / status transition:** Resend email to the client (reuse the `lib/leads.ts` Resend + `escapeHtml` template helpers). 
 - Keep all notification sends best-effort/non-fatal (same discipline as `processLead`).
 
@@ -392,7 +391,7 @@ open → quoted → accepted → in_progress → delivered → closed
 3. **In-memory rate-limit fallback** → Upstash or documented accepted risk (Phase 4). *(M ship-blocker)*
 4. **Admin-email parsing duplicated** (`isAdminEmail` + middleware) → single shared helper (Phase 2). *(M ship-blocker)*
 5. Drop `LEAD_TABLES` (covered by #1).
-6. Hoist duplicated `intercomNameFromUser` (`app/admin/layout.tsx` + `app/portal/layout.tsx`) into a shared util (Phase 2).
+6. Hoist the duplicated display-name helper (`app/admin/layout.tsx` + `app/portal/layout.tsx`) into a shared util (Phase 2).
 7. Delete 13/16 root `.cmd` operator scripts (keep `push-vercel-lockfile-fix`, `fix-lockfile-and-deploy`, `push-csp-fix`) (Phase 5).
 8. Remove 8 tested-but-unwired `lib/*` exports (Phase 5).
 9. Remove `admin/bookings` fallback (covered in Phase 1).

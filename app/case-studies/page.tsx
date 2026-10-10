@@ -9,7 +9,7 @@ import { professionalServiceJsonLd } from "@/lib/marketing-schema";
 export const metadata: Metadata = {
   title: "Case studies",
   description:
-    "Attributable shipped work from public GitHub repos — name, vertical, stack, and year. No invented testimonials.",
+    "Older public repos. They are not the offer. RouteReady is not listed here because it is not launched.",
   alternates: { canonical: "/case-studies" },
 };
 
@@ -24,8 +24,8 @@ export default function CaseStudiesPage() {
       />
       <MarketingPageHeader
         eyebrow="Case studies"
-        title="Shipped work you can click through"
-        description="Public repos only. No invented client names, quotes, or metric headlines."
+        title="Older repos, not the offer"
+        description="Public GitHub history. No invented clients. RouteReady is not in this list — it is not launched here."
       />
       <section className="container max-w-6xl pb-16">
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">

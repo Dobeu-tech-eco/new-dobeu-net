@@ -7,7 +7,7 @@ import { LabsPage } from "@/components/labs/LabsPage";
 export const metadata: Metadata = {
   title: "Labs — Interactive portfolio demos",
   description:
-    "Curated interactive demos from Dobeu shipped work: AI agent loops, shader craft, and lead pipeline fan-out.",
+    "A few interactive pieces from older work. Not the fleet offer, and not a service menu.",
   alternates: { canonical: "/labs" },
 };
 

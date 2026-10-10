@@ -32,14 +32,14 @@ export function professionalServiceJsonLd(opts?: {
     },
     description:
       opts?.description ??
-      `AI automation and custom software for small businesses in ${NAP.areaServed}. Typical engagement ${PRICE_RANGE.display}.`,
+      `Partnership on fleet work for operators in ${NAP.areaServed}. Typical engagement ${PRICE_RANGE.display}.`,
     priceRange: PRICE_RANGE.display,
   };
 }
 
 export function serviceOfferJsonLd(pillar?: GtmPillar, pagePath?: string) {
   const SITE_URL = getSiteUrl();
-  const name = pillar?.headline ?? "Custom software and AI automation";
+  const name = pillar?.headline ?? "Fleet partnership";
   const description =
     pillar?.description ??
     `Fixed-scope engagements from ${PRICE_RANGE.display} for operators in ${NAP.areaServed}.`;

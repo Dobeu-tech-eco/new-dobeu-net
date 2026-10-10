@@ -12,14 +12,14 @@
 
 Phases 0–3 shipped and are **live on production**. What remains is hardening, hygiene, and the one user-gated data migration:
 
-- **Phase 4 — Auth hardening** (~1–2d): Supabase TOTP MFA for the single admin, enforced as an AAL2 gate on `/admin/*`; Intercom Identity Verification (HMAC). Both plumbing paths already exist (`IntercomIdentify` accepts `user_hash`; `identifyIntercom` forwards it) — only the server-side signing + enrollment UI + middleware gate are missing.
+- **Phase 4 — Auth hardening** (~1–2d): Supabase TOTP MFA for the single admin, enforced as an AAL2 gate on `/admin/*` — enrollment UI + middleware gate.
 - **Phase 5 — Polish** (~3–5d): re-run dead-code analysis and remove genuinely-unwired exports, physically drop the `profiles.is_admin` column, delete redundant `.cmd` scripts, expand E2E beyond smoke, a11y pass on ticket UIs, Lighthouse ≥90 verification. **CI already runs `pnpm test:ci`** (`.github/workflows/ci.yml:40` — the production plan's "make CI run tests" item is already done; CLAUDE.md is stale on this).
 - **Legacy DB cutover** (Phase 1 tail): inventory → mapping SQL → one-shot dump+restore → 7-day soak → retire `db-dobeutech-unified`. **User-gated** on running the read-only inventory queries in `.agent/migration/inventory.md`. The target Supabase has empty user data today, so nothing blocks the code-side phases.
 - **Operational close-out**: verify Stripe webhook registration, run the end-to-end ticket→quote→accept→pay smoke path, merge `test/coverage` → `main`.
 
-**Recommended sequencing: Approach B (parallel streams).** The four code-side workstreams (MFA, HMAC, CI/E2E, dead-code/hygiene/a11y) share almost no files and have no ordering dependency, so they dispatch as independent parallel agents the moment the user approves. The legacy cutover runs on the user's own clock (it's blocked on a human action, not code) and converges last. Total wall-clock with parallelism: **~3–4 days of agent work + the user's inventory/cutover window**, versus ~6–8 days strictly sequential.
+**Recommended sequencing: Approach B (parallel streams).** The three code-side workstreams (MFA, CI/E2E, dead-code/hygiene/a11y) share almost no files and have no ordering dependency, so they dispatch as independent parallel agents the moment the user approves. The legacy cutover runs on the user's own clock (it's blocked on a human action, not code) and converges last. Total wall-clock with parallelism: **~3–4 days of agent work + the user's inventory/cutover window**, versus ~6–8 days strictly sequential.
 
-**Decision gates: effectively none blocking.** Prior decisions (stay on Supabase, single admin, Intercom-replaces-messages, work-orders built) are locked. Two low-stakes confirmations remain (whether to physically drop `is_admin` now vs. after cutover; which `.cmd` scripts to keep) and are defaulted in §8.
+**Decision gates: effectively none blocking.** Prior decisions (stay on Supabase, single admin, no in-app messaging, work-orders built) are locked. Two low-stakes confirmations remain (whether to physically drop `is_admin` now vs. after cutover; which `.cmd` scripts to keep) and are defaulted in §8.
 
 ---
 
@@ -33,15 +33,15 @@ Verified by reading the listed files at HEAD `4cc72f2`.
 | Stripe webhook | Phase 3 | `app/api/webhooks/stripe/route.ts` present | Verify URL registered in Stripe Dashboard (user) |
 | `profiles.stripe_customer_id` | Phase 3 | `supabase/migrations/20260615000000_phase3_stripe_customer_id.sql` present | — |
 | Ticket UIs | Phase 3 | `app/portal/tickets/{page,[id]/page}.tsx`, `app/admin/tickets/{page,[id]/page}.tsx` present | a11y pass (Phase 5) |
-| Work-order notifications | Phase 3 | `lib/actions/work-orders.ts` wires `sendEmail` + templates; Intercom event deferred to Phase 4 (comment line 139) | Optional Intercom `work_order_created` event |
+| Work-order notifications | Phase 3 | `lib/actions/work-orders.ts` wires `sendEmail` + templates | — |
 | CI runs tests | Phase 5 ("make CI run tests") | **Already done** — `ci.yml:40` runs `pnpm test:ci` | Doc fix only (CLAUDE.md stale) |
 | Admin gate | env-driven | `isAdminEmail()` in `lib/utils.ts`, used by middleware + admin layout + `requireAdmin()` | Add AAL2 (MFA) layer |
-| Intercom HMAC | Phase 4 | `user_hash` prop threaded through `IntercomIdentify` → `identifyIntercom`; **no server-side signing, no `INTERCOM_IDENTITY_VERIFICATION_SECRET`** | Build server hash + wire into both layouts |
+| TOTP MFA | Phase 4 | none | Enroll UI + verify + middleware AAL2 gate |
 | TOTP MFA | Phase 4 | none | Enroll UI + verify + middleware AAL2 gate |
 | `profiles.is_admin` | drop column (Phase 5) | RLS/trigger dependence removed (`20260605…_phase1_reconciliation.sql`); **column still physically present** | New migration to `drop column` + types regen |
 | `lib/analytics-server.ts` | "create or delete reference" (Phase 2) | **still missing**; confirm no dangling import remains | Verify + remove any reference, or drop the gap |
 | `.cmd` scripts | keep 3 (plan §8.7) | the named "keep" 3 already deleted in Phase 2; **12 different scripts present now** | Re-triage; keep `start-dev.cmd` + `deploy-vercel.cmd`, delete redundant git-wrappers |
-| Dead-code list | "8 unwired exports" | `.reports/dead-code-analysis.md` is **stale** (Phase-1 branch); `identifyIntercom`/Datadog hooks now wired | Re-run knip/ts-prune, delete only fresh hits |
+| Dead-code list | "8 unwired exports" | `.reports/dead-code-analysis.md` is **stale** (Phase-1 branch); analytics/Datadog hooks now wired | Re-run knip/ts-prune, delete only fresh hits |
 | Legacy cutover | one-shot dump+restore | inventory runbook present, **Findings unfilled**; target has empty user data | User runs inventory → author mapping SQL → cutover |
 | E2E | smoke-only | `e2e/*` smoke | Add ticket-flow journey |
 | Rate-limit | Upstash (Phase 4, plan §8.3) | in-memory per-IP in `/api/lead` | Upstash **or** documented accepted risk |
@@ -54,10 +54,10 @@ Verified by reading the listed files at HEAD `4cc72f2`.
 One stream, in plan order. **Pros:** simplest to reason about; no cross-stream coordination; each gate fully closes before the next opens. **Cons:** the legacy cutover sits in the middle and is **blocked on a human action** (running inventory queries), so everything downstream stalls on the user's clock; wall-clock ~6–8 days even though most work is independent. **Best when:** a single operator wants zero context-switching and isn't time-pressured.
 
 ### Approach B — Parallel streams (recommended)
-Dispatch the independent code-side workstreams (MFA, HMAC, CI/E2E, dead-code/hygiene/a11y) as concurrent agents immediately on approval; run the legacy cutover as its own gated stream on the user's clock; converge on a final merge + smoke. **Pros:** ~3–4 days agent wall-clock; the human-bottlenecked stream (inventory) overlaps with productive code work instead of blocking it; clean file-ownership boundaries (see §7) keep agents from colliding. **Cons:** requires the file-touch discipline in §7 and a convergence/merge step; two agents lightly contend on `app/{admin,portal}/layout.tsx` (resolved by sequencing B after A — see §7). **Best when:** work is genuinely independent and one stream is gated on a human — exactly this situation.
+Dispatch the independent code-side workstreams (MFA, CI/E2E, dead-code/hygiene/a11y) as concurrent agents immediately on approval; run the legacy cutover as its own gated stream on the user's clock; converge on a final merge + smoke. **Pros:** ~3–4 days agent wall-clock; the human-bottlenecked stream (inventory) overlaps with productive code work instead of blocking it; clean file-ownership boundaries (see §7) keep agents from colliding. **Cons:** requires the file-touch discipline in §7 and a convergence/merge step. **Best when:** work is genuinely independent and one stream is gated on a human — exactly this situation.
 
 ### Approach C — Ship polish first (merge to main now, harden post-launch)
-Merge `test/coverage` → `main` immediately (prod already runs this code), then do Phase 4 + cutover as post-launch follow-ups. **Pros:** fastest path to a clean `main`; reflects that prod is already on Phase 3. **Cons:** ships an admin surface with **no MFA** and an Intercom widget that's **spoofable** to `main` as the blessed baseline; invites "we'll harden later" drift on the exact security items that are cheap now. **Best when:** there were external pressure to cut a release — there isn't; prod is already live.
+Merge `test/coverage` → `main` immediately (prod already runs this code), then do Phase 4 + cutover as post-launch follow-ups. **Pros:** fastest path to a clean `main`; reflects that prod is already on Phase 3. **Cons:** ships an admin surface with **no MFA** and an unverified chat widget to `main` as the blessed baseline; invites "we'll harden later" drift on the exact security items that are cheap now. **Best when:** there were external pressure to cut a release — there isn't; prod is already live.
 
 **Recommendation: B.** The decisive factor is that the legacy cutover is gated on a human action, so sequencing (A) wastes the user's think-time, and shipping-first (C) blesses an unhardened admin surface as `main`. B runs auth hardening and hygiene in parallel during the user's inventory window, then merges a fully-hardened branch. Within B, the cutover stream stays internally sequential (inventory → mapping → cutover → soak) because its steps are strictly ordered and destructive.
 
@@ -117,35 +117,9 @@ Gate (every /admin/* request):
 - Unit: a pure helper `requiresAal2Stepup(aal)` extracted to `lib/utils.ts` (input `{ currentLevel, nextLevel }` → boolean) with a truth table test (`aal1/aal1`→false bootstrap, `aal1/aal2`→true gate, `aal2/aal2`→false). Keeps the branching logic testable without mocking middleware.
 - Integration/manual: enroll in a dev session, confirm `/admin` redirects to step-up until the code is entered, then passes. (No automated browser MFA test — TOTP codes are time-based; out of scope per YAGNI.)
 
-### 4.2 Intercom Identity Verification (HMAC)
+### 4.2 Chat-widget identity verification (REMOVED)
 
-**Goal:** Intercom must reject a spoofed `user_id`. The plumbing already exists — `IntercomIdentify` takes a `user_hash` prop and `identifyIntercom` forwards it to `intercomUpdate`. Missing: the server-side HMAC and the env var.
-
-**Algorithm:** `user_hash = HMAC_SHA256(key = INTERCOM_IDENTITY_VERIFICATION_SECRET, data = user_id)`, hex digest. (Intercom hashes the **identifier** you send — here `user_id`, the Supabase UUID, which is what both layouts already pass.)
-
-**Components & data flow:**
-
-```
-app/portal/layout.tsx (server component)   app/admin/layout.tsx (server component)
-        │ user = supabase.auth.getUser()           │ (same)
-        │ user_hash = intercomUserHash(user.id) ────┤
-        ▼                                            ▼
-   <IntercomIdentify user_id user_hash ... />   <IntercomIdentify user_id user_hash ... />
-        │ (client) effect → identifyIntercom({ ..., user_hash })
-        ▼
-   Intercom Messenger verifies hash against the workspace secret
-```
-
-**File paths:**
-- Create `lib/intercom-hmac.ts` — server-only (uses `node:crypto`); exports `intercomUserHash(userId: string): string | undefined` returning the hex HMAC, or `undefined` when `INTERCOM_IDENTITY_VERIFICATION_SECRET` is unset (graceful no-op so dev without the secret still boots Intercom anonymously). **Separate file** from `lib/intercom.ts` because `lib/intercom.ts` is deliberately importable from both server and client (it holds `intercomNameFromUser`); `node:crypto` must never reach the client bundle.
-- Modify `app/portal/layout.tsx` — import `intercomUserHash`, compute `user_hash`, pass to `IntercomIdentify`.
-- Modify `app/admin/layout.tsx` — same.
-- Env: add `INTERCOM_IDENTITY_VERIFICATION_SECRET` (server-only) to Vercel + `.env.local`; document in `CLAUDE.md` env table.
-
-**Error handling:** secret unset → `intercomUserHash` returns `undefined`, `IntercomIdentify` receives no `user_hash`, Intercom boots in unverified mode (current behavior). No throw. Once the secret is set in Intercom's dashboard **and** Vercel, verification is enforced by Intercom.
-
-**Testing approach:**
-- Unit (`lib/intercom-hmac.test.ts`): known-vector test — fixed secret + fixed `user_id` → assert exact expected hex digest (compute the expected value once with a one-liner and pin it). Plus: unset secret → returns `undefined`.
+Removed with the chat integration. There is no widget to verify, no server hash to build, and no secret to provision — this section is obsolete. Phase 4 is MFA only.
 
 ### 4.3 Rate-limit durability (plan §8.3)
 
@@ -180,7 +154,7 @@ Restates `.agent/PRODUCTION-PLAN.md` §6 with current-state corrections. The tar
 `.github/workflows/ci.yml:40` already runs `pnpm test:ci` between lint and build. **No CI change needed.** Action: correct the stale CLAUDE.md "CI does NOT run tests" note (it now does). This reclassifies a plan item from "build" to "doc fix."
 
 ### 6.2 Dead-code removal — re-derive, don't trust the stale list
-`.reports/dead-code-analysis.md` is from the Phase-1 `feat/calendly-webhook` branch; several "unwired" exports (`identifyIntercom`, Datadog hooks) are now wired by Phase 2–3. **Action:** re-run `pnpm dlx knip` + `pnpm dlx ts-prune` at HEAD, then delete only **freshly-confirmed** unused exports. Candidate survivors likely still unused (verify before deleting): `lib/apollo.ts#logApolloActivity`, `lib/analytics.ts#identify`, `lib/supabase/client.ts#isSupabaseConfigured`, `lib/utils.ts#sleep`. Keep `lib/utils.ts#env` only if genuinely unreferenced (it's a public helper). Each deletion is its own micro-commit so a mistaken removal is trivially revertable.
+`.reports/dead-code-analysis.md` is from the Phase-1 `feat/calendly-webhook` branch; several "unwired" exports (analytics + Datadog hooks) are now wired by Phase 2–3. **Action:** re-run `pnpm dlx knip` + `pnpm dlx ts-prune` at HEAD, then delete only **freshly-confirmed** unused exports. Candidate survivors likely still unused (verify before deleting): `lib/apollo.ts#logApolloActivity`, `lib/analytics.ts#identify`, `lib/supabase/client.ts#isSupabaseConfigured`, `lib/utils.ts#sleep`. Keep `lib/utils.ts#env` only if genuinely unreferenced (it's a public helper). Each deletion is its own micro-commit so a mistaken removal is trivially revertable.
 
 ### 6.3 Drop `profiles.is_admin` column
 RLS/trigger dependence already removed (`20260605…_phase1_reconciliation.sql`, TODO at line 48). **Action:** new migration `supabase/migrations/<ts>_phase5_drop_is_admin.sql` → `alter table public.profiles drop column if exists is_admin;`. Then `pnpm db:types` to regenerate `lib/database.types.ts`. Grep the repo for `is_admin` first to confirm zero app-code references (expected: only the migration + comments). **Sequencing:** this migration must land **after** any legacy cutover that restores into `profiles`, OR the mapping SQL must not reference `is_admin`. Default recommendation: drop it now (target is empty), and ensure cutover mapping SQL omits the column.
@@ -209,21 +183,19 @@ Workstreams that can run as independent parallel agents after approval, grouped 
 | Stream | Owns (writes) | Reads-only | Depends on | Wave |
 |---|---|---|---|---|
 | **A. MFA** | `components/portal/MfaEnroll.tsx`, `components/portal/MfaStatus.tsx`, `app/portal/settings/mfa/page.tsx`, `app/portal/settings/page.tsx`, `lib/supabase/middleware.ts`, `lib/utils.ts` (+`requiresAal2Stepup`), `app/admin/layout.tsx` (banner) | `lib/actions/auth.ts` | — | 1 |
-| **B. Intercom HMAC** | `lib/intercom-hmac.ts`, `lib/intercom-hmac.test.ts`, `app/portal/layout.tsx`, `app/admin/layout.tsx` | `lib/intercom.ts`, `IntercomIdentify.tsx` | — (but see overlap) | 1→2 |
 | **C. Legacy cutover** | `.agent/migration/inventory.md` (Findings), new mapping SQL files under `.agent/migration/`, `lib/database.types.ts` (post-cutover) | all `supabase/migrations/*` | **USER inventory** | gated |
 | **D. CI + E2E** | `e2e/tickets.spec.ts` (new), `CLAUDE.md` (CI-runs-tests fix) | `.github/workflows/ci.yml`, `app/portal/tickets/*` | — | 1 |
 | **E. Dead-code + hygiene** | deleted `.cmd` files, `supabase/migrations/<ts>_phase5_drop_is_admin.sql`, `lib/database.types.ts`, `lib/*` export sites, `CLAUDE.md` | knip/ts-prune output | — (types-regen vs C) | 1 |
 | **F. A11y + perf** | `app/{portal,admin}/tickets/*` + ticket components | Lighthouse output | — | 1 |
-| **G. Close-out** | merge commit, smoke script | everything | **A,B,D,E,F done; C soaked** | final |
+| **G. Close-out** | merge commit, smoke script | everything | **A,D,E,F done; C soaked** | final |
 
 **File-touch overlap analysis (the only real collisions):**
-- **A ∩ B on `app/admin/layout.tsx`:** A adds an "Enable 2FA" banner; B adds `user_hash`. **Resolution:** run B in wave 2 after A, OR assign *all* `app/{admin,portal}/layout.tsx` edits to B and have A only emit the banner via a child component A owns. Recommended: **B after A** (B is tiny — ~1 line per layout).
-- **A ∩ B on `app/portal/layout.tsx`:** only B touches it (A touches `settings`, not the portal root). No collision.
+- **A on `app/admin/layout.tsx`:** A adds an "Enable 2FA" banner via a child component A owns.
 - **C ∩ E on `lib/database.types.ts`:** both regenerate types. **Resolution:** E's `is_admin` drop lands first (target empty); C's post-cutover regen is the final word and simply re-runs `pnpm db:types`. Sequence E before C's regen, or have C's regen be the authoritative last step. No manual edits to the generated file by either.
 - **CLAUDE.md touched by D and E:** D fixes the CI note, E updates dead-code/`.cmd`/env tables. **Resolution:** assign **all CLAUDE.md edits to E** (single owner); D reports the CI-note correction to E rather than editing.
 - **`lib/utils.ts` (A adds `requiresAal2Stepup`) vs E (may remove `sleep`):** different functions, but same file. **Resolution:** A owns `lib/utils.ts` edits in wave 1; E's dead-code removal of `lib/utils.ts` exports waits for wave 2 (or E skips `lib/utils.ts` and only touches `lib/apollo.ts`/`lib/analytics.ts`/`lib/supabase/client.ts`).
 
-**Net:** Wave 1 = A, D, E(non-`lib/utils.ts`, non-CLAUDE-CI), F in parallel + C's inventory on the user's clock. Wave 2 = B (layouts), E finishes CLAUDE.md. Final = G after C soaks. **4 parallel agents in wave 1** is the practical maximum without collisions.
+**Net:** Wave 1 = A, D, E(non-`lib/utils.ts`, non-CLAUDE-CI), F in parallel + C's inventory on the user's clock. Wave 2 = E finishes CLAUDE.md. Final = G after A, D, E, F are done and C has soaked. **4 parallel agents in wave 1** is the practical maximum without collisions.
 
 ---
 
@@ -235,7 +207,6 @@ Minimal — prior decisions are locked. Defaults chosen; user can override:
 2. **`.cmd` scripts to keep?** Default: keep `start-dev.cmd` + `deploy-vercel.cmd`, delete the 10 git-wrappers. CLAUDE.md asks to confirm `.cmd` intent before deleting — this is that confirmation.
 3. **Rate-limit: Upstash or accepted risk?** Default: **accepted risk for v1**, documented in CLAUDE.md. Override if you want durable limiting now.
 4. **`lib/analytics-server.ts`: create or drop reference?** Default: **drop the dangling doc reference** (no current importer). Override if server-side analytics is actually wanted.
-5. **Intercom `work_order_created` event** (deferred from Phase 3, comment at `work-orders.ts:139`): default **include in Phase 4 HMAC stream** (cheap, same file). Override to defer to backlog.
 
 None of these block dispatching wave 1.
 
@@ -243,9 +214,9 @@ None of these block dispatching wave 1.
 
 ## 9. Success criteria — "production ready"
 
-- **Auth:** admin login to `/admin/*` requires a TOTP code (AAL2); a session without it is redirected to step-up. Intercom rejects an identify call with a mismatched `user_hash` (verified against the workspace secret). Unit tests green for `requiresAal2Stepup` + `intercomUserHash`.
+- **Auth:** admin login to `/admin/*` requires a TOTP code (AAL2); a session without it is redirected to step-up. Unit tests green for `requiresAal2Stepup`.
 - **Data:** legacy `db-dobeutech-unified` rows present in the target with row-count parity (allowing documented lead dedupe); one migrated user logs in via magic link and sees their project + files; legacy held read-only for the 7-day soak, then retired.
-- **Hygiene:** `profiles.is_admin` column dropped; `lib/database.types.ts` regenerated; redundant `.cmd` scripts removed; freshly-confirmed dead exports removed; CLAUDE.md corrected (CI runs tests; env table includes `INTERCOM_IDENTITY_VERIFICATION_SECRET`).
+- **Hygiene:** `profiles.is_admin` column dropped; `lib/database.types.ts` regenerated; redundant `.cmd` scripts removed; freshly-confirmed dead exports removed; CLAUDE.md corrected (CI runs tests).
 - **Quality:** `pnpm verify` green (type-check + lint + `test:ci` + build); CI green on `main`; ticket-flow E2E passes; ticket UIs pass axe + keyboard walkthrough; Lighthouse ≥90 on `/` and `/portal`.
 - **Operational:** Stripe webhook URL confirmed registered (`https://dobeu.net/api/webhooks/stripe`) and a $1 live-mode invoice round-trips to `paid` via the webhook; `test/coverage` merged to `main`; post-merge smoke script green.
 
@@ -254,7 +225,7 @@ None of these block dispatching wave 1.
 ## Spec self-review
 
 - **Placeholder scan:** no TBD/TODO/"handle later" left as instructions; the only `TODO` mentioned is the pre-existing one in the reconciliation migration (quoted as evidence, line 48), not a plan placeholder. ✔
-- **Consistency:** file paths cross-checked against verified HEAD reads (`lib/supabase/middleware.ts`, `app/admin/layout.tsx`, `lib/intercom.ts`, `IntercomIdentify.tsx`, `lib/utils.ts`, `ci.yml`, migrations list). `requiresAal2Stepup` / `intercomUserHash` named identically in §4, §7, §9 and in the companion plan. ✔
+- **Consistency:** file paths cross-checked against verified HEAD reads (`lib/supabase/middleware.ts`, `app/admin/layout.tsx`, `lib/utils.ts`, `ci.yml`, migrations list). `requiresAal2Stepup` named identically in §4, §7, §9 and in the companion plan. ✔
 - **Scope:** every item traces to PRODUCTION-PLAN §5/§6 or a verified gap; YAGNI applied to rate-limit (accepted risk), analytics-server (drop reference), axe-in-CI (manual), admin-side E2E (manual). No new features invented. ✔
 - **Ambiguity resolved:** corrected three stale assumptions inline (CI already runs tests; `.cmd` keep-list outdated; dead-code report stale) so the plan doesn't re-do completed work. The first-enrollment lockout edge case is explicitly designed around (bootstrap pass + banner). ✔
 - **Out of scope confirmed:** Auth0 (dead), multi-admin, custom invoice UI, dual-write migration — none introduced. ✔

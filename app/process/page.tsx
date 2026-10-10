@@ -8,7 +8,7 @@ import { professionalServiceJsonLd } from "@/lib/marketing-schema";
 
 export const metadata: Metadata = {
   title: "Process",
-  description: `Discovery, a scoped proposal, then ship in 2–6 weeks. How ${NAP.brandName} works with operators in ${NAP.areaServed}.`,
+  description: `Talk through the job, get a written scope, then do the work together. How ${NAP.brandName} works with fleets in ${NAP.areaServed}.`,
   alternates: { canonical: "/process" },
 };
 
@@ -23,8 +23,8 @@ export default function ProcessPage() {
       />
       <MarketingPageHeader
         eyebrow="Process"
-        title="Three steps. No theater."
-        description="A 30-minute discovery call, a one-pager within 48 hours, then a single sprint. If I'm booked, I'll say so."
+        title="Three steps. No ticket queue."
+        description="Thirty minutes on the job, a written scope, then the work itself. If I'm booked, I'll say so."
       />
       <HowItWorks variant="standalone" />
       <FinalCTA />

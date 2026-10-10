@@ -17,9 +17,9 @@ export interface LabExperimentEntry {
 export const LAB_DEMOS: LabDemoEntry[] = [
   {
     id: "agent-loop",
-    title: "Agent loop",
-    summary: "Watch a mocked plan → act → verify cycle with tool calls and status transitions.",
-    tag: "AI",
+    title: "A mocked cycle",
+    summary: "A sandboxed plan, act, and check cycle. Not a service, and not something I sell.",
+    tag: "Demo",
   },
   {
     id: "shader",
@@ -39,6 +39,6 @@ export const LAB_DEMOS: LabDemoEntry[] = [
 export const FEATURED_EXPERIMENT: LabExperimentEntry = {
   id: "immersive-hero",
   title: "Immersive Canvas hero",
-  summary: "Full-viewport atmosphere with floating capability cards — now live on the landing.",
+  summary: "The landing atmosphere, tuned here. Not a service.",
   status: "live",
 };

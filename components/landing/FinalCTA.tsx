@@ -33,19 +33,19 @@ export function FinalCTA() {
           <div className="relative px-8 py-14 md:px-16 md:py-20">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-5">
-                Dispatch first.
+                The job, first.
               </p>
 
               <h2
                 id="cta-heading"
                 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.04] text-balance mb-5"
               >
-                Tell me about the loop that&apos;s stuck.
+                Tell me about the fleet.
               </h2>
 
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-4 max-w-md">
-                Send the job — I&apos;ll reply with a price band. Or book 30
-                minutes and we&apos;ll scope it together.
+                Send the job and I&apos;ll reply about whether I can take it.
+                Or book 30 minutes and we&apos;ll talk through the work.
               </p>
               <p className="text-sm font-medium text-foreground mb-10">
                 {PRICE_RANGE.line}

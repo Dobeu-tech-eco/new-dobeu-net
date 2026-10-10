@@ -12,7 +12,7 @@
  * exists — that also captures real foreign-key relationships and nullability drift.
  *
  * 2026-06-04 (Phase 2): synced with `20260605000000_phase1_reconciliation.sql`
- *   - dropped `messages` (Intercom owns chat)
+ *   - dropped `messages`
  *   - added `invoices.hosted_invoice_url`
  *   - added `work_orders` + `work_order_attachments`
  *

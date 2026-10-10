@@ -10,7 +10,7 @@
 2. **`lib/invoice-creation.ts` — untested.** Billing-adjacent logic with zero unit tests, while its neighbors (`stripe.ts`, `stripe-event-dedupe.ts`, `lib/actions/invoices.ts`) are all tested. Money paths deserve the same treatment.
 3. **`app/api/github-activity/route.ts` — untested.** Its sibling `github-repo/route.ts` has tests; this one has none. External API dependency (GitHub) makes it a natural place for mocked failure-mode tests (rate limits, timeouts).
 4. **`lib/supabase/server.ts` — untested.** `client.ts` and `middleware.ts` both have tests; the server-side client factory does not, and it's the one used by privileged code paths.
-5. **`app/api/intercom/jwt/route.ts` — untested route wrapper.** The underlying `lib/intercom-jwt.ts` is tested, but the route (which decides *who* gets a signed JWT) is not — the authorization boundary is exactly the part without coverage.
+5. ~~**Chat-widget JWT route — untested route wrapper.**~~ **Removed** with the chat integration (route deleted).
 
 ## Medium-priority gaps
 

@@ -106,10 +106,9 @@ All four files saved by Playwright to `.playwright-mcp/` and copied to `docs/ver
 The current production deployment is commit `3960d807`. The following observability work is staged in `lib/` and `components/` but **not yet pushed** to GitHub, so Vercel hasn't built it:
 
 - `@datadog/browser-rum` + `@datadog/browser-logs` (lib/datadog.ts)
-- `@intercom/messenger-js-sdk` (lib/intercom.ts)
 - `@vercel/analytics` + `@vercel/speed-insights` (mounted in app/layout.tsx)
-- Extended CSP allow-lists for Datadog / Intercom / Vercel insights origins
-- AnalyticsProvider chained to call `initDatadog()` + `initIntercom()` after consent
+- Extended CSP allow-lists for Datadog / Vercel insights origins
+- AnalyticsProvider chained to call `initDatadog()` after consent
 
 To ship them: double-click `push-observability.cmd` in the project root. Vercel will auto-redeploy in ~60s.
 
@@ -145,7 +144,7 @@ The 72 mobile perf score is the only metric below target. Common causes for this
 2. **`next/dynamic` for below-the-fold sections.** Lazy-load `<Proof>`, `<Founder>`, `<FAQ>`, `<FinalCTA>` so the hero ships in a smaller initial bundle.
 3. **Critical CSS inlining.** Tailwind's purged stylesheet is already lean, but Next 15 ships full CSS bundle in dev/preview; production should be smaller already — verify with a Lighthouse run on a fresh deploy.
 4. **Image optimization.** Currently no `<Image>` components on the marketing landing (it's all SVG + CSS gradient). The hero mesh gradient is a CSS background — already optimal.
-5. **`@vercel/speed-insights` (already wired in the next push).** Once the Datadog/Intercom commit lands, real-user CWV scores from actual visitors will appear in Vercel and give a much better signal than Lighthouse's synthetic test on a cold-cache mobile profile.
+5. **`@vercel/speed-insights` (already wired in the next push).** Once the Datadog commit lands, real-user CWV scores from actual visitors will appear in Vercel and give a much better signal than Lighthouse's synthetic test on a cold-cache mobile profile.
 
 These are all Phase-2 work, not launch blockers.
 

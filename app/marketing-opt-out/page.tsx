@@ -60,7 +60,7 @@ export default function MarketingOptOutPage() {
         <h2>Analytics and tracking</h2>
         <p>
           To opt out of analytics cookies (PostHog, Mixpanel, Google Analytics,
-          Datadog) and support chat (Intercom):
+          Datadog):
         </p>
         <ul>
           <li>

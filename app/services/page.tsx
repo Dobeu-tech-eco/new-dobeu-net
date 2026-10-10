@@ -8,7 +8,7 @@ import { professionalServiceJsonLd } from "@/lib/marketing-schema";
 
 export const metadata: Metadata = {
   title: "Services",
-  description: `AI agents, full-stack apps, brand systems, and growth engineering for operators in ${NAP.areaServed}. Typical engagement ${PRICE_RANGE.display}.`,
+  description: `Partnership on fleet work for operators in ${NAP.areaServed}. Typical engagement ${PRICE_RANGE.display}. Not a ticket mill.`,
   alternates: { canonical: "/services" },
 };
 
@@ -23,8 +23,8 @@ export default function ServicesPage() {
       />
       <MarketingPageHeader
         eyebrow="Services"
-        title="What I ship for operators"
-        description={`Four pillars. Most engagements blend a few. Typical range ${PRICE_RANGE.display} after a scoped proposal.`}
+        title="The work, not a menu of products"
+        description={`Four parts of the same partnership. Most jobs blend them. Typical range ${PRICE_RANGE.display} once the job is clear.`}
       />
       <Services variant="standalone" />
       <FinalCTA />

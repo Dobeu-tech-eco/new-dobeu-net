@@ -2,7 +2,7 @@
 
 Local imports only (relative + `@/` aliases). `node_modules` skipped. Type-only imports marked. Shared marketing chrome (`LightboxProvider` → `SiteNav` / `SiteFooter`) is expanded once under `/` and referenced later.
 
-All routes also inherit `app/layout.tsx` → `components/theme-provider.tsx`, `components/analytics-provider.tsx` → `components/CookieBanner.tsx` → `hooks/use-cookie-consent.ts`, `lib/analytics.ts` → `lib/utils.ts`, `lib/datadog.ts` → `lib/datadog-redact.ts`, `components/intercom/IntercomSecureBoot.tsx` → `lib/intercom.ts`, `app/globals.css`.
+All routes also inherit `app/layout.tsx` → `components/theme-provider.tsx`, `components/analytics-provider.tsx` → `components/CookieBanner.tsx` → `hooks/use-cookie-consent.ts`, `lib/analytics.ts` → `lib/utils.ts`, `lib/datadog.ts` → `lib/datadog-redact.ts`, `app/globals.css`.
 
 ## / (Home)
 

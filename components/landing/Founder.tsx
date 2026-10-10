@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { Linkedin, Mail, ArrowRight } from "lucide-react";
 import { DobeuMark } from "@/components/brand/DobeuMark";
-import { AVAILABILITY, FOUNDER, FOUNDER_REASONS, NAP, SHIPPED_WORK, TRUST_POSITION } from "@/lib/jeremy-data";
+import { AVAILABILITY, FOUNDER, FOUNDER_REASONS, NAP, TRUST_POSITION } from "@/lib/jeremy-data";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { useMotionProps, FADE_UP, SCALE_IN } from "@/hooks/use-motion-props";
 
@@ -110,32 +110,15 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
             </h3>
 
             <p className="text-base text-muted-foreground leading-relaxed mb-6">
-              I&apos;ve been shipping software since {FOUNDER.since} — for logistics operators,
-              hospitality teams, and founders building things that didn&apos;t exist yet. Public
-              shipped work includes{" "}
-              {SHIPPED_WORK.map((item, index) => {
-                const separator =
-                  index === 0 ? "" : index === SHIPPED_WORK.length - 1 ? ", and " : ", ";
-                return (
-                  <span key={item.slug}>
-                    {separator}
-                    <a
-                      href={item.github}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-foreground underline decoration-border underline-offset-2 hover:text-primary transition-colors"
-                    >
-                      {item.name}
-                    </a>
-                  </span>
-                );
-              })}
-              .
+              I&apos;ve been in the work since {FOUNDER.since}, with the people running it —
+              not behind a ticket queue. The fleet jobs started with owners I already knew.
+              I spent the hours in small fleets, on the yard and on dispatch, until the job
+              was solved with them. That is the work I take now.
             </p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Every client I take on gets my full attention. That means I turn down more
-              than I accept. If I&apos;m the right person for your project, you&apos;ll know it
-              by end of the discovery call.
+              RouteReady is one of those partnerships turning into a product. It is not
+              launched from this site. I take a small number of fleets at a time. If I&apos;m
+              the right person, you&apos;ll know by the end of the call.
             </p>
 
             <motion.div
@@ -151,7 +134,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">dobeu.net</p>
-                <p className="text-xs text-muted-foreground">Principal engineering & AI studio</p>
+                <p className="text-xs text-muted-foreground">{FOUNDER.tagline}</p>
               </div>
             </motion.div>
           </motion.div>

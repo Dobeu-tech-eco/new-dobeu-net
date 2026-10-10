@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Dobeu Tech Solutions — Custom software, AI agents, and design systems.";
+export const alt = "Dobeu Tech Solutions — Partnership on the fleet job.";
 
 /**
  * OG image — v3 design system.
@@ -121,16 +121,16 @@ export default async function OGImage() {
                 flexDirection: "column",
               }}
             >
-              <span>Ship the agent.</span>
-              <span>Ship the app.</span>
-              <span style={{ color: "#F59555" }}>Ship the brand.</span>
+              <span>Partnership on</span>
+              <span>the fleet job.</span>
+              <span style={{ color: "#F59555" }}>Not a ticket mill.</span>
             </div>
           </div>
 
           {/* Descriptor */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ fontSize: 20, color: "#9A9AB0", letterSpacing: "-0.01em" }}>
-              Custom software · AI agents · Design systems
+              Fleet work · Partnership first · Not a brochure site
             </span>
             <span style={{ fontSize: 16, color: "#4A4A68" }}>
               One operator. Production-grade. New York, NY.
@@ -152,12 +152,12 @@ export default async function OGImage() {
           }}
         >
           {[
-            "Next.js & React",
-            "AI Agent Eng.",
-            "TypeScript",
-            "Design Systems",
-            "Growth Eng.",
-            "Supabase / Postgres",
+            "Yards & dispatch",
+            "The actual job",
+            "Small fleets",
+            "Your repo",
+            "Stripe invoices",
+            "One operator",
           ].map((label) => (
             <div
               key={label}

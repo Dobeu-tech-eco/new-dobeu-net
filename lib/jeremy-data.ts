@@ -1,9 +1,8 @@
 /**
  * lib/jeremy-data.ts
  *
- * Static manifest of Jeremy Williams' real work, sub-brands, and GTM positioning.
- * Sourced from GitHub (Dobeu-tech-eco), dobeu.net, and Composio connectors.
- * Update this file when new projects ship — it drives the hero, commercial
+ * Static manifest of Jeremy Williams' real work and public-site positioning.
+ * Update this file when the offer changes — it drives the hero, commercial
  * pages, case-study chassis, and structured data.
  */
 
@@ -12,7 +11,7 @@
 // ---------------------------------------------------------------------------
 export const AVAILABILITY = {
   status: "open" as "open" | "limited" | "closed",
-  label: "Taking projects",
+  label: "Taking fleet work",
   color: "green" as const,
 } as const;
 
@@ -23,7 +22,7 @@ export const FOUNDER = {
   name: "Jeremy Williams",
   handle: "@dobeutech",
   title: "Founder & Principal Engineer",
-  tagline: "One operator. AI that keeps trucks, kitchens, and sites running.",
+  tagline: "One operator. Not a ticket mill.",
   location: "New York City",
   since: "2019",
   avatar: "/images/jeremy-williams.jpg",
@@ -92,30 +91,48 @@ export function resolveTypeformFormId(
 }
 
 // ---------------------------------------------------------------------------
-// Hero copy — SMB Outcome (locked implement direction)
+// Hero copy — fleet partnership
 // ---------------------------------------------------------------------------
 export const HERO_COPY = {
   greeting: "Hi. I'm Jeremy.",
-  outcome: "AI that keeps your trucks, kitchens, and sites running.",
-  diagnostic:
-    "If ops still live in spreadsheets, you don't have an AI problem. You have a process problem.",
+  outcome: "Partnership on the fleet job.",
+  diagnostic: "This is not a form-filling dev shop.",
   estimateCta: "Send the job",
-  estimateHint: "I'll reply with a price band. Not an instant quote.",
+  estimateHint: "Tell me the job. I reply if I can take it — not an instant quote.",
   bookCta: "Book a call",
-  promise: "Dispatch that actually dispatches.",
-  proof: "Prices are published. Invoices go through Stripe. The code lands in your repo.",
+  promise:
+    "I sit with the people who run the trucks. A product only if that work earns it.",
+  proof: "The ranges are published. Invoices go through Stripe. The code lands in your repo.",
 } as const;
+
+/** Shared clause for the lead-form success toast and the submitted state. */
+export const LEAD_REPLY_SLA = "reply about the job within 24 hours";
 
 /** Exported for tests. The hero shows HERO_COPY.promise and no longer rotates these. */
 export const TYPEWRITER_PHRASES = [
-  "dispatch that actually dispatches.",
-  "compliance paperwork that files itself.",
-  "inventory that stays reconciled.",
-  "invoices that go out on time.",
+  "the yard, with the people on the shift.",
+  "dispatch the crew already trusts.",
+  "a system that fits this fleet.",
+  "a product only if the work earns it.",
 ] as const;
 
+/**
+ * RouteReady tease. Name only — no URL, no domain, no "visit" link.
+ * It is not generally launched from this site.
+ */
+export const PIPELINE = {
+  eyebrow: "What's in the pipeline",
+  name: "RouteReady",
+  lede:
+    "Fleet owners I already knew, and had already worked with, asked for a way to run the job. I spent countless hours inside small fleets — yards, dispatch, the people on the shift — and solved it with them.",
+  body:
+    "RouteReady is that partnership turning into a product. It is not generally launched here. This page is not a signup, and there is no site to visit.",
+  aside:
+    "If you wanted a ticket number and a five-page brochure, there is a whole industry for that. This is the other thing.",
+} as const;
+
 // ---------------------------------------------------------------------------
-// Real shipped work — sourced from GitHub repos (Dobeu-tech-eco)
+// Real shipped work — older public repos. Not the commercial offer.
 // Metric headlines render only when approved === true.
 // ---------------------------------------------------------------------------
 export type ShippedMetric = {
@@ -127,24 +144,24 @@ export type ShippedMetric = {
 export const SHIPPED_WORK = [
   {
     slug: "monty-ai",
-    name: "Monty AI",
-    category: "AI Agent",
-    vertical: "Software delivery",
+    name: "Monty",
+    category: "Past experiment",
+    vertical: "Not offered",
     description:
-      "Autonomous full-stack developer agent built on Claude SDK — writes, tests, and ships code end-to-end.",
-    stack: ["TypeScript", "Anthropic Claude", "Node.js"],
+      "An old internal experiment. Not a service, and not the fleet work I take.",
+    stack: ["TypeScript", "Node.js"],
     github: "https://github.com/Dobeu-tech-eco/monty-ai-fullstackdev-coder",
     year: 2025,
     metrics: [] as readonly ShippedMetric[],
   },
   {
     slug: "unified-ai",
-    name: "Unified AI v1",
-    category: "AI Gateway",
-    vertical: "AI infrastructure",
+    name: "Unified v1",
+    category: "Past experiment",
+    vertical: "Not offered",
     description:
-      "Multi-model AI gateway with Composio tool integrations, Postgres persistence, and streaming responses.",
-    stack: ["Next.js", "Postgres", "Composio"],
+      "An old internal experiment. Not offered from this site.",
+    stack: ["Next.js", "Postgres"],
     github: "https://github.com/Dobeu-tech-eco/unified-ai-v1",
     year: 2025,
     metrics: [] as readonly ShippedMetric[],
@@ -152,11 +169,11 @@ export const SHIPPED_WORK = [
   {
     slug: "statminer",
     name: "StatMiner",
-    category: "AI Data",
-    vertical: "Analytics",
+    category: "Past experiment",
+    vertical: "Not offered",
     description:
-      "Unbiased AI data analysis engine — extracts clean signals from noisy data sets.",
-    stack: ["Python", "AI SDK", "TypeScript"],
+      "A data-cleanup experiment. Not a service I sell.",
+    stack: ["Python", "TypeScript"],
     github: "https://github.com/Dobeu-tech-eco/statminer",
     year: 2025,
     metrics: [] as readonly ShippedMetric[],
@@ -164,10 +181,10 @@ export const SHIPPED_WORK = [
   {
     slug: "dts-contract",
     name: "DTS Contract Engine",
-    category: "SaaS",
+    category: "Operations",
     vertical: "Service businesses",
     description:
-      "End-to-end quote, proposal, and contract generation engine for service businesses.",
+      "Quote, proposal, and contract paperwork for service businesses.",
     stack: ["Next.js", "Supabase", "Stripe"],
     github: "https://github.com/Dobeu-tech-eco/dts-contract-engine",
     year: 2024,
@@ -176,11 +193,11 @@ export const SHIPPED_WORK = [
   {
     slug: "sales-funnel",
     name: "IT Consult Funnel",
-    category: "Growth Engineering",
-    vertical: "Lead generation",
+    category: "Past experiment",
+    vertical: "Not offered",
     description:
-      "Automated customer-sourcing and sales funnel for IT consulting — zero-touch lead generation.",
-    stack: ["Next.js", "Resend", "Analytics"],
+      "An old experiment for finding leads. Not the offer.",
+    stack: ["Next.js", "Resend"],
     github: "https://github.com/Dobeu-tech-eco/dobeutech-sales-funnel-itconsult",
     year: 2024,
     metrics: [] as readonly ShippedMetric[],
@@ -188,10 +205,10 @@ export const SHIPPED_WORK = [
   {
     slug: "lastplate",
     name: "LastPlate",
-    category: "Hospitality SaaS",
+    category: "Hospitality",
     vertical: "Food service",
     description:
-      "Restaurant management platform with reservations, POS integration, and AI-assisted menu management.",
+      "Restaurant floor software — reservations and the service. Not the fleet work, and not a template I resell.",
     stack: ["Next.js", "Supabase", "Stripe"],
     github: "https://github.com/Dobeu-tech-eco/lastplateprod",
     year: 2024,
@@ -226,7 +243,7 @@ export const SUB_BRANDS = [
   {
     name: "dobeu.net",
     label: "dobeu.net",
-    description: "Principal engineering & AI studio",
+    description: "Fleet partnerships, not a ticket mill",
     href: "https://dobeu.net",
     category: "Studio",
   },
@@ -256,6 +273,7 @@ export const PRIMARY_NAV_LINKS = [
 
 export const FOOTER_SITE_LINKS = [
   { label: "Services", href: "/services" },
+  { label: "Pipeline", href: "/#pipeline" },
   { label: "Process", href: "/process" },
   { label: "About", href: "/about" },
   { label: "Pricing", href: "/pricing" },
@@ -266,59 +284,59 @@ export const FOOTER_SITE_LINKS = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// GTM — service pillars mapped to buyer pain points
+// GTM — partnership on the fleet job, not a service menu of products
 // ---------------------------------------------------------------------------
 export const GTM_PILLARS = [
   {
-    id: "ai-agents",
-    slug: "ai-agents",
-    buyerTitle: "Dispatch that runs",
-    headline: "AI agents for the dispatch loop",
-    pain: "Routes, tickets, and follow-ups still live in inboxes. Dispatch first — the same loop shows up in a kitchen, on a site, or at a desk.",
+    id: "on-the-shift",
+    slug: "on-the-shift",
+    buyerTitle: "On the shift",
+    headline: "I sit with the people who run the trucks",
+    pain: "The board, the yard, and the exceptions are not a form. If nobody has stood there, the software will miss the job.",
     description:
-      "I take one repeating loop off the inbox and make it run without a person chasing it. The stack stays on this page, under the job.",
-    detail: "Claude, Composio, and MCP when the loop needs tools.",
-    cta: "Automate it",
-    icon: "Bot" as const,
+      "Partnership starts with the owners and the crew already doing the work. I learn the job before I propose a build.",
+    detail: "Yards, dispatch, and the people on the shift.",
+    cta: "Start with the job",
+    icon: "Truck" as const,
     tag: undefined as string | undefined,
   },
   {
-    id: "fullstack",
-    slug: "fullstack",
-    buyerTitle: "The tool you don't have",
-    headline: "The app the crew actually opens",
-    pain: "The job runs in a spreadsheet because the tool you need does not exist, and a template will not cut it.",
+    id: "the-job",
+    slug: "the-job",
+    buyerTitle: "The actual job",
+    headline: "Tailored to this fleet, not a template",
+    pain: "A rented portal and a brochure site do not dispatch trucks.",
     description:
-      "Internal tools, portals, and the one app your people will open on a shift. Built to stay in your repo.",
-    detail: "Next.js, Supabase, and Vercel. Auth, billing, and a path to production.",
-    cta: "Ship it",
-    icon: "Code2" as const,
+      "The system is built around how this operation already runs. It lives in your repo. It is larger work than a webpage.",
+    detail: "Routes, exceptions, and the paperwork the shift actually touches.",
+    cta: "Talk about the job",
+    icon: "ClipboardList" as const,
     tag: undefined as string | undefined,
   },
   {
-    id: "brand",
-    slug: "brand",
-    buyerTitle: "A front door people trust",
-    headline: "A site that looks like the operation",
-    pain: "The site looks rented. Operators and their customers can tell.",
+    id: "one-person",
+    slug: "one-person",
+    buyerTitle: "One person, not a queue",
+    headline: "You talk to the person doing the work",
+    pain: "A faceless ticket mill will hand you a number and a status update. That is not this.",
     description:
-      "The public site and the documents match the work, whether that work is trucks, kitchens, or a desk.",
-    detail: "Design tokens, type, and a component library. Figma when you want the source.",
-    cta: "Build the brand",
-    icon: "Palette" as const,
-    tag: "Design",
+      "No account bench, and no form that prices the job for you. If I take it, I stay on it.",
+    detail: "A small number of fleets at a time.",
+    cta: "Talk to me",
+    icon: "Handshake" as const,
+    tag: undefined as string | undefined,
   },
   {
-    id: "growth",
-    slug: "growth",
-    buyerTitle: "Invoices that go out",
-    headline: "Billing and the numbers that matter",
-    pain: "Work gets done and the invoice, the follow-up, or the margin is still a guess.",
+    id: "earned-product",
+    slug: "earned-product",
+    buyerTitle: "A product, if it earns it",
+    headline: "A product only after the partnership earns it",
+    pain: "I don't show up with a product looking for a problem.",
     description:
-      "Get paid on time and see which jobs actually pay. This is not a traffic dashboard.",
-    detail: "Lifecycle email, attribution, and the reporting you can check.",
-    cta: "Fix the funnel",
-    icon: "LineChart" as const,
+      "Sometimes the work is specific enough, and repeated enough, that it becomes its own product. That happens after the job is solved with you.",
+    detail: "Not launched from this page. Named in the pipeline so the claim has a receipt.",
+    cta: "See the pipeline",
+    icon: "Package" as const,
     tag: undefined as string | undefined,
   },
 ] as const;
@@ -351,43 +369,43 @@ export const PROCESS_STEPS = [
   {
     num: "01",
     icon: "CalendarCheck" as const,
-    label: "30-min discovery",
-    body: "We talk through what you're trying to ship, what's in the way, and whether I'm the right person. No pitch, no slide deck — just an honest conversation.",
+    label: "Talk through the job",
+    body: "Thirty minutes on the fleet, the yard, and what's stuck. No pitch deck. If I'm the wrong person, I'll say so.",
   },
   {
     num: "02",
     icon: "FileText" as const,
-    label: "Scoped proposal",
-    body: "Within 48 hours you get a one-pager: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine — no obligation to that point.",
+    label: "A written scope",
+    body: "You get a one-pager: the job, what I will not take on, a number, and what I need from you. Approve, decline, or change it.",
   },
   {
     num: "03",
     icon: "Rocket" as const,
-    label: "Ship in 2–6 weeks",
-    body: "Daily Loom updates, your private portal for files and invoices, async-first communication. Most projects ship in a single sprint with zero theater.",
+    label: "Do the work together",
+    body: "I stay on the job with the people who run it. A product is a later conversation, and only if the work earns it.",
   },
 ] as const;
 
 export const MARKETING_FAQS = [
   {
     q: "What's the typical engagement size?",
-    a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. You get a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing.",
+    a: "Most tailored fleet work lands between $5k and $30k, once the job is clear. A week with the fleet is $1,500 and comes off the build if we continue. I don't sell a brochure site.",
   },
   {
-    q: "Does the Ops Teardown fee count toward the build?",
-    a: "Yes. Hire me for a custom build within 60 days of delivery and the full $1,500 comes straight off your first invoice: a $15k build invoices at $13.5k. If you take the fixed-price website package instead, $500 comes off it — that package is already scoped and priced tight, so a full credit would eat it. After 60 days the credit expires, because by then the scope I mapped has moved. And if you don't hire me at all, you keep the document and owe nothing else.",
+    q: "Does the week with the fleet count toward the work?",
+    a: "Yes. Continue into the build within 60 days and the full $1,500 comes off the first invoice. After 60 days the credit expires, because the job I wrote down has moved. If you don't continue, you keep the document and owe nothing else.",
   },
   {
     q: "What's the difference between Book a call and Send the job?",
-    a: "Book a call is a 30-minute conversation. Send the job opens a short form so I can review the work and reply with a price band. It does not quote you instantly and it does not start a checkout.",
+    a: "Book a call is a 30-minute conversation about the job. Send the job is a short note so I can read the work and reply about whether I can take it. It does not quote you instantly and it does not start a checkout.",
   },
   {
     q: "How fast can you start?",
-    a: "Usually within a week of the discovery call. If I'm fully booked I'll say so on the call and recommend someone good — never string you along.",
+    a: "Usually within a week of the call, if the job is a fit. If I'm fully booked I'll say so and recommend someone good — never string you along.",
   },
   {
     q: "Do you do retainers?",
-    a: "Occasionally — for ongoing automation work, agent maintenance, or growth engineering. The discovery call is the right place to scope this.",
+    a: "Sometimes, once a system is live and someone has to keep it current. That is care for work already in production, not a queue of tickets. The call is where we see if it fits.",
   },
   {
     q: "Where will the code live?",
@@ -403,49 +421,49 @@ export const MARKETING_FAQS = [
   },
   {
     q: "Will I be able to maintain what you build?",
-    a: "That's the goal. Every deliverable comes with documentation, a Loom walkthrough, and a 2-week support window after handoff. Modern stack means your future hires already know it.",
+    a: "That's the goal. You get the repo, a walkthrough, and two weeks after handoff to ask the questions that come up.",
   },
   {
     q: 'Why "dobeu"?',
-    a: 'Two readings at once. Say it out loud — it\'s my last initial W, spelled phonetically ("dub-el-u"). It\'s also "Do Be You": we handle the technical backend so you get to focus on running your business.',
+    a: 'Two readings at once. Say it out loud — it\'s my last initial W, spelled phonetically ("dub-el-u"). It\'s also "Do Be You": I handle the technical work so you can run the operation.',
   },
 ] as const;
 
 export const PRICING_TIERS = [
   {
     id: "diagnostic",
-    name: "Ops Teardown",
+    name: "A week with the fleet",
     price: "$1,500 flat",
     duration: "5 business days",
-    summary: "One week, one fixed fee, a written teardown of the loop that is actually costing you.",
+    summary: "Five days with the people doing the work, and a written account of the job.",
     detail:
-      "I sit with the people doing the work, map the loop end to end, and hand back a document: where the hours go, what to automate first, the hours and price band to build it, and what to leave alone.",
+      "Where the hours go, what the shift actually needs, what to build, and what to leave alone. You keep the document either way.",
     excludes:
-      "Not a build — no code ships that week. Not a retainer, and not an obligation to hire me. If you do hire me for a custom build, the full fee comes off it.",
+      "Not a build that week, and not a brochure site. Not an obligation to continue. If we do continue, the fee comes off the work.",
   },
   {
-    id: "workflow",
-    name: "Single workflow",
-    price: "Band before the call",
-    summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+    id: "partnership",
+    name: "The partnership",
+    price: "Scoped to the job",
+    summary: "Tailored work for one small fleet, priced after the job is clear.",
     detail:
-      "One loop, fixed price once the scope is real. Send the job and I reply with a band before we talk numbers.",
+      "Send the job or book a call. I reply about whether I can take it. The number follows the work, not a menu.",
   },
   {
     id: "full-build",
-    name: "Full build",
+    name: "The system",
     price: PRICE_RANGE.display,
-    summary: "The ops app, portal, or agent stack you will keep running.",
-    detail: "Most engagements land here. Fixed-scope, fixed-price after the call.",
+    summary: "The tool the yard will keep using.",
+    detail: "Fixed scope once the job is clear. It stays in your repo. Most of this work lands here.",
     featured: true,
   },
   {
     id: "retainer",
     name: "Care plan",
     price: "From $149/mo",
-    summary: "Keep the system current once it is in production.",
+    summary: "Keep a live system current after the work is in production.",
     detail:
-      "Three tiers — Watch, Tune, Extend. Business hours, real hours of work, no lock-in. Only when there is a live system to maintain.",
+      "Three tiers — Watch, Tune, Extend. Business hours, real hours, no lock-in. Only when there is something live to look after.",
   },
 ] as const;
 
@@ -461,7 +479,7 @@ export const CARE_PLAN = {
   intro:
     "Once a system is live, someone has to keep it live. Month to month, cancel any time, and only sold when there is something of mine in production to look after.",
   honesty:
-    "I'm one person, not a 24/7 NOC. Every response window below is business hours, Monday to Friday. If you need overnight coverage, say so on the call and I'll tell you to hire someone else.",
+    "I'm one person, not a 24/7 desk. Every response window below is business hours, Monday to Friday. If you need overnight coverage, say so on the call and I'll tell you to hire someone else.",
 } as const;
 
 export const CARE_PLAN_TIERS = [
@@ -493,11 +511,11 @@ export const CARE_PLAN_TIERS = [
     id: "extend",
     name: "Extend",
     price: "$299/mo",
-    summary: "Enough hours to keep shipping improvements instead of just holding the line.",
+    summary: "Enough hours to keep improving the job instead of just holding the line.",
     includes: [
       "Everything in Tune",
       "4 hours/month of changes",
-      "A 30-minute review each quarter of what to automate next",
+      "A 30-minute review each quarter of what the shift still needs",
       "Your work scheduled ahead of new-client work",
     ],
   },
@@ -511,7 +529,7 @@ export type CarePlanTier = (typeof CARE_PLAN_TIERS)[number];
  */
 export const TRUST_POSITION = {
   heading: "No testimonials. Check the work instead.",
-  body: "There are no client logos or five-star quotes on this site, because I won't publish proof I can't back. What I can point at is checkable: the code is public on GitHub, the price bands are published on the pricing page instead of quoted case by case, and every invoice runs through Stripe. Verify any of it before you send me a dollar.",
+  body: "There are no client logos or five-star quotes on this site, because I won't publish proof I can't back. What I can point at is checkable: the code is public on GitHub, the ranges are on the pricing page, and every invoice runs through Stripe. Verify any of it before you send me a dollar.",
 } as const;
 
 export const FOUNDER_STATS = [
@@ -523,15 +541,15 @@ export const FOUNDER_STATS = [
 export const FOUNDER_REASONS = [
   {
     headline: "You talk to the person doing the work.",
-    body: "No account managers between you and the build.",
+    body: "No ticket queue between you and the job.",
   },
   {
-    headline: "Decisions get made in hours, not weeks.",
-    body: "No agency layers, no rebrand committees.",
+    headline: "The work is learned on the shift.",
+    body: "Not from a form, and not from a template.",
   },
   {
-    headline: "Modern stack from day one.",
-    body: "Nothing you'll have to rewrite in 18 months.",
+    headline: "A product only if the partnership earns it.",
+    body: "Otherwise you keep a system that fits this fleet.",
   },
 ] as const;
 

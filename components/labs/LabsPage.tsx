@@ -9,12 +9,12 @@ export function LabsPage() {
   return (
     <div className="container max-w-4xl py-16 md:py-24">
       <header className="mb-12 md:mb-16">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Portfolio theater</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Labs</p>
         <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-balance">
-          Interactive proof from shipped work
+          Interactive pieces, not the offer
         </h1>
         <p className="mt-4 max-w-2xl text-muted-foreground leading-relaxed">
-          Curated demos from real Dobeu projects — agent loops, visual craft, and growth pipelines. Complements{" "}
+          A few interactive pieces from older work. Not the fleet offer. Complements{" "}
           <Link href="/repos" className="text-primary underline underline-offset-4 hover:text-primary/80">
             /repos
           </Link>{" "}

@@ -4,10 +4,12 @@ import { gotoLanding, seedCookieConsent } from "./helpers";
 test.describe("Landing page smoke tests", () => {
   test("homepage loads with outcome hero", async ({ page }) => {
     await gotoLanding(page);
-    await expect(page).toHaveTitle(/AI Automation|Small Business|Dobeu/i);
+    await expect(page).toHaveTitle(/Partnership on the fleet job|Dobeu/i);
     await expect(page.locator("main")).toBeVisible();
-    await expect(page.locator("#hero-heading")).toContainText(/trucks, kitchens, and sites/i);
-    await expect(page.locator("#hero-heading")).not.toContainText(/autonomous AI coding agents/i);
+    await expect(page.locator("#hero-heading")).toContainText(/Partnership on the fleet job/i);
+    await expect(page.locator("#hero-heading")).not.toContainText(/AI automation|AI agent/i);
+    await expect(page.locator("#pipeline")).toContainText(/RouteReady/);
+    await expect(page.locator("#pipeline")).not.toContainText(/https?:\/\//);
     await expect(page.getByTestId("hero-price-line")).toContainText(/\$5k/);
   });
 
@@ -34,7 +36,7 @@ test.describe("Landing page smoke tests", () => {
     await page.getByTestId("hero-estimate-cta").click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(/price band/i);
+    await expect(dialog).toContainText(/not an instant quote/i);
     await expect(dialog.getByRole("textbox").first()).toBeVisible();
   });
 
@@ -100,7 +102,7 @@ test.describe("Commercial routes", () => {
     await page.getByTestId("pricing-estimate-cta").click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(/price band/i);
+    await expect(dialog).toContainText(/not an instant quote/i);
     await expect(dialog.getByRole("textbox").first()).toBeVisible();
   });
 

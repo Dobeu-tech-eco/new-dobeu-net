@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { track } from "@/lib/analytics";
+import { LEAD_REPLY_SLA } from "@/lib/jeremy-data";
 
 type Source = "book" | "form" | "email";
 
@@ -35,9 +36,9 @@ function confirmation(source: Source): { toast: string; title: string; body: str
       };
     case "form":
       return {
-        toast: "Got it — I'll reply with a price band within 24 hours.",
+        toast: `Got it — I'll ${LEAD_REPLY_SLA}.`,
         title: "Job received.",
-        body: "I personally read every job and reply with a price band within 24 hours. Not an instant quote.",
+        body: `I personally read every job and ${LEAD_REPLY_SLA}. Not an instant quote.`,
       };
     case "email":
       return {
@@ -80,7 +81,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       return;
     }
     if (source === "form" && !payload.message) {
-      toast.error("Tell me about the job so I can reply with a price band.");
+      toast.error("Tell me about the job so I know if I can take it.");
       return;
     }
 
@@ -167,7 +168,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
 
           <div className="grid gap-2">
             <Label htmlFor={`message-${source}`}>
-              {source === "form" ? "What should I price?" : "What's on your mind?"}
+              {source === "form" ? "What's the job?" : "What's on your mind?"}
             </Label>
             <Textarea
               id={`message-${source}`}
@@ -176,7 +177,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
               required={source === "form"}
               placeholder={
                 source === "form"
-                  ? "The loop, who does it today, and what done looks like."
+                  ? "The fleet, who runs dispatch today, and what done looks like."
                   : "Briefly describe the project, deadline, or what you want to explore."
               }
             />

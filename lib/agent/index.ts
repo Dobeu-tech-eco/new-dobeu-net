@@ -1,8 +1,8 @@
 /**
  * Embedded Claude Agents SDK + Composio Tool Router.
  *
- * The landing markets "Claude + Composio + MCP integrations" as a core
- * Dobeu service — this module makes that real inside the app. It opens a
+ * Admin-only embedded helper. The public site does not sell this as a
+ * service. It opens a
  * per-user Composio tool-router session (Stripe, Vercel, Calendly, Apollo,
  * Customer.io, GitHub, and 500+ more) and runs the Agent SDK's `query()`
  * against it.

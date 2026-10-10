@@ -18,7 +18,7 @@ Vercel-managed Supabase remains the **source of truth**. Do **not** run
 | Portal files | `client_files` count = **0** | No `project_files` / storage migration |
 | Leads | `contact_submissions` = **0**; no `leads` / `dobeu_net_leads` | No lead dedupe or mapping |
 | v3 business tables | `invoices`, `leads`, `bookings` **absent** on legacy | No invoice/booking migration |
-| Chat | `messages` exists on legacy; v3 **dropped** `messages` | Intercom owns support — skip |
+| Chat | `messages` exists on legacy; v3 **dropped** `messages` | No in-app chat — skip |
 | Platform noise | 30 public tables; `composio_tools` ≈ 3072 rows | Full dump would pollute target |
 | Auth | `auth.users` = **3** | Only legacy artifact worth knowing about |
 | App auth model | Magic-link only | Passwords never migrate; users re-auth on first visit |

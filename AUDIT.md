@@ -102,7 +102,6 @@ third-party script weight. Not blocking launch.
 | Item | Why deferred | Owner |
 |------|-------------|-------|
 | Mobile Lighthouse ~80 → 90 | Analytics script weight; needs bundle analysis + `next/script strategy="lazyOnload"` audit | Engineering |
-| Intercom identity HMAC secret | Operational config; no code needed | Jeremy |
 | Stripe webhook signature verification | Operational; separate PR | Engineering |
 | Resend DKIM + SPF DNS records | DNS config only | Jeremy / DNS |
 | Legacy DB decommission | After cutover confirmed stable | Jeremy |

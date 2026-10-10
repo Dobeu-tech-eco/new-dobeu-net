@@ -72,7 +72,7 @@ project — it is what gives every RUM event its `env` and `version` tag.
 - `beforeSend` drops un-actionable noise: `ResizeObserver loop`, bare
   `Script error.`, and anything originating in a browser extension.
 - `allowedTracingUrls` injects trace headers **only** on our own origin, so no
-  trace ids leak to Stripe, Calendly, Intercom or Supabase.
+  trace ids leak to Stripe, Calendly or Supabase.
 - `allowedTrackingOrigins` prevents extension-injected RUM from reporting.
 
 ## CSP

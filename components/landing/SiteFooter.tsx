@@ -51,8 +51,8 @@ export function SiteFooter() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              AI automation and custom software for operators in {NAP.areaServed}.
-              One person, modern stack.
+              Fleet partnerships for operators in {NAP.areaServed}.
+              One person on the job, not a ticket mill.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
               {SITE_IDENTITY.legalName} · {NAP.locality}, {NAP.region} · {NAP.email}
