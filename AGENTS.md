@@ -101,6 +101,8 @@ Coverage and dependency audit currently report results but do not enforce thresh
 | `public/`              | Static assets and crawler/AI metadata                                                      |
 | `docs/`                | Deployment, observability, reviews, audits, and implementation plans                       |
 | `types/`               | Project-wide TypeScript declarations                                                       |
+| `.devcontainer/`       | Reproducible Node 24 development-container definition                                      |
+| `.ona/`                | Ona tasks and long-running development-service definitions                                 |
 | `.github/workflows/`   | CI, review, dependency-audit, OCI, and snapshot workflows                                  |
 
 `lib/database.types.ts` is generated. Regenerate it with `pnpm db:types`; do not edit it by hand.
