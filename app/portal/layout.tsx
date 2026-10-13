@@ -29,6 +29,7 @@ const NAV = [
   { href: "/portal/settings", label: "Settings", icon: Settings }
 ];
 
+/** Require a signed-in user before rendering the client portal shell and analytics identity. */
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {

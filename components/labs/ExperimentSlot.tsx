@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import type { LabExperimentEntry } from "@/lib/labs-data";
 
+/** Render a featured lab experiment with its status and booking and job inquiry buttons. */
 export function ExperimentSlot({ experiment }: { experiment: LabExperimentEntry }) {
   const { open } = useLightbox();
 

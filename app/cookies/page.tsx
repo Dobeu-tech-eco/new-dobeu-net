@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/** Render the cookie policy describing necessary cookies and optional tracking consent. */
 export default function CookiesPage() {
   return (
     <LegalLayout title="Cookie Policy" lastUpdated="2026-06-20">

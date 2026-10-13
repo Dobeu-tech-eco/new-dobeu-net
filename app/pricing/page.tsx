@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/pricing" },
 };
 
+/** Render engagement scoping and payment terms with service offer structured data. */
 export default function PricingPage() {
   return (
     <MarketingShell>

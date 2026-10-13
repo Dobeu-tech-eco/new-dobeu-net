@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/services" },
 };
 
+/** Render the fleet service pillars with page structured data and a contact CTA. */
 export default function ServicesPage() {
   return (
     <MarketingShell>

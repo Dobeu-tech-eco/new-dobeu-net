@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 
+/** Render a customizable invitation to open the booking or job inquiry dialog. */
 export function ConversionBridge({ label = "If the job is a fleet, tell me about it." }: { label?: string }) {
   const { open } = useLightbox();
 

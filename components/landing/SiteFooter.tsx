@@ -33,6 +33,7 @@ const FOOTER_LINKS = {
   ],
 };
 
+/** Render site navigation, business details, legal links, and cookie preference access. */
 export function SiteFooter() {
   const year = new Date().getFullYear();
 

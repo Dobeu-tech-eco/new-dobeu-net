@@ -5,6 +5,7 @@ import { EstimateCtas } from "@/components/landing/EstimateCtas";
 import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 import { PRICE_RANGE } from "@/lib/jeremy-data";
 
+/** Render the closing fleet partnership invitation with booking and inquiry buttons. */
 export function FinalCTA() {
   const mp = useMotionProps(FADE_UP);
 

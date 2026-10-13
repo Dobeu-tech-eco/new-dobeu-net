@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/case-studies" },
 };
 
+/** Render attributable shipped work, or the empty state when no case studies are published. */
 export default function CaseStudiesPage() {
   return (
     <MarketingShell>

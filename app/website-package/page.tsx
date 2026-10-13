@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+/** Render the retired website-package notice and links to current fleet work and contact options. */
 export default function WebsitePackagePage() {
   return (
     <MarketingShell>

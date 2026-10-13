@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/** Render the terms governing site use, engagements, payments, and liability. */
 export default function TermsPage() {
   return (
     <LegalLayout title="Terms of Service" lastUpdated="2026-06-20">

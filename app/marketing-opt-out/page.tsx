@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/** Render instructions for withdrawing tracking consent and opting out of marketing emails. */
 export default function MarketingOptOutPage() {
   return (
     <LightboxProvider>

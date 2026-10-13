@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/** Render the privacy policy covering collected data, providers, and visitor rights. */
 export default function PrivacyPage() {
   return (
     <LegalLayout title="Privacy Policy" lastUpdated="2026-06-20">

@@ -10,6 +10,7 @@ import { HERO_COPY } from "@/lib/jeremy-data";
 export const BOOK_MICROCOPY = "30 min on the actual job.";
 export const SEND_MICROCOPY = "I reply about the job.";
 
+/** Render tracked booking and job inquiry buttons with accessible supporting text. */
 export function EstimateCtas({
   location,
   estimateTestId,

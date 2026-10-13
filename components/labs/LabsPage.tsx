@@ -5,6 +5,7 @@ import { FEATURED_EXPERIMENT, LAB_DEMOS } from "@/lib/labs-data";
 import { DemoCard } from "@/components/labs/DemoCard";
 import { ExperimentSlot } from "@/components/labs/ExperimentSlot";
 
+/** Render the interactive demo catalog and featured experiment from shared lab data. */
 export function LabsPage() {
   return (
     <div className="container max-w-4xl py-16 md:py-24">

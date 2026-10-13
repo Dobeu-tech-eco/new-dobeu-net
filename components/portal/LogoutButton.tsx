@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { resetAnalyticsUser } from "@/lib/analytics";
 
+/** Render the portal sign-out button and connect it to session and analytics cleanup. */
 export function LogoutButton() {
   const router = useRouter();
+  /** Sign out of Supabase, reset analytics identity, and return to a refreshed homepage. */
   async function handle() {
     const supabase = createClient();
     await supabase.auth.signOut();

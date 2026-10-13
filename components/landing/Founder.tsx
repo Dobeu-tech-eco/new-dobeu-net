@@ -7,6 +7,7 @@ import { AVAILABILITY, FOUNDER, FOUNDER_REASONS, NAP, TRUST_POSITION } from "@/l
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { useMotionProps, FADE_UP, SCALE_IN } from "@/hooks/use-motion-props";
 
+/** Render the founder story in the homepage or standalone variant with a booking CTA. */
 export function Founder({ variant = "home" }: { variant?: "home" | "standalone" }) {
   const { open } = useLightbox();
   const mpUp = useMotionProps(FADE_UP);

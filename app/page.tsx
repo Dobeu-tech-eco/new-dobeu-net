@@ -27,6 +27,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+/** Render the fleet partnership homepage, service structured data, and product pipeline. */
 export default function HomePage() {
   return (
     <MarketingShell stickyCta>

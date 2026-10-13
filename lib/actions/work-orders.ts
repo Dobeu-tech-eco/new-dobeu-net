@@ -115,6 +115,10 @@ export interface UploadTarget {
   size_bytes: number;
 }
 
+/**
+ * Validate and create a work order for the signed-in user, returning signed attachment upload targets.
+ * Notifications and event tracking are best effort; attachment rows are finalized after upload.
+ */
 export async function submitWorkOrder(
   raw: unknown
 ): Promise<ActionResult<{ id: string; uploadPaths: string[]; uploadTargets: UploadTarget[] }>> {

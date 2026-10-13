@@ -143,6 +143,7 @@ const nextConfig: NextConfig = {
       }
     ];
   },
+  /** Return permanent redirects for the former homepage and retired service pillar URLs. */
   async redirects() {
     return [
       { source: "/home", destination: "/", permanent: true },

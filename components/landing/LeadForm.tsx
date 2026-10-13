@@ -26,6 +26,7 @@ function submitLabel(source: Source): string {
   }
 }
 
+/** Return source-specific toast and confirmation copy for a successful lead submission. */
 function confirmation(source: Source): { toast: string; title: string; body: string } {
   switch (source) {
     case "book":
@@ -59,10 +60,12 @@ interface Props {
   compact?: boolean;
 }
 
+/** Render a lead intake form with source-specific fields, submission feedback, and optional success callback. */
 export function LeadForm({ source, onSuccess, compact = false }: Props) {
   const [submitting, setSubmitting] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
 
+  /** Validate form fields, post the lead with attribution, and report success or failure to the visitor. */
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);

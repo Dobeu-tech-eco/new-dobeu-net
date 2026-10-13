@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/about" },
 };
 
+/** Render the founder profile with organization structured data and the marketing shell. */
 export default function AboutPage() {
   return (
     <MarketingShell>

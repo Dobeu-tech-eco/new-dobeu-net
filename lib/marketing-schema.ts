@@ -7,6 +7,7 @@ import {
   hasPublishablePhone,
 } from "@/lib/jeremy-data";
 
+/** Build ProfessionalService structured data from site identity with optional name, description, and URL overrides. */
 export function professionalServiceJsonLd(opts?: {
   name?: string;
   description?: string;
@@ -37,6 +38,7 @@ export function professionalServiceJsonLd(opts?: {
   };
 }
 
+/** Build Service and Offer structured data for a pillar or the general engagement, with an optional page path. */
 export function serviceOfferJsonLd(pillar?: GtmPillar, pagePath?: string) {
   const SITE_URL = getSiteUrl();
   const name = pillar?.headline ?? "Fleet partnership";

@@ -26,6 +26,7 @@ function writeCookie(name: string, value: string, maxAge: number) {
   document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAge}; path=/; SameSite=Lax; Secure`;
 }
 
+/** Read saved tracking preferences, defaulting to undecided and denied for absent or invalid JSON. */
 function readConsent(): ConsentState {
   const raw = parseCookie(COOKIE_NAME);
   if (!raw) return { decided: false, analytics: false, marketing: false };
@@ -55,6 +56,7 @@ function broadcastConsentChange() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(CONSENT_EVENT));
 }
 
+/** Manage persisted tracking consent, honor Do Not Track on reads, and synchronize hook instances in this tab. */
 export function useCookieConsent() {
   const [consent, setConsentState] = useState<ConsentState>({
     decided: false,
@@ -72,6 +74,7 @@ export function useCookieConsent() {
 
     // Stay in sync when any other instance (banner / provider) updates consent
     // in the same session, so analytics start immediately without a reload.
+    /** Refresh consent after a change in this tab, treating Do Not Track as denial. */
     const sync = () =>
       setConsentState(
         isDNT()
@@ -82,6 +85,7 @@ export function useCookieConsent() {
     return () => window.removeEventListener(CONSENT_EVENT, sync);
   }, []);
 
+  /** Persist approval for all optional tracking categories and notify hook instances in this tab. */
   const acceptAll = useCallback(() => {
     const state: ConsentState = { decided: true, analytics: true, marketing: true };
     writeCookie(COOKIE_NAME, JSON.stringify({ analytics: true, marketing: true }), COOKIE_MAX_AGE);
@@ -89,6 +93,7 @@ export function useCookieConsent() {
     broadcastConsentChange();
   }, []);
 
+  /** Persist denial for all optional tracking categories and notify hook instances in this tab. */
   const declineAll = useCallback(() => {
     const state: ConsentState = { decided: true, analytics: false, marketing: false };
     writeCookie(COOKIE_NAME, JSON.stringify({ analytics: false, marketing: false }), COOKIE_MAX_AGE);
@@ -96,6 +101,7 @@ export function useCookieConsent() {
     broadcastConsentChange();
   }, []);
 
+  /** Persist the selected tracking categories and notify hook instances in this tab. */
   const savePreferences = useCallback((prefs: Omit<ConsentState, "decided">) => {
     const state: ConsentState = { decided: true, ...prefs };
     writeCookie(COOKIE_NAME, JSON.stringify(prefs), COOKIE_MAX_AGE);

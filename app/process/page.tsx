@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/process" },
 };
 
+/** Render the partnership process with page structured data and a contact CTA. */
 export default function ProcessPage() {
   return (
     <MarketingShell>

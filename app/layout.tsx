@@ -67,6 +67,7 @@ export const viewport: Viewport = {
   maximumScale: 5
 };
 
+/** Wrap all routes with document metadata, fonts, theme, analytics, and cookie preferences. */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html

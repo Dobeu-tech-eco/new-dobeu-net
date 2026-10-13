@@ -21,6 +21,7 @@ const HOME_OUTCOMES: Record<string, string> = {
   "earned-product": "A product only after the partnership earns it. See what's in the pipeline.",
 } as const;
 
+/** Render fleet service cards in the homepage or standalone variant with links and an inquiry CTA. */
 export function Services({ variant = "home" }: { variant?: "home" | "standalone" }) {
   const { open } = useLightbox();
   const mp = useMotionProps(FADE_UP_LG, "-80px");

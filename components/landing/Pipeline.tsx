@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
 import { PIPELINE } from "@/lib/jeremy-data";
 
+/** Render the RouteReady pipeline preview using shared content and motion preferences. */
 export function Pipeline() {
   const mp = useMotionProps(FADE_UP);
 

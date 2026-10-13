@@ -40,6 +40,7 @@ const NAV = [
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
+/** Require an admin session with MFA before rendering navigation, analytics identity, and children. */
 export default async function AdminLayout({
   children,
 }: {
