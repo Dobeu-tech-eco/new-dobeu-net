@@ -61,10 +61,10 @@ jobs:
             exit 1
           fi
 
+      # Same commit as this workflow file, so the script and workflow always match.
       - name: Checkout the learning script
         uses: actions/checkout@v4
         with:
-          ref: main
           path: runner
 
       - name: Checkout ${{ matrix.repo }}
