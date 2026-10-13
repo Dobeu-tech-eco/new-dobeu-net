@@ -126,9 +126,10 @@ async function collectFindings() {
   );
 }
 
-// Only the evidence syntax counts as a citation: "PR #12" or "PR #12, #15".
+// Only the evidence syntax counts as a citation: "PR #12", "PR #12, #15" or
+// "PR #12 and #15". Every number in the phrase is checked.
 // A bare "#333" (a CSS colour, an issue-style ref in a rule) is not one.
-const PR_CITATION = /PR #\d+(?:\s*,\s*#\d+)*/g;
+const PR_CITATION = /PR #\d+(?:\s*(?:,|&|\band\b)\s*(?:and\s+)?#\d+)*/gi;
 
 function citedPrNumbers(text) {
   return [...text.matchAll(PR_CITATION)].flatMap((m) =>
