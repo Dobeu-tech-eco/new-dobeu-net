@@ -31,7 +31,8 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser, requireAdmin, AuthError } from "@/lib/actions/auth";
-import type { Database, WorkOrderStatus } from "@/lib/database.types";
+import type { Database } from "@/lib/database.types";
+import type { WorkOrderStatus } from "@/lib/work-order-types";
 import { sendEmail } from "@/lib/resend";
 import {
   workOrderReceivedToAdmin,

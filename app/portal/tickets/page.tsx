@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { NewWorkOrderDialog } from "@/components/portal/NewWorkOrderDialog";
-import type { WorkOrderStatus } from "@/lib/database.types";
+import type { WorkOrderStatus } from "@/lib/work-order-types";
 
 export const dynamic = "force-dynamic";
 

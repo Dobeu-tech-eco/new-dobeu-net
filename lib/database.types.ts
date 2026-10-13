@@ -1,42 +1,3 @@
-/**
- * Supabase generated types — placeholder.
- * Run `pnpm db:types` after applying migrations to regenerate.
- *
- * This is a hand-written stub covering the v1 schema so the codebase
- * is type-safe before the live Supabase project is provisioned.
- *
- * NOTE: each table includes `Relationships: []` because @supabase/postgrest-js
- * requires the `Relationships` key on every table to satisfy its GenericTable
- * constraint. Without it the schema generic collapses and every `.from().select()`
- * row resolves to `never`. Regenerate via `pnpm db:types` once the live schema
- * exists — that also captures real foreign-key relationships and nullability drift.
- *
- * 2026-06-04 (Phase 2): synced with `20260605000000_phase1_reconciliation.sql`
- *   - dropped `messages`
- *   - added `invoices.hosted_invoice_url`
- *   - added `work_orders` + `work_order_attachments`
- *
- * 2026-06-15 (Phase 3): synced with `20260615000000_phase3_stripe_customer_id.sql`
- *   - added `profiles.stripe_customer_id` (lazy-created on first invoice)
- *
- * 2026-06-18 (gap-closure): synced with `20260618000000_workorder_invoice_linkage.sql`
- *   + `20260618000100_profiles_prefs_phone.sql`
- *   - `invoices.project_id` now NULLABLE; added `invoices.user_id` (direct owner
- *     so a project-less work-order invoice is still visible/payable via RLS)
- *   - added work-order lifecycle timestamps:
- *     `work_orders.{in_progress_at,delivered_at,closed_at,cancelled_at}`
- *   - added `profiles.phone` + `profiles.notify_email`
- *
- * 2026-07-17 (tenancy): synced with `20260717120000_multi_tenant_companies.sql`
- *   - added `companies`, `company_roles`, `company_members`, `digital_assets`,
- *     `asset_entitlements`, `admin_audit_log`
- *   - added nullable `projects.company_id` + `work_orders.company_id`
- *
- * 2026-08-29 (review-first budget intake): synced with
- * `20260829010000_typeform_budget_intakes.sql`
- *   - added service-role-only `typeform_budget_intakes`
- */
-
 export type Json =
   | string
   | number
@@ -45,383 +6,950 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type WorkOrderServiceType =
-  | "logo"
-  | "website_update"
-  | "data_export"
-  | "consulting"
-  | "other";
-
-export type WorkOrderStatus =
-  | "open"
-  | "quoted"
-  | "accepted"
-  | "in_progress"
-  | "delivered"
-  | "closed"
-  | "cancelled";
-
-export type WorkOrderPriority = "low" | "normal" | "high";
-
-export type TypeformBudgetIntakeStatus = "new" | "reviewed" | "archived";
-
-export type TypeformBudgetMappingStatus = "mapped" | "needs_review";
-
-export interface Database {
+export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
-      profiles: {
+      admin_audit_log: {
         Row: {
-          id: string;
-          full_name: string | null;
-          company: string | null;
-          avatar_url: string | null;
-          apollo_contact_id: string | null;
-          stripe_customer_id: string | null;
-          phone: string | null;
-          notify_email: boolean;
+          action: string;
+          actor_user_id: string | null;
           created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & {
+          data: Json | null;
           id: string;
+          target_id: string | null;
+          target_type: string;
         };
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
-        Relationships: [];
-      };
-      projects: {
-        Row: {
-          id: string;
-          owner_user_id: string;
-          title: string;
-          description: string | null;
-          status: "proposed" | "active" | "delivered" | "closed";
-          started_at: string | null;
-          delivered_at: string | null;
-          total_cents: number;
-          stripe_link: string | null;
-          company_id: string | null;
-          created_at: string;
-          updated_at: string;
+        Insert: {
+          action: string;
+          actor_user_id?: string | null;
+          created_at?: string;
+          data?: Json | null;
+          id?: string;
+          target_id?: string | null;
+          target_type: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["projects"]["Row"]> & {
-          owner_user_id: string;
-          title: string;
+        Update: {
+          action?: string;
+          actor_user_id?: string | null;
+          created_at?: string;
+          data?: Json | null;
+          id?: string;
+          target_id?: string | null;
+          target_type?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["projects"]["Row"]>;
-        Relationships: [];
-      };
-      project_files: {
-        Row: {
-          id: string;
-          project_id: string;
-          storage_path: string;
-          filename: string;
-          mime: string | null;
-          size_bytes: number | null;
-          uploaded_by: string;
-          uploaded_at: string;
-          retention_until: string;
-        };
-        Insert: Partial<
-          Database["public"]["Tables"]["project_files"]["Row"]
-        > & {
-          project_id: string;
-          storage_path: string;
-          filename: string;
-          uploaded_by: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["project_files"]["Row"]>;
-        Relationships: [];
-      };
-      invoices: {
-        Row: {
-          id: string;
-          project_id: string | null;
-          user_id: string | null;
-          amount_cents: number;
-          currency: string;
-          status: "open" | "paid" | "void" | "overdue";
-          stripe_invoice_id: string | null;
-          stripe_payment_intent: string | null;
-          hosted_invoice_url: string | null;
-          due_date: string | null;
-          paid_at: string | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["invoices"]["Row"]> & {
-          amount_cents: number;
-        };
-        Update: Partial<Database["public"]["Tables"]["invoices"]["Row"]>;
-        Relationships: [];
-      };
-      leads: {
-        Row: {
-          id: string;
-          email: string;
-          name: string | null;
-          company: string | null;
-          apollo_contact_id: string | null;
-          source: "book" | "form" | "email" | "typeform" | "other";
-          utm_source: string | null;
-          utm_medium: string | null;
-          utm_campaign: string | null;
-          utm_term: string | null;
-          utm_content: string | null;
-          referrer: string | null;
-          first_seen: string;
-          last_seen: string;
-          raw_payload: Json;
-        };
-        Insert: Partial<Database["public"]["Tables"]["leads"]["Row"]> & {
-          email: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["leads"]["Row"]>;
-        Relationships: [];
-      };
-      bookings: {
-        Row: {
-          id: string;
-          lead_id: string | null;
-          email: string;
-          name: string | null;
-          scheduled_at: string;
-          duration_minutes: number;
-          meeting_url: string | null;
-          apollo_meeting_id: string | null;
-          google_event_id: string | null;
-          status: "scheduled" | "completed" | "cancelled" | "noshow";
-          notes: string | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["bookings"]["Row"]> & {
-          email: string;
-          scheduled_at: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["bookings"]["Row"]>;
-        Relationships: [];
-      };
-      page_events: {
-        Row: {
-          id: string;
-          session_id: string;
-          user_id: string | null;
-          event_name: string;
-          properties: Json;
-          page_path: string | null;
-          occurred_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["page_events"]["Row"]> & {
-          session_id: string;
-          event_name: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["page_events"]["Row"]>;
-        Relationships: [];
-      };
-      work_orders: {
-        Row: {
-          id: string;
-          created_by: string;
-          project_id: string | null;
-          service_type: WorkOrderServiceType;
-          title: string;
-          description: string | null;
-          status: WorkOrderStatus;
-          priority: WorkOrderPriority;
-          quoted_amount_cents: number | null;
-          quoted_at: string | null;
-          accepted_at: string | null;
-          in_progress_at: string | null;
-          delivered_at: string | null;
-          closed_at: string | null;
-          cancelled_at: string | null;
-          invoice_id: string | null;
-          company_id: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["work_orders"]["Row"]> & {
-          created_by: string;
-          service_type: WorkOrderServiceType;
-          title: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["work_orders"]["Row"]>;
-        Relationships: [];
-      };
-      work_order_attachments: {
-        Row: {
-          id: string;
-          work_order_id: string;
-          storage_path: string;
-          filename: string;
-          mime_type: string | null;
-          size_bytes: number | null;
-          uploaded_at: string;
-        };
-        Insert: Partial<
-          Database["public"]["Tables"]["work_order_attachments"]["Row"]
-        > & {
-          work_order_id: string;
-          storage_path: string;
-          filename: string;
-        };
-        Update: Partial<
-          Database["public"]["Tables"]["work_order_attachments"]["Row"]
-        >;
-        Relationships: [];
-      };
-      companies: {
-        Row: {
-          id: string;
-          name: string;
-          status: "active" | "suspended";
-          stripe_customer_id: string | null;
-          created_by: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["companies"]["Row"]> & {
-          name: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["companies"]["Row"]>;
-        Relationships: [];
-      };
-      company_roles: {
-        Row: {
-          key: string;
-          label: string;
-          rank: number;
-          created_at: string;
-        };
-        Insert: Partial<
-          Database["public"]["Tables"]["company_roles"]["Row"]
-        > & {
-          key: string;
-          label: string;
-          rank: number;
-        };
-        Update: Partial<Database["public"]["Tables"]["company_roles"]["Row"]>;
-        Relationships: [];
-      };
-      company_members: {
-        Row: {
-          id: string;
-          company_id: string;
-          user_id: string;
-          role: string;
-          status: "invited" | "active" | "disabled";
-          invited_by: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<
-          Database["public"]["Tables"]["company_members"]["Row"]
-        > & {
-          company_id: string;
-          user_id: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["company_members"]["Row"]>;
-        Relationships: [];
-      };
-      digital_assets: {
-        Row: {
-          id: string;
-          title: string;
-          description: string | null;
-          storage_path: string;
-          stripe_product_id: string | null;
-          price_cents: number | null;
-          active: boolean;
-          created_at: string;
-        };
-        Insert: Partial<
-          Database["public"]["Tables"]["digital_assets"]["Row"]
-        > & {
-          title: string;
-          storage_path: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["digital_assets"]["Row"]>;
         Relationships: [];
       };
       asset_entitlements: {
         Row: {
-          id: string;
           asset_id: string;
           company_id: string | null;
-          user_id: string | null;
+          granted_at: string;
+          id: string;
           source: string;
           stripe_checkout_session_id: string | null;
-          granted_at: string;
+          user_id: string | null;
         };
-        Insert: Partial<
-          Database["public"]["Tables"]["asset_entitlements"]["Row"]
-        > & {
+        Insert: {
           asset_id: string;
+          company_id?: string | null;
+          granted_at?: string;
+          id?: string;
+          source?: string;
+          stripe_checkout_session_id?: string | null;
+          user_id?: string | null;
         };
-        Update: Partial<
-          Database["public"]["Tables"]["asset_entitlements"]["Row"]
-        >;
+        Update: {
+          asset_id?: string;
+          company_id?: string | null;
+          granted_at?: string;
+          id?: string;
+          source?: string;
+          stripe_checkout_session_id?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "asset_entitlements_asset_id_fkey";
+            columns: ["asset_id"];
+            isOneToOne: false;
+            referencedRelation: "digital_assets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "asset_entitlements_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      bookings: {
+        Row: {
+          apollo_meeting_id: string | null;
+          created_at: string;
+          duration_minutes: number;
+          email: string;
+          google_event_id: string | null;
+          id: string;
+          lead_id: string | null;
+          meeting_url: string | null;
+          name: string | null;
+          notes: string | null;
+          scheduled_at: string;
+          status: Database["public"]["Enums"]["booking_status"];
+        };
+        Insert: {
+          apollo_meeting_id?: string | null;
+          created_at?: string;
+          duration_minutes?: number;
+          email: string;
+          google_event_id?: string | null;
+          id?: string;
+          lead_id?: string | null;
+          meeting_url?: string | null;
+          name?: string | null;
+          notes?: string | null;
+          scheduled_at: string;
+          status?: Database["public"]["Enums"]["booking_status"];
+        };
+        Update: {
+          apollo_meeting_id?: string | null;
+          created_at?: string;
+          duration_minutes?: number;
+          email?: string;
+          google_event_id?: string | null;
+          id?: string;
+          lead_id?: string | null;
+          meeting_url?: string | null;
+          name?: string | null;
+          notes?: string | null;
+          scheduled_at?: string;
+          status?: Database["public"]["Enums"]["booking_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bookings_lead_id_fkey";
+            columns: ["lead_id"];
+            isOneToOne: false;
+            referencedRelation: "leads";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      companies: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          status: string;
+          stripe_customer_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          status?: string;
+          stripe_customer_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          status?: string;
+          stripe_customer_id?: string | null;
+          updated_at?: string;
+        };
         Relationships: [];
+      };
+      company_members: {
+        Row: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          invited_by: string | null;
+          role: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          company_id: string;
+          created_at?: string;
+          id?: string;
+          invited_by?: string | null;
+          role?: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          company_id?: string;
+          created_at?: string;
+          id?: string;
+          invited_by?: string | null;
+          role?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "company_members_role_fkey";
+            columns: ["role"];
+            isOneToOne: false;
+            referencedRelation: "company_roles";
+            referencedColumns: ["key"];
+          },
+        ];
+      };
+      company_roles: {
+        Row: {
+          created_at: string;
+          key: string;
+          label: string;
+          rank: number;
+        };
+        Insert: {
+          created_at?: string;
+          key: string;
+          label: string;
+          rank: number;
+        };
+        Update: {
+          created_at?: string;
+          key?: string;
+          label?: string;
+          rank?: number;
+        };
+        Relationships: [];
+      };
+      digital_assets: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          description: string | null;
+          id: string;
+          price_cents: number | null;
+          storage_path: string;
+          stripe_product_id: string | null;
+          title: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          price_cents?: number | null;
+          storage_path: string;
+          stripe_product_id?: string | null;
+          title: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          price_cents?: number | null;
+          storage_path?: string;
+          stripe_product_id?: string | null;
+          title?: string;
+        };
+        Relationships: [];
+      };
+      invoices: {
+        Row: {
+          amount_cents: number;
+          created_at: string;
+          currency: string;
+          due_date: string | null;
+          hosted_invoice_url: string | null;
+          id: string;
+          paid_at: string | null;
+          project_id: string | null;
+          status: Database["public"]["Enums"]["invoice_status"];
+          stripe_invoice_id: string | null;
+          stripe_payment_intent: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          amount_cents: number;
+          created_at?: string;
+          currency?: string;
+          due_date?: string | null;
+          hosted_invoice_url?: string | null;
+          id?: string;
+          paid_at?: string | null;
+          project_id?: string | null;
+          status?: Database["public"]["Enums"]["invoice_status"];
+          stripe_invoice_id?: string | null;
+          stripe_payment_intent?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          amount_cents?: number;
+          created_at?: string;
+          currency?: string;
+          due_date?: string | null;
+          hosted_invoice_url?: string | null;
+          id?: string;
+          paid_at?: string | null;
+          project_id?: string | null;
+          status?: Database["public"]["Enums"]["invoice_status"];
+          stripe_invoice_id?: string | null;
+          stripe_payment_intent?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoices_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      leads: {
+        Row: {
+          apollo_contact_id: string | null;
+          company: string | null;
+          email: string;
+          first_seen: string;
+          id: string;
+          last_seen: string;
+          name: string | null;
+          raw_payload: Json;
+          referrer: string | null;
+          source: Database["public"]["Enums"]["lead_source"];
+          utm_campaign: string | null;
+          utm_content: string | null;
+          utm_medium: string | null;
+          utm_source: string | null;
+          utm_term: string | null;
+        };
+        Insert: {
+          apollo_contact_id?: string | null;
+          company?: string | null;
+          email: string;
+          first_seen?: string;
+          id?: string;
+          last_seen?: string;
+          name?: string | null;
+          raw_payload?: Json;
+          referrer?: string | null;
+          source?: Database["public"]["Enums"]["lead_source"];
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_medium?: string | null;
+          utm_source?: string | null;
+          utm_term?: string | null;
+        };
+        Update: {
+          apollo_contact_id?: string | null;
+          company?: string | null;
+          email?: string;
+          first_seen?: string;
+          id?: string;
+          last_seen?: string;
+          name?: string | null;
+          raw_payload?: Json;
+          referrer?: string | null;
+          source?: Database["public"]["Enums"]["lead_source"];
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_medium?: string | null;
+          utm_source?: string | null;
+          utm_term?: string | null;
+        };
+        Relationships: [];
+      };
+      page_events: {
+        Row: {
+          event_name: string;
+          id: string;
+          occurred_at: string;
+          page_path: string | null;
+          properties: Json;
+          session_id: string;
+          user_id: string | null;
+        };
+        Insert: {
+          event_name: string;
+          id?: string;
+          occurred_at?: string;
+          page_path?: string | null;
+          properties?: Json;
+          session_id: string;
+          user_id?: string | null;
+        };
+        Update: {
+          event_name?: string;
+          id?: string;
+          occurred_at?: string;
+          page_path?: string | null;
+          properties?: Json;
+          session_id?: string;
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: {
+          apollo_contact_id: string | null;
+          avatar_url: string | null;
+          company: string | null;
+          created_at: string;
+          full_name: string | null;
+          id: string;
+          notify_email: boolean;
+          phone: string | null;
+          stripe_customer_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          apollo_contact_id?: string | null;
+          avatar_url?: string | null;
+          company?: string | null;
+          created_at?: string;
+          full_name?: string | null;
+          id: string;
+          notify_email?: boolean;
+          phone?: string | null;
+          stripe_customer_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          apollo_contact_id?: string | null;
+          avatar_url?: string | null;
+          company?: string | null;
+          created_at?: string;
+          full_name?: string | null;
+          id?: string;
+          notify_email?: boolean;
+          phone?: string | null;
+          stripe_customer_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      project_files: {
+        Row: {
+          filename: string;
+          id: string;
+          mime: string | null;
+          project_id: string;
+          retention_until: string;
+          size_bytes: number | null;
+          storage_path: string;
+          uploaded_at: string;
+          uploaded_by: string;
+        };
+        Insert: {
+          filename: string;
+          id?: string;
+          mime?: string | null;
+          project_id: string;
+          retention_until?: string;
+          size_bytes?: number | null;
+          storage_path: string;
+          uploaded_at?: string;
+          uploaded_by: string;
+        };
+        Update: {
+          filename?: string;
+          id?: string;
+          mime?: string | null;
+          project_id?: string;
+          retention_until?: string;
+          size_bytes?: number | null;
+          storage_path?: string;
+          uploaded_at?: string;
+          uploaded_by?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      projects: {
+        Row: {
+          company_id: string | null;
+          created_at: string;
+          delivered_at: string | null;
+          description: string | null;
+          id: string;
+          owner_user_id: string;
+          started_at: string | null;
+          status: Database["public"]["Enums"]["project_status"];
+          stripe_link: string | null;
+          title: string;
+          total_cents: number;
+          updated_at: string;
+        };
+        Insert: {
+          company_id?: string | null;
+          created_at?: string;
+          delivered_at?: string | null;
+          description?: string | null;
+          id?: string;
+          owner_user_id: string;
+          started_at?: string | null;
+          status?: Database["public"]["Enums"]["project_status"];
+          stripe_link?: string | null;
+          title: string;
+          total_cents?: number;
+          updated_at?: string;
+        };
+        Update: {
+          company_id?: string | null;
+          created_at?: string;
+          delivered_at?: string | null;
+          description?: string | null;
+          id?: string;
+          owner_user_id?: string;
+          started_at?: string | null;
+          status?: Database["public"]["Enums"]["project_status"];
+          stripe_link?: string | null;
+          title?: string;
+          total_cents?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "projects_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       typeform_budget_intakes: {
         Row: {
-          id: string;
-          form_id: string;
-          response_token: string;
-          event_id: string | null;
-          submitted_at: string | null;
-          received_at: string;
-          updated_at: string;
-          status: TypeformBudgetIntakeStatus;
-          mapping_status: TypeformBudgetMappingStatus;
-          mapping_warnings: Json;
-          email: string | null;
-          name: string | null;
-          company: string | null;
-          service_family_ref: string | null;
-          service_family_label: string | null;
-          budget_band_ref: string | null;
           budget_band_label: string | null;
+          budget_band_ref: string | null;
+          company: string | null;
+          email: string | null;
+          event_id: string | null;
+          form_id: string;
+          id: string;
+          mapping_status: string;
+          mapping_warnings: Json;
+          name: string | null;
           project_summary: string | null;
           raw_payload: Json;
+          received_at: string;
+          response_token: string;
           review_notes: string | null;
           reviewed_at: string | null;
           reviewed_by: string | null;
+          service_family_label: string | null;
+          service_family_ref: string | null;
+          status: string;
+          submitted_at: string | null;
+          updated_at: string;
         };
-        Insert: Partial<
-          Database["public"]["Tables"]["typeform_budget_intakes"]["Row"]
-        > & {
+        Insert: {
+          budget_band_label?: string | null;
+          budget_band_ref?: string | null;
+          company?: string | null;
+          email?: string | null;
+          event_id?: string | null;
           form_id: string;
-          response_token: string;
+          id?: string;
+          mapping_status?: string;
+          mapping_warnings?: Json;
+          name?: string | null;
+          project_summary?: string | null;
           raw_payload: Json;
+          received_at?: string;
+          response_token: string;
+          review_notes?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          service_family_label?: string | null;
+          service_family_ref?: string | null;
+          status?: string;
+          submitted_at?: string | null;
+          updated_at?: string;
         };
-        Update: Partial<
-          Database["public"]["Tables"]["typeform_budget_intakes"]["Row"]
-        >;
+        Update: {
+          budget_band_label?: string | null;
+          budget_band_ref?: string | null;
+          company?: string | null;
+          email?: string | null;
+          event_id?: string | null;
+          form_id?: string;
+          id?: string;
+          mapping_status?: string;
+          mapping_warnings?: Json;
+          name?: string | null;
+          project_summary?: string | null;
+          raw_payload?: Json;
+          received_at?: string;
+          response_token?: string;
+          review_notes?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          service_family_label?: string | null;
+          service_family_ref?: string | null;
+          status?: string;
+          submitted_at?: string | null;
+          updated_at?: string;
+        };
         Relationships: [];
       };
-      admin_audit_log: {
+      work_order_attachments: {
         Row: {
+          filename: string;
           id: string;
-          actor_user_id: string | null;
-          action: string;
-          target_type: string;
-          target_id: string | null;
-          data: Json | null;
+          mime_type: string | null;
+          size_bytes: number | null;
+          storage_path: string;
+          uploaded_at: string;
+          work_order_id: string;
+        };
+        Insert: {
+          filename: string;
+          id?: string;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          storage_path: string;
+          uploaded_at?: string;
+          work_order_id: string;
+        };
+        Update: {
+          filename?: string;
+          id?: string;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          storage_path?: string;
+          uploaded_at?: string;
+          work_order_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "work_order_attachments_work_order_id_fkey";
+            columns: ["work_order_id"];
+            isOneToOne: false;
+            referencedRelation: "work_orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      work_orders: {
+        Row: {
+          accepted_at: string | null;
+          cancelled_at: string | null;
+          closed_at: string | null;
+          company_id: string | null;
           created_at: string;
+          created_by: string;
+          delivered_at: string | null;
+          description: string | null;
+          id: string;
+          in_progress_at: string | null;
+          invoice_id: string | null;
+          priority: Database["public"]["Enums"]["work_order_priority"];
+          project_id: string | null;
+          quoted_amount_cents: number | null;
+          quoted_at: string | null;
+          service_type: Database["public"]["Enums"]["work_order_service_type"];
+          status: Database["public"]["Enums"]["work_order_status"];
+          title: string;
+          updated_at: string;
         };
-        Insert: Partial<
-          Database["public"]["Tables"]["admin_audit_log"]["Row"]
-        > & {
-          action: string;
-          target_type: string;
+        Insert: {
+          accepted_at?: string | null;
+          cancelled_at?: string | null;
+          closed_at?: string | null;
+          company_id?: string | null;
+          created_at?: string;
+          created_by: string;
+          delivered_at?: string | null;
+          description?: string | null;
+          id?: string;
+          in_progress_at?: string | null;
+          invoice_id?: string | null;
+          priority?: Database["public"]["Enums"]["work_order_priority"];
+          project_id?: string | null;
+          quoted_amount_cents?: number | null;
+          quoted_at?: string | null;
+          service_type: Database["public"]["Enums"]["work_order_service_type"];
+          status?: Database["public"]["Enums"]["work_order_status"];
+          title: string;
+          updated_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["admin_audit_log"]["Row"]>;
-        Relationships: [];
+        Update: {
+          accepted_at?: string | null;
+          cancelled_at?: string | null;
+          closed_at?: string | null;
+          company_id?: string | null;
+          created_at?: string;
+          created_by?: string;
+          delivered_at?: string | null;
+          description?: string | null;
+          id?: string;
+          in_progress_at?: string | null;
+          invoice_id?: string | null;
+          priority?: Database["public"]["Enums"]["work_order_priority"];
+          project_id?: string | null;
+          quoted_amount_cents?: number | null;
+          quoted_at?: string | null;
+          service_type?: Database["public"]["Enums"]["work_order_service_type"];
+          status?: Database["public"]["Enums"]["work_order_status"];
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "work_orders_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "work_orders_invoice_id_fkey";
+            columns: ["invoice_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "work_orders_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      company_role_rank: { Args: { cid: string }; Returns: number };
+      is_company_member: { Args: { cid: string }; Returns: boolean };
+    };
+    Enums: {
+      booking_status: "scheduled" | "completed" | "cancelled" | "noshow";
+      invoice_status: "open" | "paid" | "void" | "overdue";
+      lead_source: "book" | "form" | "email" | "typeform" | "other";
+      project_status: "proposed" | "active" | "delivered" | "closed";
+      work_order_priority: "low" | "normal" | "high";
+      work_order_service_type:
+        | "logo"
+        | "website_update"
+        | "data_export"
+        | "consulting"
+        | "other";
+      work_order_status:
+        | "open"
+        | "quoted"
+        | "accepted"
+        | "in_progress"
+        | "delivered"
+        | "closed"
+        | "cancelled";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
+};
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  "public"
+>];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
 }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      booking_status: ["scheduled", "completed", "cancelled", "noshow"],
+      invoice_status: ["open", "paid", "void", "overdue"],
+      lead_source: ["book", "form", "email", "typeform", "other"],
+      project_status: ["proposed", "active", "delivered", "closed"],
+      work_order_priority: ["low", "normal", "high"],
+      work_order_service_type: [
+        "logo",
+        "website_update",
+        "data_export",
+        "consulting",
+        "other",
+      ],
+      work_order_status: [
+        "open",
+        "quoted",
+        "accepted",
+        "in_progress",
+        "delivered",
+        "closed",
+        "cancelled",
+      ],
+    },
+  },
+} as const;

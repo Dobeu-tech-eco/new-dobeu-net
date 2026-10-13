@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { COMPANY_ADMIN_RANK } from "@/lib/actions/company-auth";
 import {
@@ -214,7 +215,7 @@ export default async function CompanyMembersPage({
                       </form>
                     </td>
                     <td className="p-3">
-                      <StatusBadge status={m.status} />
+                      <StatusBadge status={z.enum(["invited", "active", "disabled"]).parse(m.status)} />
                     </td>
                     <td className="p-3 text-muted-foreground">
                       {new Date(m.created_at).toLocaleDateString()}

@@ -183,7 +183,7 @@ export default async function AdminIntakeDetailPage({ params }: PageProps) {
         </p>
         <IntakeReviewActions
           intakeId={intake.id}
-          status={intake.status}
+          status={z.enum(["new", "reviewed", "archived"]).parse(intake.status)}
           initialNotes={intake.review_notes}
         />
       </section>

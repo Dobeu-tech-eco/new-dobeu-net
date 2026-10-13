@@ -9,7 +9,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import type { WorkOrderStatus, WorkOrderServiceType } from "@/lib/database.types";
+import type { WorkOrderStatus, WorkOrderServiceType } from "@/lib/work-order-types";
 
 export const dynamic = "force-dynamic";
 

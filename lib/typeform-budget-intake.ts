@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Json } from "@/lib/database.types";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -310,7 +311,7 @@ export async function persistTypeformBudgetIntake(
     return {
       id: data.id,
       duplicate: false,
-      mappingStatus: data.mapping_status,
+      mappingStatus: z.enum(["mapped", "needs_review"]).parse(data.mapping_status),
       mappingWarnings: coerceWarnings(data.mapping_warnings) ?? [
         ...intake.mappingWarnings,
       ],
@@ -339,7 +340,7 @@ export async function persistTypeformBudgetIntake(
   return {
     id: existing.id,
     duplicate: true,
-    mappingStatus: existing.mapping_status,
+    mappingStatus: z.enum(["mapped", "needs_review"]).parse(existing.mapping_status),
     mappingWarnings: coerceWarnings(existing.mapping_warnings) ?? [],
   };
 }
