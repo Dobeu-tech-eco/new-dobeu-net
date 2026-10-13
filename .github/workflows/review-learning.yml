@@ -1,8 +1,13 @@
 name: Review learning
 
 # Once a week, sort last week's Claude review comments into fixed vs ignored and
-# open a PR that updates the learned rules in REVIEW.md. Never pushes to main:
-# each run writes to its own dated branch and opens a PR for a human to merge.
+# open a PR that updates the learned rules in each repo's REVIEW.md. Never pushes
+# to main: each run writes to its own dated branch and opens a PR for a human.
+#
+# This public repo runs the job for every repo listed in the REVIEW_LEARNING_REPOS
+# variable (comma-separated owner/name; default: this repo only), so private repos
+# spend no Actions minutes of their own. Other repos need the CROSS_REPO_TOKEN
+# secret: a fine-grained token with Contents and Pull requests read/write on them.
 
 on:
   schedule:
@@ -12,23 +17,72 @@ on:
       lookback_days:
         description: "How many days of review comments to read"
         default: "7"
+      repos:
+        description: "Comma-separated owner/name list (blank = REVIEW_LEARNING_REPOS)"
+        default: ""
+
+permissions: {}
 
 concurrency:
   group: review-learning
   cancel-in-progress: false
 
 jobs:
+  targets:
+    runs-on: ubuntu-latest
+    outputs:
+      repos: ${{ steps.list.outputs.repos }}
+    steps:
+      - id: list
+        env:
+          REPOS: ${{ inputs.repos || vars.REVIEW_LEARNING_REPOS || github.repository }}
+        # Entries are split on commas or whitespace, must look like owner/name,
+        # and are de-duplicated ignoring case (GitHub names are case-insensitive).
+        run: |
+          json=$(printf '%s' "$REPOS" | jq -Rsc '
+            [splits("[,\\s]+") | select(length > 0)]
+            | if all(test("^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$")) then unique_by(ascii_downcase)
+              else error("each repo must be owner/name, got: \(map(select(test("^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$") | not)))") end')
+          echo "repos=$json" >> "$GITHUB_OUTPUT"
+          echo "Targets: $json"
+
   learn:
+    needs: targets
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: ${{ fromJSON(needs.targets.outputs.repos) }}
+    env:
+      # Passed through env so the repo name never becomes shell source.
+      TARGET_REPOSITORY: ${{ matrix.repo }}
+      # This repo uses the built-in token; every other repo needs CROSS_REPO_TOKEN.
+      # Expression == ignores case, so a differently-cased name still matches.
+      TARGET_TOKEN: ${{ matrix.repo == github.repository && secrets.GITHUB_TOKEN || secrets.CROSS_REPO_TOKEN }}
 
     steps:
-      - name: Checkout main
+      - name: Check token
+        run: |
+          if [ -z "$TARGET_TOKEN" ]; then
+            echo "::error::CROSS_REPO_TOKEN is not set, so $TARGET_REPOSITORY cannot be read."
+            exit 1
+          fi
+
+      # Same commit as this workflow file, so the script and workflow always match.
+      - name: Checkout the learning script
         uses: actions/checkout@v4
         with:
-          ref: main
+          path: runner
+
+      - name: Checkout ${{ matrix.repo }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          token: ${{ env.TARGET_TOKEN }}
+          path: target
 
       - uses: actions/setup-node@v4
         with:
@@ -36,23 +90,26 @@ jobs:
 
       - name: Update REVIEW.md from last week's reviews
         id: learn
+        working-directory: target
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ env.TARGET_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_MODEL: ${{ vars.REVIEW_LEARNING_MODEL }}
           REVIEW_BOT_PATTERN: ${{ vars.REVIEW_BOT_PATTERN }}
           LOOKBACK_DAYS: ${{ inputs.lookback_days || '7' }}
-        run: node .github/scripts/review-learning.mjs
+        run: node ../runner/.github/scripts/review-learning.mjs
 
-      - name: Open a PR if the rules changed
+      - name: Open a PR in ${{ matrix.repo }} if the rules changed
+        working-directory: target
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.TARGET_TOKEN }}
           SUMMARY: ${{ steps.learn.outputs.summary }}
         run: |
           if git diff --quiet -- REVIEW.md; then
             echo "No rule changes this week."
             exit 0
           fi
+          base=$(git rev-parse --abbrev-ref HEAD)
           branch="review-learning/$(date -u +%Y-%m-%d)-${{ github.run_id }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -60,6 +117,6 @@ jobs:
           git add REVIEW.md
           git commit -m "chore(review): update learned review rules"
           git push origin "$branch"
-          gh pr create --base main --head "$branch" \
+          gh pr create --repo "$TARGET_REPOSITORY" --base "$base" --head "$branch" \
             --title "chore(review): weekly learned review rules" \
-            --body "$(printf '%s\n\nGenerated by the Review learning workflow. Merge to apply, edit the branch to adjust, or close to discard.\n\nRun: %s' "$SUMMARY" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")"
+            --body "$(printf '%s\n\nGenerated by the Review learning workflow in %s. Merge to apply, edit the branch to adjust, or close to discard.\n\nRun: %s' "$SUMMARY" "${{ github.repository }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")"

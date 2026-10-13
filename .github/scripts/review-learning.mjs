@@ -4,8 +4,11 @@
 // opens the PR; this script never pushes.
 //
 // Usage: node .github/scripts/review-learning.mjs [--dry-run]
-// Env: GITHUB_TOKEN, GITHUB_REPOSITORY, ANTHROPIC_API_KEY (not needed for
-// --dry-run), LOOKBACK_DAYS (7), REVIEW_BOT_PATTERN, ANTHROPIC_MODEL.
+// Env: GITHUB_TOKEN, TARGET_REPOSITORY (owner/name; falls back to
+// GITHUB_REPOSITORY, which Actions does not let a step override),
+// ANTHROPIC_API_KEY (not needed for --dry-run), LOOKBACK_DAYS (7),
+// REVIEW_BOT_PATTERN, ANTHROPIC_MODEL. Run it from the target repo's checkout:
+// REVIEW.md is read from the current directory.
 
 import { readFile, writeFile, appendFile } from "node:fs/promises";
 
@@ -22,7 +25,11 @@ const MS_PER_DAY = 86_400_000;
 
 const env = process.env;
 const dryRun = process.argv.includes("--dry-run");
-const [owner, repo] = (env["GITHUB_REPOSITORY"] ?? "").split("/");
+const [owner, repo] = (
+  env["TARGET_REPOSITORY"] ||
+  env["GITHUB_REPOSITORY"] ||
+  ""
+).split("/");
 const lookbackDays = Number(env["LOOKBACK_DAYS"] || DEFAULT_LOOKBACK_DAYS);
 const botPattern = new RegExp(
   env["REVIEW_BOT_PATTERN"] || DEFAULT_BOT_PATTERN,
@@ -119,7 +126,31 @@ async function collectFindings() {
   );
 }
 
-function buildPrompt(currentBlock, handWritten, findings) {
+// Only the evidence syntax counts as a citation: "PR #12", "PR #12, #15" or
+// "PR #12 and #15". Every number in the phrase is checked.
+// A bare "#333" (a CSS colour, an issue-style ref in a rule) is not one.
+const PR_CITATION = /PR #\d+(?:\s*(?:,|&|\band\b)\s*(?:and\s+)?#\d+)*/gi;
+
+function citedPrNumbers(text) {
+  return [...text.matchAll(PR_CITATION)].flatMap((m) =>
+    [...m[0].matchAll(/#(\d+)/g)].map((n) => Number(n[1])),
+  );
+}
+
+// PR numbers the model may cite: this week's findings plus any already
+// cited in the current learned block (kept rules carry old evidence).
+export function allowedPrNumbers(findings, currentBlock) {
+  return new Set([
+    ...findings.map((f) => f.pr),
+    ...citedPrNumbers(currentBlock),
+  ]);
+}
+
+export function unknownCitations(text, allowed) {
+  return [...new Set(citedPrNumbers(text).filter((n) => !allowed.has(n)))];
+}
+
+function buildPrompt(currentBlock, handWritten, findings, allowed) {
   return [
     "You maintain the auto-learned section of a repository's REVIEW.md, which an AI code reviewer reads.",
     "Below are last week's AI review comments, each marked fixed (the author changed the code or resolved it)",
@@ -132,6 +163,7 @@ function buildPrompt(currentBlock, handWritten, findings) {
     "- Keep existing learned rules unless this week's evidence contradicts them. Never duplicate a hand-written rule.",
     "- Never add a rule that would stop flagging security, auth, payments, age gating or data deletion issues.",
     "- After each rule, add the evidence as `(PR #12, #15)`.",
+    `- Cite only these PR numbers, taken from the findings' \`pr\` field: ${[...allowed].map((n) => `#${n}`).join(", ")}. Never write any other #number.`,
     "",
     "Reply with ONLY the markdown that goes between the markers, starting with '## Learned from past reviews'.",
     "",
@@ -193,6 +225,24 @@ async function summarize(findings) {
     await appendFile(env["GITHUB_OUTPUT"], `summary=${line}\n`);
 }
 
+// The model has invented PR numbers before (chimacomics #58 cited a
+// nonexistent #239). Ask once more with the bad numbers named, then fail
+// rather than open a PR whose evidence cannot be checked.
+async function learnRules(block, handWritten, findings) {
+  const allowed = allowedPrNumbers(findings, block);
+  const prompt = buildPrompt(block, handWritten, findings, allowed);
+  const first = await askClaude(prompt);
+  const bad = unknownCitations(first, allowed);
+  if (bad.length === 0) return first;
+  const retry = await askClaude(
+    `${prompt}\n\nYour previous answer cited ${bad.map((n) => `#${n}`).join(", ")}, which are not in the findings. Answer again citing only the allowed PR numbers.`,
+  );
+  const stillBad = unknownCitations(retry, allowed);
+  if (stillBad.length > 0)
+    throw new Error(`Model cited unknown PRs: ${stillBad.join(", ")}`);
+  return retry;
+}
+
 async function main() {
   const findings = await collectFindings();
   await summarize(findings);
@@ -204,7 +254,7 @@ async function main() {
 
   const text = await readFile(REVIEW_FILE, "utf8");
   const { before, block, after } = splitReviewFile(text);
-  const learned = await askClaude(buildPrompt(block, before, findings));
+  const learned = await learnRules(block, before, findings);
   await writeFile(REVIEW_FILE, `${before}\n\n${learned}\n\n${after}`);
 }
 
