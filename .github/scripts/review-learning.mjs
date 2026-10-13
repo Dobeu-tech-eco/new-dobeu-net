@@ -126,7 +126,23 @@ async function collectFindings() {
   );
 }
 
-function buildPrompt(currentBlock, handWritten, findings) {
+const PR_CITATION = /#(\d+)/g;
+
+// PR numbers the model may cite: this week's findings plus any already
+// cited in the current learned block (kept rules carry old evidence).
+export function allowedPrNumbers(findings, currentBlock) {
+  const cited = [...currentBlock.matchAll(PR_CITATION)].map((m) =>
+    Number(m[1]),
+  );
+  return new Set([...findings.map((f) => f.pr), ...cited]);
+}
+
+export function unknownCitations(text, allowed) {
+  const cited = [...text.matchAll(PR_CITATION)].map((m) => Number(m[1]));
+  return [...new Set(cited.filter((n) => !allowed.has(n)))];
+}
+
+function buildPrompt(currentBlock, handWritten, findings, allowed) {
   return [
     "You maintain the auto-learned section of a repository's REVIEW.md, which an AI code reviewer reads.",
     "Below are last week's AI review comments, each marked fixed (the author changed the code or resolved it)",
@@ -139,6 +155,7 @@ function buildPrompt(currentBlock, handWritten, findings) {
     "- Keep existing learned rules unless this week's evidence contradicts them. Never duplicate a hand-written rule.",
     "- Never add a rule that would stop flagging security, auth, payments, age gating or data deletion issues.",
     "- After each rule, add the evidence as `(PR #12, #15)`.",
+    `- Cite only these PR numbers, taken from the findings' \`pr\` field: ${[...allowed].map((n) => `#${n}`).join(", ")}. Never write any other #number.`,
     "",
     "Reply with ONLY the markdown that goes between the markers, starting with '## Learned from past reviews'.",
     "",
@@ -200,6 +217,24 @@ async function summarize(findings) {
     await appendFile(env["GITHUB_OUTPUT"], `summary=${line}\n`);
 }
 
+// The model has invented PR numbers before (chimacomics #58 cited a
+// nonexistent #239). Ask once more with the bad numbers named, then fail
+// rather than open a PR whose evidence cannot be checked.
+async function learnRules(block, handWritten, findings) {
+  const allowed = allowedPrNumbers(findings, block);
+  const prompt = buildPrompt(block, handWritten, findings, allowed);
+  const first = await askClaude(prompt);
+  const bad = unknownCitations(first, allowed);
+  if (bad.length === 0) return first;
+  const retry = await askClaude(
+    `${prompt}\n\nYour previous answer cited ${bad.map((n) => `#${n}`).join(", ")}, which are not in the findings. Answer again citing only the allowed PR numbers.`,
+  );
+  const stillBad = unknownCitations(retry, allowed);
+  if (stillBad.length > 0)
+    throw new Error(`Model cited unknown PRs: ${stillBad.join(", ")}`);
+  return retry;
+}
+
 async function main() {
   const findings = await collectFindings();
   await summarize(findings);
@@ -211,7 +246,7 @@ async function main() {
 
   const text = await readFile(REVIEW_FILE, "utf8");
   const { before, block, after } = splitReviewFile(text);
-  const learned = await askClaude(buildPrompt(block, before, findings));
+  const learned = await learnRules(block, before, findings);
   await writeFile(REVIEW_FILE, `${before}\n\n${learned}\n\n${after}`);
 }
 
