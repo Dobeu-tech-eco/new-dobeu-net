@@ -126,20 +126,27 @@ async function collectFindings() {
   );
 }
 
-const PR_CITATION = /#(\d+)/g;
+// Only the evidence syntax counts as a citation: "PR #12" or "PR #12, #15".
+// A bare "#333" (a CSS colour, an issue-style ref in a rule) is not one.
+const PR_CITATION = /PR #\d+(?:\s*,\s*#\d+)*/g;
+
+function citedPrNumbers(text) {
+  return [...text.matchAll(PR_CITATION)].flatMap((m) =>
+    [...m[0].matchAll(/#(\d+)/g)].map((n) => Number(n[1])),
+  );
+}
 
 // PR numbers the model may cite: this week's findings plus any already
 // cited in the current learned block (kept rules carry old evidence).
 export function allowedPrNumbers(findings, currentBlock) {
-  const cited = [...currentBlock.matchAll(PR_CITATION)].map((m) =>
-    Number(m[1]),
-  );
-  return new Set([...findings.map((f) => f.pr), ...cited]);
+  return new Set([
+    ...findings.map((f) => f.pr),
+    ...citedPrNumbers(currentBlock),
+  ]);
 }
 
 export function unknownCitations(text, allowed) {
-  const cited = [...text.matchAll(PR_CITATION)].map((m) => Number(m[1]));
-  return [...new Set(cited.filter((n) => !allowed.has(n)))];
+  return [...new Set(citedPrNumbers(text).filter((n) => !allowed.has(n)))];
 }
 
 function buildPrompt(currentBlock, handWritten, findings, allowed) {
