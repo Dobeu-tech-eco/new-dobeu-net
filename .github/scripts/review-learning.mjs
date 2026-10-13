@@ -4,8 +4,11 @@
 // opens the PR; this script never pushes.
 //
 // Usage: node .github/scripts/review-learning.mjs [--dry-run]
-// Env: GITHUB_TOKEN, GITHUB_REPOSITORY, ANTHROPIC_API_KEY (not needed for
-// --dry-run), LOOKBACK_DAYS (7), REVIEW_BOT_PATTERN, ANTHROPIC_MODEL.
+// Env: GITHUB_TOKEN, TARGET_REPOSITORY (owner/name; falls back to
+// GITHUB_REPOSITORY, which Actions does not let a step override),
+// ANTHROPIC_API_KEY (not needed for --dry-run), LOOKBACK_DAYS (7),
+// REVIEW_BOT_PATTERN, ANTHROPIC_MODEL. Run it from the target repo's checkout:
+// REVIEW.md is read from the current directory.
 
 import { readFile, writeFile, appendFile } from "node:fs/promises";
 
@@ -22,7 +25,11 @@ const MS_PER_DAY = 86_400_000;
 
 const env = process.env;
 const dryRun = process.argv.includes("--dry-run");
-const [owner, repo] = (env["GITHUB_REPOSITORY"] ?? "").split("/");
+const [owner, repo] = (
+  env["TARGET_REPOSITORY"] ||
+  env["GITHUB_REPOSITORY"] ||
+  ""
+).split("/");
 const lookbackDays = Number(env["LOOKBACK_DAYS"] || DEFAULT_LOOKBACK_DAYS);
 const botPattern = new RegExp(
   env["REVIEW_BOT_PATTERN"] || DEFAULT_BOT_PATTERN,
