@@ -37,6 +37,16 @@ like any other; nothing in it lands without a merge.
 
 ## Learned from past reviews
 
-No weekly run has happened yet.
+### Always check
+
+- Badge text, labels and `aria-label`s that sit next to status-driven styling must come from the same state (for example `AVAILABILITY.status` / `AVAILABILITY.label`). Hardcoded copy contradicts the styling when the status changes. (PR #275)
+- Submit-button and confirmation copy in `LeadForm` must match what was actually submitted. Do not promise a price band or "job received" when `message` is optional and may be empty. Choose the copy by `source` (`book` vs `form`). (PR #275, #274)
+- Copy, anchors and policy text that describe behavior must match the code and the section they point to. Examples are price-band timing, consent categories on the cookies page, and trust-chip anchors such as `#about`. (PR #275, #274)
+- Workflow and script code that parses manual inputs such as repo lists must handle newlines, whitespace and letter case. It must validate the `owner/name` format before the value reaches shell or a matrix. Pass values through `env`, not `${{ }}` interpolation inside `run:`. (PR #278)
+- Citation validation in `.github/scripts/review-learning.mjs` must check every number in a `PR #x, #y` evidence phrase and must not treat unrelated `#` values (such as `#333`) as citations. (PR #278)
+
+### Stop flagging
+
+- Agent and tooling configuration for AI dev tools is not product code. This covers `.codex/`, `.cursor/skills/**`, `.agents/` and `.ona/config.yaml`, including hook paths, launcher file modes and task ordering. (PR #270, #232)
 
 <!-- review-learning:end -->
