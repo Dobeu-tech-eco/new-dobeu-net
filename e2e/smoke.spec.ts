@@ -6,23 +6,22 @@ test.describe("Landing page smoke tests", () => {
     await gotoLanding(page);
     await expect(page).toHaveTitle(/Operations Software|Small Business|Dobeu/i);
     await expect(page.locator("main")).toBeVisible();
-    await expect(page.locator("#hero-heading")).toContainText(/solution built for it/i);
+    await expect(page.locator("#hero-heading")).toContainText(/Your business isn.t generic/i);
     await expect(page.locator("#hero-heading")).not.toContainText(/AI|automation/i);
     await expect(page.getByText("RouteReady", { exact: true }).first()).toBeVisible();
   });
 
-  test("hero has book and estimate CTAs", async ({ page }) => {
+  test("hero has a problem-first CTA and product showcase link", async ({ page }) => {
     await gotoLanding(page);
     const hero = page.locator("#top");
-    await expect(hero.getByRole("button", { name: /book a call/i })).toBeVisible();
     await expect(hero.getByTestId("hero-estimate-cta")).toBeVisible();
-    await expect(hero.getByRole("link", { name: /explore the lab/i })).toHaveCount(0);
+    await expect(hero.getByRole("link", { name: /see what that looks like/i })).toHaveAttribute("href", "#routeready");
   });
 
   test("book CTA opens the lightbox dialog", async ({ page }) => {
     await seedCookieConsent(page);
     await page.goto("/");
-    await page.locator("#top").getByRole("button", { name: /book a call/i }).click();
+    await page.locator("#contact").getByRole("button", { name: /prefer to talk it through/i }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText(/Book a call/i);
