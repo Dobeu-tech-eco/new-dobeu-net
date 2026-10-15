@@ -26,11 +26,11 @@ const SITE_URL = getSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Dobeu Tech Solutions — Ship the agent. Ship the app. Ship the brand.",
+    default: "Dobeu Tech Solutions — Software shaped around your operation",
     template: "%s · Dobeu Tech Solutions"
   },
   description:
-    "One operator. Modern stack. Production-grade AI agents, full-stack web apps, brand systems, and growth engineering for founders who need it shipped, not pitched.",
+    "Custom operational software, integrations, and automation shaped around how your business works. Work directly with Jeremy Williams, from discovery to handover.",
   authors: [{ name: "Jeremy Williams", url: SITE_URL }],
   creator: "Dobeu Tech Solutions",
   openGraph: {
@@ -38,15 +38,15 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Dobeu Tech Solutions",
-    title: "Dobeu Tech Solutions — Ship the agent. Ship the app. Ship the brand.",
+    title: "Dobeu Tech Solutions — Software shaped around your operation",
     description:
-      "Production-grade AI agents, full-stack web apps, brand systems, and growth engineering. One operator. Modern stack.",
+      "Custom operational software, integrations, and automation. Work directly with the person building your system.",
     images: [{ url: "/opengraph-image", width: 1200, height: 630 }]
   },
   twitter: {
     card: "summary_large_image",
     title: "Dobeu Tech Solutions",
-    description: "Ship the agent. Ship the app. Ship the brand."
+    description: "Custom software shaped around your operation."
   },
   robots: {
     index: true,
@@ -84,7 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster position="bottom-right" theme="system" richColors closeButton />
         </ThemeProvider>
         {/* JSON-LD structured data — WebSite + Person + Organization graph
-            WebSite: enables Google Sitelinks Searchbox; provides canonical name + URL signal.
+            WebSite: provides canonical name + URL signal.
             Person:  founder knowledge-panel signal; links personal identity to the org.
             Organization: brand identity, logo, and sameAs backlinks. */}
         <script
@@ -99,16 +99,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   url: SITE_URL,
                   name: "Dobeu Tech Solutions",
                   description:
-                    "Production-grade AI agents, full-stack web apps, brand systems, and growth engineering.",
+                    "Custom operational software, integrations, and automation shaped around how your business works.",
                   publisher: { "@id": `${SITE_URL}/#organization` },
-                  potentialAction: {
-                    "@type": "SearchAction",
-                    target: {
-                      "@type": "EntryPoint",
-                      urlTemplate: `${SITE_URL}/?s={search_term_string}`
-                    },
-                    "query-input": "required name=search_term_string"
-                  },
                   inLanguage: "en-US"
                 },
                 {
