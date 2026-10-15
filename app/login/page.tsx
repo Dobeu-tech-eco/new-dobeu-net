@@ -92,7 +92,7 @@ export default function LoginPage() {
         <div className="absolute top-5 left-5">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Back to site
@@ -111,19 +111,19 @@ export default function LoginPage() {
               Welcome back
             </h1>
             <p className="text-sm text-muted-foreground mt-1.5">
-              Enter your email — we&apos;ll send a magic link.
+              Enter the email associated with your client account to receive a sign-in link.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-            <Suspense fallback={null}>
+          <div className="rounded-xl border border-border bg-card p-6">
+            <Suspense fallback={<p role="status" className="py-6 text-sm text-muted-foreground">Loading sign-in form…</p>}>
               <LoginForm />
             </Suspense>
           </div>
 
           <p className="mt-5 text-xs text-center text-muted-foreground">
             New here?{" "}
-            <Link href="/#work" className="underline underline-offset-3 hover:text-foreground transition-colors">
+            <Link href="/case-studies" className="inline-flex min-h-11 items-center underline underline-offset-4 hover:text-foreground transition-colors">
               See what I build
             </Link>
           </p>
