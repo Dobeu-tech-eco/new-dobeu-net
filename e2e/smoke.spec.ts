@@ -27,13 +27,14 @@ test.describe("Landing page smoke tests", () => {
     await expect(dialog).toContainText(/Book a call/i);
   });
 
-  test("estimate CTA opens the price-band form", async ({ page }) => {
+  test("estimate CTA opens the job inquiry form", async ({ page }) => {
     await seedCookieConsent(page);
     await page.goto("/");
     await page.getByTestId("hero-estimate-cta").click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(/price band/i);
+    await expect(dialog.getByRole("heading", { name: "Send the job", exact: true })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Send the job", exact: true })).toBeVisible();
     await expect(dialog.getByRole("textbox").first()).toBeVisible();
   });
 
@@ -49,9 +50,15 @@ test.describe("Landing page smoke tests", () => {
     const faqSection = page.locator("#faq");
     await faqSection.scrollIntoViewIfNeeded();
     await expect(faqSection).toBeVisible();
-    const triggers = faqSection.getByRole("button");
-    expect(await triggers.count()).toBeGreaterThanOrEqual(5);
-    await expect(triggers.first()).toHaveAttribute("aria-expanded", "false");
+    const questions = faqSection.locator("details");
+    await expect(questions).toHaveCount(4);
+    const firstQuestion = questions.first();
+    await expect(firstQuestion).not.toHaveAttribute("open", "");
+    await firstQuestion.locator("summary").click();
+    await expect(firstQuestion).toHaveAttribute("open", "");
+    await expect(firstQuestion.locator("p")).toBeVisible();
+    await firstQuestion.locator("summary").click();
+    await expect(firstQuestion).not.toHaveAttribute("open", "");
   });
 
   test("services section shows service tiles", async ({ page }) => {
@@ -92,14 +99,15 @@ test.describe("Commercial routes", () => {
     await expect(nav.getByRole("link", { name: /pricing/i })).toBeVisible();
   });
 
-  test("/pricing estimate opens the price-band form", async ({ page }) => {
+  test("/pricing estimate opens the job inquiry form", async ({ page }) => {
     await seedCookieConsent(page);
     await page.goto("/pricing");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.getByTestId("pricing-estimate-cta").click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(/price band/i);
+    await expect(dialog.getByRole("heading", { name: "Send the job", exact: true })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Send the job", exact: true })).toBeVisible();
     await expect(dialog.getByRole("textbox").first()).toBeVisible();
   });
 
