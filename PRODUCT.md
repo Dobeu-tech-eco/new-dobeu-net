@@ -8,21 +8,23 @@ web
 
 ## Users
 
-The primary buyer is an operator whose repeating work still lives in an inbox and in spreadsheets. Dispatch is the home case. The same loop is meant to stay usable for a kitchen, a job site, or a small office. Confirmed in conversation: dispatcher-first, and cross-company on purpose.
+The primary buyer is a small-business owner or operations lead whose day-to-day work is harder to run because existing tools leave gaps. They need clearer responsibilities, dependable records, and better coordination between the field and back office. Small fleets are the flagship example, not the limit of the business. Confirmed by the owner: tailored operational software for small businesses, rather than dispatch-first agent services.
 
 Signed-in clients and the admin desk also exist in this app. Whether design work should treat them as the same product as the public site was asked and not answered. Inferred from the repo: they ship here, behind login.
 
 ## Product Purpose
 
-Dobeu Tech Solutions LLC, run by Jeremy Williams in New York, takes one of those operating loops and ships it. The public site asks the visitor to book a call or send the job. "Send the job" gets a price band back, not an instant quote. A typical engagement is the published $5k–$30k band. Success on the public site is a qualified conversation that can become that engagement.
+Dobeu Tech Solutions LLC, run by Jeremy Williams in New York, designs and builds tailored systems around how a business actually operates. The goal is to help people work safely, keep responsibilities clear, and spend less time chasing information. These are intended benefits, not measured outcome claims. Success on the public site is a qualified conversation about a real operational problem that can become a scoped engagement. The existing published typical engagement band is $5k–$30k; inquiries receive a considered response, not an instant quote.
 
 ## Positioning
 
-One operator ships the loop the buyer does not have a tool for yet: an agent that runs dispatch (or the same shape of work), an app the crew will actually open, a front door that matches the operation, or billing that goes out. A template shop and a traffic dashboard cannot truthfully make that claim. The published proof line is: prices are published, invoices go through Stripe, and the code lands in the client's repo.
+Dobeu is a custom operational software partner, not a general IT reseller, template shop, or instant AI-tool generator. Understand the operation and its constraints first; select technology to fit the problem. Work includes understanding real workflows, exceptions, integrations, and ownership—not simply generating a small tool. Technology is a means, not the product promise.
+
+RouteReady (https://routereadyhq.com) is the flagship example: a concrete solution for small-fleet driver training and readiness. It demonstrates the kind of tailored operational work Dobeu can provide without restricting the business to fleets. Do not imply verified safety improvements, adoption, or customer results without supporting evidence.
 
 ## Operating Context
 
-The buyer evaluates the offer on dobeu.net, then either books a call or sends a job through the estimate form. Work is scoped as an engagement, invoiced through Stripe, and delivered into the client's repository. The four published offers are "Dispatch that runs", "The tool you don't have", "A front door people trust", and "Invoices that go out".
+The buyer evaluates Dobeu on dobeu.net and describes what is difficult today, who is affected, and what better would look like, or books a conversation. The established inquiry and booking flows remain in place. Work is scoped as an engagement, invoiced through Stripe, and delivered into the client's repository. The approach is to understand the operation, design around its constraints, then build and support the system. Earlier dispatch/agent-led offer labels are legacy messaging, not the current positioning.
 
 ## Capabilities and Constraints
 
@@ -40,7 +42,7 @@ Open: whether future design passes include the portal and admin, or only the pub
 
 The live logo on https://dobeu.net stays. It is the inlined mark in `components/brand/DobeuMark.tsx` with the lowercase "dobeu.net" wordmark. Do not redraw or replace it. Confirmed by the owner.
 
-Voice on the public site is first person, Jeremy, operator to operator. Dispatch is the concrete case. The same sentences must still make sense for a kitchen, a site, or a desk.
+The established voice is Jeremy, operator to operator: direct, plainspoken, and grounded in the buyer's work. Lead with what the business gains, not AI, automation, or IT-service buzzwords. RouteReady is the concrete example; broader messaging must remain applicable to other small businesses. Preserve the factual single-operator identity rather than inventing a team.
 
 ## Evidence on Hand
 
@@ -51,8 +53,12 @@ Voice on the public site is first person, Jeremy, operator to operator. Dispatch
 
 ## Product Principles
 
-- Dispatch is the home story. The offer still has to work for other small operators.
-- Sell a scoped engagement with a published price band. Do not promise an instant quote.
-- Proof has to be checkable. Unpublished metrics stay unpublished.
-- The live logo is fixed. Other visual decisions can change around it.
-- One operator does the work. Do not write the site as a team or an agency bench.
+- Start with the operational problem and the buyer's benefit, not a technology category.
+- Build around real workflows and constraints; do not promise instant tool generation or an instant quote.
+- Use RouteReady as concrete evidence of the approach, not a fleet-only boundary or unsupported results claim.
+- Keep proof checkable, pricing truthful, and ownership clear. Do not invent metrics, customers, testimonials, or a team.
+- Preserve the established logo and single-operator identity.
+
+## Accessibility & Inclusion
+
+Public interfaces must meet WCAG AA contrast requirements, support keyboard navigation and visible focus, provide appropriate image alternatives, and respect reduced-motion preferences. Mobile web is part of the web platform, not a separate native product.
