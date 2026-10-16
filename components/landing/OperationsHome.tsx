@@ -17,13 +17,13 @@ const steps = [
 
 export function RouteReadyShowcase() {
   return (
-    <section id="routeready" aria-labelledby="routeready-heading" className="scroll-mt-24 bg-card/50 py-20 md:py-28">
+    <section id="routeready" aria-labelledby="routeready-heading" className="scroll-mt-24 bg-card py-20 md:py-28">
       <div className="container flex max-w-7xl flex-col gap-12">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <h2 id="routeready-heading" className="max-w-2xl text-balance font-display text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">Real work.<br />A purpose-built solution.</h2>
           <p className="max-w-md text-lg leading-relaxed text-muted-foreground">RouteReady puts the approach into practice: new technology applied to a specific operational need—driver training for small fleets.</p>
         </div>
-        <article className="overflow-hidden rounded-2xl border border-border bg-background">
+        <article className="overflow-hidden rounded-2xl border-2 border-primary/50 bg-background">
           <div className="flex flex-col lg:flex-row">
             <div className="flex flex-col items-start gap-6 p-7 md:p-12 lg:w-5/12">
               <div className="flex items-center gap-3"><ShieldCheck className="h-8 w-8 text-primary" aria-hidden="true" /><span className="font-display text-2xl font-extrabold">RouteReady</span></div>
@@ -32,11 +32,11 @@ export function RouteReadyShowcase() {
               <p className="leading-relaxed text-muted-foreground">RouteReady brings training steps, trainer touchpoints, and manager sign-off into a documented process—giving small fleet teams a clearer way to manage readiness.</p>
               <a href="https://routereadyhq.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-md font-semibold text-primary underline-offset-4 hover:underline">Explore RouteReady <ArrowRight className="h-4 w-4" aria-hidden="true" /><span className="sr-only"> (opens in new tab)</span></a>
             </div>
-            <div className="flex flex-col justify-center gap-6 border-t border-border bg-muted/40 p-6 md:p-12 lg:w-7/12 lg:border-l lg:border-t-0">
+            <div className="flex flex-col justify-center gap-6 border-t border-border bg-muted p-6 md:p-12 lg:w-7/12 lg:border-l lg:border-t-0">
               <div className="flex items-center justify-between gap-4"><span className="inline-flex items-center gap-2 text-sm font-semibold"><ClipboardCheck className="h-4 w-4 text-primary" aria-hidden="true" />Driver training journey</span><span className="text-xs text-muted-foreground">Process illustration</span></div>
               <div className="overflow-hidden rounded-xl border border-border bg-background">
                 <div className="flex flex-col gap-2 border-b border-border p-6"><p className="font-display text-xl font-extrabold">From first ride to final sign-off.</p><p className="text-sm text-muted-foreground">One process. A clear record at every step.</p></div>
-                <ol className="divide-y divide-border">{["Ride-along begins", "Trainer records progress", "Manager reviews and signs", "Training packet is ready"].map((step) => <li key={step} className="flex items-center gap-4 px-6 py-5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Check className="h-4 w-4" aria-hidden="true" /></span><span className="text-sm font-semibold md:text-base">{step}</span></li>)}</ol>
+                <ol className="divide-y divide-border">{["Ride-along begins", "Trainer records progress", "Manager reviews and signs", "Training packet is ready"].map((step) => <li key={step} className="flex items-center gap-4 px-6 py-5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-4 w-4" aria-hidden="true" /></span><span className="text-sm font-semibold md:text-base">{step}</span></li>)}</ol>
                 <div className="flex items-center gap-3 border-t border-border bg-card px-6 py-4 text-sm text-muted-foreground"><FileCheck2 className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />Training evidence stays with the record.</div>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">The technology is the means. A training process your team can follow and document is the point.</p>
@@ -50,11 +50,11 @@ export function RouteReadyShowcase() {
 }
 
 export function OperationalOutcomes() {
-  return <section id="work" aria-labelledby="outcomes-heading" className="scroll-mt-24 py-20 md:py-28"><div className="container max-w-7xl"><h2 id="outcomes-heading" className="max-w-3xl text-balance font-display text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">Less working around the system.<br /><span className="text-muted-foreground">More getting the work done.</span></h2><div className="mt-12 flex flex-col divide-y divide-border">{outcomes.map((item) => <article key={item.title} className="flex flex-col gap-5 py-8 md:flex-row md:gap-12"><div className="flex flex-col gap-3 md:w-1/2"><h3 className="font-display text-2xl font-extrabold">{item.title}</h3><p className="text-sm text-muted-foreground">{item.problem}</p></div><p className="max-w-xl leading-relaxed text-muted-foreground md:w-1/2">{item.answer}</p></article>)}</div></div></section>;
+  return <section id="work" aria-labelledby="outcomes-heading" className="scroll-mt-24 py-20 md:py-28"><div className="container max-w-7xl"><h2 id="outcomes-heading" className="max-w-3xl text-balance font-display text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">Less working around the system.<br /><span className="text-primary">More getting the work done.</span></h2><div className="mt-12 flex flex-col divide-y divide-border">{outcomes.map((item) => <article key={item.title} className="flex flex-col gap-5 py-8 md:flex-row md:gap-12"><div className="flex flex-col gap-3 md:w-1/2"><h3 className="font-display text-2xl font-extrabold">{item.title}</h3><p className="text-sm text-muted-foreground">{item.problem}</p></div><p className="max-w-xl leading-relaxed text-muted-foreground md:w-1/2">{item.answer}</p></article>)}</div></div></section>;
 }
 
 export function OperationalApproach() {
-  return <section id="how-it-works" aria-labelledby="approach-heading" className="scroll-mt-24 border-y border-border bg-card/50 py-20 md:py-28"><div className="container flex max-w-7xl flex-col gap-12 lg:flex-row lg:gap-20"><div className="flex flex-col gap-6 lg:w-5/12"><h2 id="approach-heading" className="text-balance font-display text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">First, your operation.<br />Then, the technology.</h2><p className="text-lg leading-relaxed text-muted-foreground">Not a template with your logo on it. Not a quick tool built around the latest trend. A considered solution to a problem worth solving.</p></div><ol className="flex flex-1 flex-col gap-10">{steps.map(([title, body]) => <li key={title} className="flex flex-col gap-3 border-b border-border pb-8 last:border-0 last:pb-0"><h3 className="font-display text-2xl font-extrabold">{title}</h3><p className="leading-relaxed text-muted-foreground">{body}</p></li>)}</ol></div></section>;
+  return <section id="how-it-works" aria-labelledby="approach-heading" className="scroll-mt-24 border-y border-border bg-card py-20 md:py-28"><div className="container flex max-w-7xl flex-col gap-12 lg:flex-row lg:gap-20"><div className="flex flex-col gap-6 lg:w-5/12"><h2 id="approach-heading" className="text-balance font-display text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">First, your operation.<br />Then, the technology.</h2><p className="text-lg leading-relaxed text-muted-foreground">Not a template with your logo on it. Not a quick tool built around the latest trend. A considered solution to a problem worth solving.</p></div><ol className="flex flex-1 flex-col gap-10">{steps.map(([title, body]) => <li key={title} className="flex flex-col gap-3 border-b border-border pb-8 last:border-0 last:pb-0"><h3 className="font-display text-2xl font-extrabold">{title}</h3><p className="leading-relaxed text-muted-foreground">{body}</p></li>)}</ol></div></section>;
 }
 
 export function OperationsQuestions() {
