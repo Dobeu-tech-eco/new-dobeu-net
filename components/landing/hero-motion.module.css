@@ -1,0 +1,24 @@
+.hero { position: relative; overflow: hidden; isolation: isolate; }
+.content { position: relative; z-index: 1; }
+.hero::before { content: ''; position: absolute; pointer-events: none; inset: -20%; background: radial-gradient(ellipse at 85% 20%, hsl(var(--dobeu-violet-500) / .18), transparent 55%), radial-gradient(ellipse at 65% 70%, hsl(var(--dobeu-amber-500) / .12), transparent 50%); animation: atmosphere 4.5s cubic-bezier(.16,1,.3,1) both; }
+@keyframes atmosphere { from { opacity: 0; transform: translate3d(3%, -2%, 0) scale(.95); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .hero::before { animation: none; } }
+.orbit { position: absolute; pointer-events: none; right: -12rem; top: -10rem; width: min(75vw, 64rem); aspect-ratio: 1; border: 1px solid hsl(var(--primary) / .16); border-radius: 50%; transform: rotate(-28deg) scaleY(.6); animation: orbit-arrive 1.4s cubic-bezier(.16,1,.3,1) both; }
+.orbit::before, .orbit::after { content: ''; position: absolute; inset: 12%; border: 1px solid hsl(var(--primary) / .22); border-radius: 50%; }
+.orbit::after { inset: 26%; border-color: hsl(var(--primary) / .3); }
+.signal { position: absolute; inset: 0; border-radius: 50%; animation: signal-travel 4.5s cubic-bezier(.25,1,.5,1) both; }
+.signal::after { content: ''; position: absolute; top: 50%; left: 0; width: .65rem; height: .65rem; border-radius: 50%; background: hsl(var(--primary)); }
+.eyebrow, .headline, .details, .cue { animation: reveal .85s cubic-bezier(.16,1,.3,1) both; }
+.headline { animation-delay: .1s; }
+.details { animation-delay: .2s; }
+.cue { animation-delay: .3s; }
+.cue svg { transition: transform .25s cubic-bezier(.16,1,.3,1); }
+.cue:hover svg { transform: translateY(4px); }
+.action { transition: transform .2s cubic-bezier(.16,1,.3,1), background-color .2s; }
+.action:hover { transform: translateY(-2px); }
+.action:active { transform: translateY(0); }
+@keyframes reveal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes orbit-arrive { from { opacity: 0; transform: rotate(-40deg) scaleY(.6) scale(.92); } to { opacity: 1; transform: rotate(-28deg) scaleY(.6) scale(1); } }
+@keyframes signal-travel { from { transform: rotate(-70deg); opacity: 0; } 15% { opacity: 1; } to { transform: rotate(105deg); opacity: 1; } }
+@media (max-width: 640px) { .orbit { width: 38rem; right: -26rem; top: -8rem; opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .hero *, .hero *::before, .hero *::after { animation: none !important; transition: none !important; } }

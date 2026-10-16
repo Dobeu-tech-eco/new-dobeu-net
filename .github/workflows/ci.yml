@@ -94,6 +94,17 @@ jobs:
       - name: Run E2E tests
         run: pnpm test:e2e
 
+      - name: Upload Playwright results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: notify vercel
         if: always()
         uses: vercel/repository-dispatch/actions/status@v1

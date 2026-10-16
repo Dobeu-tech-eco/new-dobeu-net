@@ -13,10 +13,11 @@ interface LegalLayoutProps {
 }
 
 const LEGAL_LINKS = [
-  { href: "/terms", label: "Terms of Service" },
-  { href: "/privacy", label: "Privacy Policy" },
-  { href: "/cookies", label: "Cookie Policy" },
-  { href: "/optin/sms", label: "SMS Opt-In" },
+  { href: "/terms", label: "Terms of Service", titles: ["Terms of Service"] },
+  { href: "/privacy", label: "Privacy Policy", titles: ["Privacy Policy"] },
+  { href: "/cookies", label: "Cookie Policy", titles: ["Cookie Policy"] },
+  { href: "/optin/sms", label: "SMS Opt-In", titles: ["SMS Opt-In", "SMS Opt-In Policy"] },
+  { href: "/marketing-opt-out", label: "Marketing Opt-Out", titles: ["Marketing Opt-Out"] },
 ];
 
 export function LegalLayout({ title, lastUpdated, children }: LegalLayoutProps) {
@@ -40,13 +41,14 @@ export function LegalLayout({ title, lastUpdated, children }: LegalLayoutProps) 
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 px-2">
                 Legal
               </p>
-              {LEGAL_LINKS.map(({ href, label }) => (
+              {LEGAL_LINKS.map(({ href, label, titles }) => (
                 <Link
                   key={href}
                   href={href}
+                  aria-current={titles.includes(title) ? "page" : undefined}
                   className={
-                    "block rounded-lg px-2 py-1.5 text-sm transition-colors " +
-                    (href === `/${title.toLowerCase().replace(/\s+/g, "-")}`
+                    "flex min-h-11 items-center rounded-lg px-3 text-sm transition-colors " +
+                    (titles.includes(title)
                       ? "font-semibold text-foreground bg-muted"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60")
                   }

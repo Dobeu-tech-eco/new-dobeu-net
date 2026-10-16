@@ -18,7 +18,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/case-studies`, lastModified: stamp(CONTENT_DATES.caseStudies), changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/labs`, lastModified: stamp(CONTENT_DATES.labs), changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/repos`, lastModified: stamp(CONTENT_DATES.repos), changeFrequency: "monthly", priority: 0.5 },
-    { url: `${SITE_URL}/login`, lastModified: stamp(CONTENT_DATES.login), changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE_URL}/privacy`, lastModified: stamp(CONTENT_DATES.privacy), changeFrequency: "yearly", priority: 0.4 },
     { url: `${SITE_URL}/terms`, lastModified: stamp(CONTENT_DATES.terms), changeFrequency: "yearly", priority: 0.4 },
     { url: `${SITE_URL}/cookies`, lastModified: stamp(CONTENT_DATES.cookies), changeFrequency: "yearly", priority: 0.3 },

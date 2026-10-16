@@ -1,182 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
-import { BOOK_MICROCOPY, SEND_MICROCOPY } from "@/components/landing/EstimateCtas";
 import { track } from "@/lib/analytics";
-import {
-  HERO_COPY,
-  PRICE_RANGE,
-  SHOW_LABS_HERO_CTA,
-} from "@/lib/jeremy-data";
-
-const HeroShaderBackground = dynamic(
-  () =>
-    import("@/components/landing/HeroShaderBackground").then(
-      (module) => module.HeroShaderBackground,
-    ),
-  { ssr: false },
-);
-
-function HeroBackdrop() {
-  const [loadShader, setLoadShader] = useState(false);
-
-  useEffect(() => {
-    if (!window.matchMedia("(min-width: 769px)").matches) return;
-    const timer = window.setTimeout(() => setLoadShader(true), 1);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  if (loadShader) return <HeroShaderBackground />;
-
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-background"
-      data-testid="hero-shader-background"
-    >
-      <div className="absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-dobeu-violet-500/15 blur-3xl dark:bg-dobeu-violet-500/20" />
-      <div className="absolute -right-20 top-0 h-64 w-64 rounded-full bg-dobeu-amber-500/10 blur-3xl dark:bg-dobeu-amber-500/15" />
-      <div className="absolute inset-0 bg-background/35 dark:bg-background/30 md:hidden" />
-      <div className="absolute inset-0 hidden md:block md:bg-gradient-to-r md:from-background/70 md:via-background/25 md:to-transparent dark:md:from-background/70 dark:md:via-background/20 dark:md:to-transparent" />
-    </div>
-  );
-}
+import styles from "./hero-motion.module.css";
 
 export function Hero() {
   const { open } = useLightbox();
-
-  function trackAndOpen(target: "book" | "form" | "email", label: string) {
-    track("cta_click", { cta_label: label, cta_location: "hero", target });
-    open(target);
-  }
-
   return (
-    <section
-      id="top"
-      aria-labelledby="hero-heading"
-      className="relative isolate overflow-hidden pt-12 md:pt-16 pb-[calc(6.5rem+var(--cookie-banner-offset,0px))]"
-    >
-      <HeroBackdrop />
-
-      <div className="container relative z-10 max-w-6xl">
-        {/* LCP copy is static. motion + opacity:0 delayed Lighthouse until hydration. */}
-        <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
-          {/* Greeting is a warm intro, not a headline — the value prop owns the h1. */}
-          <p className="mb-3 font-display text-lg font-semibold text-muted-foreground md:text-xl">
-            {HERO_COPY.greeting}
-          </p>
-
-          <h1
-            id="hero-heading"
-            className="font-display font-extrabold leading-[1.02] tracking-tight"
-          >
-            <span className="block text-4xl text-foreground sm:text-5xl lg:text-[4.25rem] xl:text-[4.75rem]">
-              {HERO_COPY.outcome}
-            </span>
+    <section id="top" aria-labelledby="hero-heading" className={`${styles.hero} border-b-2 border-primary/40 bg-background`}>
+      <div aria-hidden="true" className={styles.orbit}><span className={styles.signal} /></div>
+      <div className={`${styles.content} container max-w-7xl py-20 md:py-28 lg:py-32`}>
+        <div className="flex flex-col items-start gap-8">
+          <p className={`${styles.eyebrow} border-l-4 border-primary pl-4 font-mono text-sm font-bold uppercase tracking-widest text-foreground`}>Real operations. Purpose-built solutions.</p>
+          <h1 id="hero-heading" className={`${styles.headline} max-w-5xl text-balance font-display text-5xl font-extrabold leading-[1.04] tracking-tight text-foreground md:text-7xl lg:text-8xl`}>
+            Your business isn&apos;t generic.<br /><span className="text-primary">Your software shouldn&apos;t be either.</span>
           </h1>
-
-          <p
-            className="mt-4 max-w-2xl text-base leading-relaxed text-foreground md:text-lg"
-            data-testid="hero-promise"
-          >
-            {HERO_COPY.promise}
-          </p>
-
-          <p
-            className="mt-4 text-sm font-medium text-foreground"
-            data-testid="hero-price-line"
-          >
-            {PRICE_RANGE.line}
-          </p>
-
-          <div
-            id="hero-ctas"
-            className="mt-5 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-start sm:justify-center"
-          >
-            <div className="flex flex-col items-center gap-1">
-              <Button
-                size="lg"
-                onClick={() => trackAndOpen("book", "Book a call — hero")}
-                className="group w-full rounded-full bg-primary px-7 font-semibold text-primary-foreground shadow-amber-glow/20 hover:bg-primary/90 sm:w-auto"
-                aria-describedby="book-microcopy-hero"
-              >
-                {HERO_COPY.bookCta}
-                <ArrowRight
-                  className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                  aria-hidden="true"
-                />
-              </Button>
-              <p id="book-microcopy-hero" className="text-xs text-muted-foreground">
-                {BOOK_MICROCOPY}
-              </p>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => trackAndOpen("form", "Send the job — hero")}
-                className="w-full rounded-full px-7 font-medium sm:w-auto"
-                aria-describedby="send-microcopy-hero"
-                data-testid="hero-estimate-cta"
-              >
-                {HERO_COPY.estimateCta}
-              </Button>
-              <p id="send-microcopy-hero" className="text-xs text-muted-foreground">
-                {SEND_MICROCOPY}
-              </p>
-            </div>
-            {SHOW_LABS_HERO_CTA && (
-              <Button
-                size="lg"
-                variant="ghost"
-                asChild
-                className="w-full rounded-full px-7 font-medium sm:w-auto"
-              >
-                <Link href="/labs">Explore the lab →</Link>
-              </Button>
-            )}
+          <div className={`${styles.details} flex w-full flex-col gap-8 lg:flex-row lg:items-end lg:justify-between`}>
+            <p data-testid="hero-promise" className="max-w-2xl text-pretty text-lg leading-relaxed text-foreground/85 md:text-xl">Safer field work. Clearer handoffs. Less chasing information. We build tailored operational systems around your people, your constraints, and the work that needs to get done.</p>
+            <Button size="lg" className="h-auto shrink-0 rounded-full px-7 py-4" data-testid="hero-estimate-cta" onClick={() => { track("cta_click", { cta_location: "hero", cta_label: "Tell us what is getting in the way", target: "form" }); open("form"); }}>Tell us what&apos;s getting in the way <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></Button>
           </div>
-
-          <p className="mt-2 text-xs text-muted-foreground">
-            {HERO_COPY.estimateHint}
-          </p>
-
-          <ul
-            aria-label="Why you can trust this"
-            className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
-          >
-            <li>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center rounded-full border border-border px-3 py-1 transition-colors hover:border-primary hover:text-foreground"
-              >
-                Published $5k–$30k
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/#about"
-                className="inline-flex items-center rounded-full border border-border px-3 py-1 transition-colors hover:border-primary hover:text-foreground"
-              >
-                Stripe invoices
-              </Link>
-            </li>
-            <li>
-              <a
-                href="https://github.com/Dobeu-tech-eco"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded-full border border-border px-3 py-1 transition-colors hover:border-primary hover:text-foreground"
-              >
-                Code in your repo
-              </a>
-            </li>
-          </ul>
+          <a href="#routeready" className={`${styles.cue} inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline`}>See what that looks like <ArrowDown className="h-4 w-4" aria-hidden="true" /></a>
         </div>
       </div>
     </section>

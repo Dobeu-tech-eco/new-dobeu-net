@@ -48,12 +48,12 @@ describe("jeremy-data marketing source", () => {
   it("uses an outcome H1, not a stack slogan", () => {
     expect(HERO_COPY.outcome.toLowerCase()).not.toContain("autonomous ai coding agents");
     expect(HERO_COPY.greeting).toMatch(/Jeremy\.$/);
-    expect(HERO_COPY.diagnostic.toLowerCase()).toContain("spreadsheet");
+    expect(HERO_COPY.diagnostic.toLowerCase()).toContain("work");
     expect(PRICE_RANGE.line).toMatch(/\$5k/);
     expect(PRICE_RANGE.line).toMatch(/\$30k/);
     expect(TYPEWRITER_PHRASES.join(" ")).not.toMatch(/autonomous AI coding agents/i);
-    expect(HERO_COPY.promise).toBe("Dispatch that actually dispatches.");
-    expect(HERO_COPY.estimateCta).toBe("Send the job");
+    expect(HERO_COPY.promise).toContain("tailored systems");
+    expect(HERO_COPY.estimateCta).toBe("Show us the problem");
   });
 
   it("excludes dead hosts from public chrome data", () => {
