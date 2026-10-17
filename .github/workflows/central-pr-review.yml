@@ -1,0 +1,110 @@
+name: Central PR review
+
+# Every 3 hours, post one Claude review comment on each open, non-draft PR in
+# the repos listed in REVIEW_LEARNING_REPOS (the same list Review learning uses)
+# whose current head commit has not been reviewed by this job yet. Private repos
+# there cannot run their own Actions, so the runs happen here instead.
+#
+# Dedupe: each comment carries a hidden <!-- central-pr-review:sha=... -->
+# marker; a PR is reviewed again only after a new commit is pushed. This repo is
+# skipped because claude-code-review.yml already reviews its PRs.
+#
+# Needs: CROSS_REPO_TOKEN (fine-grained token with Pull requests read/write and
+# Contents read on the target repos) and ANTHROPIC_API_KEY.
+
+on:
+  schedule:
+    - cron: "17 */3 * * *" # every 3 hours, off the hour
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: "Comma-separated owner/name list (blank = REVIEW_LEARNING_REPOS)"
+        default: ""
+      lookback_hours:
+        description: "Only PRs updated within this many hours"
+        default: "6"
+      dry_run:
+        description: "List the PRs that would be reviewed, without calling Claude or commenting"
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: central-pr-review
+  cancel-in-progress: false
+
+jobs:
+  targets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      repos: ${{ steps.list.outputs.repos }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: list
+        env:
+          REPOS: ${{ inputs.repos || vars.REVIEW_LEARNING_REPOS }}
+          EXCLUDE_REPO: ${{ github.repository }}
+        run: |
+          json=$(node .github/scripts/central-pr-review.mjs --targets)
+          echo "repos=$json" >> "$GITHUB_OUTPUT"
+          echo "Targets: $json"
+
+  review:
+    needs: targets
+    if: needs.targets.outputs.repos != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: ${{ fromJSON(needs.targets.outputs.repos) }}
+    steps:
+      - name: Check secrets
+        env:
+          CROSS_REPO_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$CROSS_REPO_TOKEN" ]; then
+            echo "::error::CROSS_REPO_TOKEN is not set, so other repos cannot be read."
+            exit 1
+          fi
+          if [ -z "$ANTHROPIC_API_KEY" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            echo "::error::ANTHROPIC_API_KEY is not set."
+            exit 1
+          fi
+
+      # Same commit as this workflow file, so the script and workflow always match.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Review open PRs in ${{ matrix.repo }}
+        env:
+          # Passed through env so the repo name never becomes shell source.
+          TARGET_REPOSITORY: ${{ matrix.repo }}
+          GITHUB_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ vars.CENTRAL_REVIEW_MODEL }}
+          LOOKBACK_HOURS: ${{ inputs.lookback_hours || '6' }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # Secrets are masked by Actions already; mask again in case a value
+          # reaches the log through an unexpected path.
+          echo "::add-mask::$GITHUB_TOKEN"
+          if [ -n "$ANTHROPIC_API_KEY" ]; then echo "::add-mask::$ANTHROPIC_API_KEY"; fi
+          node .github/scripts/central-pr-review.mjs $DRY_RUN
