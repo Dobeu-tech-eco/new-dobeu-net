@@ -261,16 +261,18 @@ export function SiteNav() {
                   </Link>
                 ))}
               </div>
-              <button
+              <Button
                 type="button"
-                className="min-h-11 self-start rounded-md text-sm text-primary underline underline-offset-4"
+                variant="outline"
+                className="min-h-11 self-start rounded-pill"
                 onClick={() => {
                   setMobileOpen(false);
                   open("intake");
                 }}
               >
                 Project intake · Typeform
-              </button>
+                <ArrowUpRight aria-hidden="true" />
+              </Button>
               <Button
                 className="rounded-pill"
                 onClick={() => {
