@@ -11,7 +11,11 @@ import {
 } from "@/lib/jeremy-data";
 
 const FOOTER_LINKS = {
-  Site: FOOTER_SITE_LINKS,
+  Site: [
+    { label: "RouteReady", href: "/#routeready" },
+    { label: "Your operation", href: "/#work" },
+    ...FOOTER_SITE_LINKS,
+  ],
   Account: [
     { label: "Log in", href: "/login" },
     { label: "Client portal", href: "/portal" },
@@ -39,23 +43,23 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border/30 bg-background">
       <div className="container max-w-6xl py-14 md:py-16">
-
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10 md:gap-16 mb-12">
           <div className="max-w-xs">
             <div className="flex items-center gap-2.5 mb-4">
               <DobeuMark className="h-8 w-8 shrink-0" />
               <div>
-                <p className="font-display text-base font-extrabold text-[hsl(var(--brand-indigo-slate))] leading-tight lowercase">
+                <p className="font-display text-base font-extrabold text-fg-heading leading-tight lowercase">
                   dobeu.net
                 </p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              AI automation and custom software for operators in {NAP.areaServed}.
-              One person, modern stack.
+              Custom operational software. Built around your people and
+              processes. Serving {NAP.areaServed}.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              {SITE_IDENTITY.legalName} · {NAP.locality}, {NAP.region} · {NAP.email}
+              {SITE_IDENTITY.legalName} · {NAP.locality}, {NAP.region} ·{" "}
+              {NAP.email}
               {hasPublishablePhone() ? ` · ${NAP.phoneDisplay}` : ""}
             </p>
           </div>
@@ -69,14 +73,22 @@ export function SiteFooter() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                   {group}
                 </p>
-                <ul className="space-y-2">
+                <ul className="flex flex-col gap-3">
                   {links.map((link) => (
                     <li key={link.label}>
                       {"external" in link && link.external ? (
                         <a
                           href={link.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          target={
+                            link.href.startsWith("https://")
+                              ? "_blank"
+                              : undefined
+                          }
+                          rel={
+                            link.href.startsWith("https://")
+                              ? "noopener noreferrer"
+                              : undefined
+                          }
                           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {link.label}
@@ -102,17 +114,29 @@ export function SiteFooter() {
             &copy; {year} {SITE_IDENTITY.legalName}. All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link
+              href="/privacy"
+              className="hover:text-foreground transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="hover:text-foreground transition-colors"
+            >
+              Terms
+            </Link>
             <button
               type="button"
               className="hover:text-foreground transition-colors"
               onClick={() => {
                 if (
                   typeof window !== "undefined" &&
-                  (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences
+                  (window as Window & { openCookiePreferences?: () => void })
+                    .openCookiePreferences
                 ) {
-                  (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences!();
+                  (window as Window & { openCookiePreferences?: () => void })
+                    .openCookiePreferences!();
                 }
               }}
             >

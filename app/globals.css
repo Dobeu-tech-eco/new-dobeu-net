@@ -3,36 +3,36 @@
 @tailwind utilities;
 
 /* ============================================================================
- * Dobeu Design System v3 — CSS variables
- * Palette refresh: Deep Violet primary, Coral Amber CTA, Void dark canvas.
+ * Dobeu Design System — CSS variables
+ * Reference landing palette: indigo, warm amber actions, navy canvas.
  * Values are HSL components (no hsl() wrapper) so Tailwind's `hsl(var(--x))` works.
  * Brand colors NEVER hardcoded in components — always via token → Tailwind.
  * ============================================================================
  *
- * Core 5 brand colors:
- *   Deep Violet  #5B4FD9  hsl(245, 63%, 58%)   ← primary (replaces indigo #6B5CE7)
- *   Coral Amber  #F59555  hsl(24, 89%, 64%)    ← CTA accent dark (replaces #F4A261)
- *   Void         #111120  hsl(243, 30%, 10%)   ← dark canvas (replaces #1A1A2E)
- *   Slate        #4A42A0  hsl(244, 42%, 44%)   ← wordmark / light headings
- *   Clean White  #FAFAFA  hsl(0, 0%, 98%)      ← light canvas
+ * Reference brand colors:
+ *   Indigo       #6B5CE7  ← brand and decorative signal
+ *   Warm amber   #F4A261  ← primary action on dark
+ *   Navy         #1A1A2E  ← dark canvas
+ *   Deep indigo  #4A3FA8  ← accessible light action and heading
+ *   Cream        #FFF8F0  ← light canvas
  * ============================================================================ */
 
 @layer base {
   :root {
     /* ---- Raw Dobeu palette (HSL) — v3 ---- */
-    --dobeu-violet-50:  245 70% 97%;
+    --dobeu-violet-50: 245 70% 97%;
     --dobeu-violet-100: 245 68% 93%;
     --dobeu-violet-200: 245 66% 86%;
     --dobeu-violet-300: 245 64% 76%;
     --dobeu-violet-400: 245 63% 68%;
-    --dobeu-violet-500: 245 63% 58%;   /* #5B4FD9 — primary brand */
-    --dobeu-violet-600: 244 54% 50%;
-    --dobeu-violet-700: 244 42% 44%;   /* #4A42A0 — slate */
+    --dobeu-violet-500: 246.47 74.33% 63.33%; /* #6B5CE7 — reference indigo */
+    --dobeu-violet-600: 246.29 45.45% 45.29%;
+    --dobeu-violet-700: 247.17 36.8% 49.02%; /* #5A4FAB — slate */
     --dobeu-violet-800: 244 38% 34%;
     --dobeu-violet-900: 243 36% 24%;
 
     /* Keep legacy indigo aliases pointing to new violet for smooth migration */
-    --dobeu-indigo-50:  var(--dobeu-violet-50);
+    --dobeu-indigo-50: var(--dobeu-violet-50);
     --dobeu-indigo-100: var(--dobeu-violet-100);
     --dobeu-indigo-200: var(--dobeu-violet-200);
     --dobeu-indigo-300: var(--dobeu-violet-300);
@@ -43,29 +43,29 @@
     --dobeu-indigo-800: var(--dobeu-violet-800);
     --dobeu-indigo-900: var(--dobeu-violet-900);
 
-    --dobeu-amber-500: 24 89% 64%;    /* #F59555 — coral amber (v3) */
+    --dobeu-amber-500: 26.53 86.98% 66.86%; /* #F4A261 — dark action */
     --dobeu-amber-600: 20 74% 55%;
 
-    --dobeu-ink-900:  243 30% 10%;    /* #111120 — void dark canvas (v3) */
-    --dobeu-paper-50: 0 0% 98%;       /* #FAFAFA — clean white (v3) */
+    --dobeu-ink-900: 240 27.78% 14.12%; /* #1A1A2E — dark canvas */
+    --dobeu-paper-50: 0 0% 98%; /* #FAFAFA — clean white (v3) */
 
     /* ---- v3 brand primitives ---- */
-    /* Slate #4A42A0 — wordmark color + light-mode heading color */
-    --brand-indigo-slate: 244 42% 44%;
+    /* Deep indigo #4A3FA8 — accessible light-mode heading color */
+    --brand-indigo-slate: 246.29 45.45% 45.29%;
     /* Light canvas */
     --brand-cream-soft: 0 0% 100%;
     /* Borders */
-    --brand-border-light: 245 55% 91%; /* light violet-tinted rule */
-    --brand-border-dark:  243 22% 19%; /* dark void-tinted rule */
+    --brand-border-light: 242.73 52.38% 91.76%; /* #E0DFF5 */
+    --brand-border-dark: 240 24.32% 21.76%; /* #2A2A45 */
     /* 10% tints (badges, pills, soft fills) */
     --brand-tint-indigo-10: 245 62% 95%;
-    --brand-tint-amber-10:  24 90% 94%;
+    --brand-tint-amber-10: 24 90% 94%;
     /* Heading foreground (slate in light, paper in dark) */
     --fg-heading: var(--brand-indigo-slate);
 
     /* ---- Light theme ---- */
-    --background: 0 0% 100%;
-    --foreground: var(--dobeu-ink-900);
+    --background: 32 100% 97.06%;
+    --foreground: 240 12.62% 20.2%;
 
     --card: 0 0% 100%;
     --card-foreground: var(--dobeu-ink-900);
@@ -73,8 +73,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: var(--dobeu-ink-900);
 
-    --primary: var(--dobeu-violet-500);
-    --primary-foreground: var(--dobeu-paper-50);
+    --primary: var(--dobeu-violet-600);
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 240 6% 97%;
     --secondary-foreground: var(--dobeu-ink-900);
@@ -105,23 +105,23 @@
   }
 
   .dark {
-    --background: var(--dobeu-ink-900);    /* #111120 void */
+    --background: var(--dobeu-ink-900); /* #1A1A2E navy */
     --foreground: var(--dobeu-paper-50);
 
     /* Heading: fall back to paper-50 on dark */
     --fg-heading: var(--dobeu-paper-50);
 
-    --card: 243 28% 15%;               /* slightly lifted above void */
+    --card: 240 28% 19.61%; /* #242440 — raised surface */
     --card-foreground: var(--dobeu-paper-50);
 
-    --popover: 243 28% 13%;
+    --popover: 240 28% 19.61%;
     --popover-foreground: var(--dobeu-paper-50);
 
     /* v3 CTA-swap: dark-mode primary = coral amber for maximum contrast pop */
     --primary: var(--dobeu-amber-500);
     --primary-foreground: var(--dobeu-ink-900);
 
-    --secondary: 243 24% 18%;
+    --secondary: 240 28% 19.61%;
     --secondary-foreground: var(--dobeu-paper-50);
 
     --accent: var(--dobeu-violet-400);
@@ -129,8 +129,8 @@
     /* On the void canvas the lavender accent already clears AA as text. */
     --accent-text: var(--dobeu-violet-400);
 
-    --muted: 243 22% 17%;
-    --muted-foreground: 243 8% 68%;
+    --muted: 240 34.78% 9.02%;
+    --muted-foreground: 240 12.22% 64.71%;
 
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
@@ -140,7 +140,7 @@
     --ring: var(--dobeu-amber-500);
 
     /* Elevated surface — void + 5% lift */
-    --elevated: 243 26% 16%;
+    --elevated: 240 28% 19.61%;
   }
 }
 
@@ -256,6 +256,21 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+}
+
+@layer components {
+  .section-heading {
+    @apply text-balance font-display text-4xl font-extrabold leading-tight tracking-tight text-fg-heading md:text-5xl;
+  }
+  .eyebrow {
+    @apply font-mono text-xs tracking-wide text-muted-foreground;
+  }
+}
+
+[data-motion="paused"] *,
+[data-motion="paused"] *::before,
+[data-motion="paused"] *::after {
+  animation: none !important;
 }
 
 /* The mobile nav is a full-width overlay with its own "Book a call" button.

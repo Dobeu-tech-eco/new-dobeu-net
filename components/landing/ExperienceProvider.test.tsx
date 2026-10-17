@@ -1,0 +1,113 @@
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  ExperienceProvider,
+  useAutoStep,
+  useExperience,
+} from "./ExperienceProvider";
+
+const preferences = vi.hoisted(() => ({ reduced: false }));
+vi.mock("motion/react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("motion/react")>()),
+  useInView: () => true,
+  useReducedMotion: () => preferences.reduced,
+}));
+
+function Journey() {
+  const { ref, active, select, interactionProps } = useAutoStep(3, 1000);
+  const { stopped, toggleMotion } = useExperience();
+  return (
+    <div ref={ref} {...interactionProps} data-testid="journey">
+      <output data-testid="active">{active}</output>
+      <button onClick={toggleMotion}>{stopped ? "Resume" : "Pause"}</button>
+      <button onClick={() => select(2)}>Select final stage</button>
+    </div>
+  );
+}
+
+function renderJourney() {
+  return render(
+    <ExperienceProvider>
+      <Journey />
+    </ExperienceProvider>,
+  );
+}
+function advance(ms = 1000) {
+  act(() => {
+    vi.advanceTimersByTime(ms);
+  });
+}
+
+beforeEach(() => {
+  preferences.reduced = false;
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
+
+describe("marketing experience controls", () => {
+  it("pauses and resumes auto-advancing illustrations", () => {
+    const { container } = renderJourney();
+    advance();
+    expect(screen.getByTestId("active").textContent).toBe("1");
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    advance(4000);
+    expect(screen.getByTestId("active").textContent).toBe("1");
+    expect(container.firstElementChild).toHaveAttribute(
+      "data-motion",
+      "paused",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Resume" }));
+    advance();
+    expect(screen.getByTestId("active").textContent).toBe("2");
+  });
+
+  it("never autoplays when reduced motion is requested", () => {
+    preferences.reduced = true;
+    const { container } = renderJourney();
+    advance(5000);
+    expect(container.firstElementChild).toHaveAttribute(
+      "data-motion",
+      "paused",
+    );
+    expect(screen.getByTestId("active").textContent).toBe("0");
+    fireEvent.click(screen.getByRole("button", { name: "Select final stage" }));
+    expect(screen.getByTestId("active").textContent).toBe("2");
+  });
+
+  it("keeps a manually selected stage stable", () => {
+    renderJourney();
+    fireEvent.click(screen.getByRole("button", { name: "Select final stage" }));
+    advance(5000);
+    expect(screen.getByTestId("active").textContent).toBe("2");
+  });
+
+  it("pauses while hovered and resumes after leaving", () => {
+    renderJourney();
+    fireEvent.mouseEnter(screen.getByTestId("journey"));
+    advance(4000);
+    expect(screen.getByTestId("active").textContent).toBe("0");
+    fireEvent.mouseLeave(screen.getByTestId("journey"));
+    advance();
+    expect(screen.getByTestId("active").textContent).toBe("1");
+  });
+
+  it("pauses when the document is hidden", () => {
+    renderJourney();
+    vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    advance(4000);
+    expect(screen.getByTestId("active").textContent).toBe("0");
+  });
+});

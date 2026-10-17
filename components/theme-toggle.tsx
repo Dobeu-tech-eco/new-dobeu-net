@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -31,24 +32,26 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={() => setTheme("light")}
-          aria-current={mounted && theme === "light"}
-        >
-          <Sun className="mr-2 h-4 w-4" /> Light
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => setTheme("dark")}
-          aria-current={mounted && theme === "dark"}
-        >
-          <Moon className="mr-2 h-4 w-4" /> Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => setTheme("system")}
-          aria-current={mounted && theme === "system"}
-        >
-          <Monitor className="mr-2 h-4 w-4" /> System
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onSelect={() => setTheme("light")}
+            aria-current={mounted && theme === "light"}
+          >
+            <Sun className="mr-2 h-4 w-4" /> Light
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => setTheme("dark")}
+            aria-current={mounted && theme === "dark"}
+          >
+            <Moon className="mr-2 h-4 w-4" /> Dark
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => setTheme("system")}
+            aria-current={mounted && theme === "system"}
+          >
+            <Monitor className="mr-2 h-4 w-4" /> System
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );
