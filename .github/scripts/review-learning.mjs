@@ -150,19 +150,26 @@ export function unknownCitations(text, allowed) {
   return [...new Set(citedPrNumbers(text).filter((n) => !allowed.has(n)))];
 }
 
+// Byte-identical on every matrix run, so this is the cacheable prompt prefix.
+// askClaude sends it as its own content block with a cache_control breakpoint.
+const INSTRUCTIONS = [
+  "You maintain the auto-learned section of a repository's REVIEW.md, which an AI code reviewer reads.",
+  "Below are last week's AI review comments, each marked fixed (the author changed the code or resolved it)",
+  "or ignored (the PR merged or closed with the comment untouched). Human replies are included.",
+  "",
+  "Update the learned section:",
+  "- 'Always check': patterns that were repeatedly fixed, phrased as a concrete check.",
+  "- 'Stop flagging': patterns that were repeatedly ignored or rebutted by a human reply.",
+  "- Only add a rule backed by at least 2 findings, or 1 finding with an explicit human rebuttal.",
+  "- Keep existing learned rules unless this week's evidence contradicts them. Never duplicate a hand-written rule.",
+  "- Never add a rule that would stop flagging security, auth, payments, age gating or data deletion issues.",
+  "- After each rule, add the evidence as `(PR #12, #15)`.",
+].join("\n");
+
+// Everything below varies per repo/run (allowed PRs, rules, findings) and stays
+// after the cache breakpoint, uncached.
 function buildPrompt(currentBlock, handWritten, findings, allowed) {
   return [
-    "You maintain the auto-learned section of a repository's REVIEW.md, which an AI code reviewer reads.",
-    "Below are last week's AI review comments, each marked fixed (the author changed the code or resolved it)",
-    "or ignored (the PR merged or closed with the comment untouched). Human replies are included.",
-    "",
-    "Update the learned section:",
-    "- 'Always check': patterns that were repeatedly fixed, phrased as a concrete check.",
-    "- 'Stop flagging': patterns that were repeatedly ignored or rebutted by a human reply.",
-    "- Only add a rule backed by at least 2 findings, or 1 finding with an explicit human rebuttal.",
-    "- Keep existing learned rules unless this week's evidence contradicts them. Never duplicate a hand-written rule.",
-    "- Never add a rule that would stop flagging security, auth, payments, age gating or data deletion issues.",
-    "- After each rule, add the evidence as `(PR #12, #15)`.",
     `- Cite only these PR numbers, taken from the findings' \`pr\` field: ${[...allowed].map((n) => `#${n}`).join(", ")}. Never write any other #number.`,
     "",
     "Reply with ONLY the markdown that goes between the markers, starting with '## Learned from past reviews'.",
@@ -190,7 +197,22 @@ async function askClaude(prompt) {
     body: JSON.stringify({
       model: env["ANTHROPIC_MODEL"] || DEFAULT_MODEL,
       max_tokens: MAX_OUTPUT_TOKENS,
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        {
+          role: "user",
+          content: [
+            // Stable instructions, cached so the matrix's repeated runs (and the
+            // retry below) reuse this prefix instead of re-billing it each time.
+            {
+              type: "text",
+              text: `${INSTRUCTIONS}\n`,
+              cache_control: { type: "ephemeral" },
+            },
+            // Per-repo variable content (allowed PRs, rules, findings): uncached.
+            { type: "text", text: prompt },
+          ],
+        },
+      ],
     }),
   });
   if (!res.ok)
