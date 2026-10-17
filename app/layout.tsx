@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, JetBrains_Mono } from "next/font/google";
+import { Source_Sans_3, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
@@ -16,15 +16,15 @@ import { getSiteUrl, safeJsonLdStringify } from "@/lib/utils";
 import "./globals.css";
 
 /**
- * Dobeu Design System v2 — Nunito only (weights 400/500/600/700/800).
+ * Dobeu site typography — Source Sans 3 (weights 400/500/600/700/800).
  * Used for both `font-sans` and `font-display` in tailwind.config.ts.
  */
-const nunito = Nunito({
+const sourceSans = Source_Sans_3({
   subsets: ["latin"],
-  // optional: if Nunito misses the first paint, keep the fallback so a late
+  // optional: if the font misses the first paint, keep the fallback so a late
   // swap cannot become LCP after homepage JS (mobile LH was 3.4s / 0.89).
   display: "optional",
-  variable: "--font-nunito",
+  variable: "--font-source-sans",
   weight: ["400", "500", "600", "700", "800"],
 });
 
@@ -91,7 +91,7 @@ export default function RootLayout({
       data-brand="net"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${nunito.variable} ${jetbrainsMono.variable}`}
+      className={`${sourceSans.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <a href="#main" className="skip-link">

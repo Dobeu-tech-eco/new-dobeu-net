@@ -24,13 +24,13 @@ const outcomes = [
       "Connect the work on the ground to the people who need it next—with the right details captured at the right moment.",
   },
   {
-    title: "make important steps harder to miss.",
+    title: "Make important steps harder to miss.",
     problem: "A critical process depends on someone remembering.",
     answer:
       "Build checks, approvals, and clear ownership into the workflow, instead of leaving them in someone’s head.",
   },
   {
-    title: "a handover, not a cliff.",
+    title: "A handover, not a cliff.",
     problem: "The build is finished. Your team still needs to use it.",
     answer:
       "Documentation, training, and a clear path forward. Understand what was built, how it works, and what comes next.",
@@ -47,10 +47,10 @@ export function RouteReadyShowcase() {
       <div className="container flex flex-col gap-12">
         <Reveal className="flex flex-col gap-6">
           <h2 id="routeready-heading" className="section-heading">
-            real work.
+            Real work.
             <br />
             <span className="text-muted-foreground">
-              a purpose-built solution.
+              A purpose-built solution.
             </span>
           </h2>
           <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
@@ -67,7 +67,7 @@ export function RouteReadyShowcase() {
               </span>
             </div>
             <h3 className="text-balance font-display text-3xl font-extrabold leading-tight tracking-tight text-fg-heading md:text-4xl">
-              prove every driver was trained. branch by branch.
+              Prove every driver was trained. Branch by branch.
             </h3>
             <p className="leading-relaxed text-muted-foreground">
               Running a fleet means more than getting vehicles on the road. You
@@ -110,12 +110,12 @@ export function OperationalOutcomes() {
     >
       <div className="container flex flex-col gap-12">
         <Reveal className="flex flex-col items-start gap-6">
-          <p className="eyebrow">built around your operation</p>
+          <p className="eyebrow">Built around your operation</p>
           <h2 id="outcomes-heading" className="section-heading max-w-4xl">
-            less working around the system.
+            Less working around the system.
             <br />
             <span className="text-muted-foreground">
-              more getting the work done.
+              More getting the work done.
             </span>
           </h2>
         </Reveal>
@@ -130,7 +130,7 @@ export function OperationalOutcomes() {
                   </span>
                   <div className="flex flex-col gap-4">
                     <h3 className="text-balance font-display text-2xl font-extrabold text-fg-heading">
-                      {item.title.toLowerCase()}
+                      {item.title}
                     </h3>
                     <p className="text-sm leading-relaxed text-muted-foreground">
                       {item.problem} {item.answer}
@@ -162,11 +162,11 @@ export function OperationalApproach() {
     >
       <div className="container flex flex-col gap-12">
         <Reveal className="flex flex-col gap-6">
-          <p className="eyebrow">our approach</p>
+          <p className="eyebrow">Our approach</p>
           <h2 id="approach-heading" className="section-heading">
-            first, your operation.
+            First, your operation.
             <br />
-            <span className="text-muted-foreground">then, the technology.</span>
+            <span className="text-muted-foreground">Then, the technology.</span>
           </h2>
           <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
             Not a template with your logo on it. Not a quick tool built around
@@ -188,7 +188,7 @@ export function OperationsQuestions() {
     >
       <div className="container flex flex-col gap-10 lg:flex-row lg:gap-20">
         <h2 id="questions-heading" className="section-heading lg:w-5/12">
-          a few fair questions.
+          A few fair questions.
         </h2>
         <div className="flex flex-1 flex-col divide-y divide-border">
           {[
@@ -236,10 +236,10 @@ export function OperationsContact() {
         <Reveal className="rounded-lg border border-border bg-card">
           <div className="flex flex-col items-start gap-8 px-7 py-12 md:p-16">
             <h2 id="contact-heading" className="section-heading max-w-4xl">
-              you know what&apos;s not working.
+              You know what&apos;s not working.
               <br />
               <span className="text-primary">
-                let&apos;s work out what would.
+                Let&apos;s work out what would.
               </span>
             </h2>
             <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">

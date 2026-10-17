@@ -32,16 +32,16 @@ export function Hero() {
               className="size-2 shrink-0 rounded-pill bg-dobeu-indigo-500"
               aria-hidden="true"
             />
-            real operations. purpose-built solutions.
+            Real operations. Purpose-built solutions.
           </p>
           <h1
             id="hero-heading"
             className={`${styles.headline} max-w-5xl text-balance font-display text-5xl font-extrabold leading-[1.08] tracking-tight text-fg-heading md:text-7xl lg:text-8xl`}
           >
-            your business isn&apos;t generic.
+            Your business isn&apos;t generic.
             <br />
             <span className="text-primary">
-              your software shouldn&apos;t be either.
+              Your software shouldn&apos;t be either.
             </span>
           </h1>
           <div
@@ -88,10 +88,10 @@ export function Hero() {
               className="flex flex-wrap gap-x-8 gap-y-3 font-mono text-xs text-muted-foreground"
             >
               {[
-                "tailored operational systems",
-                "clearer handoffs",
-                "dependable records",
-                "field to back office",
+                "Tailored operational systems",
+                "Clearer handoffs",
+                "Dependable records",
+                "Field to back office",
               ].map((service) => (
                 <li key={service}>{service}</li>
               ))}

@@ -48,7 +48,7 @@ export function RouteReadyJourney() {
     >
       <div className="flex items-center justify-between gap-3">
         <span className="font-mono text-xs text-muted-foreground">
-          driver training journey
+          Driver training journey
         </span>
         <span className="font-mono text-xs text-muted-foreground">
           {String(active + 1).padStart(2, "0")} / 04

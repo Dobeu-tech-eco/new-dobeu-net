@@ -19,6 +19,9 @@
 
 @layer base {
   :root {
+    /* Keep cached and legacy font utilities on the current site typeface. */
+    --font-nunito: var(--font-source-sans);
+
     /* ---- Raw Dobeu palette (HSL) — v3 ---- */
     --dobeu-violet-50: 245 70% 97%;
     --dobeu-violet-100: 245 68% 93%;

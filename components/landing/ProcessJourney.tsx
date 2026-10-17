@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const steps = [
   {
-    title: "understand the work.",
+    title: "Understand the work.",
     description:
       "We walk through the day-to-day with you: who does what, where things break down, and which exceptions matter. No solution before we understand the problem.",
     label: "01 / understand",
@@ -20,7 +20,7 @@ const steps = [
     note: "Understand first. Build second.",
   },
   {
-    title: "design the right fit.",
+    title: "Design the right fit.",
     description:
       "Together we define what better looks like, what the system needs to connect to, and a clear scope. Sometimes the right answer is improving what you already have.",
     label: "02 / design",
@@ -33,7 +33,7 @@ const steps = [
     note: "The operation sets the direction. Not the latest trend.",
   },
   {
-    title: "build it. use it. refine it.",
+    title: "Build it. Use it. Refine it.",
     description:
       "We develop the solution, work through real scenarios with your team, and support the handover. The goal is something people can actually rely on—not just a successful demo.",
     label: "03 / build + handover",

@@ -8,8 +8,8 @@ import animate from "tailwindcss-animate";
  */
 
 const fontFamily = {
-  sans: ["var(--font-nunito)", "ui-sans-serif", "system-ui", "sans-serif"],
-  display: ["var(--font-nunito)", "ui-sans-serif", "system-ui", "sans-serif"],
+  sans: ["var(--font-source-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+  display: ["var(--font-source-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
   mono: [
     "var(--font-jetbrains)",
     "ui-monospace",
