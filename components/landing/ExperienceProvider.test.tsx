@@ -59,15 +59,26 @@ afterEach(() => {
 describe("marketing experience controls", () => {
   it("hydrates matching server markup before applying reduced motion", async () => {
     function MotionControl() {
-      const { stopped, reduced } = useExperience();
-      return <button disabled={reduced} aria-pressed={stopped}>{stopped ? "Play" : "Pause"}</button>;
+      const { stopped, toggleMotion } = useExperience();
+      return (
+        <button onClick={toggleMotion} aria-pressed={stopped}>
+          {stopped ? "Play" : "Pause"}
+        </button>
+      );
     }
-    const app = <ExperienceProvider><MotionControl /></ExperienceProvider>;
+    const app = (
+      <ExperienceProvider>
+        <MotionControl />
+      </ExperienceProvider>
+    );
     preferences.reduced = false;
     const container = document.createElement("div");
     container.innerHTML = renderToString(app);
     document.body.append(container);
-    expect(container.firstElementChild).toHaveAttribute("data-motion", "running");
+    expect(container.firstElementChild).toHaveAttribute(
+      "data-motion",
+      "running",
+    );
     preferences.reduced = true;
     const onRecoverableError = vi.fn();
     let root: ReturnType<typeof hydrateRoot> | undefined;
@@ -76,8 +87,11 @@ describe("marketing experience controls", () => {
         root = hydrateRoot(container, app, { onRecoverableError });
       });
       expect(onRecoverableError).not.toHaveBeenCalled();
-      expect(container.firstElementChild).toHaveAttribute("data-motion", "paused");
-      expect(container.querySelector("button")).toBeDisabled();
+      expect(container.firstElementChild).toHaveAttribute(
+        "data-motion",
+        "paused",
+      );
+      expect(container.querySelector("button")).toBeEnabled();
       expect(container.querySelector("button")).toHaveTextContent("Play");
     } finally {
       act(() => root?.unmount());
@@ -112,6 +126,33 @@ describe("marketing experience controls", () => {
     expect(screen.getByTestId("active").textContent).toBe("0");
     fireEvent.click(screen.getByRole("button", { name: "Select final stage" }));
     expect(screen.getByTestId("active").textContent).toBe("2");
+  });
+
+  it("allows explicit play and pause when the system requests reduced motion", () => {
+    preferences.reduced = true;
+    const { container } = renderJourney();
+    advance(3000);
+    expect(screen.getByTestId("active")).toHaveTextContent("0");
+
+    fireEvent.click(screen.getByRole("button", { name: "Resume" }));
+    expect(container.firstElementChild).toHaveAttribute(
+      "data-motion",
+      "running",
+    );
+    advance();
+    expect(screen.getByTestId("active")).toHaveTextContent("1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    expect(container.firstElementChild).toHaveAttribute(
+      "data-motion",
+      "paused",
+    );
+    advance(3000);
+    expect(screen.getByTestId("active")).toHaveTextContent("1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Resume" }));
+    advance();
+    expect(screen.getByTestId("active")).toHaveTextContent("2");
   });
 
   it("keeps a manually selected stage stable", () => {

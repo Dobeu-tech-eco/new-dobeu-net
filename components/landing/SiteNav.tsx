@@ -180,10 +180,10 @@ export function SiteNav() {
               variant="ghost"
               size="icon"
               onClick={toggleMotion}
-              disabled={Boolean(reduced)}
-              aria-label={
-                reduced
-                  ? "Motion reduced by system preference"
+              aria-label={stopped ? "Resume animations" : "Pause animations"}
+              title={
+                stopped && reduced
+                  ? "Reduced motion is enabled. Play to enable animations."
                   : stopped
                     ? "Resume animations"
                     : "Pause animations"

@@ -23,15 +23,24 @@ const clientSnapshot = () => true;
 const serverSnapshot = () => false;
 
 export function ExperienceProvider({ children }: { children: ReactNode }) {
-  const hydrated = useSyncExternalStore(subscribeToHydration, clientSnapshot, serverSnapshot);
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    clientSnapshot,
+    serverSnapshot,
+  );
   const preference = useReducedMotion();
   // Match server markup during hydration before applying the browser preference.
   const reduced = hydrated && Boolean(preference);
-  const [paused, setPaused] = useState(false);
-  const stopped = Boolean(reduced) || paused;
+  // Respect the OS default until the visitor explicitly chooses playback.
+  const [paused, setPaused] = useState<boolean | null>(null);
+  const stopped = paused ?? reduced;
   return (
     <ExperienceContext.Provider
-      value={{ stopped, reduced, toggleMotion: () => setPaused((value) => !value) }}
+      value={{
+        stopped,
+        reduced,
+        toggleMotion: () => setPaused((value) => !(value ?? reduced)),
+      }}
     >
       <div
         className="marketing-shell"

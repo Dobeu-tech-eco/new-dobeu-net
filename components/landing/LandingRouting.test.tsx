@@ -12,7 +12,12 @@ import { OperationsContact } from "./OperationsHome";
 import { SiteNav } from "./SiteNav";
 import { SiteFooter } from "./SiteFooter";
 
-const state = vi.hoisted(() => ({ open: vi.fn(), pathname: "/" }));
+const state = vi.hoisted(() => ({
+  open: vi.fn(),
+  toggleMotion: vi.fn(),
+  reduced: false,
+  pathname: "/",
+}));
 vi.mock("./LightboxProvider", () => ({
   useLightbox: () => ({ open: state.open }),
 }));
@@ -28,11 +33,17 @@ vi.mock("./ExperienceProvider", () => ({
     children: ReactNode;
     className?: string;
   }) => <div className={className}>{children}</div>,
-  useExperience: () => ({ stopped: true, toggleMotion: vi.fn() }),
+  useExperience: () => ({
+    stopped: true,
+    reduced: state.reduced,
+    toggleMotion: state.toggleMotion,
+  }),
 }));
 
 beforeEach(() => {
   state.open.mockReset();
+  state.toggleMotion.mockReset();
+  state.reduced = false;
   state.pathname = "/";
 });
 afterEach(cleanup);
@@ -64,6 +75,16 @@ describe("adopted landing routing", () => {
     ]);
   });
 
+  it("keeps Play enabled when reduced motion is requested", () => {
+    state.reduced = true;
+    render(<SiteNav />);
+    const play = screen.getByRole("button", { name: "Resume animations" });
+    expect(play).toBeEnabled();
+    expect(play).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(play);
+    expect(state.toggleMotion).toHaveBeenCalledOnce();
+  });
+
   it("uses root-safe section links on the homepage", () => {
     render(<SiteNav />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
@@ -82,12 +103,14 @@ describe("adopted landing routing", () => {
   it("preserves standalone commercial-page destinations", () => {
     state.pathname = "/pricing";
     render(<SiteNav />);
-    expect(
-      screen.getByRole("link", { name: "Process" }),
-    ).toHaveAttribute("href", "/process");
-    expect(
-      screen.getByRole("link", { name: "FAQ" }),
-    ).toHaveAttribute("href", "/#faq");
+    expect(screen.getByRole("link", { name: "Process" })).toHaveAttribute(
+      "href",
+      "/process",
+    );
+    expect(screen.getByRole("link", { name: "FAQ" })).toHaveAttribute(
+      "href",
+      "/#faq",
+    );
   });
 
   it("closes the mobile menu on Escape and restores trigger focus", () => {
