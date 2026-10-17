@@ -44,9 +44,11 @@ like any other; nothing in it lands without a merge.
 - Copy, anchors and policy text that describe behavior must match the code and the section they point to. Examples are price-band timing, consent categories on the cookies page, and trust-chip anchors such as `#about`. (PR #275, #274)
 - Workflow and script code that parses manual inputs such as repo lists must handle newlines, whitespace and letter case. It must validate the `owner/name` format before the value reaches shell or a matrix. Pass values through `env`, not `${{ }}` interpolation inside `run:`. (PR #278)
 - Citation validation in `.github/scripts/review-learning.mjs` must check every number in a `PR #x, #y` evidence phrase and must not treat unrelated `#` values (such as `#333`) as citations. (PR #278)
+- When a landing section is redesigned (for example the FAQ going from five or more items to four), check that the Playwright assertions in `e2e/smoke.spec.ts` still match the rendered markup and counts. CI runs this suite as a merge gate. (PR #280)
 
 ### Stop flagging
 
 - Agent and tooling configuration for AI dev tools is not product code. This covers `.codex/`, `.cursor/skills/**`, `.agents/` and `.ona/config.yaml`, including hook paths, launcher file modes and task ordering. (PR #270, #232)
+- JSON-LD structured data drifting from redesigned landing copy is not worth a comment. This covers a missing `FAQPage` schema and a stale default description in `professionalServiceJsonLd()`. (PR #280)
 
 <!-- review-learning:end -->
