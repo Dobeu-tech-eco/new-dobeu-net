@@ -6,6 +6,8 @@ import {
   screen,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import {
   ExperienceProvider,
   useAutoStep,
@@ -55,6 +57,34 @@ afterEach(() => {
 });
 
 describe("marketing experience controls", () => {
+  it("hydrates matching server markup before applying reduced motion", async () => {
+    function MotionControl() {
+      const { stopped, reduced } = useExperience();
+      return <button disabled={reduced} aria-pressed={stopped}>{stopped ? "Play" : "Pause"}</button>;
+    }
+    const app = <ExperienceProvider><MotionControl /></ExperienceProvider>;
+    preferences.reduced = false;
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(app);
+    document.body.append(container);
+    expect(container.firstElementChild).toHaveAttribute("data-motion", "running");
+    preferences.reduced = true;
+    const onRecoverableError = vi.fn();
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, app, { onRecoverableError });
+      });
+      expect(onRecoverableError).not.toHaveBeenCalled();
+      expect(container.firstElementChild).toHaveAttribute("data-motion", "paused");
+      expect(container.querySelector("button")).toBeDisabled();
+      expect(container.querySelector("button")).toHaveTextContent("Play");
+    } finally {
+      act(() => root?.unmount());
+      container.remove();
+    }
+  });
+
   it("pauses and resumes auto-advancing illustrations", () => {
     const { container } = renderJourney();
     advance();

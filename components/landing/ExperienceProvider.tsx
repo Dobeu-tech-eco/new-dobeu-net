@@ -6,6 +6,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { motion, useInView, useReducedMotion } from "motion/react";
@@ -13,16 +14,24 @@ import { FADE_UP, useMotionProps } from "@/hooks/use-motion-props";
 
 const ExperienceContext = createContext({
   stopped: true,
+  reduced: false,
   toggleMotion: () => {},
 });
 
+const subscribeToHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
 export function ExperienceProvider({ children }: { children: ReactNode }) {
-  const reduced = useReducedMotion();
+  const hydrated = useSyncExternalStore(subscribeToHydration, clientSnapshot, serverSnapshot);
+  const preference = useReducedMotion();
+  // Match server markup during hydration before applying the browser preference.
+  const reduced = hydrated && Boolean(preference);
   const [paused, setPaused] = useState(false);
   const stopped = Boolean(reduced) || paused;
   return (
     <ExperienceContext.Provider
-      value={{ stopped, toggleMotion: () => setPaused((value) => !value) }}
+      value={{ stopped, reduced, toggleMotion: () => setPaused((value) => !value) }}
     >
       <div
         className="marketing-shell"

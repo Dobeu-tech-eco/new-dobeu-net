@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
 import {
   ArrowUpRight,
   ChevronDown,
@@ -47,8 +46,7 @@ const MORE_LINKS = [
 
 export function SiteNav() {
   const { open } = useLightbox();
-  const { stopped, toggleMotion } = useExperience();
-  const reduced = useReducedMotion();
+  const { stopped, reduced, toggleMotion } = useExperience();
   const pathname = usePathname();
   const links = pathname === "/" ? HOME_LINKS : PRIMARY_NAV_LINKS;
   const [mobileOpen, setMobileOpen] = useState(false);
