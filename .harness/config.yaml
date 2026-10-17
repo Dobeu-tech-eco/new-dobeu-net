@@ -1,0 +1,60 @@
+project:
+  name: new-dobeu-net
+  stack: next.js-15-app-router
+  description: "dobeu.net v3 — Next.js 15 marketing landing + client portal + admin. TypeScript, Tailwind, shadcn/ui, Supabase, Vercel."
+  package_manager: pnpm
+
+commands:
+  test: pnpm test:ci
+  typecheck: pnpm type-check
+  lint: pnpm lint
+  build: pnpm build:strict
+  quick: pnpm type-check
+  verify: pnpm verify
+  lint_fix: pnpm lint:fix
+  e2e: pnpm test:e2e
+
+paths:
+  src:
+    - app/
+    - components/
+    - lib/
+    - hooks/
+    - middleware.ts
+    - instrumentation.ts
+  tests:
+    - "**/*.test.ts"
+    - "**/*.test.tsx"
+    - "**/*.spec.ts"
+    - e2e/
+  docs:
+    - docs/
+    - CLAUDE.md
+    - AGENTS.md
+    - PLAN.md
+    - STATUS.md
+    - BRAINSTORM.md
+    - AUDIT.md
+  config:
+    - next.config.ts
+    - tailwind.config.ts
+    - tsconfig.json
+    - vitest.config.ts
+    - vitest.setup.ts
+    - playwright.config.ts
+    - postcss.config.mjs
+    - vercel.json
+    - package.json
+    - pnpm-lock.yaml
+    - pnpm-workspace.yaml
+    - .github/workflows/
+  generated:
+    - lib/database.types.ts
+
+do_not_touch:
+  - .env
+  - .env.*
+  - .env.local
+  - secrets/**
+  - "**/credentials*"
+  - pnpm-lock.yaml
