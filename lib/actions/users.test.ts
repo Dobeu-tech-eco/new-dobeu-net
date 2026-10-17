@@ -23,6 +23,7 @@ vi.mock("@/lib/supabase/server", () => {
   function buildClient() {
     return {
       auth: {
+        mfa: { getAuthenticatorAssuranceLevel: vi.fn(async () => ({ data: { currentLevel: "aal2", nextLevel: "aal2" }, error: null })) },
         getUser: vi.fn(async () => ({ data: { user: h.state.user }, error: null })),
         admin: {
           inviteUserByEmail: vi.fn(async (email: string, options?: unknown) => {

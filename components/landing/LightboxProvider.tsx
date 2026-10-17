@@ -2,20 +2,47 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { HERO_COPY } from "@/lib/jeremy-data";
 
 const LeadForm = dynamic(
   () => import("@/components/landing/LeadForm").then((m) => m.LeadForm),
-  { loading: () => <p className="text-sm text-muted-foreground py-4">Loading form…</p> }
+  {
+    loading: () => (
+      <p className="text-sm text-muted-foreground py-4">Loading form…</p>
+    ),
+  },
 );
 
 const BookingTab = dynamic(
   () => import("@/components/landing/BookingTab").then((m) => m.BookingTab),
-  { ssr: false, loading: () => <p className="text-sm text-muted-foreground py-4">Loading scheduler…</p> }
+  {
+    ssr: false,
+    loading: () => (
+      <p className="text-sm text-muted-foreground py-4">Loading scheduler…</p>
+    ),
+  },
 );
 
-type Tab = "book" | "form" | "email";
+const TypeformTab = dynamic(
+  () => import("@/components/landing/TypeformTab").then((m) => m.TypeformTab),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="py-4 text-sm text-muted-foreground">
+        Loading project intake…
+      </p>
+    ),
+  },
+);
+
+type Tab = "book" | "form" | "email" | "intake";
 
 interface LightboxCtx {
   open: (tab?: Tab) => void;
@@ -26,11 +53,17 @@ const Ctx = React.createContext<LightboxCtx | null>(null);
 
 export function useLightbox(): LightboxCtx {
   const ctx = React.useContext(Ctx);
-  if (!ctx) throw new Error("useLightbox must be used inside <LightboxProvider>");
+  if (!ctx)
+    throw new Error("useLightbox must be used inside <LightboxProvider>");
   return ctx;
 }
 
 const COPY: Record<Tab, { title: string; description: string }> = {
+  intake: {
+    title: "Tell us about your operation",
+    description:
+      "This project intake goes to admin review. It does not generate an automatic quote or customer email.",
+  },
   book: {
     title: "Book a call",
     description: "Thirty minutes. I come back with a price band.",
@@ -41,12 +74,15 @@ const COPY: Record<Tab, { title: string; description: string }> = {
   },
   email: {
     title: "Send a note",
-    description: "Email is enough. I reply with a price band if the job is a fit.",
+    description:
+      "Email is enough. I reply with a price band if the job is a fit.",
   },
 };
 
 function DialogBody({ tab, onClose }: { tab: Tab; onClose: () => void }) {
   switch (tab) {
+    case "intake":
+      return <TypeformTab />;
     case "book":
       return <BookingTab onClose={onClose} />;
     case "form":

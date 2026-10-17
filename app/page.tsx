@@ -21,7 +21,17 @@ export default function HomePage() {
       <OperationalOutcomes />
       <OperationalApproach />
       <OperationsQuestions />
-      <OperationsContact />
+      <OperationsContact
+        heading={
+          <h2 id="contact-heading" className="section-heading max-w-4xl">
+            You know what&apos;s not working.
+            <br />
+            <span className="text-primary">
+              Let&apos;s work out what would.
+            </span>
+          </h2>
+        }
+      />
     </MarketingShell>
   );
 }

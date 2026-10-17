@@ -21,7 +21,12 @@
  *   <motion.div initial={mp.initial} whileInView={mp.whileInView} animate={mp.animate} />
  */
 
+import { useSyncExternalStore } from "react";
 import { useReducedMotion } from "motion/react";
+
+const subscribeToHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
 
 interface MotionVariants {
   hidden: Record<string, number | string>;
@@ -43,7 +48,14 @@ export function useMotionProps(
   variants: MotionVariants,
   viewportMargin = "-100px"
 ): MotionProps {
-  const reduce = useReducedMotion();
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    clientSnapshot,
+    serverSnapshot,
+  );
+  const preference = useReducedMotion();
+  // Browser media preferences must not change the server's initial markup.
+  const reduce = hydrated && Boolean(preference);
 
   if (reduce) {
     const visible = variants.visible;

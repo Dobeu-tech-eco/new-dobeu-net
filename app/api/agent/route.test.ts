@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getUser = vi.fn();
+const getAuthenticatorAssuranceLevel = vi.fn();
+const createAdminClient = vi.fn(() => ({}));
 
 vi.mock("@/lib/supabase/server", () => ({
-  // The route gate calls createClient().auth.getUser() before anything else.
+  // Exercise the actual shared guard, not a mocked authorization decision.
   createClient: vi.fn(async () => ({
-    auth: { getUser }
+    auth: { getUser, mfa: { getAuthenticatorAssuranceLevel } }
   })),
-  createAdminClient: vi.fn(() => ({}))
+  createAdminClient: () => createAdminClient()
 }));
 
 const runAgent = vi.fn();
@@ -30,6 +32,10 @@ function makeRequest(body: unknown, raw = false): Request {
 
 beforeEach(() => {
   getUser.mockReset();
+  getAuthenticatorAssuranceLevel.mockReset().mockResolvedValue({
+    data: { currentLevel: "aal2", nextLevel: "aal2" }, error: null
+  });
+  createAdminClient.mockClear();
   runAgent.mockReset();
   vi.stubEnv("ADMIN_EMAILS", ADMIN_EMAIL);
   // Default: an authenticated admin so most cases exercise the happy path.
@@ -42,13 +48,13 @@ afterEach(() => {
 });
 
 describe("POST /api/agent", () => {
-  it("returns 403 when the caller is not authenticated", async () => {
+  it("returns 401 when the caller is not authenticated", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
 
     const res = await POST(makeRequest({ prompt: "hi" }));
 
-    expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: "forbidden" });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "not_authenticated" });
     expect(runAgent).not.toHaveBeenCalled();
   });
 
@@ -60,6 +66,27 @@ describe("POST /api/agent", () => {
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: "forbidden" });
     expect(runAgent).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { currentLevel: "aal1", nextLevel: "aal1" },
+    { currentLevel: "aal1", nextLevel: "aal2" },
+    null
+  ])("rejects incomplete MFA (%j) before agent execution", async (data) => {
+    getAuthenticatorAssuranceLevel.mockResolvedValue({ data, error: null });
+    const res = await POST(makeRequest({ prompt: "hi" }));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "mfa_required" });
+    expect(runAgent).not.toHaveBeenCalled();
+    expect(createAdminClient).not.toHaveBeenCalled();
+  });
+
+  it("fails closed on assurance API errors", async () => {
+    getAuthenticatorAssuranceLevel.mockResolvedValue({ data: null, error: { message: "unavailable" } });
+    const res = await POST(makeRequest({ prompt: "hi" }));
+    expect(res.status).toBe(403);
+    expect(runAgent).not.toHaveBeenCalled();
+    expect(createAdminClient).not.toHaveBeenCalled();
   });
 
   it("returns 400 for a body that is not valid JSON", async () => {

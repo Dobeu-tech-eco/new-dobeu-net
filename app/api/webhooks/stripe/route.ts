@@ -98,9 +98,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     })
   );
 
-  const admin = createAdminClient();
-
   try {
+    const admin = createAdminClient();
     switch (event.type) {
       case "invoice.paid": {
         // The .neq("status","paid") guard makes this idempotent across
@@ -111,13 +110,14 @@ export async function POST(request: Request): Promise<NextResponse> {
         // "paid" receipt email on every redelivery.
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id) {
-          const { data: row } = await admin
+          const { data: row, error } = await admin
             .from("invoices")
             .update({ status: "paid", paid_at: new Date().toISOString() })
             .eq("stripe_invoice_id", inv.id)
             .neq("status", "paid")
             .select("id,project_id,amount_cents,currency,status")
-            .single();
+            .maybeSingle();
+          if (error) throw new Error(`invoice paid update failed: ${error.message}`);
 
           await notifyInvoicePaid(admin, inv, row as InvoiceRow | null);
         }
@@ -133,13 +133,14 @@ export async function POST(request: Request): Promise<NextResponse> {
         // invoice no-ops instead of re-sending the admin alert.
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id) {
-          const { data: row } = await admin
+          const { data: row, error } = await admin
             .from("invoices")
             .update({ status: "overdue" })
             .eq("stripe_invoice_id", inv.id)
             .neq("status", "overdue")
             .select("id,project_id,amount_cents,currency,status")
-            .single();
+            .maybeSingle();
+          if (error) throw new Error(`invoice failed update failed: ${error.message}`);
 
           await notifyInvoiceFailed(inv, row as InvoiceRow | null);
         }
@@ -149,10 +150,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       case "invoice.finalized": {
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id && inv.hosted_invoice_url) {
-          await admin
+          const { error } = await admin
             .from("invoices")
             .update({ hosted_invoice_url: inv.hosted_invoice_url })
             .eq("stripe_invoice_id", inv.id);
+          if (error) throw new Error(`invoice finalized update failed: ${error.message}`);
         }
         break;
       }
@@ -160,19 +162,27 @@ export async function POST(request: Request): Promise<NextResponse> {
       case "invoice.voided": {
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id) {
-          await admin
+          const { error } = await admin
             .from("invoices")
             .update({ status: "void" })
             .eq("stripe_invoice_id", inv.id);
+          if (error) throw new Error(`invoice voided update failed: ${error.message}`);
         }
         break;
       }
 
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
-        await grantAssetEntitlement(admin, session);
+        if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
+          await grantAssetEntitlement(admin, session);
+        }
         break;
       }
+
+      case "checkout.session.async_payment_failed":
+        // No entitlement exists until settlement; a failed payment grants nothing.
+        break;
 
       default:
         console.log(
@@ -243,6 +253,7 @@ async function notifyInvoiceFailed(
   stripeInv: Stripe.Invoice,
   row: InvoiceRow | null
 ): Promise<void> {
+  if (!row) return;
   try {
     const tpl = invoicePaymentFailedToAdmin({
       invoice: row

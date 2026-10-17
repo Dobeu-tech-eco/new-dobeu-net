@@ -19,6 +19,7 @@ vi.mock("@/lib/supabase/server", () => ({
   // Cookie-bound client: only needs auth.getUser for the requireAdmin gate.
   createClient: vi.fn(async () => ({
     auth: {
+      mfa: { getAuthenticatorAssuranceLevel: vi.fn(async () => ({ data: { currentLevel: "aal2", nextLevel: "aal2" }, error: null })) },
       getUser: vi.fn(async () => ({ data: { user: h.state.user }, error: null }))
     }
   })),

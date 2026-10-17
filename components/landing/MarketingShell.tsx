@@ -36,7 +36,7 @@ export function MarketingPageHeader({
       <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
         {eyebrow}
       </p>
-      <h1 className="font-display text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance">
+      <h1 className="font-display text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.05] text-balance text-fg-heading">
         {title}
       </h1>
       <p className="mt-4 max-w-2xl text-base md:text-lg text-muted-foreground leading-relaxed">
