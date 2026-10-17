@@ -199,6 +199,7 @@ describe("createInvoiceForUser", () => {
     );
     expect(createHostedInvoice).toHaveBeenCalledWith(
       expect.objectContaining({
+        idempotencyKey: "work-order-invoice:wo_9:v1",
         metadata: expect.objectContaining({ work_order_id: "wo_9", project_id: undefined })
       })
     );

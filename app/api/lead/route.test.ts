@@ -65,6 +65,20 @@ describe("POST /api/lead", () => {
     expect(mockedProcessLead.mock.calls[0][0].ipHash).toBe("ip_" + hash1111);
   });
 
+  it("returns 503 instead of success when persistence throws", async () => {
+    mockedProcessLead.mockRejectedValueOnce(new Error("database unavailable"));
+    const res = await POST(makeRequest({ email: "a@b.com" }, "10.1.0.1"));
+    expect(res.status).toBe(503);
+    expect(res.headers.get("Retry-After")).toBe("60");
+    expect(await res.json()).toMatchObject({ ok: false });
+  });
+
+  it("does not acknowledge a missing durable lead id", async () => {
+    mockedProcessLead.mockResolvedValueOnce({ leadId: null });
+    const res = await POST(makeRequest({ email: "a@b.com" }, "10.1.0.2"));
+    expect(res.status).toBe(503);
+  });
+
   it("defaults source to 'other' when omitted", async () => {
     const res = await POST(makeRequest({ email: "c@d.com" }, "10.0.0.2"));
     expect(res.status).toBe(200);
