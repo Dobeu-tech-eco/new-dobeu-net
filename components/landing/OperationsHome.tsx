@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ShieldCheck } from "lucide-react";
 import { Reveal } from "./ExperienceProvider";
@@ -224,7 +225,7 @@ export function OperationsQuestions() {
   );
 }
 
-export function OperationsContact() {
+export function OperationsContact({ heading }: { heading: ReactNode }) {
   const { open } = useLightbox();
   return (
     <section
@@ -235,13 +236,7 @@ export function OperationsContact() {
       <div className="container">
         <Reveal className="rounded-lg border border-border bg-card">
           <div className="flex flex-col items-start gap-8 px-7 py-12 md:p-16">
-            <h2 id="contact-heading" className="section-heading max-w-4xl">
-              You know what&apos;s not working.
-              <br />
-              <span className="text-primary">
-                Let&apos;s work out what would.
-              </span>
-            </h2>
+            {heading}
             <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
               Tell us where the work gets stuck, who it affects, and what a
               better day would look like. You don&apos;t need a technical brief.

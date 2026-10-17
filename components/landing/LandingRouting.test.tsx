@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -60,7 +63,14 @@ describe("adopted landing routing", () => {
   });
 
   it("keeps intake, booking, and direct email as distinct contact paths", () => {
-    render(<OperationsContact />);
+    render(
+      <OperationsContact
+        heading={<h2 id="contact-heading">Let&apos;s work out what would.</h2>}
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+      "Let's work out what would.",
+    );
     fireEvent.click(
       screen.getByRole("button", { name: /tell us about your operation/i }),
     );
@@ -73,6 +83,46 @@ describe("adopted landing routing", () => {
       "book",
       "email",
     ]);
+  });
+
+  it("hydrates the server-provided contact headline and keeps intake interactive", async () => {
+    const app = (
+      <OperationsContact
+        heading={
+          <h2 id="contact-heading" className="section-heading max-w-4xl">
+            You know what&apos;s not working.
+            <br />
+            <span className="text-primary">Let&apos;s work out what would.</span>
+          </h2>
+        }
+      />
+    );
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(app);
+    document.body.append(container);
+    const serverHeading = container.querySelector("#contact-heading");
+    const onRecoverableError = vi.fn();
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, app, { onRecoverableError });
+      });
+      expect(container.querySelector("#contact-heading")).toBe(serverHeading);
+      expect(serverHeading?.querySelector("span")).toHaveTextContent(
+        "Let's work out what would.",
+      );
+      expect(onRecoverableError).not.toHaveBeenCalled();
+      expect(consoleError).not.toHaveBeenCalled();
+      fireEvent.click(
+        within(container).getByRole("button", { name: /tell us about your operation/i }),
+      );
+      expect(state.open).toHaveBeenCalledWith("intake");
+    } finally {
+      act(() => root?.unmount());
+      container.remove();
+      consoleError.mockRestore();
+    }
   });
 
   it("keeps Play enabled when reduced motion is requested", () => {
