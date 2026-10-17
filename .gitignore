@@ -69,3 +69,9 @@ Thumbs.db
 # Ruflo hub-only policy (memory lives at repos root; never per-repo)
 .swarm/
 .claude-flow/
+
+# dts2-harness runtime (config + checklist + lessons are committed)
+.harness/runs/
+.harness/lessons-inbox.md
+.harness.bak-*/
+.claude/*.local.md
