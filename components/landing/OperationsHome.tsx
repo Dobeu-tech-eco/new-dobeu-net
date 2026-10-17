@@ -49,7 +49,7 @@ export function RouteReadyShowcase() {
           <h2 id="routeready-heading" className="section-heading">
             Real work.
             <br />
-            <span className="text-muted-foreground">
+            <span className="text-fg-heading/85">
               A purpose-built solution.
             </span>
           </h2>
@@ -66,7 +66,7 @@ export function RouteReadyShowcase() {
                 RouteReady
               </span>
             </div>
-            <h3 className="text-balance font-display text-3xl font-extrabold leading-tight tracking-tight text-fg-heading md:text-4xl">
+            <h3 className="subsection-heading">
               Prove every driver was trained. Branch by branch.
             </h3>
             <p className="leading-relaxed text-muted-foreground">
@@ -114,7 +114,7 @@ export function OperationalOutcomes() {
           <h2 id="outcomes-heading" className="section-heading max-w-4xl">
             Less working around the system.
             <br />
-            <span className="text-muted-foreground">
+            <span className="text-fg-heading/85">
               More getting the work done.
             </span>
           </h2>
@@ -129,10 +129,10 @@ export function OperationalOutcomes() {
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div className="flex flex-col gap-4">
-                    <h3 className="text-balance font-display text-2xl font-extrabold text-fg-heading">
+                    <h3 className="subsection-heading">
                       {item.title}
                     </h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
+                    <p className="text-base leading-relaxed text-muted-foreground">
                       {item.problem} {item.answer}
                     </p>
                   </div>
@@ -166,7 +166,7 @@ export function OperationalApproach() {
           <h2 id="approach-heading" className="section-heading">
             First, your operation.
             <br />
-            <span className="text-muted-foreground">Then, the technology.</span>
+            <span className="text-fg-heading/85">Then, the technology.</span>
           </h2>
           <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
             Not a template with your logo on it. Not a quick tool built around

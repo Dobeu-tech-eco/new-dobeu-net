@@ -84,7 +84,7 @@ export function ProcessJourney() {
                 >
                   {item.title}
                 </span>
-                <span className="text-sm leading-relaxed text-muted-foreground">
+                <span className="text-base leading-relaxed text-muted-foreground">
                   {item.description}
                 </span>
               </span>
@@ -97,14 +97,14 @@ export function ProcessJourney() {
         aria-live="off"
       >
         <p className="font-mono text-xs text-muted-foreground">{step.label}</p>
-        <h3 className="max-w-sm text-balance font-display text-3xl font-extrabold leading-tight text-fg-heading">
+        <h3 className="subsection-heading max-w-sm">
           {step.output}
         </h3>
         <ul className="flex flex-col gap-5 py-4">
           {step.items.map((item) => (
             <li
               key={item}
-              className="flex items-start gap-3 text-sm leading-relaxed"
+              className="flex items-start gap-3 text-base leading-relaxed"
             >
               <Check
                 className="mt-1 size-4 shrink-0 text-primary"
@@ -114,7 +114,7 @@ export function ProcessJourney() {
             </li>
           ))}
         </ul>
-        <p className="mt-auto border-t border-border pt-6 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-auto border-t border-border pt-6 text-base leading-relaxed text-muted-foreground">
           {step.note}
         </p>
         <Link

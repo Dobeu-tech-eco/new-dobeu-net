@@ -4,12 +4,14 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot } from "react-dom/client";
 import {
   ExperienceProvider,
+  Reveal,
   useAutoStep,
   useExperience,
 } from "./ExperienceProvider";
@@ -48,15 +50,67 @@ function advance(ms = 1000) {
 
 beforeEach(() => {
   preferences.reduced = false;
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
   vi.useFakeTimers();
 });
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("marketing experience controls", () => {
+  it.each([false, true])(
+    "hydrates reveal styles without mismatches when reduced motion is %s",
+    async (reduced) => {
+      vi.useRealTimers();
+      const app = (
+        <ExperienceProvider>
+          <Reveal>
+            <h2>Let&apos;s work out what would.</h2>
+          </Reveal>
+        </ExperienceProvider>
+      );
+      preferences.reduced = false;
+      const container = document.createElement("div");
+      container.innerHTML = renderToString(app);
+      document.body.append(container);
+      preferences.reduced = reduced;
+      const onRecoverableError = vi.fn();
+      const consoleError = vi.spyOn(console, "error");
+      let root: ReturnType<typeof hydrateRoot> | undefined;
+      try {
+        await act(async () => {
+          root = hydrateRoot(container, app, { onRecoverableError });
+        });
+        expect(onRecoverableError).not.toHaveBeenCalled();
+        expect(consoleError).not.toHaveBeenCalled();
+        expect(container.querySelector("h2")).toHaveTextContent(
+          "Let's work out what would.",
+        );
+        if (reduced) {
+          await waitFor(() => {
+            expect(container.querySelector("h2")?.parentElement).toHaveStyle({
+              opacity: "1",
+              transform: "none",
+            });
+          });
+        }
+      } finally {
+        act(() => root?.unmount());
+        container.remove();
+      }
+    },
+  );
+
   it("hydrates matching server markup before applying reduced motion", async () => {
     function MotionControl() {
       const { stopped, toggleMotion } = useExperience();

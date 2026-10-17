@@ -36,7 +36,7 @@ export function Hero() {
           </p>
           <h1
             id="hero-heading"
-            className={`${styles.headline} max-w-5xl text-balance font-display text-5xl font-extrabold leading-[1.08] tracking-tight text-fg-heading md:text-7xl lg:text-8xl`}
+            className={`${styles.headline} max-w-5xl text-balance font-display text-5xl font-bold leading-[1.2] tracking-normal text-fg-heading md:text-7xl lg:text-8xl`}
           >
             Your business isn&apos;t generic.
             <br />
