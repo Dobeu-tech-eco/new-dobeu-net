@@ -1,0 +1,138 @@
+# Central Claude PR review for every Dobeu-tech-eco repo.
+#
+# Runs from this public repo (private repos' own Actions are blocked by the
+# org spending limit) and reviews open, non-draft PRs in each target repo,
+# billing the Anthropic Console API key. Each PR is reviewed once per head
+# commit: a PR whose latest head SHA already carries a review marker is skipped.
+#
+# Config:
+#   vars.CENTRAL_REVIEW_REPOS  comma-separated owner/repo list (falls back to
+#                              vars.REVIEW_LEARNING_REPOS)
+#   secrets.CROSS_REPO_TOKEN   fine-grained PAT: Contents + Pull requests
+#                              read/write on every target repo
+#   secrets.ANTHROPIC_API_KEY  Console API key
+name: Central PR Review
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: "Comma-separated owner/repo list (overrides the repo variable)"
+        required: false
+        type: string
+      max_prs:
+        description: "Maximum PRs to review this run"
+        required: false
+        default: "10"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: central-pr-review
+  cancel-in-progress: false
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.pick.outputs.matrix }}
+      count: ${{ steps.pick.outputs.count }}
+    steps:
+      - name: Pick PRs that need a review
+        id: pick
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          REPOS: ${{ inputs.repos || vars.CENTRAL_REVIEW_REPOS || vars.REVIEW_LEARNING_REPOS }}
+          MAX_PRS: ${{ inputs.max_prs || '10' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::CROSS_REPO_TOKEN secret is not set"
+            exit 1
+          fi
+          if [ -z "${REPOS}" ]; then
+            echo "::warning::No repos configured; set CENTRAL_REVIEW_REPOS or REVIEW_LEARNING_REPOS"
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            echo "count=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          picked='[]'
+          IFS=',' read -ra repo_list <<< "${REPOS}"
+          for raw in "${repo_list[@]}"; do
+            repo="$(echo "${raw}" | xargs)"
+            [ -z "${repo}" ] && continue
+            prs="$(gh pr list --repo "${repo}" --state open --limit 30 \
+              --json number,isDraft,headRefOid \
+              --jq '[.[] | select(.isDraft | not) | {number, sha: .headRefOid}]' 2>/dev/null)" || {
+              echo "::warning::Cannot list PRs in ${repo} (token scope?)"
+              continue
+            }
+            for row in $(echo "${prs}" | jq -c '.[]'); do
+              number="$(echo "${row}" | jq -r .number)"
+              sha="$(echo "${row}" | jq -r .sha)"
+              marker="central-pr-review sha=${sha}"
+              seen="$(gh api "repos/${repo}/issues/${number}/comments?per_page=100" \
+                --jq "[.[] | select(.body | contains(\"${marker}\"))] | length" 2>/dev/null || echo 0)"
+              if [ "${seen}" != "0" ]; then
+                continue
+              fi
+              picked="$(echo "${picked}" | jq -c --arg r "${repo}" --argjson n "${number}" --arg s "${sha}" \
+                '. + [{repo: $r, number: $n, sha: $s}]')"
+            done
+          done
+
+          picked="$(echo "${picked}" | jq -c --argjson max "${MAX_PRS}" '.[:$max]')"
+          count="$(echo "${picked}" | jq 'length')"
+          echo "Selected ${count} PR(s)"
+          echo "matrix={\"include\":${picked}}" >> "$GITHUB_OUTPUT"
+          echo "count=${count}" >> "$GITHUB_OUTPUT"
+
+  review:
+    needs: list
+    if: needs.list.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.list.outputs.matrix) }}
+    concurrency:
+      group: central-pr-review-${{ matrix.repo }}-${{ matrix.number }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout target PR
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: refs/pull/${{ matrix.number }}/head
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.CROSS_REPO_TOKEN }}
+          plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
+          plugins: "code-review@claude-code-plugins"
+          prompt: "/code-review:code-review --comment ${{ matrix.repo }}/pull/${{ matrix.number }}"
+          claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"'
+          allowed_bots: "*"
+
+      - name: Mark head commit as reviewed
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          REPO: ${{ matrix.repo }}
+          NUMBER: ${{ matrix.number }}
+          SHA: ${{ matrix.sha }}
+        run: |
+          gh pr comment "${NUMBER}" --repo "${REPO}" \
+            --body "<!-- central-pr-review sha=${SHA} -->Claude central review ran on \`${SHA:0:7}\`."
