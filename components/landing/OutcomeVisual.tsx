@@ -10,7 +10,7 @@ import {
 import { motion } from "motion/react";
 import { useExperience } from "./ExperienceProvider";
 
-const viewport = { once: true, amount: 0.6 } as const;
+const viewport = { once: true, amount: 0.72 } as const;
 const brandSignal = "hsl(var(--dobeu-violet-500))";
 const quietSignal = "hsl(var(--dobeu-violet-500) / 0.3)";
 const quietBorder = "hsl(var(--dobeu-violet-500) / 0.35)";
@@ -44,7 +44,7 @@ function scrollProps(
     initial: hidden,
     whileInView: visible,
     viewport,
-    transition: { duration: 0.22, ease: "easeOut" as const, delay },
+    transition: { duration: 0.58, ease: "easeOut" as const, delay },
   };
 }
 

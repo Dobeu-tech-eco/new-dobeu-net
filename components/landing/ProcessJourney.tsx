@@ -2,6 +2,7 @@
 
 import { Check, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { useAutoStep } from "./ExperienceProvider";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +49,9 @@ const steps = [
 ];
 
 export function ProcessJourney() {
-  const { ref, active, select, interactionProps } = useAutoStep(steps.length);
+  const { ref, active, select, interactionProps, playing } = useAutoStep(
+    steps.length,
+  );
   const step = steps[active];
   return (
     <div
@@ -96,34 +99,49 @@ export function ProcessJourney() {
         className="flex flex-1 flex-col gap-6 self-stretch rounded-lg border border-border bg-card p-7 md:p-10"
         aria-live="off"
       >
-        <p className="font-mono text-xs text-muted-foreground">{step.label}</p>
-        <h3 className="subsection-heading max-w-sm">
-          {step.output}
-        </h3>
-        <ul className="flex flex-col gap-5 py-4">
-          {step.items.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 text-base leading-relaxed"
-            >
-              <Check
-                className="mt-1 size-4 shrink-0 text-primary"
-                aria-hidden="true"
-              />
-              {item}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-auto border-t border-border pt-6 text-base leading-relaxed text-muted-foreground">
-          {step.note}
-        </p>
-        <Link
-          href="/process"
-          className="inline-flex min-h-11 items-center gap-2 self-start rounded-md text-sm font-semibold text-primary underline-offset-4 hover:underline"
+        <motion.div
+          key={step.label}
+          className="flex h-full flex-col gap-6"
+          initial={playing ? { opacity: 0.72, y: 12 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: playing ? 0.62 : 0, ease: "easeOut" }}
         >
-          Explore our process{" "}
-          <ArrowUpRight className="size-4" aria-hidden="true" />
-        </Link>
+          <p className="font-mono text-xs text-muted-foreground">
+            {step.label}
+          </p>
+          <h3 className="subsection-heading max-w-sm">{step.output}</h3>
+          <ul className="flex flex-col gap-5 py-4">
+            {step.items.map((item, itemIndex) => (
+              <motion.li
+                key={item}
+                className="flex items-start gap-3 text-base leading-relaxed"
+                initial={playing ? { opacity: 0, y: 8 } : false}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: playing ? 0.46 : 0,
+                  delay: playing ? 0.08 + itemIndex * 0.08 : 0,
+                  ease: "easeOut",
+                }}
+              >
+                <Check
+                  className="mt-1 size-4 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+                {item}
+              </motion.li>
+            ))}
+          </ul>
+          <p className="mt-auto border-t border-border pt-6 text-base leading-relaxed text-muted-foreground">
+            {step.note}
+          </p>
+          <Link
+            href="/process"
+            className="inline-flex min-h-11 items-center gap-2 self-start rounded-md text-sm font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            Explore our process{" "}
+            <ArrowUpRight className="size-4" aria-hidden="true" />
+          </Link>
+        </motion.div>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { motion } from "motion/react";
 import { useAutoStep } from "./ExperienceProvider";
 import { cn } from "@/lib/utils";
 
@@ -34,9 +35,8 @@ const stages = [
 ];
 
 export function RouteReadyJourney() {
-  const { ref, active, select, interactionProps } = useAutoStep(
+  const { ref, active, select, interactionProps, playing } = useAutoStep(
     stages.length,
-    4500,
   );
   const stage = stages[active];
   const Icon = stage.icon;
@@ -58,15 +58,23 @@ export function RouteReadyJourney() {
         className="flex min-h-44 flex-col items-start justify-center gap-4 rounded-md border border-border bg-background p-6"
         aria-live="off"
       >
-        <Icon className="size-8 text-primary" aria-hidden="true" />
-        <div className="flex flex-col gap-2">
-          <p className="font-display text-xl font-extrabold text-fg-heading">
-            {stage.title}
-          </p>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {stage.detail}
-          </p>
-        </div>
+        <motion.div
+          key={stage.title}
+          className="flex flex-col items-start gap-4"
+          initial={playing ? { opacity: 0.72, y: 10 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: playing ? 0.58 : 0, ease: "easeOut" }}
+        >
+          <Icon className="size-8 text-primary" aria-hidden="true" />
+          <div className="flex flex-col gap-2">
+            <p className="font-display text-xl font-extrabold text-fg-heading">
+              {stage.title}
+            </p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {stage.detail}
+            </p>
+          </div>
+        </motion.div>
       </div>
       <ol className="flex flex-col gap-1">
         {stages.map((item, index) => (

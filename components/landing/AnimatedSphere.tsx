@@ -18,7 +18,6 @@ export function AnimatedSphere() {
     let visible = true;
     let width = 0;
     let height = 0;
-    let last = 0;
     const chars = "░▒▓█▀▄▌▐│─┤├┴┬╭╮╰╯";
     const draw = () => {
       context.clearRect(0, 0, width, height);
@@ -47,19 +46,23 @@ export function AnimatedSphere() {
         }
       }
     };
-    const tick = (now: number) => {
-      if (now - last >= 40) {
-        timeRef.current += 0.024;
-        draw();
-        last = now;
+    const updateFromScroll = () => {
+      if (!stopped) {
+        const viewportHeight = window.innerHeight || 1;
+        const progress = Math.min(
+          Math.max(window.scrollY / (viewportHeight * 1.6), 0),
+          1,
+        );
+        timeRef.current = progress * 3.2;
       }
-      frame = requestAnimationFrame(tick);
-    };
-    const updateAnimation = () => {
-      cancelAnimationFrame(frame);
       draw();
-      if (!stopped && visible && !document.hidden)
-        frame = requestAnimationFrame(tick);
+    };
+    const scheduleDraw = () => {
+      if (frame || !visible || document.hidden) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        updateFromScroll();
+      });
     };
     const resize = new ResizeObserver(([entry]) => {
       width = entry.contentRect.width;
@@ -68,21 +71,25 @@ export function AnimatedSphere() {
       canvas.width = width * ratio;
       canvas.height = height * ratio;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      draw();
+      updateFromScroll();
     });
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
-      updateAnimation();
+      if (visible) scheduleDraw();
     });
     resize.observe(canvas);
     observer.observe(canvas);
-    document.addEventListener("visibilitychange", updateAnimation);
-    updateAnimation();
+    window.addEventListener("scroll", scheduleDraw, { passive: true });
+    window.addEventListener("resize", scheduleDraw);
+    document.addEventListener("visibilitychange", scheduleDraw);
+    updateFromScroll();
     return () => {
       cancelAnimationFrame(frame);
       resize.disconnect();
       observer.disconnect();
-      document.removeEventListener("visibilitychange", updateAnimation);
+      window.removeEventListener("scroll", scheduleDraw);
+      window.removeEventListener("resize", scheduleDraw);
+      document.removeEventListener("visibilitychange", scheduleDraw);
     };
   }, [stopped, resolvedTheme]);
 
