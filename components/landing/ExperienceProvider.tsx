@@ -9,7 +9,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { motion, useInView, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { FADE_UP, useMotionProps } from "@/hooks/use-motion-props";
 
 const ExperienceContext = createContext({
@@ -57,9 +57,13 @@ export const useExperience = () => useContext(ExperienceContext);
 export function Reveal({
   children,
   className,
+  delay = 0,
+  duration = 0.68,
 }: {
   children: ReactNode;
   className?: string;
+  delay?: number;
+  duration?: number;
 }) {
   const props = useMotionProps(FADE_UP, "-32px");
   const { stopped } = useExperience();
@@ -70,55 +74,79 @@ export function Reveal({
       animate={stopped ? props.animate : undefined}
       whileInView={props.whileInView}
       viewport={props.viewport}
-      transition={{ duration: stopped ? 0 : 0.5 }}
+      transition={{
+        duration: stopped ? 0 : duration,
+        delay: stopped ? 0 : delay,
+        ease: "easeOut",
+      }}
     >
       {children}
     </motion.div>
   );
 }
 
-export function useAutoStep(count: number, duration = 6000) {
+function clampStep(index: number, count: number) {
+  return Math.min(Math.max(index, 0), Math.max(count - 1, 0));
+}
+
+function getViewportStep(element: HTMLElement, count: number) {
+  const viewportHeight =
+    window.visualViewport?.height ||
+    window.innerHeight ||
+    document.documentElement.clientHeight ||
+    1;
+  const rect = element.getBoundingClientRect();
+  const startLine = viewportHeight * 0.78;
+  const endLine = viewportHeight * 0.18;
+  const travel = Math.max(1, rect.height + startLine - endLine);
+  const progress = Math.min(Math.max((startLine - rect.top) / travel, 0), 1);
+
+  return clampStep(Math.floor(progress * count), count);
+}
+
+export function useAutoStep(count: number) {
   const { stopped } = useExperience();
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { amount: 0.2 });
   const [active, setActive] = useState(0);
-  const [interacting, setInteracting] = useState(false);
-  const [selected, setSelected] = useState(false);
-  const [visible, setVisible] = useState(true);
-  const playing = inView && !stopped && !interacting && !selected && visible;
+  const playing = !stopped;
 
   useEffect(() => {
-    const update = () => setVisible(!document.hidden);
+    if (count < 2 || stopped) return;
+
+    let frame = 0;
+    const update = () => {
+      const element = ref.current;
+      if (!element || document.hidden) return;
+      setActive(getViewportStep(element, count));
+    };
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+
     update();
-    document.addEventListener("visibilitychange", update);
-    return () => document.removeEventListener("visibilitychange", update);
-  }, []);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    window.visualViewport?.addEventListener("resize", schedule);
+    document.addEventListener("visibilitychange", schedule);
 
-  useEffect(() => {
-    if (!playing) return;
-    const timer = window.setInterval(
-      () => setActive((value) => (value + 1) % count),
-      duration,
-    );
-    return () => window.clearInterval(timer);
-  }, [count, duration, playing]);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      window.visualViewport?.removeEventListener("resize", schedule);
+      document.removeEventListener("visibilitychange", schedule);
+    };
+  }, [count, stopped]);
 
   return {
     ref,
     active,
     playing,
-    select: (index: number) => {
-      setActive(index);
-      setSelected(true);
-    },
-    interactionProps: {
-      onMouseEnter: () => setInteracting(true),
-      onMouseLeave: () => setInteracting(false),
-      onFocusCapture: () => setInteracting(true),
-      onBlurCapture: (event: React.FocusEvent<HTMLDivElement>) => {
-        if (!event.currentTarget.contains(event.relatedTarget))
-          setInteracting(false);
-      },
-    },
+    select: (index: number) => setActive(clampStep(index, count)),
+    interactionProps: {},
   };
 }

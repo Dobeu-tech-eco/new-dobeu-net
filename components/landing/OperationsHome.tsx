@@ -122,7 +122,7 @@ export function OperationalOutcomes() {
         </Reveal>
         <div className="grid gap-6 md:grid-cols-2">
           {outcomes.map((item, index) => (
-            <Reveal key={item.title}>
+            <Reveal key={item.title} delay={index * 0.12}>
               <article className="flex h-full flex-col gap-6 rounded-lg border border-border bg-card p-6 md:p-8">
                 <OutcomeVisual index={index} />
                 <div className="flex items-start gap-4">
@@ -130,9 +130,7 @@ export function OperationalOutcomes() {
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div className="flex flex-col gap-4">
-                    <h3 className="subsection-heading">
-                      {item.title}
-                    </h3>
+                    <h3 className="subsection-heading">{item.title}</h3>
                     <p className="text-base leading-relaxed text-muted-foreground">
                       {item.problem} {item.answer}
                     </p>
