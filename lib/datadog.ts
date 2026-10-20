@@ -204,7 +204,7 @@ export async function initDatadog(): Promise<void> {
       enablePrivacyForActionName: true,
 
       // Distributed tracing: inject headers only on our own origin so we never
-      // leak trace ids to Stripe / Calendly / Intercom / Supabase.
+      // leak trace ids to Stripe / Calendly / Supabase.
       allowedTracingUrls: [
         { match: sameOrigin, propagatorTypes: ["tracecontext", "datadog"] }
       ],
@@ -314,8 +314,7 @@ export function ddFeatureFlag(key: string, value: unknown): void {
 }
 
 /**
- * Deep link to the session replay for the current session — handy to attach to
- * a support ticket from the Intercom integration.
+ * Deep link to the session replay for the current session.
  */
 export function ddSessionReplayLink(): string | undefined {
   if (!initialized || !datadogRum) return undefined;

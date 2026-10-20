@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function CookiesPage() {
   return (
-    <LegalLayout title="Cookie Policy" lastUpdated="2026-06-20">
+    <LegalLayout title="Cookie Policy" lastUpdated="2026-10-20">
       <p>
         Dobeu Tech Solutions LLC (&ldquo;Dobeu&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) uses cookies
         and similar tracking technologies on dobeu.net. This policy explains what cookies we use, why,
@@ -97,29 +97,12 @@ export default function CookiesPage() {
         </tbody>
       </table>
 
-      <h3>Support &amp; chat (opt-in)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Cookie / Key</th>
-            <th>Service</th>
-            <th>Duration</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>intercom-*</code></td>
-            <td>Intercom — live chat and messaging</td>
-            <td>9 months</td>
-          </tr>
-        </tbody>
-      </table>
-
       <h2>How to manage cookies</h2>
       <p>
-        When you first visit dobeu.net, a consent banner lets you accept or decline analytics and
-        support cookies. You can change your preference at any time by clicking{" "}
-        <strong>&ldquo;Cookie preferences&rdquo;</strong> in the footer.
+        When you first visit dobeu.net, a consent banner lets you accept or decline analytics
+        cookies. You can change your preference at any time by clicking{" "}
+        <strong>&ldquo;Cookie preferences&rdquo;</strong> in the footer. dobeu.net does not offer
+        live chat; use the contact form or Book a call.
       </p>
       <ul>
         <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noreferrer">Chrome</a></li>
