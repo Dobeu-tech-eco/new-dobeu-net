@@ -17,7 +17,7 @@ export default function MarketingOptOutPage() {
       <main id="main" className="container max-w-3xl py-16 prose dark:prose-invert">
         <h1>Marketing Opt-Out</h1>
         <p>
-          <em>Last updated: June 20, 2026.</em>
+          <em>Last updated: October 20, 2026.</em>
         </p>
         <p>
           You have the right to opt out of marketing communications from Dobeu Tech
@@ -60,7 +60,7 @@ export default function MarketingOptOutPage() {
         <h2>Analytics and tracking</h2>
         <p>
           To opt out of analytics cookies (PostHog, Mixpanel, Google Analytics,
-          Datadog) and support chat (Intercom):
+          Datadog):
         </p>
         <ul>
           <li>

@@ -44,14 +44,13 @@ describe("useCookieConsent", () => {
     expect(result.current.consent).toEqual({
       decided: false,
       analytics: false,
-      support: false,
       marketing: false,
     });
   });
 
   it("should initialize with parsed cookie state if cookie exists", () => {
     document.cookie = `dobeu_cookie_consent=${encodeURIComponent(
-      JSON.stringify({ analytics: true, support: false, marketing: true })
+      JSON.stringify({ analytics: true, marketing: true })
     )}`;
 
     const { result } = renderHook(() => useCookieConsent());
@@ -59,8 +58,21 @@ describe("useCookieConsent", () => {
     expect(result.current.consent).toEqual({
       decided: true,
       analytics: true,
-      support: false,
       marketing: true,
+    });
+  });
+
+  it("keeps a stored decision when an older cookie still includes a removed category", () => {
+    document.cookie = `dobeu_cookie_consent=${encodeURIComponent(
+      JSON.stringify({ analytics: true, support: true, marketing: false })
+    )}`;
+
+    const { result } = renderHook(() => useCookieConsent());
+
+    expect(result.current.consent).toEqual({
+      decided: true,
+      analytics: true,
+      marketing: false,
     });
   });
 
@@ -72,7 +84,6 @@ describe("useCookieConsent", () => {
     expect(result.current.consent).toEqual({
       decided: true,
       analytics: false,
-      support: false,
       marketing: false,
     });
     expect(result.current.isDNT).toBe(true);
@@ -88,11 +99,10 @@ describe("useCookieConsent", () => {
     expect(result.current.consent).toEqual({
       decided: true,
       analytics: true,
-      support: true,
       marketing: true,
     });
     expect(document.cookie).toContain("dobeu_cookie_consent");
-    expect(document.cookie).toContain(encodeURIComponent(JSON.stringify({ analytics: true, support: true, marketing: true })));
+    expect(document.cookie).toContain(encodeURIComponent(JSON.stringify({ analytics: true, marketing: true })));
   });
 
   it("should update state and cookie when declineAll is called", () => {
@@ -105,11 +115,10 @@ describe("useCookieConsent", () => {
     expect(result.current.consent).toEqual({
       decided: true,
       analytics: false,
-      support: false,
       marketing: false,
     });
     expect(document.cookie).toContain("dobeu_cookie_consent");
-    expect(document.cookie).toContain(encodeURIComponent(JSON.stringify({ analytics: false, support: false, marketing: false })));
+    expect(document.cookie).toContain(encodeURIComponent(JSON.stringify({ analytics: false, marketing: false })));
   });
 
   it("should update state and cookie when savePreferences is called", () => {
@@ -118,7 +127,6 @@ describe("useCookieConsent", () => {
     act(() => {
       result.current.savePreferences({
         analytics: true,
-        support: false,
         marketing: true
       });
     });
@@ -126,11 +134,10 @@ describe("useCookieConsent", () => {
     expect(result.current.consent).toEqual({
       decided: true,
       analytics: true,
-      support: false,
       marketing: true,
     });
     expect(document.cookie).toContain("dobeu_cookie_consent");
-    expect(document.cookie).toContain(encodeURIComponent(JSON.stringify({ analytics: true, support: false, marketing: true })));
+    expect(document.cookie).toContain(encodeURIComponent(JSON.stringify({ analytics: true, marketing: true })));
   });
 
   it("should handle malformed JSON gracefully", () => {
@@ -141,7 +148,6 @@ describe("useCookieConsent", () => {
     expect(result.current.consent).toEqual({
       decided: false,
       analytics: false,
-      support: false,
       marketing: false,
     });
   });
