@@ -1,5 +1,9 @@
+import { config as loadEnv } from "dotenv";
 import { test, expect } from "@playwright/test";
 import { gotoLanding, seedCookieConsent } from "./helpers";
+
+// Match the environment Next.js uses when checking durable lead persistence.
+loadEnv({ path: ".env.local", quiet: true });
 
 test.describe("Landing page smoke tests", () => {
   test("homepage loads with outcome hero", async ({ page }) => {
@@ -13,7 +17,7 @@ test.describe("Landing page smoke tests", () => {
       /AI|automation/i,
     );
     await expect(
-      page.getByText("RouteReady", { exact: true }).first(),
+      page.locator("#routeready").getByText("RouteReady", { exact: true }),
     ).toBeVisible();
   });
 
@@ -238,7 +242,9 @@ test.describe("API routes", () => {
     );
   });
 
-  test("POST /api/lead accepts valid payload", async ({ request }) => {
+  test("POST /api/lead reports durable persistence availability", async ({
+    request,
+  }) => {
     const res = await request.post("/api/lead", {
       headers: { "x-forwarded-for": "203.0.113.10" },
       data: {
@@ -248,9 +254,22 @@ test.describe("API routes", () => {
         message: "Dispatch still lives in the inbox.",
       },
     });
-    expect(res.ok()).toBe(true);
+    const persistenceConfigured = Boolean(
+      (process.env.VERCEL_SUPABASE_URL ??
+        process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL) &&
+      process.env.VERCEL_SUPABASE_SERVICE_ROLE_KEY,
+    );
     const body = await res.json();
-    expect(body.ok).toBe(true);
+    if (persistenceConfigured) {
+      expect(res.status()).toBe(200);
+      expect(body.ok).toBe(true);
+      expect(body.lead_id).toEqual(expect.any(String));
+    } else {
+      expect(res.status()).toBe(503);
+      expect(res.headers()["retry-after"]).toBe("60");
+      expect(body.ok).toBe(false);
+      expect(body.error).toContain("couldn’t save your message");
+    }
   });
 
   test("POST /api/lead rejects invalid email", async ({ request }) => {

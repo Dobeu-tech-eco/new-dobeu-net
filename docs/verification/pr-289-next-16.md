@@ -27,8 +27,15 @@ Local Node 24.22.0 and pnpm 10.34.1:
   39.43%, lines 51.14%.
 - Source-map cleanup: removed 68 browser maps; no Datadog key was configured,
   so upload itself is not verified.
-- E2E and Lighthouse: pending at the time of this record; see subsequent updates
-  and GitHub CI before approval.
+- E2E: 59 passed, 5 skipped, zero retries. The skips are two credential-gated
+  ticket flows and three API cases intentionally run only on desktop.
+- Refreshed all six visual baselines after inspecting desktop and mobile output.
+  Previous baselines predated the current dark theme, typography, navigation, and
+  landing content. Hide the development indicator consistently on both pages.
+- Corrected the mobile RouteReady locator to target its visible showcase and the
+  lead API check to require 503 without persistence credentials, or 200 with a
+  durable lead ID when configured. Production API behavior is unchanged.
+- Lighthouse and final GitHub checks are pending; do not approve before they pass.
 
 The first local browser attempt could not launch because the host lacked
 libnspr4, libnss3, and libasound2. Validation uses extracted Ubuntu packages in a
