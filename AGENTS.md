@@ -40,7 +40,7 @@ The public site and lead-form demo run without `.env.local`. `/portal` and `/adm
 | Vitest watch mode                            | `pnpm test`                                                                  |
 | All unit/component tests once                | `pnpm test:ci`                                                               |
 | One Vitest file                              | `pnpm test:ci lib/leads.test.ts`                                             |
-| Tests matching a name in one file            | `pnpm test:ci lib/leads.test.ts -t "Supabase failures"`                      |
+| Tests matching a name in one file            | `pnpm test:ci lib/leads.test.ts -t "durable acceptance"`                     |
 | Coverage report                              | `pnpm test:coverage`                                                         |
 | Install the CI Playwright browser            | `pnpm exec playwright install --with-deps chromium`                          |
 | All Playwright tests                         | `pnpm test:e2e`                                                              |
@@ -120,3 +120,15 @@ Coverage and dependency audit currently report results but do not enforce thresh
 - When the user attaches a plan from `.cursor/plans/` and says to implement it as specified, do not edit or recreate the plan. Mark its existing todos `in_progress` as work proceeds.
 - Before proposing or refreshing a plan, re-read the current codebase: check git status, the diff, and the relevant files. Do not plan from stale session context.
 - Preserve unrelated working-tree changes. Do not clean up scratch files or untracked content without confirming ownership and intent.
+
+## Working rules (Rule 8)
+
+Official copy: [Rule 8: Harness discipline](https://drive.google.com/file/d/17vTVg_M8SnyajgiILv1XN-fC-75Q54wI/view).
+
+- Define done-when before starting: the outcome, and how it will be checked.
+- Fill the `Change receipt` section of the PR template in every PR. The org default template from [`Dobeu-tech-eco/.github`](https://github.com/Dobeu-tech-eco/.github) provides it, unless this repo adds its own.
+- After 3 failed review or fix rounds on the same PR, stop and escalate to Jeremy instead of looping.
+- When the same mistake happens twice, add a check, test, or written rule, and say where it lives.
+- Keep decisions and open items in the repo, Notion, or Linear, not just chat.
+- Never print secrets.
+- Never deploy or touch production without Jeremy's approval.
