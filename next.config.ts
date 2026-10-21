@@ -116,14 +116,9 @@ const nextConfig: NextConfig = {
   // Enabled via "skewProtection": true in vercel.json. Falls back to a
   // timestamp locally where VERCEL_DEPLOYMENT_ID is unset.
   generateBuildId: async () => process.env.VERCEL_DEPLOYMENT_ID ?? `local-${Date.now()}`,
-  // Build is a real verifier again: type-check + lint both pass, so failures
-  // here should block the build rather than ship silently. (Was temporarily
-  // disabled during Phase-1 launch.)
+  // Keep build-time type checks enabled. Next 16 runs lint separately via pnpm verify.
   typescript: {
     ignoreBuildErrors: false
-  },
-  eslint: {
-    ignoreDuringBuilds: false
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "motion", "@radix-ui/react-dialog", "@radix-ui/react-tabs"]
