@@ -49,3 +49,11 @@ local temporary directory; CI installs browser dependencies normally.
 
 Rollback: revert the eventual squash commit for this PR. Current main baseline
 is 4157f9ad07f2f4a576640f1da33f90fdce8ac7fb. No database or environment migration.
+
+## Preview deployment follow-up
+
+Vercel canceled the deployment for commit 36021da before starting a build because
+it could not verify the commit signature. GitHub Verify and E2E passed for that
+commit; CodeRabbit reported no actionable findings. Publish this record through
+GitHub's signed-commit API and recheck the new commit without weakening signature
+verification. A successful preview build is still required before approval.
