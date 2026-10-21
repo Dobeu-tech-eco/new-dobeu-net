@@ -44,9 +44,12 @@ like any other; nothing in it lands without a merge.
 - Copy, anchors and policy text that describe behavior must match the code and the section they point to. Examples are price-band timing, consent categories on the cookies page, and trust-chip anchors such as `#about`. (PR #275, #274)
 - Workflow and script code that parses manual inputs such as repo lists must handle newlines, whitespace and letter case. It must validate the `owner/name` format before the value reaches shell or a matrix. Pass values through `env`, not `${{ }}` interpolation inside `run:`. (PR #278)
 - Citation validation in `.github/scripts/review-learning.mjs` must check every number in a `PR #x, #y` evidence phrase and must not treat unrelated `#` values (such as `#333`) as citations. (PR #278)
+- When a landing-page redesign changes how many items a section renders (for example FAQ entries), check the Playwright assertions in `e2e/smoke.spec.ts` that count them. CI runs that suite as a merge gate. (PR #280)
 
 ### Stop flagging
 
-- Agent and tooling configuration for AI dev tools is not product code. This covers `.codex/`, `.cursor/skills/**`, `.agents/` and `.ona/config.yaml`, including hook paths, launcher file modes and task ordering. (PR #270, #232)
+- Agent and tooling configuration for AI dev tools is not product code. This covers `.codex/`, `.cursor/skills/**`, `.agents/`, `.harness/` and `.ona/config.yaml`, including hook paths, launcher file modes, task ordering and `do_not_touch` lists. (PR #270, #232, #288)
+- Pagination and scan-depth limits in the central PR review workflow and script are not worth flagging. This covers `gh pr list --limit`, a single page of PRs, and capped comment pages when searching for the review marker. (PR #285, #283)
+- Homepage JSON-LD that does not mirror the visible FAQ or the page description (`app/page.tsx`, `OperationsQuestions`, `professionalServiceJsonLd()`) is not worth flagging. (PR #280, #284)
 
 <!-- review-learning:end -->
