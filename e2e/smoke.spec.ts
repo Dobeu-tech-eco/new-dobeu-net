@@ -1,9 +1,5 @@
-import { config as loadEnv } from "dotenv";
 import { test, expect } from "@playwright/test";
 import { gotoLanding, seedCookieConsent } from "./helpers";
-
-// Match the environment Next.js uses when checking durable lead persistence.
-loadEnv({ path: ".env.local", quiet: true });
 
 test.describe("Landing page smoke tests", () => {
   test("homepage loads with outcome hero", async ({ page }) => {

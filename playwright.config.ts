@@ -1,4 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadEnvConfig } from "@next/env";
+
+// Use the same env-file precedence and expansion as the pnpm dev server.
+// Load before Playwright starts the server and workers so both inherit it.
+loadEnvConfig(process.cwd(), true);
 
 export default defineConfig({
   testDir: "./e2e",

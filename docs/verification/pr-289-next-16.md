@@ -57,3 +57,12 @@ it could not verify the commit signature. GitHub Verify and E2E passed for that
 commit; CodeRabbit reported no actionable findings. Publish this record through
 GitHub's signed-commit API and recheck the new commit without weakening signature
 verification. A successful preview build is still required before approval.
+
+Vercel subsequently reported the signed commit f639779 preview Ready. CodeRabbit
+identified an environment mismatch in the lead smoke test: loading only
+`.env.local` omitted higher-priority development files. Playwright now loads
+Next.js's environment loader in its configuration before starting the server and
+workers, using a direct `@next/env` dependency matching Next.js 16.4.2. A temporary
+fixture confirmed `.env.development.local` precedence and variable expansion.
+Validation: `pnpm verify` passed; the final Playwright-compatible named import
+passed type-checking and all three desktop API smoke tests.
