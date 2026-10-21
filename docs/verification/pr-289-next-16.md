@@ -35,7 +35,13 @@ Local Node 24.22.0 and pnpm 10.34.1:
 - Corrected the mobile RouteReady locator to target its visible showcase and the
   lead API check to require 503 without persistence credentials, or 200 with a
   durable lead ID when configured. Production API behavior is unchanged.
-- Lighthouse and final GitHub checks are pending; do not approve before they pass.
+- Lighthouse: passed the unchanged >=0.90 performance assertion on both URLs
+  across three runs each. The initial run overlapped browser tests and failed
+  (homepage best 0.89); an uncontended rerun passed (homepage best 0.91).
+  Used port 3001 and local report output; assertions, mobile emulation, throttling,
+  and run counts were unchanged. WSL required connecting to an explicitly
+  launched Linux Chrome instead of the launcher's Windows temp-directory guess.
+- Final-head GitHub checks remain pending; do not approve before they pass.
 
 The first local browser attempt could not launch because the host lacked
 libnspr4, libnss3, and libasound2. Validation uses extracted Ubuntu packages in a
