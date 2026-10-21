@@ -19,8 +19,6 @@ const csp = {
     "https://assets.calendly.com",
     "https://www.datadoghq-browser-agent.com",
     "https://va.vercel-scripts.com",
-    "https://widget.intercom.io",
-    "https://js.intercomcdn.com",
     "https://cdn.amplitude.com"
   ],
   connect: [
@@ -46,28 +44,13 @@ const csp = {
     "https://*.browser-intake-us5-datadoghq.com",
     "https://vitals.vercel-insights.com",
     "https://vercel.live",
-    "https://api.intercom.io",
-    "https://api-iam.intercom.io",
-    "https://api-iam.eu.intercom.io",
-    "https://api-ping.intercom.io",
-    "https://nexus-websocket-a.intercom.io",
-    "https://nexus-websocket-b.intercom.io",
-    "https://nexus-europe-websocket.intercom.io",
-    "wss://nexus-websocket-a.intercom.io",
-    "wss://nexus-websocket-b.intercom.io",
-    "https://uploads.intercomcdn.com",
-    "https://uploads.intercomusercontent.com",
-    "https://*.intercom-messenger.com",
-    "wss://*.intercom-messenger.com",
     "https://*.amplitude.com"
   ],
   img: ["'self'", "data:", "blob:", "https:"],
   font: [
     "'self'",
     "https://fonts.gstatic.com",
-    "data:",
-    "https://js.intercomcdn.com",
-    "https://fonts.intercomcdn.com"
+    "data:"
   ],
   style: [
     "'self'",
@@ -85,12 +68,11 @@ const csp = {
     "https://*.typeform.com",
     "https://*.apollo.io",
     "https://calendly.com",
-    "https://*.calendly.com",
-    "https://*.intercom.io",
-    "https://*.intercom.com",
-    "https://*.intercomcdn.com"
+    "https://*.calendly.com"
   ]
 };
+
+const isProduction = process.env.NODE_ENV === "production";
 
 const ContentSecurityPolicy = [
   `default-src ${csp.default.join(" ")}`,
@@ -105,14 +87,17 @@ const ContentSecurityPolicy = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
-  "upgrade-insecure-requests"
+  ...(isProduction ? ["frame-ancestors 'none'", "upgrade-insecure-requests"] : [])
 ].join("; ");
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: ContentSecurityPolicy },
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "X-Frame-Options", value: "DENY" },
+  ...(isProduction
+    ? [
+        { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+        { key: "X-Frame-Options", value: "DENY" }
+      ]
+    : []),
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
