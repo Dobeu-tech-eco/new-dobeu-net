@@ -51,7 +51,7 @@ describe("GET /auth/callback", () => {
     expect(exchangeCodeForSession).toHaveBeenCalledWith("abc");
   });
 
-  it("never verifies on GET; parks the token in a Strict httpOnly cookie, not the URL", async () => {
+  it("never verifies on GET; parks the token in a Lax httpOnly cookie (Strict is withheld on email-initiated chains), not the URL", async () => {
     const res = await GET(
       new Request("http://localhost/auth/callback?token_hash=abc&type=invite&next=%2Fportal%2Ftickets"),
     );
@@ -62,9 +62,9 @@ describe("GET /auth/callback", () => {
     const cookie = res.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("sb-otp-pending=");
     expect(cookie).toMatch(/HttpOnly/i);
-    expect(cookie).toMatch(/SameSite=strict/i);
+    expect(cookie).toMatch(/SameSite=lax/i);
     expect(cookie).toContain("Path=/auth/confirm");
-    expect(cookie).toMatch(/Max-Age=600/);
+    expect(cookie).toMatch(/Max-Age=120/);
     expect(cookie).not.toMatch(/Secure/i);
   });
 

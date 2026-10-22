@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL(next, url.origin));
     }
   } else if (url.searchParams.has("token_hash")) {
-    // Never verify an OTP on GET. Park the token in a Strict, httpOnly cookie
+    // Never verify an OTP on GET. Park the token in a Lax, httpOnly, path-scoped cookie
     // (so a cross-site POST cannot carry it) and send the browser to a confirm
     // step whose URL holds no token.
     const parsed = otpParamsSchema.safeParse({
@@ -31,12 +31,16 @@ export async function GET(request: Request) {
       const confirm = new URL("/auth/confirm", url.origin);
       confirm.searchParams.set("next", next);
       const res = NextResponse.redirect(confirm, 303);
+      // Lax, not Strict: the chain starts at an email link (cross-site), and
+      // browsers withhold Strict cookies on every hop of a cross-site-initiated
+      // navigation, so the confirm page would never see it. Lax is still not
+      // sent on a cross-site POST, and the submit route also checks Origin.
       res.cookies.set(OTP_COOKIE, JSON.stringify(parsed.data), {
         httpOnly: true,
-        sameSite: "strict",
+        sameSite: "lax",
         secure: !LOCAL_HOSTS.has(url.hostname),
         path: OTP_COOKIE_PATH,
-        maxAge: 600,
+        maxAge: 120,
       });
       return res;
     }
