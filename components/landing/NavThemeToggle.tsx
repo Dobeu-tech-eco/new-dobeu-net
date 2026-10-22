@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button";
  * real toggle is mounted on first hover, focus, or press; the placeholder stays
  * in place until the real trigger commits (same frame, via layout effect), so
  * there is no flash or layout shift. A press that lands before the chunk
- * arrives is replayed as an Enter keydown so the menu still opens.
+ * arrives still opens the menu, but only if the user is still on the control
+ * (focused or hovered) when it arrives; otherwise the swap is silent.
  */
 
 const TriggerFace = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
@@ -50,26 +51,36 @@ export function NavThemeToggle() {
   const [ready, setReady] = React.useState(false);
   const placeholderRef = React.useRef<HTMLButtonElement>(null);
   const wrapperRef = React.useRef<HTMLSpanElement>(null);
-  const pendingOpen = React.useRef(false);
-  const hadFocus = React.useRef(false);
+  const wantOpen = React.useRef(false);
+  const pointerInside = React.useRef(false);
+  const handoff = React.useRef({ focus: false, open: false });
 
   const arm = React.useCallback(() => setArmed(true), []);
 
+  // Runs in the real toggle's layout effect, while the placeholder is still in
+  // the DOM: decide what the user still wants before the swap happens.
   const onReady = React.useCallback(() => {
-    hadFocus.current = document.activeElement === placeholderRef.current;
+    const focused = document.activeElement === placeholderRef.current;
+    handoff.current = { focus: focused, open: wantOpen.current && (focused || pointerInside.current) };
+    wantOpen.current = false;
     setReady(true);
   }, []);
 
-  React.useEffect(() => {
+  // Layout effect: the placeholder unmounts in the same commit, so focus must
+  // move to the real trigger before paint to avoid a focus-loss frame.
+  React.useLayoutEffect(() => {
     if (!ready) return;
+    const { focus, open } = handoff.current;
+    handoff.current = { focus: false, open: false };
+    if (!focus && !open) return;
     const trigger = wrapperRef.current?.querySelector<HTMLButtonElement>("button[data-state]");
     if (!trigger) return;
-    if (hadFocus.current || pendingOpen.current) trigger.focus();
-    if (pendingOpen.current) {
+    if (focus) trigger.focus();
+    if (open) {
+      // Radix opens its trigger on Enter; only reached while the user is still
+      // on the control, so it cannot steal focus from elsewhere.
       trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
     }
-    pendingOpen.current = false;
-    hadFocus.current = false;
   }, [ready]);
 
   return (
@@ -78,10 +89,26 @@ export function NavThemeToggle() {
       {ready ? null : (
         <TriggerFace
           ref={placeholderRef}
-          onPointerEnter={arm}
+          onPointerEnter={() => {
+            pointerInside.current = true;
+            arm();
+          }}
+          onPointerLeave={() => {
+            pointerInside.current = false;
+          }}
           onFocus={arm}
-          onClick={() => {
-            pendingOpen.current = true;
+          // Activation is recorded on press, not click, so a swap between
+          // mousedown and mouseup cannot lose it. Pressing also focuses the
+          // button (Safari/iOS do not), so "still focused" is a reliable test.
+          onPointerDown={(event) => {
+            if (event.button > 0) return;
+            wantOpen.current = true;
+            placeholderRef.current?.focus();
+            arm();
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            wantOpen.current = true;
             arm();
           }}
         />

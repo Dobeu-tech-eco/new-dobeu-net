@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCookieConsent, type ConsentState } from "@/hooks/use-cookie-consent";
 
 /**
@@ -26,7 +27,9 @@ export function CookieBanner() {
     marketing: false,
   });
 
+  const pathname = usePathname();
   const bannerRef = React.useRef<HTMLDivElement>(null);
+  const applyRef = React.useRef<(() => void) | null>(null);
   const showFirstVisitBanner = !isDNT && !consent.decided && !showPrefs;
 
   // Expose a global so the footer "Cookie preferences" link works.
@@ -75,8 +78,10 @@ export function CookieBanner() {
     resizeObserver.observe(node);
 
     let frame = 0;
-    const mutationObserver = new MutationObserver(() => {
+    applyRef.current = apply;
+    const mutationObserver = new MutationObserver((records) => {
       if (frame) return;
+      if (!records.some((r) => r.addedNodes.length > 0)) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
         apply();
@@ -87,10 +92,20 @@ export function CookieBanner() {
     return () => {
       resizeObserver.disconnect();
       mutationObserver.disconnect();
+      applyRef.current = null;
       if (frame) cancelAnimationFrame(frame);
       touched.forEach((el) => el.style.removeProperty(OFFSET_VAR));
     };
   }, [showFirstVisitBanner]);
+
+  // Client-side navigation mounts new readers (e.g. /pricing) in the same
+  // commit as the pathname change. Apply synchronously, before paint, so the
+  // first frame of the new page already has the offset (the observer above
+  // only catches up a frame later). Observers are torn down once consent is
+  // decided, so this costs nothing afterwards.
+  React.useLayoutEffect(() => {
+    applyRef.current?.();
+  }, [pathname]);
 
   // DNT: no banner, no cookies. Nothing to show.
   if (isDNT) return null;

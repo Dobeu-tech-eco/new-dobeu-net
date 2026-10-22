@@ -19,10 +19,10 @@ describe("NavThemeToggle", () => {
   it("swaps in the real toggle and opens the menu when pressed before it loads", async () => {
     render(<NavThemeToggle />);
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Toggle theme" }));
+      fireEvent.pointerDown(screen.getByRole("button", { name: "Toggle theme" }), { button: 0 });
     });
 
-    // The replayed press opens the real Radix menu (which aria-hides the rest
+    // The pending press opens the real Radix menu (which aria-hides the rest
     // of the page while open, hence `hidden: true` for the trigger lookup).
     expect(await screen.findByRole("menuitem", { name: /dark/i })).toBeInTheDocument();
     const triggers = screen.getAllByRole("button", { name: "Toggle theme", hidden: true });
@@ -40,6 +40,42 @@ describe("NavThemeToggle", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Toggle theme" })).toHaveAttribute("data-state", "closed");
     });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("does not open or steal focus when the user moved on before the chunk arrived", async () => {
+    render(
+      <>
+        <NavThemeToggle />
+        <button type="button">Book a call</button>
+      </>,
+    );
+    const other = screen.getByRole("button", { name: "Book a call" });
+    await act(async () => {
+      const placeholder = screen.getByRole("button", { name: "Toggle theme" });
+      fireEvent.pointerEnter(placeholder);
+      fireEvent.pointerDown(placeholder, { button: 0 });
+      fireEvent.pointerLeave(placeholder);
+      other.focus();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Toggle theme" })).toHaveAttribute("data-state", "closed");
+    });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(other);
+  });
+
+  it("keeps keyboard focus on the trigger when the placeholder is swapped out", async () => {
+    render(<NavThemeToggle />);
+    await act(async () => {
+      screen.getByRole("button", { name: "Toggle theme" }).focus();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Toggle theme" })).toHaveAttribute("data-state", "closed");
+    });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Toggle theme" }));
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 });

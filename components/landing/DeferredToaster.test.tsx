@@ -40,4 +40,14 @@ describe("DeferredToaster", () => {
     render(<DeferredToaster />);
     await waitFor(() => expect(toasterSection()).not.toBeNull());
   });
+
+  it("stays mounted after navigating from an eager route to a marketing page", async () => {
+    pathname.current = "/login";
+    const { rerender } = render(<DeferredToaster />);
+    await waitFor(() => expect(toasterSection()).not.toBeNull());
+
+    pathname.current = "/";
+    rerender(<DeferredToaster />);
+    expect(toasterSection()).not.toBeNull();
+  });
 });

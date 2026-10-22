@@ -1,5 +1,8 @@
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+const pathname = vi.hoisted(() => ({ current: "/" }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
+
 import { CookieBanner } from "./CookieBanner";
 
 // jsdom has no layout: report a fixed banner height on observe().
@@ -48,5 +51,23 @@ describe("CookieBanner offset publishing", () => {
     });
 
     expect(late.style.getPropertyValue("--cookie-banner-offset")).toBe("49px");
+  });
+
+  it("applies the offset synchronously on client navigation, before any frame", async () => {
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(<CookieBanner />);
+    });
+    const late = document.createElement("section");
+    late.className = "pb-[calc(5rem+var(--cookie-banner-offset,0px))]";
+    document.body.appendChild(late);
+
+    pathname.current = "/pricing";
+    act(() => {
+      view.rerender(<CookieBanner />);
+    });
+
+    expect(late.style.getPropertyValue("--cookie-banner-offset")).toBe("49px");
+    pathname.current = "/";
   });
 });
