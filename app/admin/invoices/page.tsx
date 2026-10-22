@@ -3,27 +3,43 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { NewInvoiceDialog } from "@/components/admin/NewInvoiceDialog";
 import { AdminMarkPaidButton } from "@/components/admin/AdminMarkPaidButton";
+import {
+  AdminStatusBanner,
+  type AdminStatusParams,
+} from "@/components/admin/AdminStatusBanner";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminInvoicesPage() {
+export default async function AdminInvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminStatusParams>;
+}) {
+  const params = await searchParams;
   const supabase = createAdminClient();
-  const [{ data: invoices }, { data: profilesData }, { data: projects }] = await Promise.all([
+  const [
+    { data: invoices, error: invoicesError },
+    { data: profilesData, error: profilesError },
+    { data: projects, error: projectsError },
+  ] = await Promise.all([
     supabase
       .from("invoices")
       .select(
-        "id,project_id,amount_cents,currency,status,due_date,paid_at,stripe_invoice_id,hosted_invoice_url,created_at"
+        "id,project_id,amount_cents,currency,status,due_date,paid_at,stripe_invoice_id,hosted_invoice_url,created_at",
       )
       .order("created_at", { ascending: false })
       .limit(200),
     supabase.from("profiles").select("id,full_name,company").limit(500),
-    supabase.from("projects").select("id,title,owner_user_id").limit(500)
+    supabase.from("projects").select("id,title,owner_user_id").limit(500),
   ]);
 
   // Resolve auth emails for the picker — bulk via auth admin.
   let usersForPicker: Array<{ id: string; label: string }> = [];
+  let authError = false;
   try {
-    const { data: usersList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const { data: usersList, error: usersError } =
+      await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+    authError = Boolean(usersError);
     const profilesById = new Map((profilesData ?? []).map((p) => [p.id, p]));
     usersForPicker = (usersList?.users ?? []).map((u) => {
       const prof = profilesById.get(u.id);
@@ -33,6 +49,7 @@ export default async function AdminInvoicesPage() {
       return { id: u.id, label };
     });
   } catch (e) {
+    authError = true;
     // Picker will fall back to empty -- "no users yet" message.
     console.warn("[admin invoices] auth.admin.listUsers failed:", e);
   }
@@ -40,23 +57,38 @@ export default async function AdminInvoicesPage() {
   const projectOptions = (projects ?? []).map((p) => ({
     id: p.id,
     label: p.title,
-    ownerUserId: p.owner_user_id
+    ownerUserId: p.owner_user_id,
   }));
 
-  const open = invoices?.filter((i) => i.status === "open" || i.status === "overdue") ?? [];
+  const open =
+    invoices?.filter((i) => i.status === "open" || i.status === "overdue") ??
+    [];
 
   return (
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Invoices</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            Invoices
+          </h1>
           <p className="text-muted-foreground mt-1">
-            Open: <strong>{open.length}</strong> ·{" "}
-            Open total: <strong>{formatCurrency(open.reduce((s, i) => s + i.amount_cents, 0))}</strong>
+            Open: <strong>{open.length}</strong> · Open total:{" "}
+            <strong>
+              {formatCurrency(open.reduce((s, i) => s + i.amount_cents, 0))}
+            </strong>
           </p>
         </div>
         <NewInvoiceDialog users={usersForPicker} projects={projectOptions} />
       </header>
+
+      <AdminStatusBanner
+        error={params.error}
+        loadError={
+          invoicesError || profilesError || projectsError || authError
+            ? "Unable to load invoices or invoice options. Try again."
+            : null
+        }
+      />
 
       {!invoices || invoices.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
@@ -78,15 +110,29 @@ export default async function AdminInvoicesPage() {
             <tbody className="divide-y divide-border">
               {invoices.map((inv) => (
                 <tr key={inv.id}>
-                  <td className="p-3 font-mono text-xs">{inv.id.slice(0, 8)}…</td>
-                  <td className="p-3 font-semibold">{formatCurrency(inv.amount_cents, inv.currency)}</td>
+                  <td className="p-3 font-mono text-xs">
+                    {inv.id.slice(0, 8)}…
+                  </td>
+                  <td className="p-3 font-semibold">
+                    {formatCurrency(inv.amount_cents, inv.currency)}
+                  </td>
                   <td className="p-3">
-                    <Badge tone={inv.status === "paid" ? "neutral" : inv.status === "overdue" ? "amber" : "indigo"}>
+                    <Badge
+                      tone={
+                        inv.status === "paid"
+                          ? "neutral"
+                          : inv.status === "overdue"
+                            ? "amber"
+                            : "indigo"
+                      }
+                    >
                       {inv.status}
                     </Badge>
                   </td>
                   <td className="p-3 text-xs text-muted-foreground">
-                    {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}
+                    {inv.due_date
+                      ? new Date(inv.due_date).toLocaleDateString()
+                      : "—"}
                   </td>
                   <td className="p-3 text-xs">
                     {inv.hosted_invoice_url ? (
@@ -108,11 +154,15 @@ export default async function AdminInvoicesPage() {
                         dashboard →
                       </a>
                     ) : (
-                      <span className="text-muted-foreground">draft (no Stripe id)</span>
+                      <span className="text-muted-foreground">
+                        draft (no Stripe id)
+                      </span>
                     )}
                   </td>
                   <td className="p-3 text-right">
-                    {inv.status !== "paid" && <AdminMarkPaidButton invoiceId={inv.id} />}
+                    {inv.status !== "paid" && (
+                      <AdminMarkPaidButton invoiceId={inv.id} />
+                    )}
                   </td>
                 </tr>
               ))}

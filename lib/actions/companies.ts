@@ -20,6 +20,7 @@
  * and grants `company_admin` with status 'active' instead of 're-inviting'.
  */
 import { revalidatePath } from "next/cache";
+import { inviteRedirect } from "@/lib/actions/auth-redirect";
 import { z } from "zod";
 import { requireAdmin, AuthError, type DBClient } from "@/lib/actions/auth";
 import type { Json } from "@/lib/database.types";
@@ -27,17 +28,18 @@ import type { Json } from "@/lib/database.types";
 const uuid = z.string().uuid("invalid id");
 
 const createInput = z.object({
-  name: z.string().trim().min(2, "name too short").max(160, "name too long")
+  name: z.string().trim().min(2, "name too short").max(160, "name too long"),
 });
 
 const idInput = z.object({ id: uuid });
 
 const provisionInput = z.object({
   companyId: uuid,
-  email: z.string().trim().email("invalid email").max(254)
+  email: z.string().trim().email("invalid email").max(254),
 });
 
-export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
+export type ActionResult<T> =
+  { ok: true; data: T } | { ok: false; error: string };
 
 /**
  * Best-effort audit write. A failure is logged (non-fatal) rather than
@@ -48,26 +50,32 @@ async function writeAudit(
   actorUserId: string,
   action: string,
   targetId: string | null,
-  data: Json
+  data: Json,
 ): Promise<void> {
   const { error } = await admin.from("admin_audit_log").insert({
     actor_user_id: actorUserId,
     action,
     target_type: "company",
     target_id: targetId,
-    data
+    data,
   });
   if (error) {
-    console.warn("[companies] audit log insert failed (non-fatal):", error.message);
+    console.warn(
+      "[companies] audit log insert failed (non-fatal):",
+      error.message,
+    );
   }
 }
 
 export async function createCompany(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = createInput.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const { name } = parsed.data;
 
@@ -85,7 +93,8 @@ export async function createCompany(
     .select("id")
     .single();
 
-  if (error || !data) return { ok: false, error: error?.message ?? "insert failed" };
+  if (error || !data)
+    return { ok: false, error: error?.message ?? "insert failed" };
 
   await writeAudit(admin, user.id, "company.create", data.id, { name });
 
@@ -100,11 +109,14 @@ export async function createCompany(
 async function setCompanyStatus(
   raw: unknown,
   status: "active" | "suspended",
-  action: string
+  action: string,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = idInput.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const { id } = parsed.data;
 
@@ -116,7 +128,10 @@ async function setCompanyStatus(
     throw e;
   }
 
-  const { error } = await admin.from("companies").update({ status }).eq("id", id);
+  const { error } = await admin
+    .from("companies")
+    .update({ status })
+    .eq("id", id);
   if (error) return { ok: false, error: error.message };
 
   await writeAudit(admin, user.id, action, id, { status });
@@ -127,13 +142,13 @@ async function setCompanyStatus(
 }
 
 export async function suspendCompany(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   return setCompanyStatus(raw, "suspended", "company.suspend");
 }
 
 export async function reactivateCompany(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   return setCompanyStatus(raw, "active", "company.reactivate");
 }
@@ -162,7 +177,7 @@ function isAlreadyRegistered(error: {
  */
 async function findUserByEmail(
   admin: DBClient,
-  email: string
+  email: string,
 ): Promise<{ id: string } | null> {
   const target = email.toLowerCase();
   const perPage = 200;
@@ -189,11 +204,14 @@ async function findUserByEmail(
  * `company_admin`; otherwise a new row is inserted.
  */
 export async function provisionCompanyAdmin(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ userId: string; status: "invited" | "active" }>> {
   const parsed = provisionInput.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const { companyId, email } = parsed.data;
 
@@ -218,7 +236,9 @@ export async function provisionCompanyAdmin(
   let memberStatus: "invited" | "active";
 
   const { data: invited, error: inviteErr } =
-    await admin.auth.admin.inviteUserByEmail(email);
+    await admin.auth.admin.inviteUserByEmail(email, {
+      redirectTo: inviteRedirect("/company"),
+    });
 
   if (invited?.user) {
     userId = invited.user.id;
@@ -226,7 +246,10 @@ export async function provisionCompanyAdmin(
   } else if (inviteErr && isAlreadyRegistered(inviteErr)) {
     const existing = await findUserByEmail(admin, email);
     if (!existing) {
-      return { ok: false, error: "user already registered but could not be resolved" };
+      return {
+        ok: false,
+        error: "user already registered but could not be resolved",
+      };
     }
     userId = existing.id;
     memberStatus = "active";
@@ -245,7 +268,11 @@ export async function provisionCompanyAdmin(
   if (existingMember) {
     const { error } = await admin
       .from("company_members")
-      .update({ role: "company_admin", status: memberStatus, invited_by: user.id })
+      .update({
+        role: "company_admin",
+        status: memberStatus,
+        invited_by: user.id,
+      })
       .eq("id", existingMember.id);
     if (error) return { ok: false, error: error.message };
   } else {
@@ -254,7 +281,7 @@ export async function provisionCompanyAdmin(
       user_id: userId,
       role: "company_admin",
       status: memberStatus,
-      invited_by: user.id
+      invited_by: user.id,
     });
     if (error) return { ok: false, error: error.message };
   }
@@ -262,7 +289,7 @@ export async function provisionCompanyAdmin(
   await writeAudit(admin, user.id, "company.provision_admin", companyId, {
     email,
     user_id: userId,
-    status: memberStatus
+    status: memberStatus,
   });
 
   revalidatePath("/admin/companies");

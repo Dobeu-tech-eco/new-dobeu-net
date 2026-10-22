@@ -6,13 +6,26 @@ export default function AdminAnalyticsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Analytics</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Analytics
+        </h1>
         <p className="text-muted-foreground mt-1">
-          Live dashboards. Drill in via the linked tools — embeds will land in v2.
+          Live dashboards. Drill in via the linked tools — embeds will land in
+          v2.
         </p>
       </header>
 
       <div className="grid sm:grid-cols-2 gap-4">
+        <Tile
+          label="Amplitude"
+          desc="Product analytics, user journeys, session replay"
+          href="https://app.amplitude.com/analytics/polished-sun-911894/project/784238"
+        />
+        <Tile
+          label="Datadog RUM"
+          desc="Browser sessions, performance, errors"
+          href="https://app.datadoghq.com/rum/sessions"
+        />
         <Tile
           label="PostHog (product)"
           desc="Funnels, retention, session replay, feature flags"
@@ -38,7 +51,15 @@ export default function AdminAnalyticsPage() {
   );
 }
 
-function Tile({ label, desc, href }: { label: string; desc: string; href: string }) {
+function Tile({
+  label,
+  desc,
+  href,
+}: {
+  label: string;
+  desc: string;
+  href: string;
+}) {
   return (
     <a
       href={href}
