@@ -474,10 +474,10 @@ describe("runCleanup", () => {
     expect(stub.deletes.length).toBeGreaterThan(1);
     expect(
       Math.max(...stub.deletes.map((ids) => ids.length)),
-    ).toBeLessThanOrEqual(1000);
+    ).toBeLessThanOrEqual(100);
   });
 
-  it("caps page event purging at 20 batches per run", async () => {
+  it("caps page event purging at 200 batches per run", async () => {
     const stub = stubCleanup({
       events: Array.from({ length: 21_000 }, (_, i) => ({
         id: `e-${i}`,
@@ -486,8 +486,8 @@ describe("runCleanup", () => {
     });
     const summary = await runCleanup(stub.client, NOW);
     expect(summary.pageEvents).toBe(20_000);
-    expect(summary.failedTargets).toEqual(["page_events"]);
-    expect(stub.deletes).toHaveLength(20);
+    expect(summary.failedTargets).toEqual([]);
+    expect(stub.deletes).toHaveLength(200);
     expect(stub.events()).toHaveLength(1000);
   });
 
@@ -511,11 +511,11 @@ describe("runCleanup", () => {
       files: { "project-files": [file("orphan")] },
     });
     expect(await runCleanup(stub.client, NOW)).toEqual({
-      pageEvents: 1000,
+      pageEvents: 100,
       projectFiles: 1,
       workOrderAttachments: 0,
       failedTargets: ["page_events"],
     });
-    expect(stub.events()).toHaveLength(1300);
+    expect(stub.events()).toHaveLength(2200);
   });
 });

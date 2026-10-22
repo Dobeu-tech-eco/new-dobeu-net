@@ -5,8 +5,10 @@ import { DAY_MS, PAGE_SIZE } from "./constants";
 type AdminClient = ReturnType<typeof createAdminClient>;
 const MAX_STORAGE_DELETIONS = 500;
 const REFERENCE_CHUNK_SIZE = 100;
-// Bound each invocation to 20,000 events; remaining rows wait for a later run.
-const MAX_EVENT_BATCHES = 20;
+// Bound each invocation to 20,000 events (not a failure); remaining rows wait for a later run.
+const MAX_EVENT_BATCHES = 200;
+// ids go in the DELETE URL, so keep batches small (100 uuids ~ 4KB).
+const EVENT_BATCH_SIZE = REFERENCE_CHUNK_SIZE;
 const TARGETS = [
   { bucket: "project-files", table: "project_files", key: "projectFiles" },
   {
@@ -26,7 +28,7 @@ async function cleanPageEvents(client: AdminClient, cutoff: string) {
         .select("id")
         .lt("occurred_at", cutoff)
         .order("id")
-        .limit(PAGE_SIZE);
+        .limit(EVENT_BATCH_SIZE);
       if (error || !data) throw new Error("Page events query failed");
       if (data.length === 0) return { deleted, failed: false };
 
@@ -41,9 +43,10 @@ async function cleanPageEvents(client: AdminClient, cutoff: string) {
         throw new Error("Page events deletion failed");
       }
       deleted += count;
-      if (data.length < PAGE_SIZE) return { deleted, failed: false };
+      if (data.length < EVENT_BATCH_SIZE) return { deleted, failed: false };
     }
-    throw new Error("Page events batch limit reached");
+    // Batch cap reached: the remaining backlog is purged by later runs.
+    return { deleted, failed: false };
   } catch {
     return { deleted, failed: true };
   }
