@@ -75,3 +75,9 @@ Thumbs.db
 .harness/lessons-inbox.md
 .harness.bak-*/
 .claude/*.local.md
+.env*
+!.env.example
+.harness/review/screens/
+.harness/gtm/*/screens/
+.harness/handoff/latest.md
+.claude/worktrees/

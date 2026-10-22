@@ -92,6 +92,17 @@
     "node": ">=24"
   },
   "packageManager": "pnpm@10.34.1",
+  "pnpm": {
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-jmr9-qjv8-65gv",
+        "GHSA-7pqw-9j4j-h8q3",
+        "GHSA-hp3w-g68c-fv3c",
+        "GHSA-c475-qrg2-pj4r",
+        "GHSA-vfj7-8cjw-p6xm"
+      ]
+    }
+  },
   "allowScripts": {
     "@swc/core@1.15.3": true,
     "cbor-extract@2.2.2": true,

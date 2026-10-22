@@ -30,7 +30,7 @@ async function issueSignedUrl(id: string) {
 
   const { data: file, error: fileError } = await supabase
     .from("project_files")
-    .select("id,storage_path")
+    .select("id,storage_path,filename")
     .eq("id", id)
     .single();
 
@@ -38,9 +38,12 @@ async function issueSignedUrl(id: string) {
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
+  // Save under the display name, not the `<uuid>-<safe-name>` object key.
   const { data: signed, error: signedError } = await supabase.storage
     .from("project-files")
-    .createSignedUrl(file.storage_path, SIGNED_URL_TTL_SECONDS);
+    .createSignedUrl(file.storage_path, SIGNED_URL_TTL_SECONDS, {
+      download: file.filename || true
+    });
 
   if (signedError || !signed?.signedUrl) {
     return NextResponse.json({ error: "Could not create download URL" }, { status: 500 });

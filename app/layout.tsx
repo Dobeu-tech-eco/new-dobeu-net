@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Source_Sans_3, JetBrains_Mono } from "next/font/google";
-import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { RouteLight } from "@/components/motion/RouteLight";
 import { ExperienceProvider } from "@/components/landing/ExperienceProvider";
+import { DeferredToaster } from "@/components/landing/DeferredToaster";
 import {
   FOUNDER,
   NAP,
@@ -101,12 +101,7 @@ export default function RootLayout({
           <ExperienceProvider>
             <RouteLight />
             <AnalyticsProvider>{children}</AnalyticsProvider>
-            <Toaster
-              position="bottom-right"
-              theme="system"
-              richColors
-              closeButton
-            />
+            <DeferredToaster />
           </ExperienceProvider>
         </ThemeProvider>
         {/* JSON-LD structured data — WebSite + Person + Organization graph

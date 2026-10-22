@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DobeuMark } from "@/components/brand/DobeuMark";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { NavThemeToggle } from "@/components/landing/NavThemeToggle";
 import { useLightbox } from "./LightboxProvider";
 import { useExperience } from "./ExperienceProvider";
 import { PRIMARY_NAV_LINKS, SUB_BRANDS } from "@/lib/jeremy-data";
@@ -196,7 +196,7 @@ export function SiteNav() {
                 <Pause className="size-4" aria-hidden="true" />
               )}
             </Button>
-            <ThemeToggle />
+            <NavThemeToggle />
             <Button
               variant="outline"
               size="sm"

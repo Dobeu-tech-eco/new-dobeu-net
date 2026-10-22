@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalLayout } from "@/components/landing/LegalLayout";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy — Dobeu Tech Solutions",
+  title: "Cookie Policy",
   description: "How Dobeu Tech Solutions uses cookies and how to manage your preferences.",
   alternates: { canonical: "/cookies" },
   robots: { index: true, follow: true },

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalLayout } from "@/components/landing/LegalLayout";
 
 export const metadata: Metadata = {
-  title: "SMS Opt-In Policy — Dobeu Tech Solutions",
+  title: "SMS Opt-In Policy",
   description: "How Dobeu Tech Solutions uses SMS messaging and how to opt in or out.",
   alternates: { canonical: "/optin/sms" },
   robots: { index: true, follow: true },

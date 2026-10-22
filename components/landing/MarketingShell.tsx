@@ -1,7 +1,7 @@
 import { SiteNav } from "@/components/landing/SiteNav";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { LightboxProvider } from "@/components/landing/LightboxProvider";
-import { StickyMobileCTA } from "@/components/landing/StickyMobileCTA";
+import { StickyMobileCTASlot } from "@/components/landing/StickyMobileCTASlot";
 
 export function MarketingShell({
   children,
@@ -17,7 +17,7 @@ export function MarketingShell({
         {children}
       </main>
       <SiteFooter />
-      {stickyCta ? <StickyMobileCTA /> : null}
+      {stickyCta ? <StickyMobileCTASlot /> : null}
     </LightboxProvider>
   );
 }
