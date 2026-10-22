@@ -27,7 +27,7 @@ const mockedLog = vi.mocked(logToDatadog);
 const mockedLogError = vi.mocked(logServerError);
 
 /** Everything sent to Datadog, serialized, for leak assertions. */
-function datadogDump(): string {
+function intakeDump(): string {
   return JSON.stringify([mockedLog.mock.calls, mockedLogError.mock.calls]);
 }
 
@@ -149,6 +149,31 @@ describe("POST /api/webhooks/calendly", () => {
       }
     });
 
+    // stdout/stderr are drained to Datadog too: capture every console call.
+    let consoleSpies: ReturnType<typeof vi.spyOn>[] = [];
+    beforeEach(() => {
+      consoleSpies = (["error", "warn", "log", "info"] as const).map((m) =>
+        vi.spyOn(console, m).mockImplementation(() => undefined)
+      );
+    });
+    afterEach(() => {
+      for (const spy of consoleSpies) spy.mockRestore();
+    });
+    function consoleDump(): string {
+      return JSON.stringify(
+        consoleSpies.map((spy) =>
+          spy.mock.calls.map((args: unknown[]) =>
+            args.map((a: unknown) => (a instanceof Error ? `${a.name}: ${a.message}\n${a.stack}` : a))
+          )
+        )
+      );
+    }
+
+    /** Datadog intake args + every console call. */
+    function datadogDump(): string {
+      return intakeDump() + consoleDump();
+    }
+
     it("logs a warn on a bad signature without payload, headers or the key", async () => {
       process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
       const badSig = sign(bookingBody, undefined, "wrong-key");
@@ -166,12 +191,14 @@ describe("POST /api/webhooks/calendly", () => {
       expect(dump).not.toContain("booker@example.com");
     });
 
-    it("logs and rethrows when lead processing fails, without the error message", async () => {
+    it("logs and returns 500 when lead processing fails, without the error message", async () => {
       process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
       mockedProcessLead.mockRejectedValueOnce(new Error("lead insert failed for booker@example.com"));
-      await expect(POST(makeRequest(bookingBody, sign(bookingBody)))).rejects.toThrow(
-        "lead insert failed"
-      );
+      // Explicit 500 (same status an unhandled throw produced); no rethrow, so
+      // the raw error never reaches onRequestError or Next's stderr.
+      const res = await POST(makeRequest(bookingBody, sign(bookingBody)));
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ ok: false, error: "processing_failed" });
       expect(mockedLog).toHaveBeenCalledWith("error", "calendly_webhook_processing_failed", {
         route: "/api/webhooks/calendly",
         request_id: expect.any(String),
@@ -213,6 +240,29 @@ describe("POST /api/webhooks/calendly", () => {
       const dump = datadogDump();
       expect(dump).not.toContain("booker@example.com");
       expect(dump).not.toContain("duplicate key");
+    });
+
+    it("logs only code/constraint when the booking insert throws", async () => {
+      process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
+      vi.mocked(createAdminClient).mockReturnValueOnce({
+        from: vi.fn(() => ({
+          insert: vi.fn().mockRejectedValue(
+            Object.assign(new Error("connection reset while inserting booker@example.com"), {
+              code: "08006"
+            })
+          )
+        }))
+      } as unknown as ReturnType<typeof createAdminClient>);
+      const res = await POST(makeRequest(bookingBody, sign(bookingBody)));
+      expect(res.status).toBe(200);
+      expect(mockedLog).toHaveBeenCalledWith(
+        "error",
+        "calendly_booking_insert_failed",
+        expect.objectContaining({ error: { kind: "Error", code: "08006" } })
+      );
+      const dump = datadogDump();
+      expect(dump).not.toContain("booker@example.com");
+      expect(dump).not.toContain("connection reset");
     });
 
     it("stays non-fatal when the logger itself throws", async () => {

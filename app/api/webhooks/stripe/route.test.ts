@@ -14,7 +14,7 @@
  *   - Datadog failure logging (bad signature, handler/DB error) with no
  *     payload, signature header or webhook secret in the log args
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 const h = vi.hoisted(() => {
   const verifyMock = vi.fn();
@@ -455,8 +455,30 @@ describe("POST /api/webhooks/stripe", () => {
     const RAW_BODY = JSON.stringify({ id: "evt_raw", customer_email: "payer@example.com" });
     const SIG = "t=1,v1=deadbeefcafe";
 
+
+    // stdout/stderr are drained to Datadog too: capture every console call.
+    let consoleSpies: ReturnType<typeof vi.spyOn>[] = [];
+    beforeEach(() => {
+      consoleSpies = (["error", "warn", "log", "info"] as const).map((m) =>
+        vi.spyOn(console, m).mockImplementation(() => undefined)
+      );
+    });
+    afterEach(() => {
+      for (const spy of consoleSpies) spy.mockRestore();
+    });
+    function consoleDump(): string {
+      return JSON.stringify(
+        consoleSpies.map((spy) =>
+          spy.mock.calls.map((args: unknown[]) =>
+            args.map((a: unknown) => (a instanceof Error ? `${a.name}: ${a.message}\n${a.stack}` : a))
+          )
+        )
+      );
+    }
+
+    /** Datadog intake args + every console call. */
     function datadogDump(): string {
-      return JSON.stringify([h.logMock.mock.calls, h.logErrorMock.mock.calls]);
+      return JSON.stringify([h.logMock.mock.calls, h.logErrorMock.mock.calls]) + consoleDump();
     }
 
     it("logs a warn on a bad signature without payload, header, secret or Stripe error", async () => {
@@ -566,6 +588,28 @@ describe("POST /api/webhooks/stripe", () => {
       const dump = datadogDump();
       expect(dump).not.toContain("leak@example.com");
       expect(dump).not.toContain("violates");
+    });
+
+    it("logs a failed receipt email without the provider error text", async () => {
+      h.verifyMock.mockReturnValue({
+        id: "evt_mail_fail",
+        type: "invoice.paid",
+        data: { object: { id: "in_mail", customer_email: "payer@example.com" } }
+      });
+      h.adminBehavior.updatedRow = {
+        id: "inv_mail",
+        project_id: "p_1",
+        amount_cents: 1000,
+        currency: "USD",
+        status: "paid"
+      };
+      h.sendEmailMock.mockRejectedValueOnce(new Error("Resend rejected payer@example.com"));
+      const { POST } = await importRouteFresh();
+      expect((await POST(makeRequest(RAW_BODY, SIG))).status).toBe(200);
+      const dump = datadogDump();
+      expect(dump).toContain("stripe_invoice_paid_email_failed");
+      expect(dump).not.toContain("payer@example.com");
+      expect(dump).not.toContain("Resend rejected");
     });
 
     it("stays non-fatal when the logger itself throws", async () => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "node:crypto";
 
 vi.mock("@/lib/leads", () => ({
@@ -416,8 +416,33 @@ describe("POST /api/typeform/webhook", () => {
     };
     const body = JSON.stringify(payload);
 
+
+    // stdout/stderr are drained to Datadog too: capture every console call.
+    let consoleSpies: ReturnType<typeof vi.spyOn>[] = [];
+    beforeEach(() => {
+      consoleSpies = (["error", "warn", "log", "info"] as const).map((m) =>
+        vi.spyOn(console, m).mockImplementation(() => undefined)
+      );
+    });
+    afterEach(() => {
+      for (const spy of consoleSpies) spy.mockRestore();
+    });
+    function consoleDump(): string {
+      return JSON.stringify(
+        consoleSpies.map((spy) =>
+          spy.mock.calls.map((args: unknown[]) =>
+            args.map((a: unknown) => (a instanceof Error ? `${a.name}: ${a.message}\n${a.stack}` : a))
+          )
+        )
+      );
+    }
+
+    /** Datadog intake args + every console call. */
     function datadogDump(): string {
-      return JSON.stringify([mockedLog.mock.calls, mockedLogError.mock.calls]);
+      return (
+        JSON.stringify([mockedLog.mock.calls, mockedLogError.mock.calls]) +
+        consoleDump()
+      );
     }
 
     it("logs a warn on a bad signature without payload, header or secret", async () => {
@@ -438,10 +463,18 @@ describe("POST /api/typeform/webhook", () => {
     });
 
     it("logs a storage (DB) failure without the DB message and keeps the 503", async () => {
-      // persistTypeformBudgetIntake rethrows the raw PostgREST message.
+      // persistTypeformBudgetIntake rethrows the raw PostgREST message, with
+      // the PostgREST error as `cause`.
       mockedPersistBudgetIntake.mockRejectedValue(
         new Error(
           'duplicate key value violates unique constraint "typeform_budget_intakes_email_key" for budget@example.com',
+          {
+            cause: {
+              code: "23505",
+              message: "dup budget@example.com",
+              details: "Key (email)=(budget@example.com) already exists.",
+            },
+          },
         ),
       );
       const res = await POST(makeRequest(body, sign(body), "evt_tf_db"));
@@ -455,6 +488,7 @@ describe("POST /api/typeform/webhook", () => {
           form_id: BUDGET_FORM_ID,
           error: {
             kind: "Error",
+            code: "23505",
             constraint: "typeform_budget_intakes_email_key",
           },
         },

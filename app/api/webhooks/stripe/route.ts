@@ -29,6 +29,7 @@ import { verifyWebhookSignature } from "@/lib/stripe";
 import { forgetStripeEvent, rememberStripeEvent } from "@/lib/stripe-event-dedupe";
 import { sendEmail } from "@/lib/resend";
 import { logToDatadog } from "@/lib/datadog-server";
+import { safeErrorFields } from "@/lib/log-safe";
 import {
   invoicePaidToClient,
   invoicePaymentFailedToAdmin
@@ -43,6 +44,8 @@ const ROUTE = "/api/webhooks/stripe";
 /**
  * Datadog logging is best-effort: it must never change the response. Only ids
  * and error metadata go in; never the payload, headers, or the webhook secret.
+ * console output is drained to Datadog too (Vercel log drain), so every
+ * console call below uses fixed strings + safeErrorFields() only.
  */
 async function safely(log: () => Promise<void>): Promise<void> {
   try {
@@ -52,38 +55,6 @@ async function safely(log: () => Promise<void>): Promise<void> {
   }
 }
 
-/**
- * The only error fields that reach Datadog: the error class, the SQLSTATE /
- * PostgREST code, and constraint / table identifiers. The raw message,
- * details, hint and stack are never forwarded because Postgres embeds row
- * values (emails, tokens) in them. Identifiers are pulled out of the message
- * with an identifier-only pattern, so no free text survives.
- */
-function safeErrorFields(error: unknown): Record<string, string> {
-  const fields: Record<string, string> = {
-    kind: error instanceof Error ? error.name : "UnknownError"
-  };
-  const sources = [error, error instanceof Error ? error.cause : undefined];
-  for (const source of sources) {
-    if (!source || typeof source !== "object") continue;
-    const o = source as { code?: unknown; constraint?: unknown; table?: unknown; message?: unknown };
-    const text = typeof o.message === "string" ? o.message : "";
-    if (!fields.code && typeof o.code === "string" && /^[A-Za-z0-9_]{1,16}$/.test(o.code)) {
-      fields.code = o.code;
-    }
-    const constraint =
-      typeof o.constraint === "string" ? o.constraint : /constraint "([A-Za-z0-9_]{1,63})"/.exec(text)?.[1];
-    if (!fields.constraint && constraint && /^[A-Za-z0-9_]{1,63}$/.test(constraint)) {
-      fields.constraint = constraint;
-    }
-    const table =
-      typeof o.table === "string" ? o.table : /(?:relation|table) "([A-Za-z0-9_.]{1,63})"/.exec(text)?.[1];
-    if (!fields.table && table && /^[A-Za-z0-9_.]{1,63}$/.test(table)) {
-      fields.table = table;
-    }
-  }
-  return fields;
-}
 
 const ADMIN_NOTIFY_TO = (): string =>
   process.env.RESEND_REPLY_TO ?? "jeremyw@dobeu.net";
@@ -114,12 +85,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   let event: Stripe.Event;
   try {
     event = verifyWebhookSignature(rawBody, sig);
-  } catch (e) {
+  } catch {
     console.warn(
       JSON.stringify({
         msg: "stripe_webhook_invalid_signature",
-        request_id: requestId,
-        error: e instanceof Error ? e.message : String(e)
+        request_id: requestId
       })
     );
     // The Stripe verification error carries the raw payload and signature
@@ -173,7 +143,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             .neq("status", "paid")
             .select("id,project_id,amount_cents,currency,status")
             .maybeSingle();
-          if (error) throw new Error(`invoice paid update failed: ${error.message}`, { cause: error });
+          if (error) throw new Error("invoice paid update failed", { cause: error });
 
           await notifyInvoicePaid(admin, inv, row as InvoiceRow | null);
         }
@@ -196,7 +166,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             .neq("status", "overdue")
             .select("id,project_id,amount_cents,currency,status")
             .maybeSingle();
-          if (error) throw new Error(`invoice failed update failed: ${error.message}`, { cause: error });
+          if (error) throw new Error("invoice failed update failed", { cause: error });
 
           await notifyInvoiceFailed(inv, row as InvoiceRow | null);
         }
@@ -210,7 +180,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             .from("invoices")
             .update({ hosted_invoice_url: inv.hosted_invoice_url })
             .eq("stripe_invoice_id", inv.id);
-          if (error) throw new Error(`invoice finalized update failed: ${error.message}`, { cause: error });
+          if (error) throw new Error("invoice finalized update failed", { cause: error });
         }
         break;
       }
@@ -222,7 +192,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             .from("invoices")
             .update({ status: "void" })
             .eq("stripe_invoice_id", inv.id);
-          if (error) throw new Error(`invoice voided update failed: ${error.message}`, { cause: error });
+          if (error) throw new Error("invoice voided update failed", { cause: error });
         }
         break;
       }
@@ -258,11 +228,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         request_id: requestId,
         event_id: event.id,
         event_type: event.type,
-        error: e instanceof Error ? e.message : String(e)
+        error: safeErrorFields(e)
       })
     );
-    // DB failures are thrown with the PostgREST error as `cause`, so the
-    // code / constraint survive while the message (row values) does not.
+    // DB failures are thrown with a fixed message and the PostgREST error as
+    // `cause`, so the code / constraint survive while row values do not.
     await safely(() =>
       logToDatadog("error", "stripe_webhook_handler_error", {
         route: ROUTE,
@@ -311,7 +281,9 @@ async function notifyInvoicePaid(
     });
     await sendEmail({ to: recipient, subject: tpl.subject, text: tpl.text, html: tpl.html });
   } catch (e) {
-    console.warn("[stripe webhook] invoice.paid email failed (non-fatal):", e);
+    console.warn(
+      JSON.stringify({ msg: "stripe_invoice_paid_email_failed", error: safeErrorFields(e) })
+    );
   }
   void admin; // reserved for future per-project owner lookup
 }
@@ -343,7 +315,9 @@ async function notifyInvoiceFailed(
       html: tpl.html
     });
   } catch (e) {
-    console.warn("[stripe webhook] invoice.payment_failed email failed (non-fatal):", e);
+    console.warn(
+      JSON.stringify({ msg: "stripe_invoice_failed_email_failed", error: safeErrorFields(e) })
+    );
   }
 }
 
@@ -395,6 +369,6 @@ async function grantAssetEntitlement(
   });
 
   if (error && !isUniqueViolation(error)) {
-    throw new Error(`asset entitlement insert failed: ${error.message}`, { cause: error });
+    throw new Error("asset entitlement insert failed", { cause: error });
   }
 }
