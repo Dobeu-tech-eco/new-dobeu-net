@@ -33,7 +33,9 @@ every push and pull request to `main` and is the enforcing layer. The
 `.gitleaks.toml` configuration extends the default rules and allowlists only
 placeholder values (`your-...-here`, optionally behind `sk_test_`, `ghp_`,
 `whsec_`, or `re_`) in the root `.env.example`; a real-looking key there is still
-flagged.
+flagged. CI scans full history; the reviewed historical findings (public anon
+keys and analytics tokens, plus one commit-SHA false positive) are baselined by
+exact fingerprint in `.gitleaksignore`, so any new finding still fails.
 
 Enable secret scanning and push protection in GitHub repository settings. These
 are repository settings, not guarantees supplied by a local hook; verify their

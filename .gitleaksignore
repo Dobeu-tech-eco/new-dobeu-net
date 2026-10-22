@@ -1,0 +1,19 @@
+# Historical gitleaks findings reviewed 2026-10-22 (harness run 20261022-004253).
+# None is a secret, so each exact fingerprint is baselined. New findings in any
+# commit still fail CI. Re-review if any of these files gain new values.
+#   - Supabase ANON key JWTs (STATUS.md, ship-everything.cmd): public by design;
+#     shipped to every browser, data protected by RLS.
+#   - NEXT_PUBLIC_MIXPANEL_TOKEN / "publishable key prefix" (.env.example,
+#     docs/CHAT-TRANSCRIPT-2026-05-21.md): client-side analytics tokens, public.
+#   - datadog-access-token in docs/GIT-TYPEFORM-CONSOLIDATION.md:20 is a git
+#     commit SHA, not a token (false positive).
+2c442162a8204ed282e5224d83bc5294b9c40765:.env.example:generic-api-key:44
+3960d807f0ef571ad5386746f3f93e8fc53b085c:.env.example:generic-api-key:38
+3960d807f0ef571ad5386746f3f93e8fc53b085c:STATUS.md:jwt:58
+3960d807f0ef571ad5386746f3f93e8fc53b085c:docs/CHAT-TRANSCRIPT-2026-05-21.md:generic-api-key:210
+3960d807f0ef571ad5386746f3f93e8fc53b085c:docs/CHAT-TRANSCRIPT-2026-05-21.md:generic-api-key:262
+4ecca89eab679888f92fd551921fe0d6a4ccdada:docs/GIT-TYPEFORM-CONSOLIDATION.md:datadog-access-token:20
+58afc6dc1137fa46b3feda8aa283fbbd2baf5063:.env.example:generic-api-key:44
+6d001a409a04924a5a9123705deadd01aba65d2c:ship-everything.cmd:jwt:30
+8bd7813b4b29361813db0d7c4979126e4e1b2bba:ship-everything.cmd:jwt:14
+a732d8baff580a6aaf0c30ff437d5e8c01c7dc5c:STATUS.md:jwt:59
