@@ -1,5 +1,8 @@
 # Lighthouse verification — `/` (2026-10-22)
 
+> **Round 2 update:** see "Round 2" at the end. Mobile Performance is still below 90:
+> the median of 10 runs on the round-2 build is 88, and the best single run is 91.
+
 Scope: harness run `20261022-004253`, builder 5 (S18). Goal: Performance >= 90,
 Accessibility >= 95, Best Practices >= 90, SEO >= 95 on `/`, mobile and desktop,
 with no copy, layout, or brand changes.
@@ -128,3 +131,88 @@ changing the hero reveal. All are out of scope for this pass.
 CI note: `.github/workflows/ci.yml` runs only `pnpm lighthouse:ci` (mobile). The desktop
 config runs only when invoked explicitly with
 `pnpm exec lhci autorun --config=lighthouserc.desktop.cjs`.
+
+## Round 2 (fix round 2 of 3)
+
+Two changes were authorized: scope the cookie-banner offset, and shrink the Tailwind CSS
+shipped to marketing pages.
+
+### 1. `CookieBanner`: no more `--cookie-banner-offset` on `<html>`
+
+The variable has three readers (`grep -rn "cookie-banner-offset"`):
+
+| Reader | How it reads the variable | In this builder's set? |
+| --- | --- | --- |
+| `components/landing/StickyMobileCTA.tsx` | inline `style={{ bottom: "var(--cookie-banner-offset, 0px)" }}` | yes, no edit needed |
+| `app/pricing/page.tsx` | class `pb-[calc(5rem+var(--cookie-banner-offset,0px))]` | **no**, but no edit needed |
+| `app/globals.css` | comment only | n/a |
+
+Before, the banner set the inherited custom property on `document.documentElement` and
+measured itself with `getBoundingClientRect()` inside a layout effect. That forced a
+synchronous whole-document style recalculation and layout during hydration.
+
+Now the banner writes the value only onto the reader elements, found with
+`[class*="cookie-banner-offset"],[style*="cookie-banner-offset"]`. Its size comes from
+the `ResizeObserver` entry, which is delivered after the browser's own layout and before
+paint, so there is no forced layout and no visible change.
+
+A `MutationObserver` (`childList`, rAF-throttled, active only while the first-visit
+banner is shown) applies the value to readers that mount later: the sticky bar appears on
+scroll, and pages arrive via client-side navigation to `/pricing`. On teardown, the value
+is removed from every element it touched. `/` has no reader, so nothing is restyled there.
+
+Tests: `components/CookieBanner.test.tsx` covers that the value lands on readers, never on
+`<html>`, and is applied to late-mounted readers.
+
+Effect: the separate ~100–150 ms `layout-*.js` long task disappeared in 4 of 5 mobile runs.
+Total TBT did not move measurably, because the work largely folds into the hydration task.
+
+### 2. Tailwind: not changed
+
+The Tailwind CLI was run against `app/globals.css` with the current config and with
+narrower content sets:
+
+| Content set | Raw | Gzip |
+| --- | --- | --- |
+| Current (`app`, `components`, `lib`) | 52,760 B | 10,360 B |
+| Marketing only (excludes portal, admin, company, login, auth app and component dirs) | 48,353 B | 9,594 B |
+| Current minus `*.test.*` files (the only "dead" paths) | 52,733 B | ~10,355 B |
+
+- **Per-route-group split.** Marketing pages would save at most **~0.8 kB gzip** of CSS.
+  A split needs route-group layouts, each importing its own CSS entry with `@config`. That
+  means moving pages into `app/(marketing)` and `app/(app)` groups, far outside this
+  builder's file set. It also risks cascade-order conflicts between two full Tailwind
+  builds (duplicate preflight and utilities) on client-side navigation between groups.
+- **Trimming dead globs.** This saves 27 bytes.
+- **Decision.** Neither change is worth the risk to portal, admin, or company styles, so
+  `tailwind.config.ts` is unchanged.
+
+The "60 kB CSS" in round 1 is the whole stylesheet, including globals and design tokens.
+Tailwind utilities that only portal or admin use make up about 4 kB raw of it.
+
+### Experiment (not committed): `experimental.inlineCss`
+
+`next.config.ts` is out of bounds, so this was tried in a scratch copy only. It inlined the
+CSS but grew the HTML document from 87 kB to 215 kB, because the CSS is also carried in the
+RSC payload. Interleaved, it scored worse: mobile median 84 against 89 for round 2, with
+TBT 411 ms against 256 ms. Do not adopt it.
+
+### Round 2 scores (`/`, interleaved against round-1 commit `0612b77`)
+
+| Session | Build | Mobile perf runs | Mobile median | Desktop median | A11y / BP / SEO |
+| --- | --- | --- | --- | --- | --- |
+| A | round 1 `0612b77` | 76, 84, 87, 86, 88 | 86 | 100 | 100 / 100 / 100 |
+| A | round 2 | 81, 89, 87, 84, 82 | 84 | 99 | 100 / 100 / 100 |
+| B | round 2 (vs inlineCss experiment) | 88, 89, 88, 89, 91 | 89 | 100 | 100 / 100 / 100 |
+
+- Round 2 pooled over 10 mobile runs: **median 88**, best 91. Typical values: LCP 3.06–3.21 s,
+  TBT 200–490 ms, FCP 1.22 s, CLS 0.
+- Desktop is 99–100 in every session.
+- Session-to-session spread on the same build is about 5 points. The host stayed at 35–50%
+  CPU from other processes, so interleaving was used throughout.
+
+**Conclusion.** Mobile >= 90 is reachable in single runs but not as a stable median on this
+host. What remains is the framework's module evaluation and hydration task (about 250–370 ms
+simulated) and the document's first style and layout pass (about 220–290 ms simulated),
+which gate LCP through Lantern's pessimistic graph. Neither can be reduced further without a
+visual change or framework-level changes.
