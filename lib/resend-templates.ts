@@ -336,3 +336,31 @@ export function leadAdminNotification(args: {
   );
   return { subject, text, html };
 }
+
+// ---- weekly admin invoice aging ----
+
+export function invoiceAgingToAdmin(counts: {
+  overdue: number;
+  over7: number;
+  over14: number;
+  over30: number;
+}): EmailContent {
+  const subject = `Weekly invoice aging: ${counts.overdue} overdue`;
+  const rows: [string, number][] = [
+    ["Total overdue", counts.overdue],
+    ["More than 7 days", counts.over7],
+    ["More than 14 days", counts.over14],
+    ["More than 30 days", counts.over30],
+  ];
+  const adminUrl = `${getSiteUrl()}/admin/invoices`;
+  return {
+    subject,
+    text: `${rows.map(([label, count]) => `${label}: ${count}`).join("\n")}\nCounts are cumulative.\nReview: ${adminUrl}`,
+    html: shell(
+      `<h1>Weekly invoice aging</h1><ul>${rows
+        .map(([label, count]) => `<li>${escapeHtml(label)}: <strong>${count}</strong></li>`)
+        .join("")}</ul><p>Counts are cumulative.</p>${button(adminUrl, "Review invoices")}`,
+      { previewText: subject }
+    ),
+  };
+}
