@@ -20,11 +20,14 @@ The checker found exactly one `initAll()` call, in `lib/analytics.ts`.
 
 ## Line endings and executable scripts
 
-`.gitattributes` declares `* text=auto eol=lf` and marks image, font, and PDF
-formats as binary. No repository-wide renormalization was performed.
+`.gitattributes` declares `* text=auto eol=lf`, forces CRLF for `*.cmd`, `*.bat`,
+and `*.ps1` (so `cmd.exe` goto labels work on fresh clones), and marks image,
+font, and PDF formats as binary. No repository-wide renormalization was performed.
 
-Operator step: run `git add --renormalize .` in a clean, dedicated branch and
-review the resulting diff before committing it. Renormalization remains pending.
+Operator step: run `git add --renormalize .` only on a clean working tree, in a
+dedicated branch, and review the resulting diff before committing it (the new CRLF
+rules will rewrite existing `.cmd`/`.bat`/`.ps1` files). Renormalization remains
+pending.
 
 The existing `scripts/cloud-agent-install.sh`, `scripts/cloud-agent-start.sh`,
 and `scripts/pull-vercel-env.sh` were verified as LF and explicitly preserved as
@@ -36,14 +39,19 @@ content was unchanged.
 
 `.githooks/pre-commit` is POSIX sh, LF, and executable in Git. It runs
 `gitleaks protect --staged --redact` when Gitleaks is on PATH and propagates its
-exit code. Otherwise, it prints an installation hint and exits successfully.
-`.gitleaks.toml` extends the default rules and allowlists only the root
-`.env.example` placeholder template.
+exit code. Otherwise it prints a warning that the commit was not scanned and exits
+successfully (fail-open). `.gitleaks.toml` extends the default rules and
+allowlists only placeholder shapes (`your-...-here`, optionally prefixed `sk_test_`,
+`ghp_`, `whsec_`, `re_`) inside the root `.env.example`.
+
+Enforcement lives in CI: `.github/workflows/secret-scan.yml` runs the checksum-pinned
+gitleaks 8.30.1 release binary (no `GITLEAKS_LICENSE` needed) on push and pull request
+to `main`, using this repository's `.gitleaks.toml`.
 
 Operator steps:
 
 1. Install Gitleaks with `winget install gitleaks` or `brew install gitleaks`.
-2. Enable the repository hook: `git config core.hooksPath .githooks`.
+2. Enable the repository hook once per clone: `git config core.hooksPath .githooks`.
 
 Gitleaks was absent from the builder PATH and `core.hooksPath` was unset at
 inspection. Hook activation and a scan with the real Gitleaks binary remain

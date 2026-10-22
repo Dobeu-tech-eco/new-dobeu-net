@@ -27,7 +27,8 @@ overrides:
   "brace-expansion@1": "1.1.21"
   "brace-expansion@5": "5.0.12"
   "js-yaml@4": "4.3.2"
-  "tmp@0": "0.2.7"
+  # GHSA-52f5-9888-hmc6 affects tmp <=0.2.3 (fixed 0.2.4); force only that range.
+  "tmp@<0.2.4": "0.2.7"
   "browserslist@4": "4.28.7"
   "source-map-js@1": "1.2.2"
   "proxy-addr@2": "2.0.8"

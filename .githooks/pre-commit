@@ -1,8 +1,11 @@
 #!/bin/sh
 
 if command -v gitleaks >/dev/null 2>&1; then
-  exec gitleaks protect --staged --redact
+  exec gitleaks protect --staged --redact --config .gitleaks.toml
 fi
 
-printf '%s\n' 'Install gitleaks: winget install gitleaks / brew install gitleaks'
+printf '%s\n' \
+  'WARNING: gitleaks is not installed, so this commit was NOT scanned for secrets.' \
+  'Install it (winget install gitleaks / brew install gitleaks) to enable the check.' \
+  'CI (secret-scan workflow) still scans every push and pull request.' >&2
 exit 0

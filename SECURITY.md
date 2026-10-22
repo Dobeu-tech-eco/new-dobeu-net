@@ -26,9 +26,14 @@ advisories below as well as the filtered audit results.
 
 Install Gitleaks (`winget install gitleaks` or `brew install gitleaks`), then enable
 the repository hook with `git config core.hooksPath .githooks`. The pre-commit hook
-runs `gitleaks protect --staged --redact` when installed; otherwise it prints an
-install hint and allows the commit. The `.gitleaks.toml` configuration extends the
-default rules and only allowlists the root `.env.example` placeholder file.
+runs `gitleaks protect --staged --redact` when installed; otherwise it prints a
+warning that the commit was not scanned and allows it (fail-open). The
+secret-scan CI workflow (`.github/workflows/secret-scan.yml`) runs gitleaks on
+every push and pull request to `main` and is the enforcing layer. The
+`.gitleaks.toml` configuration extends the default rules and allowlists only
+placeholder values (`your-...-here`, optionally behind `sk_test_`, `ghp_`,
+`whsec_`, or `re_`) in the root `.env.example`; a real-looking key there is still
+flagged.
 
 Enable secret scanning and push protection in GitHub repository settings. These
 are repository settings, not guarantees supplied by a local hook; verify their
@@ -50,6 +55,20 @@ accepted this build-time exposure for braces; it is not a runtime dependency fix
 | sprintf-js 1.0.3  | [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) | `@lhci/cli > @lhci/utils > js-yaml > argparse > sprintf-js`                                                                                                                                                                               | Lighthouse CLI argument formatting; absent from production dependencies and application runtime. No upstream fixed version reported (moderate severity).                                                               | Upstream patch or Dependabot alert; review before accepting untrusted format strings in a service.                        |
 | basic-ftp 5.3.1   | [GHSA-c475-qrg2-pj4r](https://github.com/advisories/GHSA-c475-qrg2-pj4r) | `@lhci/cli > proxy-agent > pac-proxy-agent > get-uri > basic-ftp`                                                                                                                                                                         | Lighthouse's development proxy tooling; absent from production dependencies and application runtime. The reported fix is >=6.2.1, requiring a separately reviewed major upgrade from 5.x.                              | Upstream 5.x patch, reviewed upgrade/replacement, or Dependabot alert; review before exposing FTP tooling as a service.   |
 | braces 3.0.3      | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | `tailwindcss-animate > tailwindcss > chokidar > braces`; also `tailwindcss > micromatch > braces`, `tailwindcss > fast-glob > micromatch > braces`, and `eslint-config-next > @next/eslint-plugin-next > fast-glob > micromatch > braces` | Chokidar is Tailwind's build-time file watcher; the other paths are style compilation and lint tooling. They never execute at request time or ship in application runtime bundles. No upstream fixed version reported. | Upstream patch or Dependabot alert; reassess if Tailwind, glob processing, or file watching moves into request-time code. |
+
+### Ignored GHSA review schedule
+
+`ignoreGhsas` is global: pnpm applies each ID to every dependency path, not only the
+paths listed here. Each entry was reviewed on 2026-10-22 and must be re-reviewed by
+2027-01-22 (or on its revisit trigger, whichever is first).
+
+| GHSA                | Reviewed on | Re-review by | Exact dependency path(s)                                                                                                                                          |
+| ------------------- | ----------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GHSA-jmr9-qjv8-65gv | 2026-10-22  | 2027-01-22   | `@lhci/cli > lighthouse > puppeteer-core > @puppeteer/browsers > extract-zip`                                                                                      |
+| GHSA-7pqw-9j4j-h8q3 | 2026-10-22  | 2027-01-22   | `@lhci/cli > lighthouse > puppeteer-core > @puppeteer/browsers > extract-zip`                                                                                      |
+| GHSA-hp3w-g68c-fv3c | 2026-10-22  | 2027-01-22   | `@lhci/cli > @lhci/utils > js-yaml > argparse > sprintf-js`                                                                                                        |
+| GHSA-c475-qrg2-pj4r | 2026-10-22  | 2027-01-22   | `@lhci/cli > proxy-agent > pac-proxy-agent > get-uri > basic-ftp`; also via `@puppeteer/browsers > proxy-agent > pac-proxy-agent > get-uri > basic-ftp`             |
+| GHSA-vfj7-8cjw-p6xm | 2026-10-22  | 2027-01-22   | `tailwindcss-animate > tailwindcss > chokidar > braces`, `tailwindcss > micromatch > braces`, `tailwindcss > fast-glob > micromatch > braces`, `eslint-config-next > @next/eslint-plugin-next > fast-glob > micromatch > braces` |
 
 Only these five GHSAs are ignored in `package.json` under
 `pnpm.auditConfig.ignoreGhsas`, supported by the pinned pnpm 10.34.1 audit command
