@@ -40,6 +40,9 @@ import {
 
 const BUCKET = "project-files";
 
+/** Postgres unique_violation. */
+const UNIQUE_VIOLATION = "23505";
+
 const uuid = z.string().uuid("invalid id");
 
 const mimeEnum = z.enum(ALLOWED_DELIVERABLE_MIME, {
@@ -215,6 +218,12 @@ export async function recordDeliverable(
     .select("id")
     .single();
 
+  // project_files_storage_path_key (20261023000300) closes the race the
+  // isReferenced() pre-check leaves open. A concurrent record of the same key
+  // means a row now points at these bytes, so never remove the object here.
+  if (error?.code === UNIQUE_VIOLATION) {
+    return { ok: false, error: "storage_path already recorded" };
+  }
   if (error || !data) return { ok: false, error: error?.message ?? "insert failed" };
 
   revalidatePath(`/admin/projects/${project_id}`);

@@ -5,6 +5,10 @@ import { createHmac } from "node:crypto";
 vi.mock("@/lib/leads", () => ({
   processLead: vi.fn().mockResolvedValue({ leadId: "lead_1", apolloContactId: "apollo_1" })
 }));
+vi.mock("@/lib/datadog-server", () => ({
+  logToDatadog: vi.fn(),
+  logServerError: vi.fn()
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: vi.fn(() => ({
     from: vi.fn(() => ({
@@ -15,8 +19,17 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import { POST } from "@/app/api/webhooks/calendly/route";
 import { processLead } from "@/lib/leads";
+import { createAdminClient } from "@/lib/supabase/server";
+import { logServerError, logToDatadog } from "@/lib/datadog-server";
 
 const mockedProcessLead = vi.mocked(processLead);
+const mockedLog = vi.mocked(logToDatadog);
+const mockedLogError = vi.mocked(logServerError);
+
+/** Everything sent to Datadog, serialized, for leak assertions. */
+function datadogDump(): string {
+  return JSON.stringify([mockedLog.mock.calls, mockedLogError.mock.calls]);
+}
 
 const KEY = "test-signing-key";
 
@@ -38,6 +51,8 @@ function makeRequest(rawBody: string, signature?: string | null): Request {
 
 beforeEach(() => {
   mockedProcessLead.mockClear();
+  mockedLog.mockReset();
+  mockedLogError.mockReset();
 });
 
 afterEach(() => {
@@ -118,5 +133,90 @@ describe("POST /api/webhooks/calendly", () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ error: "invalid_json" });
     expect(mockedProcessLead).not.toHaveBeenCalled();
+  });
+
+  describe("Datadog failure logging", () => {
+    const bookingBody = JSON.stringify({
+      event: "invitee.created",
+      payload: {
+        email: "booker@example.com",
+        name: "Booker",
+        scheduled_event: {
+          uri: "https://cal/uri",
+          name: "Intro Call",
+          start_time: "2026-11-01T15:00:00Z"
+        }
+      }
+    });
+
+    it("logs a warn on a bad signature without payload, headers or the key", async () => {
+      process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
+      const badSig = sign(bookingBody, undefined, "wrong-key");
+      const res = await POST(makeRequest(bookingBody, badSig));
+      expect(res.status).toBe(401);
+      expect(mockedLog).toHaveBeenCalledTimes(1);
+      expect(mockedLog).toHaveBeenCalledWith(
+        "warn",
+        "calendly_webhook_invalid_signature",
+        expect.objectContaining({ route: "/api/webhooks/calendly" })
+      );
+      const dump = datadogDump();
+      expect(dump).not.toContain(KEY);
+      expect(dump).not.toContain(badSig);
+      expect(dump).not.toContain("booker@example.com");
+      expect(dump).not.toContain(JSON.stringify(bookingBody));
+    });
+
+    it("logs and rethrows when lead processing fails (status unchanged)", async () => {
+      process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
+      mockedProcessLead.mockRejectedValueOnce(new Error("fan-out exploded"));
+      await expect(POST(makeRequest(bookingBody, sign(bookingBody)))).rejects.toThrow(
+        "fan-out exploded"
+      );
+      expect(mockedLogError).toHaveBeenCalledTimes(1);
+      expect(mockedLogError.mock.calls[0][1]).toMatchObject({
+        msg: "calendly_webhook_processing_failed",
+        event_type: "invitee.created"
+      });
+      const dump = datadogDump();
+      expect(dump).not.toContain(KEY);
+      expect(dump).not.toContain("booker@example.com");
+    });
+
+    it("logs a booking insert failure but still returns 200", async () => {
+      process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
+      vi.mocked(createAdminClient).mockReturnValueOnce({
+        from: vi.fn(() => ({
+          insert: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: "23503", message: "insert or update on table violates foreign key constraint" }
+          })
+        }))
+      } as unknown as ReturnType<typeof createAdminClient>);
+      const res = await POST(makeRequest(bookingBody, sign(bookingBody)));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ ok: true, lead_id: "lead_1" });
+      expect(mockedLog).toHaveBeenCalledWith(
+        "error",
+        "calendly_booking_insert_failed",
+        expect.objectContaining({ lead_id: "lead_1", error: expect.objectContaining({ code: "23503" }) })
+      );
+      expect(datadogDump()).not.toContain("booker@example.com");
+    });
+
+    it("stays non-fatal when the logger itself throws", async () => {
+      process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
+      mockedLog.mockRejectedValueOnce(new Error("datadog down"));
+      const res = await POST(makeRequest(bookingBody, sign(bookingBody, undefined, "wrong-key")));
+      expect(res.status).toBe(401);
+    });
+
+    it("does not log on a successful booking", async () => {
+      process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
+      const res = await POST(makeRequest(bookingBody, sign(bookingBody)));
+      expect(res.status).toBe(200);
+      expect(mockedLog).not.toHaveBeenCalled();
+      expect(mockedLogError).not.toHaveBeenCalled();
+    });
   });
 });

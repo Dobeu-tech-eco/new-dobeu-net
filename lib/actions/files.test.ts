@@ -5,7 +5,7 @@ const h = vi.hoisted(() => {
     user: { id: string; email: string } | null;
     projectSelect: { data: { id: string } | null; error: { message: string } | null };
     signedUrl: { data: { path: string; token: string } | null; error: { message: string } | null };
-    insertResult: { data: { id: string } | null; error: { message: string } | null };
+    insertResult: { data: { id: string } | null; error: { message: string; code?: string } | null };
     capturedInsert: Record<string, unknown> | null;
     refs: { data: unknown[] | null; error: { message: string } | null };
     aal: { currentLevel: string; nextLevel: string } | null;
@@ -438,6 +438,22 @@ describe("recordDeliverable", () => {
     const { recordDeliverable } = await import("@/lib/actions/files");
     const result = await recordDeliverable({ ...base, size_bytes: 26 * 1024 * 1024 });
     expect(result.ok).toBe(false);
+  });
+
+  it("maps a unique violation on storage_path to a clean error and keeps the object", async () => {
+    // Lost the race: the pre-check saw no row, but a concurrent record won.
+    h.state.insertResult = {
+      data: null,
+      error: {
+        message: 'duplicate key value violates unique constraint "project_files_storage_path_key"',
+        code: "23505"
+      }
+    };
+    const { recordDeliverable } = await import("@/lib/actions/files");
+    const result = await recordDeliverable(base);
+    expect(result).toEqual({ ok: false, error: "storage_path already recorded" });
+    expect(h.state.capturedInsert).toMatchObject({ storage_path: base.storage_path });
+    expect(h.state.removeSpy as unknown).not.toHaveBeenCalled();
   });
 
   it("surfaces a Supabase insert error", async () => {

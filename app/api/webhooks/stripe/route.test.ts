@@ -11,12 +11,16 @@
  *   - invoice.voided     → status='void'
  *   - unknown event type → 200 ignored (no DB writes)
  *   - handler error      → 500 + event removed from dedupe so retry works
+ *   - Datadog failure logging (bad signature, handler/DB error) with no
+ *     payload, signature header or webhook secret in the log args
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const h = vi.hoisted(() => {
   const verifyMock = vi.fn();
   const sendEmailMock = vi.fn(() => Promise.resolve({ ok: true }));
+  const logMock = vi.fn();
+  const logErrorMock = vi.fn();
   const adminInvocations: Array<{
     table: string;
     op: string;
@@ -35,11 +39,16 @@ const h = vi.hoisted(() => {
     throwOnUpdate: false,
     insertError: null as null | { message: string; code?: string }
   };
-  return { verifyMock, sendEmailMock, adminInvocations, adminBehavior };
+  return { verifyMock, sendEmailMock, logMock, logErrorMock, adminInvocations, adminBehavior };
 });
 
 vi.mock("@/lib/stripe", () => ({
   verifyWebhookSignature: h.verifyMock
+}));
+
+vi.mock("@/lib/datadog-server", () => ({
+  logToDatadog: h.logMock,
+  logServerError: h.logErrorMock
 }));
 
 vi.mock("@/lib/resend", () => ({
@@ -440,5 +449,106 @@ describe("POST /api/webhooks/stripe", () => {
     };
     const second = await POST(makeRequest("{}"));
     expect(second.status).toBe(200);
+  });
+
+  describe("Datadog failure logging", () => {
+    const RAW_BODY = JSON.stringify({ id: "evt_raw", customer_email: "payer@example.com" });
+    const SIG = "t=1,v1=deadbeefcafe";
+
+    function datadogDump(): string {
+      return JSON.stringify([h.logMock.mock.calls, h.logErrorMock.mock.calls]);
+    }
+
+    it("logs a warn on a bad signature without payload, header, secret or Stripe error", async () => {
+      h.verifyMock.mockImplementationOnce(() => {
+        const err = new Error("No signatures found matching the expected signature for payload");
+        Object.assign(err, { payload: RAW_BODY, header: SIG });
+        throw err;
+      });
+      const { POST } = await importRouteFresh();
+      const res = await POST(makeRequest(RAW_BODY, SIG));
+      expect(res.status).toBe(400);
+      expect(h.logMock).toHaveBeenCalledTimes(1);
+      expect(h.logMock).toHaveBeenCalledWith("warn", "stripe_webhook_invalid_signature", {
+        route: "/api/webhooks/stripe",
+        request_id: "req_test_123"
+      });
+      expect(h.logErrorMock).not.toHaveBeenCalled();
+      const dump = datadogDump();
+      expect(dump).not.toContain("whsec_dummy");
+      expect(dump).not.toContain("sk_test_dummy");
+      expect(dump).not.toContain(SIG);
+      expect(dump).not.toContain("payer@example.com");
+      expect(dump).not.toContain("No signatures found");
+    });
+
+    it("logs a handler error with event ids only and keeps the 500", async () => {
+      h.verifyMock.mockReturnValue({
+        id: "evt_log_err",
+        type: "invoice.paid",
+        data: { object: { id: "in_log", customer_email: "payer@example.com" } }
+      });
+      h.adminBehavior.throwOnUpdate = true;
+      const { POST } = await importRouteFresh();
+      const res = await POST(makeRequest(RAW_BODY, SIG));
+      expect(res.status).toBe(500);
+      expect(h.logErrorMock).toHaveBeenCalledTimes(1);
+      expect(h.logErrorMock.mock.calls[0][1]).toEqual({
+        msg: "stripe_webhook_handler_error",
+        route: "/api/webhooks/stripe",
+        request_id: "req_test_123",
+        event_id: "evt_log_err",
+        event_type: "invoice.paid"
+      });
+      const dump = datadogDump();
+      expect(dump).not.toContain("whsec_dummy");
+      expect(dump).not.toContain(SIG);
+      expect(dump).not.toContain("payer@example.com");
+    });
+
+    it("logs an entitlement insert (DB) failure and keeps the 500", async () => {
+      h.verifyMock.mockReturnValue({
+        id: "evt_log_insert",
+        type: "checkout.session.completed",
+        data: {
+          object: {
+            payment_status: "paid",
+            id: "cs_log_1",
+            metadata: { digital_asset_id: "asset_1", user_id: "user_9" }
+          }
+        }
+      });
+      h.adminBehavior.insertError = { message: "fk violation", code: "23503" };
+      const { POST } = await importRouteFresh();
+      const res = await POST(makeRequest(RAW_BODY, SIG));
+      expect(res.status).toBe(500);
+      expect(h.logErrorMock).toHaveBeenCalledTimes(1);
+      const [err, ctx] = h.logErrorMock.mock.calls[0] as [Error, Record<string, unknown>];
+      expect(err.message).toContain("asset entitlement insert failed");
+      expect(ctx).toMatchObject({ event_id: "evt_log_insert", event_type: "checkout.session.completed" });
+    });
+
+    it("stays non-fatal when the logger itself throws", async () => {
+      h.verifyMock.mockImplementationOnce(() => {
+        throw new Error("bad sig");
+      });
+      h.logMock.mockRejectedValueOnce(new Error("datadog down"));
+      const { POST } = await importRouteFresh();
+      const res = await POST(makeRequest(RAW_BODY, SIG));
+      expect(res.status).toBe(400);
+    });
+
+    it("stays on the nodejs runtime (Stripe SDK does not run on edge)", async () => {
+      const mod = await importRouteFresh();
+      expect(mod.runtime).toBe("nodejs");
+    });
+
+    it("does not log on a handled event", async () => {
+      h.verifyMock.mockReturnValue({ id: "evt_ok", type: "invoice.voided", data: { object: { id: "in_ok" } } });
+      const { POST } = await importRouteFresh();
+      expect((await POST(makeRequest(RAW_BODY, SIG))).status).toBe(200);
+      expect(h.logMock).not.toHaveBeenCalled();
+      expect(h.logErrorMock).not.toHaveBeenCalled();
+    });
   });
 });

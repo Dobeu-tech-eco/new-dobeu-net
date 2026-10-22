@@ -137,9 +137,11 @@ export async function getAssetDownloadUrl(
     return { ok: false, error: assetErr?.message ?? "asset not found" };
   }
 
+  // `download: true` makes Storage send Content-Disposition: attachment, so the
+  // asset is saved rather than rendered inline on the storage origin.
   const { data: signed, error: signErr } = await supabase.storage
     .from(BUCKET)
-    .createSignedUrl(asset.storage_path, SIGNED_URL_TTL_SECONDS);
+    .createSignedUrl(asset.storage_path, SIGNED_URL_TTL_SECONDS, { download: true });
 
   if (signErr || !signed?.signedUrl) {
     return { ok: false, error: signErr?.message ?? "could not create download url" };

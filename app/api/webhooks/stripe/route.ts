@@ -28,6 +28,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { verifyWebhookSignature } from "@/lib/stripe";
 import { forgetStripeEvent, rememberStripeEvent } from "@/lib/stripe-event-dedupe";
 import { sendEmail } from "@/lib/resend";
+import { logServerError, logToDatadog } from "@/lib/datadog-server";
 import {
   invoicePaidToClient,
   invoicePaymentFailedToAdmin
@@ -36,6 +37,20 @@ import type Stripe from "stripe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const ROUTE = "/api/webhooks/stripe";
+
+/**
+ * Datadog logging is best-effort: it must never change the response. Only ids
+ * and error metadata go in; never the payload, headers, or the webhook secret.
+ */
+async function safely(log: () => Promise<void>): Promise<void> {
+  try {
+    await log();
+  } catch {
+    // Non-fatal by design.
+  }
+}
 
 const ADMIN_NOTIFY_TO = (): string =>
   process.env.RESEND_REPLY_TO ?? "jeremyw@dobeu.net";
@@ -72,6 +87,14 @@ export async function POST(request: Request): Promise<NextResponse> {
         msg: "stripe_webhook_invalid_signature",
         request_id: requestId,
         error: e instanceof Error ? e.message : String(e)
+      })
+    );
+    // The Stripe verification error carries the raw payload and signature
+    // header as properties, so it is deliberately NOT forwarded to Datadog.
+    await safely(() =>
+      logToDatadog("warn", "stripe_webhook_invalid_signature", {
+        route: ROUTE,
+        request_id: requestId
       })
     );
     return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 400 });
@@ -203,6 +226,15 @@ export async function POST(request: Request): Promise<NextResponse> {
         event_id: event.id,
         event_type: event.type,
         error: e instanceof Error ? e.message : String(e)
+      })
+    );
+    await safely(() =>
+      logServerError(e, {
+        msg: "stripe_webhook_handler_error",
+        route: ROUTE,
+        request_id: requestId,
+        event_id: event.id,
+        event_type: event.type
       })
     );
     // Removing the event from the dedupe set lets Stripe retry. Errors are
