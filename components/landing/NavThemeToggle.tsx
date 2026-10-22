@@ -13,9 +13,13 @@ import { Button } from "@/components/ui/button";
  * for the menu. Until then this renders the exact same trigger markup. The
  * real toggle is mounted on first hover, focus, or press; the placeholder stays
  * in place until the real trigger commits (same frame, via layout effect), so
- * there is no flash or layout shift. A press that lands before the chunk
- * arrives still opens the menu, but only if the user is still on the control
- * (focused or hovered) when it arrives; otherwise the swap is silent.
+ * there is no flash or layout shift.
+ *
+ * The swap is always silent: it never opens the menu on the user's behalf. A
+ * press that lands before the chunk arrives only starts the load; the user
+ * presses again once the real trigger is in place. Replaying the press would
+ * let a late-arriving modal menu steal focus after an aborted press or after
+ * the user has moved on.
  */
 
 const TriggerFace = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
@@ -51,36 +55,23 @@ export function NavThemeToggle() {
   const [ready, setReady] = React.useState(false);
   const placeholderRef = React.useRef<HTMLButtonElement>(null);
   const wrapperRef = React.useRef<HTMLSpanElement>(null);
-  const wantOpen = React.useRef(false);
-  const pointerInside = React.useRef(false);
-  const handoff = React.useRef({ focus: false, open: false });
+  const keepFocus = React.useRef(false);
 
   const arm = React.useCallback(() => setArmed(true), []);
 
   // Runs in the real toggle's layout effect, while the placeholder is still in
-  // the DOM: decide what the user still wants before the swap happens.
+  // the DOM: remember whether focus must follow the swap.
   const onReady = React.useCallback(() => {
-    const focused = document.activeElement === placeholderRef.current;
-    handoff.current = { focus: focused, open: wantOpen.current && (focused || pointerInside.current) };
-    wantOpen.current = false;
+    keepFocus.current = document.activeElement === placeholderRef.current;
     setReady(true);
   }, []);
 
   // Layout effect: the placeholder unmounts in the same commit, so focus must
   // move to the real trigger before paint to avoid a focus-loss frame.
   React.useLayoutEffect(() => {
-    if (!ready) return;
-    const { focus, open } = handoff.current;
-    handoff.current = { focus: false, open: false };
-    if (!focus && !open) return;
-    const trigger = wrapperRef.current?.querySelector<HTMLButtonElement>("button[data-state]");
-    if (!trigger) return;
-    if (focus) trigger.focus();
-    if (open) {
-      // Radix opens its trigger on Enter; only reached while the user is still
-      // on the control, so it cannot steal focus from elsewhere.
-      trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
-    }
+    if (!ready || !keepFocus.current) return;
+    keepFocus.current = false;
+    wrapperRef.current?.querySelector<HTMLButtonElement>("button[data-state]")?.focus();
   }, [ready]);
 
   return (
@@ -89,27 +80,11 @@ export function NavThemeToggle() {
       {ready ? null : (
         <TriggerFace
           ref={placeholderRef}
-          onPointerEnter={() => {
-            pointerInside.current = true;
-            arm();
-          }}
-          onPointerLeave={() => {
-            pointerInside.current = false;
-          }}
+          onPointerEnter={arm}
           onFocus={arm}
-          // Activation is recorded on press, not click, so a swap between
-          // mousedown and mouseup cannot lose it. Pressing also focuses the
-          // button (Safari/iOS do not), so "still focused" is a reliable test.
-          onPointerDown={(event) => {
-            if (event.button > 0) return;
-            wantOpen.current = true;
-            placeholderRef.current?.focus();
-            arm();
-          }}
+          onPointerDown={arm}
           onKeyDown={(event) => {
-            if (event.key !== "Enter" && event.key !== " ") return;
-            wantOpen.current = true;
-            arm();
+            if (event.key === "Enter" || event.key === " ") arm();
           }}
         />
       )}

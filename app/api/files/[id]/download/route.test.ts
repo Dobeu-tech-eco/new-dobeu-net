@@ -60,6 +60,21 @@ describe("POST /api/files/[id]/download", () => {
     expect(createSignedUrl).toHaveBeenCalledWith("private/file.pdf", 60, { download: true });
   });
 
+  it("saves under the display filename when the row has one", async () => {
+    single.mockResolvedValue({
+      data: { id: "f1", storage_path: "p1/0b6c-Q1-Report.pdf", filename: "Q1 Report.pdf" },
+      error: null
+    });
+    createSignedUrl.mockResolvedValue({ data: { signedUrl: "https://signed.example/q1" }, error: null });
+
+    const res = await POST(new Request("http://localhost/api/files/f1/download", { method: "POST" }), {
+      params: Promise.resolve({ id: "f1" })
+    });
+
+    expect(res.status).toBe(303);
+    expect(createSignedUrl).toHaveBeenCalledWith("p1/0b6c-Q1-Report.pdf", 60, { download: "Q1 Report.pdf" });
+  });
+
   it("returns 404 when file does not exist", async () => {
     single.mockResolvedValue({ data: null, error: new Error("not found") });
 

@@ -67,11 +67,14 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
         return;
       }
 
-      // 2. PUT the bytes directly to storage from the browser.
+      // 2. PUT the bytes directly to storage from the browser. storage-js
+      // ignores `contentType` for File/Blob bodies and stores the blob's own
+      // type, so re-wrap the bytes with the canonical extension MIME.
       const supabase = createClient();
+      const body = new Blob([file], { type: mime });
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
-        .uploadToSignedUrl(urlRes.data.path, urlRes.data.token, file, {
+        .uploadToSignedUrl(urlRes.data.path, urlRes.data.token, body, {
           contentType: mime
         });
       if (uploadError) {

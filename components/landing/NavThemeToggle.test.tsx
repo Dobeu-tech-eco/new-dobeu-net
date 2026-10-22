@@ -16,19 +16,44 @@ describe("NavThemeToggle", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("swaps in the real toggle and opens the menu when pressed before it loads", async () => {
+  it("swaps in the real toggle silently when pressed before it loads", async () => {
     render(<NavThemeToggle />);
     await act(async () => {
-      fireEvent.pointerDown(screen.getByRole("button", { name: "Toggle theme" }), { button: 0 });
+      const placeholder = screen.getByRole("button", { name: "Toggle theme" });
+      placeholder.focus();
+      fireEvent.pointerDown(placeholder, { button: 0 });
+      fireEvent.keyDown(placeholder, { key: "Enter" });
     });
 
-    // The pending press opens the real Radix menu (which aria-hides the rest
-    // of the page while open, hence `hidden: true` for the trigger lookup).
-    expect(await screen.findByRole("menuitem", { name: /dark/i })).toBeInTheDocument();
-    const triggers = screen.getAllByRole("button", { name: "Toggle theme", hidden: true });
-    expect(triggers).toHaveLength(1);
-    expect(triggers[0]).toHaveAttribute("data-state", "open");
-    expect(triggers[0]).toHaveAttribute("aria-expanded", "true");
+    // The early press only loads the real trigger; it never auto-opens the
+    // modal menu, so a late chunk cannot pull focus into it.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Toggle theme" })).toHaveAttribute("data-state", "closed");
+    });
+    expect(screen.getAllByRole("button", { name: "Toggle theme" })).toHaveLength(1);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("does not open when the pointer is still over the toggle but focus moved on", async () => {
+    render(
+      <>
+        <NavThemeToggle />
+        <button type="button">Book a call</button>
+      </>,
+    );
+    const other = screen.getByRole("button", { name: "Book a call" });
+    await act(async () => {
+      const placeholder = screen.getByRole("button", { name: "Toggle theme" });
+      fireEvent.pointerEnter(placeholder);
+      fireEvent.pointerDown(placeholder, { button: 0 });
+      other.focus();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Toggle theme" })).toHaveAttribute("data-state", "closed");
+    });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(other);
   });
 
   it("arms on hover without opening the menu", async () => {
