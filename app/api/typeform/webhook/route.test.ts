@@ -1,10 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "node:crypto";
 
 vi.mock("@/lib/leads", () => ({
   processLead: vi
     .fn()
     .mockResolvedValue({ leadId: "lead_tf_1", apolloContactId: "apollo_tf_1" }),
+}));
+
+vi.mock("@/lib/datadog-server", () => ({
+  logToDatadog: vi.fn(),
+  logServerError: vi.fn(),
 }));
 
 vi.mock("@/lib/typeform-budget-intake", () => {
@@ -24,12 +29,15 @@ import {
   persistTypeformBudgetIntake,
 } from "@/lib/typeform-budget-intake";
 import { TYPEFORM_WEBHOOK_MAX_BYTES } from "@/lib/typeform-webhook-body";
+import { logServerError, logToDatadog } from "@/lib/datadog-server";
 
 const mockedProcessLead = vi.mocked(processLead);
 const mockedPersistBudgetIntake = vi.mocked(persistTypeformBudgetIntake);
 const mockedFormConfigurationConsistent = vi.mocked(
   isTypeformBudgetFormConfigurationConsistent,
 );
+const mockedLog = vi.mocked(logToDatadog);
+const mockedLogError = vi.mocked(logServerError);
 const SECRET = "typeform-secret";
 const BUDGET_FORM_ID = "wKVKIBe7";
 
@@ -395,5 +403,115 @@ describe("POST /api/typeform/webhook", () => {
     });
     expect(mockedProcessLead).not.toHaveBeenCalled();
     expect(mockedPersistBudgetIntake).not.toHaveBeenCalled();
+  });
+
+  describe("Datadog failure logging", () => {
+    const payload = {
+      event_type: "form_response",
+      form_response: {
+        form_id: BUDGET_FORM_ID,
+        token: "response_log_1",
+        answers: [{ type: "email", email: "budget@example.com" }],
+      },
+    };
+    const body = JSON.stringify(payload);
+
+
+    // stdout/stderr are drained to Datadog too: capture every console call.
+    let consoleSpies: ReturnType<typeof vi.spyOn>[] = [];
+    beforeEach(() => {
+      consoleSpies = (["error", "warn", "log", "info"] as const).map((m) =>
+        vi.spyOn(console, m).mockImplementation(() => undefined)
+      );
+    });
+    afterEach(() => {
+      for (const spy of consoleSpies) spy.mockRestore();
+    });
+    function consoleDump(): string {
+      return JSON.stringify(
+        consoleSpies.map((spy) =>
+          spy.mock.calls.map((args: unknown[]) =>
+            args.map((a: unknown) => (a instanceof Error ? `${a.name}: ${a.message}\n${a.stack}` : a))
+          )
+        )
+      );
+    }
+
+    /** Datadog intake args + every console call. */
+    function datadogDump(): string {
+      return (
+        JSON.stringify([mockedLog.mock.calls, mockedLogError.mock.calls]) +
+        consoleDump()
+      );
+    }
+
+    it("logs a warn on a bad signature without payload, header or secret", async () => {
+      const badSig = sign(body, "wrong");
+      const res = await POST(makeRequest(body, badSig, "evt_tf_bad"));
+      expect(res.status).toBe(401);
+      expect(mockedLog).toHaveBeenCalledTimes(1);
+      expect(mockedLog).toHaveBeenCalledWith(
+        "warn",
+        "typeform_webhook_invalid_signature",
+        { route: "/api/typeform/webhook", request_id: "evt_tf_bad" },
+      );
+      const dump = datadogDump();
+      expect(dump).not.toContain(SECRET);
+      expect(dump).not.toContain(badSig);
+      expect(dump).not.toContain("budget@example.com");
+      expect(dump).not.toContain("response_log_1");
+    });
+
+    it("logs a storage (DB) failure without the DB message and keeps the 503", async () => {
+      // persistTypeformBudgetIntake rethrows the raw PostgREST message, with
+      // the PostgREST error as `cause`.
+      mockedPersistBudgetIntake.mockRejectedValue(
+        new Error(
+          'duplicate key value violates unique constraint "typeform_budget_intakes_email_key" for budget@example.com',
+          {
+            cause: {
+              code: "23505",
+              message: "dup budget@example.com",
+              details: "Key (email)=(budget@example.com) already exists.",
+            },
+          },
+        ),
+      );
+      const res = await POST(makeRequest(body, sign(body), "evt_tf_db"));
+      expect(res.status).toBe(503);
+      expect(mockedLog).toHaveBeenCalledWith(
+        "error",
+        "typeform_budget_intake_storage_failed",
+        {
+          route: "/api/typeform/webhook",
+          request_id: "evt_tf_db",
+          form_id: BUDGET_FORM_ID,
+          error: {
+            kind: "Error",
+            code: "23505",
+            constraint: "typeform_budget_intakes_email_key",
+          },
+        },
+      );
+      expect(mockedLogError).not.toHaveBeenCalled();
+      const dump = datadogDump();
+      expect(dump).not.toContain(SECRET);
+      expect(dump).not.toContain("budget@example.com");
+      expect(dump).not.toContain("response_log_1");
+      expect(dump).not.toContain("duplicate key");
+    });
+
+    it("stays non-fatal when the logger itself throws", async () => {
+      mockedLog.mockRejectedValueOnce(new Error("datadog down"));
+      const res = await POST(makeRequest(body, sign(body, "wrong")));
+      expect(res.status).toBe(401);
+    });
+
+    it("does not log on a successful intake", async () => {
+      const res = await POST(makeRequest(body, sign(body)));
+      expect(res.status).toBe(200);
+      expect(mockedLog).not.toHaveBeenCalled();
+      expect(mockedLogError).not.toHaveBeenCalled();
+    });
   });
 });

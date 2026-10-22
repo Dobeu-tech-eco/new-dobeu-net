@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { processLead } from "@/lib/leads";
 import { createAdminClient } from "@/lib/supabase/server";
+import { logToDatadog } from "@/lib/datadog-server";
+import { safeErrorFields } from "@/lib/log-safe";
 import {
   isCalendlyWebhookConfigured,
   verifyCalendlySignature,
@@ -10,6 +12,23 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const ROUTE = "/api/webhooks/calendly";
+
+/**
+ * Datadog logging is best-effort: it must never change the response. Only ids
+ * and error metadata go in; never the payload, headers, or the signing key.
+ * console output is drained to Datadog too (Vercel log drain), so every
+ * console call below uses fixed strings + safeErrorFields() only.
+ */
+async function safely(log: () => Promise<void>): Promise<void> {
+  try {
+    await log();
+  } catch {
+    // Non-fatal by design.
+  }
+}
+
 
 /**
  * Calendly webhook receiver. Calendly's `invitee.created` payload DOES carry the
@@ -47,6 +66,12 @@ export async function POST(request: Request) {
   const signingKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY!;
   const valid = verifyCalendlySignature(rawBody, request.headers.get("Calendly-Webhook-Signature"), signingKey);
   if (!valid) {
+    await safely(() =>
+      logToDatadog("warn", "calendly_webhook_invalid_signature", {
+        route: ROUTE,
+        request_id: requestId
+      })
+    );
     return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
   }
 
@@ -69,20 +94,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, skipped: "no_email" });
   }
 
-  const { leadId, apolloContactId } = await processLead({
-    email: p.email,
-    name: p.name ?? null,
-    source: "book",
-    message: p.scheduled_event?.name ? `Booked: ${p.scheduled_event.name}` : null,
-    utm: utmFromTracking(p.tracking),
-    referrer: p.scheduled_event?.uri ?? null
-  });
+  let processed: Awaited<ReturnType<typeof processLead>>;
+  try {
+    processed = await processLead({
+      email: p.email,
+      name: p.name ?? null,
+      source: "book",
+      message: p.scheduled_event?.name ? `Booked: ${p.scheduled_event.name}` : null,
+      utm: utmFromTracking(p.tracking),
+      referrer: p.scheduled_event?.uri ?? null
+    });
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        msg: "calendly_webhook_processing_failed",
+        request_id: requestId,
+        error: safeErrorFields(error)
+      })
+    );
+    await safely(() =>
+      logToDatadog("error", "calendly_webhook_processing_failed", {
+        route: ROUTE,
+        request_id: requestId,
+        event_type: evt.event,
+        error: safeErrorFields(error)
+      })
+    );
+    // Same 500 an unhandled throw produced (Calendly still retries), but
+    // returned explicitly: a rethrow would reach instrumentation.ts
+    // onRequestError -> logServerError and Next's stderr with the raw message.
+    return NextResponse.json({ ok: false, error: "processing_failed" }, { status: 500 });
+  }
+  const { leadId, apolloContactId } = processed;
 
   // Keep the bookings table in sync so admin booking views are populated.
   if (p.scheduled_event?.start_time) {
     try {
       const supabase = createAdminClient();
-      await supabase.from("bookings").insert({
+      const { error: insertError } = await supabase.from("bookings").insert({
         lead_id: leadId,
         email: p.email,
         name: p.name ?? null,
@@ -91,8 +140,39 @@ export async function POST(request: Request) {
         notes: p.scheduled_event.name ?? null,
         status: "scheduled"
       });
+      if (insertError) {
+        console.warn(
+          JSON.stringify({
+            msg: "calendly_booking_insert_failed",
+            request_id: requestId,
+            error: safeErrorFields(insertError)
+          })
+        );
+        await safely(() =>
+          logToDatadog("error", "calendly_booking_insert_failed", {
+            route: ROUTE,
+            request_id: requestId,
+            lead_id: leadId,
+            error: safeErrorFields(insertError)
+          })
+        );
+      }
     } catch (error) {
-      console.warn("[/api/webhooks/calendly] booking mirror insert failed", error);
+      console.warn(
+        JSON.stringify({
+          msg: "calendly_booking_insert_failed",
+          request_id: requestId,
+          error: safeErrorFields(error)
+        })
+      );
+      await safely(() =>
+        logToDatadog("error", "calendly_booking_insert_failed", {
+          route: ROUTE,
+          request_id: requestId,
+          lead_id: leadId,
+          error: safeErrorFields(error)
+        })
+      );
     }
   }
 

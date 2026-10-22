@@ -3,7 +3,8 @@
 - **Date:** 2026-10-22
 - **Method:** static read of every file in `supabase/migrations/` (`20260521000000` to `20260829010000`), replayed in order to get the effective policy set, then cross-checked against callers in `lib/actions/**` and `app/api/**`. The Supabase MCP and live advisors were **not** available, and the live schema has not been diffed against migrations yet (S2). Findings describe the schema the migrations produce, not production.
 - **Fix:** `supabase/migrations/20261022000100_rls_advisor_hardening.sql`
-- **Tests:** `lib/rls-migration.test.ts` (static, runs in CI) and `supabase/tests/database/rls_hardening.test.sql` (pgTAP, run with `pnpm supabase test db` against the local Docker stack).
+- **Follow-up (Run 2, 2026-10-23):** `20261023000100_digital_assets_storage.sql` (D1), `20261023000200_drop_company_members_company_idx.sql` (D4), `20261023000300_project_files_storage_path_unique.sql`, `20261023000400_company_storage_select.sql` (D2), `20261023000500_storage_path_unique_indexes.sql`. See "Run 2 follow-up" below.
+- **Tests:** `lib/rls-migration.test.ts` and `lib/run2-migrations.test.ts` (static, run in CI), `supabase/tests/database/rls_hardening.test.sql` and `supabase/tests/database/run2_storage.test.sql` (pgTAP, run with `pnpm supabase test db` against the local Docker stack).
 
 ## Access model (unchanged)
 
@@ -41,13 +42,13 @@ All 16 tables in the requested list exist in migrations. `messages` is the only 
 
 | Policy | Bucket | Cmd | Finding | Fix |
 | --- | --- | --- | --- | --- |
-| `project_files_storage_select_own` | `project-files` | S | F1 (bare uid), no `to` role | recreated with wrapped uid, `to authenticated` |
-| `wo_attachments_storage_select_own` | `work-order-attachments` | S | F1, no `to` role | recreated |
+| `project_files_storage_select_own` | `project-files` | S | F1 (bare uid), no `to` role | recreated with wrapped uid, `to authenticated`; **replaced in Run 2** by `project_files_storage_select_owner_or_company` (D2) |
+| `wo_attachments_storage_select_own` | `work-order-attachments` | S | F1, no `to` role | recreated; **replaced in Run 2** by `wo_attachments_storage_select_owner_or_company` (D2) |
 | `wo_attachments_storage_insert_own` | `work-order-attachments` | I | F1, no `to` role (the `<work_order_id>/` prefix check is kept) | recreated |
 | `wo_attachments_storage_delete_own` | `work-order-attachments` | D | F1, no `to` role | recreated |
-| (none) | `digital-assets` | S | D1: `getAssetDownloadUrl` (`lib/actions/assets.ts`) signs URLs with the cookie-bound client, but no migration creates the bucket or a storage policy for it | **deferred**, see below |
+| (none) | `digital-assets` | S | D1: `getAssetDownloadUrl` (`lib/actions/assets.ts`) signs URLs with the cookie-bound client, but no migration creates the bucket or a storage policy for it | **fixed in Run 2**: `digital_assets_storage_select_entitled` (see below) |
 
-`storage.buckets` is not touched. Bucket rows and limits belong to a separate change.
+`20261022000100` does not touch `storage.buckets`. The Run 2 migration `20261023000100` creates `digital-assets` and forces it private.
 
 ## Functions
 
@@ -87,10 +88,35 @@ After this migration only two client UPDATE policies exist: `profiles_update_own
 
 ## Deferred (not fixed here, needs a decision)
 
-- **D1, `digital-assets` storage read.** No bucket and no `storage.objects` policy exist in migrations, yet `getAssetDownloadUrl` signs with the user client. Either the bucket and policy were created out-of-band, or entitled downloads fail today. This needs the bucket owner (storage.buckets change) to add an entitled-read policy, or the action should sign with the service role after its RLS entitlement check.
-- **D2, company-member storage reads.** The table RLS lets company members read `project_files` and `work_order_attachments` rows, but the storage policies only allow the owner. So `/api/files/[id]/download` and portal ticket attachments return no signed URL for co-members. Widening storage access is a product decision, so it is left owner-only.
+- **D1, `digital-assets` storage read (CLOSED, Run 2).** `20261023000100` creates the bucket private (`on conflict (id) do update set public = false`, so a dashboard-created public bucket is forced private) and adds `digital_assets_storage_select_entitled`. That policy allows SELECT to `authenticated` for an ACTIVE `digital_assets` row whose `storage_path` equals the object name, with an entitlement by user or by active company membership. It adds no write policy. `getAssetDownloadUrl` signs with `{ download: true }`.
+- **D2, company-member storage reads (CLOSED, Run 2, decision: option A).** `20261023000400` replaces the owner-only storage SELECT policies with `project_files_storage_select_owner_or_company` and `wo_attachments_storage_select_owner_or_company`, which mirror the table policies: owner, or active member of the project's or work order's company. SELECT only; `wo_attachments_storage_insert_own` / `_delete_own` are unchanged.
 - **R1, company admin invite/activate (CLOSED).** A company admin can still insert any registered user as an `invited` member (that is the `inviteMember` feature, bounded to their own company and to roles at or below their own rank), but can no longer activate anyone: `enforce_company_member_activation` rejects, for `anon`/`authenticated`, any INSERT with `status='active'` and any UPDATE moving a row from a non-active status to `active`. Role edits on already-active rows and `active` to `disabled` are unaffected. Checked callers: `inviteMember` inserts `invited`, `changeMemberRole` writes `role`, `deactivateMember` writes `disabled`, and `provisionCompanyAdmin` (the only writer of `active`) uses the service role. No cookie-bound path sets `active`, and no accept-invite flow exists, so there is no invitee self-accept path to preserve. If one is added later, it needs a narrow service-role action (or a trigger exception for `user_id = auth.uid()`, `invited` to `active`, role unchanged).
-- **R2, entitled users see `storage_path`.** Entitled users can read their asset's `storage_path`. It is only useful with a storage read policy, and no `digital-assets` storage policy exists in migrations (see D1).
+- **R2, entitled users see `storage_path`.** Entitled users can read their asset's `storage_path`. Since D1 closed, it maps to exactly the object they are already entitled to read: `digital_assets.storage_path` is unique (`20261023000500`), so a path cannot widen to another audience.
 - **D3, project-less company invoices.** `invoices_select_owner_or_company` widens to company members only through `project_id`. A work-order invoice with `project_id = null` stays visible only to `user_id`, matching prior behaviour.
-- **D4, redundant index.** `company_members_company_idx` duplicates the leading column of `unique (company_id, user_id)`. It was not dropped, because this migration only adds indexes.
+- **D4, redundant index (CLOSED, Run 2).** `company_members_company_idx` duplicated the leading column of `unique (company_id, user_id)` (`company_members_company_id_user_id_key`). `20261023000200` drops it, after a guard confirms that a unique index leading with `company_id` exists.
 - **D5, live verification.** Run `supabase db advisors` (CLI >= 2.81.3) or MCP `get_advisors` against production after S2 and this migration land, and diff `pg_policies` against this document.
+
+## Run 2 follow-up (2026-10-23)
+
+storage.objects policies after `20261023000100`–`000500`:
+
+| Policy | Bucket | Cmd | Role | Rule |
+| --- | --- | --- | --- | --- |
+| `project_files_storage_select_owner_or_company` | `project-files` | S | authenticated | a `project_files` row with `storage_path = name` whose project is owned by the caller or belongs to a company the caller is an active member of |
+| `wo_attachments_storage_select_owner_or_company` | `work-order-attachments` | S | authenticated | a `work_order_attachments` row with `storage_path = name` whose work order was created by the caller or belongs to a company the caller is an active member of |
+| `wo_attachments_storage_insert_own` | `work-order-attachments` | I | authenticated | unchanged |
+| `wo_attachments_storage_delete_own` | `work-order-attachments` | D | authenticated | unchanged |
+| `digital_assets_storage_select_entitled` | `digital-assets` | S | authenticated | an ACTIVE `digital_assets` row with `storage_path = name`, entitled to the caller directly or through an active company membership |
+
+No UPDATE policy was added; column-level write scope is unchanged.
+
+Indexes:
+
+| Index | Change | Why |
+| --- | --- | --- |
+| `company_members_company_idx` | dropped | redundant with `company_members_company_id_user_id_key` (D4) |
+| `project_files_storage_path_key` | new, unique | one row per object; serves the storage policy lookup. `recordDeliverable` maps this constraint's 23505 to `storage_path already recorded` |
+| `digital_assets_storage_path_key` | new, unique | stops two asset rows from unioning their audiences over one object; serves the policy lookup |
+| `work_order_attachments_storage_path_key` | new, unique | same, for attachments |
+
+Each unique index is preceded by a guard that raises with the duplicate count, so it never skips silently. If a table or function a policy depends on is missing, the migration raises an exception instead of being recorded as applied.

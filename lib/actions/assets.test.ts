@@ -132,7 +132,7 @@ describe("getAssetDownloadUrl", () => {
 
     const res = await getAssetDownloadUrl(ASSET_ID);
     expect(res).toEqual({ ok: true, data: { url: "https://signed.example/a1.zip" } });
-    expect(createSignedUrl).toHaveBeenCalledWith("a1/kit.zip", 600);
+    expect(createSignedUrl).toHaveBeenCalledWith("a1/kit.zip", 600, { download: true });
   });
 
   it("returns an error when the signed URL cannot be created", async () => {
