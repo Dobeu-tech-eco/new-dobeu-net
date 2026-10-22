@@ -13,6 +13,10 @@ import {
 
 const BUCKET = "project-files";
 
+function tooLargeMessage(bytes: number): string {
+  return `File too large: ${(bytes / (1024 * 1024)).toFixed(1)} MB. Deliverables are capped at 25 MB.`;
+}
+
 export function DeliverableUpload({ projectId }: { projectId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +34,7 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
     }
     // Client-side pre-checks (server re-validates MIME on record).
     if (file.size > MAX_DELIVERABLE_BYTES) {
-      setError("File too large (25MB max).");
+      setError(tooLargeMessage(file.size));
       return;
     }
     const mime = file.type;
@@ -43,7 +47,9 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
       // 1. Mint a signed upload URL (admin).
       const urlRes = await createDeliverableUploadUrl({
         project_id: projectId,
-        filename: file.name
+        filename: file.name,
+        size_bytes: file.size,
+        mime
       });
       if (!urlRes.ok) {
         setError(urlRes.error);
@@ -58,7 +64,10 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
           contentType: mime
         });
       if (uploadError) {
-        setError(uploadError.message);
+        const e = uploadError as { message: string; statusCode?: string | number; status?: number };
+        const tooBig =
+          String(e.statusCode ?? e.status ?? "") === "413" || /exceed/i.test(e.message);
+        setError(tooBig ? tooLargeMessage(file.size) : e.message);
         return;
       }
 

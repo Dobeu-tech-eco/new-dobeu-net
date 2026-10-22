@@ -7,12 +7,14 @@ const h = vi.hoisted(() => {
     signedUrl: { data: { path: string; token: string } | null; error: { message: string } | null };
     insertResult: { data: { id: string } | null; error: { message: string } | null };
     capturedInsert: Record<string, unknown> | null;
+    signSpy: (...a: unknown[]) => void;
   } = {
     user: { id: "admin_id", email: "admin@dobeu.net" },
     projectSelect: { data: { id: "proj_1" }, error: null },
     signedUrl: { data: { path: "proj_1/abc-file.pdf", token: "tok_1" }, error: null },
     insertResult: { data: { id: "file_1" }, error: null },
-    capturedInsert: null
+    capturedInsert: null,
+    signSpy: vi.fn() as unknown as (...a: unknown[]) => void
   };
   return { state };
 });
@@ -44,7 +46,10 @@ vi.mock("@/lib/supabase/server", () => {
       })),
       storage: {
         from: vi.fn(() => ({
-          createSignedUploadUrl: vi.fn(() => Promise.resolve(h.state.signedUrl))
+          createSignedUploadUrl: vi.fn((...a: unknown[]) => {
+            h.state.signSpy(...a);
+            return Promise.resolve(h.state.signedUrl);
+          })
         }))
       }
     };
@@ -66,18 +71,19 @@ beforeEach(() => {
 });
 
 const projectId = "00000000-0000-0000-0000-000000000001";
+const pdf = { size_bytes: 1024, mime: "application/pdf" };
 
 describe("createDeliverableUploadUrl", () => {
   it("mints a signed url for an admin", async () => {
     const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
-    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "spec.pdf" });
+    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "spec.pdf", ...pdf });
     expect(result).toEqual({ ok: true, data: { path: "proj_1/abc-file.pdf", token: "tok_1" } });
   });
 
   it("blocks non-admin callers", async () => {
     h.state.user = { id: "u", email: "stranger@example.com" };
     const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
-    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "spec.pdf" });
+    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "spec.pdf", ...pdf });
     expect(result).toEqual({ ok: false, error: "forbidden" });
   });
 
@@ -85,7 +91,8 @@ describe("createDeliverableUploadUrl", () => {
     const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
     const result = await createDeliverableUploadUrl({
       project_id: projectId,
-      filename: "../../etc/passwd"
+      filename: "../../etc/passwd",
+      ...pdf
     });
     expect(result.ok).toBe(false);
   });
@@ -93,14 +100,60 @@ describe("createDeliverableUploadUrl", () => {
   it("fails when the project does not exist", async () => {
     h.state.projectSelect = { data: null, error: { message: "not found" } };
     const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
-    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "spec.pdf" });
+    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "spec.pdf", ...pdf });
     expect(result.ok).toBe(false);
+  });
+
+  it("rejects over-cap files before minting a url", async () => {
+    const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
+    const result = await createDeliverableUploadUrl({
+      project_id: projectId,
+      filename: "big.pdf",
+      mime: "application/pdf",
+      size_bytes: 26 * 1024 * 1024
+    });
+    expect(result).toEqual({
+      ok: false,
+      error: "File too large: 26.0 MB. Deliverables are capped at 25 MB."
+    });
+    expect(h.state.signSpy as unknown).not.toHaveBeenCalled();
+  });
+
+  it("accepts exactly 25MB", async () => {
+    const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
+    const result = await createDeliverableUploadUrl({
+      project_id: projectId,
+      filename: "edge.pdf",
+      mime: "application/pdf",
+      size_bytes: 26214400
+    });
+    expect(result.ok).toBe(true);
+    expect(h.state.signSpy as unknown).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a disallowed MIME before minting a url", async () => {
+    const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
+    const result = await createDeliverableUploadUrl({
+      project_id: projectId,
+      filename: "evil.exe",
+      mime: "application/x-msdownload",
+      size_bytes: 1024
+    });
+    expect(result.ok).toBe(false);
+    expect(h.state.signSpy as unknown).not.toHaveBeenCalled();
+  });
+
+  it("requires size_bytes and mime", async () => {
+    const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
+    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "a.pdf" });
+    expect(result.ok).toBe(false);
+    expect(h.state.signSpy as unknown).not.toHaveBeenCalled();
   });
 
   it("surfaces a storage error", async () => {
     h.state.signedUrl = { data: null, error: { message: "bucket missing" } };
     const { createDeliverableUploadUrl } = await import("@/lib/actions/files");
-    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "spec.pdf" });
+    const result = await createDeliverableUploadUrl({ project_id: projectId, filename: "spec.pdf", ...pdf });
     expect(result).toEqual({ ok: false, error: "bucket missing" });
   });
 });

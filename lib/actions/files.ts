@@ -5,8 +5,11 @@
  * Bytes must NOT flow through a server action: Next.js caps action request
  * bodies at ~1MB, far below the 25MB deliverable ceiling. The flow is:
  *
- *   1. `createDeliverableUploadUrl(projectId, filename)` — admin mints a signed
- *      upload URL for the `project-files` bucket (service-role client).
+ *   1. `createDeliverableUploadUrl({ project_id, filename, size_bytes, mime })` —
+ *      admin mints a signed upload URL for the `project-files` bucket
+ *      (service-role client). Size (<= 25 MB) and MIME (allowlist) are rejected
+ *      BEFORE a URL is minted; the bucket enforces the same limits in storage
+ *      (see 20261022000200_storage_deliverable_size_limit.sql).
  *   2. The BROWSER PUTs the bytes directly to storage via `uploadToSignedUrl`
  *      (see components/admin/DeliverableUpload.tsx). Size + MIME are pre-checked
  *      client-side there.
@@ -26,13 +29,19 @@ const BUCKET = "project-files";
 /** 25 MB ceiling, mirrored client-side as a pre-check. */
 export const MAX_DELIVERABLE_BYTES = 25 * 1024 * 1024;
 
-/** MIME allowlist for admin deliverables. */
+/**
+ * MIME allowlist for admin deliverables: pdf, common images (png/jpeg/webp/
+ * gif/svg), zip, Office docs (doc/docx/xls/xlsx/ppt/pptx), text/plain,
+ * text/csv, video/mp4. Keep in sync with the storage bucket migration
+ * `20261022000200_storage_deliverable_size_limit.sql`.
+ */
 export const ALLOWED_DELIVERABLE_MIME = [
   "application/pdf",
   "application/zip",
   "image/png",
   "image/jpeg",
   "image/webp",
+  "image/gif",
   "image/svg+xml",
   "text/plain",
   "text/csv",
@@ -41,7 +50,8 @@ export const ALLOWED_DELIVERABLE_MIME = [
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "video/mp4"
 ] as const;
 
 const uuid = z.string().uuid("invalid id");
@@ -57,7 +67,11 @@ const safeFilename = z
 
 const createUrlInput = z.object({
   project_id: uuid,
-  filename: safeFilename
+  filename: safeFilename,
+  size_bytes: z.number().int().positive("size_bytes required"),
+  mime: z.enum(ALLOWED_DELIVERABLE_MIME, {
+    errorMap: () => ({ message: "Unsupported file type." })
+  })
 });
 
 const recordInput = z.object({
@@ -87,7 +101,12 @@ export async function createDeliverableUploadUrl(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
   }
-  const { project_id, filename } = parsed.data;
+  const { project_id, filename, size_bytes } = parsed.data;
+
+  if (size_bytes > MAX_DELIVERABLE_BYTES) {
+    const mb = (size_bytes / (1024 * 1024)).toFixed(1);
+    return { ok: false, error: `File too large: ${mb} MB. Deliverables are capped at 25 MB.` };
+  }
 
   let admin;
   try {
