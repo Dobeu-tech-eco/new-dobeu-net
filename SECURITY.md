@@ -82,6 +82,21 @@ or a dependency classification change. Any new runtime exposure needs a separate
 review; an audit passing with these exceptions does not mean the dependency graph
 contains no vulnerabilities.
 
+## Accepted risks — email sign-in links (token_hash)
+
+Invite and magic-link emails carry a one-time `token_hash`. `/auth/callback` never
+verifies it on GET: it parks the token in a short-lived (120 s) httpOnly, Lax,
+`/auth/confirm`-scoped cookie and shows a "Continue signing in" step; only the
+Origin-checked POST to `/auth/confirm/submit` calls `verifyOtp`. This defeats
+mail-scanner prefetch, cross-site auto-submit, and token leakage into URLs,
+Referer, analytics, and Datadog (`token_hash` is a redacted query key).
+
+Residual (accepted 2026-10-22): a victim who opens an attacker's own sign-in link
+and clicks Continue is signed into the attacker's account. This is inherent to
+OTP links that are not bound to the browser that requested them; Supabase cannot
+reveal the target identity without consuming the token. `recovery` links are not
+accepted by this flow.
+
 ## Accepted risks — deliverable uploads
 
 Uploads are admin-only (`requireAdminAal2`: `ADMIN_EMAILS` plus MFA AAL2). The

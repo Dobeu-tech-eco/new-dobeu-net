@@ -20,8 +20,14 @@ async function renderPage(next = "/portal") {
 }
 
 describe("ConfirmPage", () => {
-  it("sets no-referrer", () => {
-    expect(metadata.referrer).toBe("no-referrer");
+  it("does not override the referrer policy (no-referrer would make the POST send Origin: null)", () => {
+    expect(metadata.referrer).toBeUndefined();
+  });
+
+  it("accepts an already-decoded cookie value", async () => {
+    jar.value = JSON.stringify({ token_hash: "abc", type: "invite" });
+    await renderPage();
+    expect(screen.getByRole("button", { name: "Continue signing in" })).toBeTruthy();
   });
 
   it("shows the form when the pending cookie is valid and ignores query tokens", async () => {

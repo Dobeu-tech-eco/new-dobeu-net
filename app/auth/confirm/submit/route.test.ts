@@ -54,6 +54,12 @@ describe("POST /auth/confirm/submit", () => {
     expect(verifyOtp).not.toHaveBeenCalled();
   });
 
+  it("rejects a literal Origin: null (sandboxed iframe / no-referrer page) and never verifies", async () => {
+    const res = await post({ cookie: pending(), origin: "null", fetchSite: "same-origin" });
+    expect(res.status).toBe(403);
+    expect(verifyOtp).not.toHaveBeenCalled();
+  });
+
   it("without Origin allows only same-origin or none Sec-Fetch-Site", async () => {
     verifyOtp.mockResolvedValue({ error: null });
     expect((await post({ cookie: pending(), origin: null, fetchSite: "cross-site" })).status).toBe(403);

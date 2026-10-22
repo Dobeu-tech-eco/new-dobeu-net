@@ -6,8 +6,11 @@ import { otpParamsSchema } from "./schema";
 import { OTP_COOKIE } from "./cookie";
 
 export const dynamic = "force-dynamic";
+// No page-level referrer override: `no-referrer` makes browsers send
+// `Origin: null` on this page's form POST, which the submit route's CSRF
+// check rejects. The URL holds only `next` (the token is in a cookie), so
+// the site-wide origin-when-cross-origin policy is enough.
 export const metadata: Metadata = {
-  referrer: "no-referrer",
   robots: { index: false, follow: false },
 };
 
@@ -16,7 +19,13 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 function hasPendingOtp(raw: string | undefined): boolean {
   if (!raw) return false;
   try {
-    return otpParamsSchema.safeParse(JSON.parse(decodeURIComponent(raw))).success;
+    let value: unknown;
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      value = JSON.parse(decodeURIComponent(raw));
+    }
+    return otpParamsSchema.safeParse(value).success;
   } catch {
     return false;
   }
