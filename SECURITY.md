@@ -10,8 +10,9 @@ Dependabot checks npm dependencies, GitHub Actions, and the Docker image in
 `/containers/function` weekly. Review its security updates promptly. Cursor Bugbot
 is the PR reviewer; address its security findings before merging.
 
-GitHub Actions is currently stalled. Local `pnpm verify` is the merge gate until
-Actions resumes; run the relevant Playwright and Lighthouse checks for changes
+GitHub Actions runs on every pull request: the `Verify` job (`pnpm verify`) and the
+`secret-scan` gitleaks job are the merge gate. Run `pnpm verify` locally before
+pushing, and run the relevant Playwright and Lighthouse checks for changes
 that affect those surfaces. A local build that skips source-map upload can use
 `pnpm exec next build`; it does not replace the full merge gate.
 
