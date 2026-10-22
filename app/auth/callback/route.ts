@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizeNextPath } from "@/lib/utils";
+import { otpParamsSchema } from "@/app/auth/confirm/schema";
+import { OTP_COOKIE, OTP_COOKIE_PATH } from "@/app/auth/confirm/cookie";
 
 export const dynamic = "force-dynamic";
+
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -16,13 +20,26 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL(next, url.origin));
     }
   } else if (url.searchParams.has("token_hash")) {
-    // Never verify an OTP on GET: a mail scanner or a crafted link would
-    // consume or plant a session. Hand off to an explicit confirm step.
-    const confirm = new URL("/auth/confirm", url.origin);
-    confirm.searchParams.set("token_hash", url.searchParams.get("token_hash") ?? "");
-    confirm.searchParams.set("type", url.searchParams.get("type") ?? "");
-    confirm.searchParams.set("next", next);
-    return NextResponse.redirect(confirm);
+    // Never verify an OTP on GET. Park the token in a Strict, httpOnly cookie
+    // (so a cross-site POST cannot carry it) and send the browser to a confirm
+    // step whose URL holds no token.
+    const parsed = otpParamsSchema.safeParse({
+      token_hash: url.searchParams.get("token_hash"),
+      type: url.searchParams.get("type"),
+    });
+    if (parsed.success) {
+      const confirm = new URL("/auth/confirm", url.origin);
+      confirm.searchParams.set("next", next);
+      const res = NextResponse.redirect(confirm, 303);
+      res.cookies.set(OTP_COOKIE, JSON.stringify(parsed.data), {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: !LOCAL_HOSTS.has(url.hostname),
+        path: OTP_COOKIE_PATH,
+        maxAge: 600,
+      });
+      return res;
+    }
   }
 
   return NextResponse.redirect(
