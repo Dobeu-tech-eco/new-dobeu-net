@@ -33,9 +33,8 @@ export default async function AdminLeadsPage({
       </header>
 
       <AdminStatusBanner
-        error={
-          params.error || (error ? "Unable to load leads. Try again." : null)
-        }
+        error={params.error}
+        loadError={error ? "Unable to load leads. Try again." : null}
       />
 
       {!leads || leads.length === 0 ? (

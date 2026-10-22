@@ -110,9 +110,8 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
       </div>
 
       <AdminStatusBanner
-        error={
-          sp.error || (error ? "Unable to load tickets. Try again." : null)
-        }
+        error={sp.error}
+        loadError={error ? "Unable to load tickets. Try again." : null}
       />
 
       {!tickets || tickets.length === 0 ? (

@@ -82,11 +82,11 @@ export default async function AdminInvoicesPage({
       </header>
 
       <AdminStatusBanner
-        error={
-          params.error ||
-          (invoicesError || profilesError || projectsError || authError
+        error={params.error}
+        loadError={
+          invoicesError || profilesError || projectsError || authError
             ? "Unable to load invoices or invoice options. Try again."
-            : null)
+            : null
         }
       />
 

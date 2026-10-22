@@ -118,10 +118,8 @@ export default async function AdminIntakesPage({ searchParams }: PageProps) {
       </div>
 
       <AdminStatusBanner
-        error={
-          params.error ||
-          (error ? "Unable to load the intake queue. Try again." : null)
-        }
+        error={params.error}
+        loadError={error ? "Unable to load the intake queue. Try again." : null}
       />
 
       {!error && (!intakes || intakes.length === 0) ? (

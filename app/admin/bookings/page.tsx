@@ -36,11 +36,11 @@ export default async function AdminBookingsPage({
       </header>
 
       <AdminStatusBanner
-        error={
-          params.error ||
-          (error
+        error={params.error}
+        loadError={
+          error
             ? "Couldn’t load bookings. Check Supabase connectivity — see server logs for details."
-            : null)
+            : null
         }
       />
 

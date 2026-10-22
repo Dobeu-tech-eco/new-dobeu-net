@@ -23,7 +23,7 @@ async function createCompanyAction(formData: FormData): Promise<void> {
     name: String(formData.get("name") ?? ""),
   });
   redirect(
-    `/admin/companies?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+    `/admin/companies?${result.ok ? "ok=1" : "error=company_create_failed"}`,
   );
 }
 
@@ -31,7 +31,7 @@ async function suspendCompanyAction(formData: FormData): Promise<void> {
   "use server";
   const result = await suspendCompany({ id: String(formData.get("id") ?? "") });
   redirect(
-    `/admin/companies?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+    `/admin/companies?${result.ok ? "ok=1" : "error=company_suspend_failed"}`,
   );
 }
 
@@ -41,7 +41,7 @@ async function reactivateCompanyAction(formData: FormData): Promise<void> {
     id: String(formData.get("id") ?? ""),
   });
   redirect(
-    `/admin/companies?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+    `/admin/companies?${result.ok ? "ok=1" : "error=company_reactivate_failed"}`,
   );
 }
 
@@ -52,7 +52,7 @@ async function provisionAdminAction(formData: FormData): Promise<void> {
     email: String(formData.get("email") ?? ""),
   });
   redirect(
-    `/admin/companies?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+    `/admin/companies?${result.ok ? "ok=1" : "error=admin_provision_failed"}`,
   );
 }
 
@@ -95,11 +95,11 @@ export default async function AdminCompaniesPage({
       </header>
 
       <AdminStatusBanner
-        error={
-          params.error ||
-          (companiesRes.error || membersRes.error
+        error={params.error}
+        loadError={
+          companiesRes.error || membersRes.error
             ? "Unable to load companies and member counts. Try again."
-            : null)
+            : null
         }
         success={params.ok === "1" ? "Company updated successfully." : null}
       />

@@ -46,11 +46,11 @@ export default async function AdminUsersPage({
       </header>
 
       <AdminStatusBanner
-        error={
-          params.error ||
-          (error || authError
+        error={params.error}
+        loadError={
+          error || authError
             ? "Unable to load users or admin roles. Try again."
-            : null)
+            : null
         }
       />
 

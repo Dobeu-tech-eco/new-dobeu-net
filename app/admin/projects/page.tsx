@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminStatusBanner } from "@/components/admin/AdminStatusBanner";
 import { createAdminClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { NewProjectDialog } from "@/components/admin/NewProjectDialog";
@@ -71,14 +72,7 @@ export default async function AdminProjectsPage({
         <NewProjectDialog owners={ownerOptions} companies={companies ?? []} />
       </header>
 
-      {actionError && (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
-        >
-          {actionError}
-        </p>
-      )}
+      <AdminStatusBanner error={actionError} />
       {(projectsError ||
         ownersError ||
         companiesError ||

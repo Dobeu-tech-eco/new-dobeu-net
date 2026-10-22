@@ -20,7 +20,7 @@ async function provisionAdminAction(
     email: String(formData.get("email") ?? ""),
   });
   redirect(
-    `/admin/companies/${encodeURIComponent(companyId)}?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+    `/admin/companies/${encodeURIComponent(companyId)}?${result.ok ? "ok=1" : "error=admin_provision_failed"}`,
   );
 }
 
@@ -132,16 +132,16 @@ export default async function AdminCompanyDetailPage({
       </div>
 
       <AdminStatusBanner
-        error={
-          statusParams.error ||
-          (membersRes.error ||
+        error={statusParams.error}
+        loadError={
+          membersRes.error ||
           projectsRes.error ||
           workOrdersRes.error ||
           entitlementsRes.error ||
           ("error" in profilesRes && profilesRes.error) ||
           ("error" in assetsRes && assetsRes.error)
             ? "Unable to load some company details. Try again."
-            : null)
+            : null
         }
         success={
           statusParams.ok === "1"

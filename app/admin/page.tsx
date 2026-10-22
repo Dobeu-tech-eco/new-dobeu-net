@@ -68,14 +68,14 @@ export default async function AdminOverview({
       </header>
 
       <AdminStatusBanner
-        error={
-          params.error ||
-          (leadsRes.error ||
+        error={params.error}
+        loadError={
+          leadsRes.error ||
           bookingsRes.error ||
           openInvoicesRes.error ||
           usersRes.error
             ? "Unable to load some overview data. Try again."
-            : null)
+            : null
         }
       />
 

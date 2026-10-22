@@ -25,7 +25,9 @@ describe("admin leads errors", () => {
         searchParams: Promise.resolve({ error: "Lead action failed" }),
       }),
     );
-    expect(screen.getByRole("alert")).toHaveTextContent("Lead action failed");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Something went wrong. Try again.",
+    );
   });
 
   it("renders read failures without exposing database details", async () => {
@@ -43,10 +45,15 @@ describe("admin leads errors", () => {
         },
       }).supabase,
     );
-    render(await AdminLeadsPage({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Unable to load leads. Try again.",
+    render(
+      await AdminLeadsPage({
+        searchParams: Promise.resolve({ error: "load_failed" }),
+      }),
     );
+    expect(
+      screen.getByText("Unable to load leads. Try again."),
+    ).toHaveAttribute("role", "alert");
+    expect(screen.getAllByRole("alert")).toHaveLength(2);
     expect(screen.queryByText(/private_schema/)).not.toBeInTheDocument();
   });
 

@@ -71,10 +71,51 @@ describe("company detail action feedback", () => {
     render(
       await AdminCompanyDetailPage({
         params: Promise.resolve({ id: "company-id" }),
-        searchParams: Promise.resolve({ error: "Invite failed" }),
+        searchParams: Promise.resolve({ error: "admin_provision_failed" }),
       }),
     );
-    expect(screen.getByRole("alert")).toHaveTextContent("Invite failed");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Unable to provision the company admin. Try again.",
+    );
+  });
+
+  it("keeps detail read failures visible alongside query feedback", async () => {
+    h.createAdminClient.mockReturnValue(
+      buildStubClient({
+        tables: {
+          companies: {
+            selectSingle: {
+              data: {
+                id: "company-id",
+                name: "Acme",
+                status: "active",
+                created_at: "2026-10-20T12:00:00Z",
+                stripe_customer_id: null,
+              },
+            },
+          },
+          company_members: {
+            selectSingle: {
+              data: [],
+              error: { message: "private provider text" },
+            },
+          },
+        },
+      }).supabase,
+    );
+    render(
+      await AdminCompanyDetailPage({
+        params: Promise.resolve({ id: "company-id" }),
+        searchParams: Promise.resolve({ error: "admin_provision_failed" }),
+      }),
+    );
+    expect(
+      screen.getByText("Unable to load some company details. Try again."),
+    ).toHaveAttribute("role", "alert");
+    expect(
+      screen.getByText("Unable to provision the company admin. Try again."),
+    ).toHaveAttribute("role", "alert");
+    expect(screen.queryByText(/private provider/)).not.toBeInTheDocument();
   });
 
   it("renders successful provisioning as a status", async () => {
@@ -93,7 +134,7 @@ describe("company detail action feedback", () => {
     { result: { ok: true, data: {} }, query: "ok=1" },
     {
       result: { ok: false, error: "Suspended & inactive?" },
-      query: `error=${encodeURIComponent("Suspended & inactive?")}`,
+      query: "error=admin_provision_failed",
     },
   ])(
     "redirects provisioning back to the company with $query",

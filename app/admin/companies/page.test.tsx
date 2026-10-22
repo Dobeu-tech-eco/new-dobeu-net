@@ -104,16 +104,34 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("company action feedback", () => {
+  it.each([
+    "<script>alert(1)</script>",
+    "https://evil.example/re-authenticate",
+    "x".repeat(500),
+    "toString",
+    "__proto__",
+  ])(
+    "replaces unrecognized query error %s with generic copy",
+    async (error) => {
+      const { container } = render(
+        await AdminCompaniesPage({ searchParams: Promise.resolve({ error }) }),
+      );
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Something went wrong. Try again.",
+      );
+      expect(container.textContent).not.toContain(error);
+    },
+  );
   it("renders action errors as alerts", async () => {
     render(
       await AdminCompaniesPage({
         searchParams: Promise.resolve({
-          error: "Company is suspended & cannot invite",
+          error: "company_suspend_failed",
         }),
       }),
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Company is suspended & cannot invite",
+      "Unable to suspend the company. Try again.",
     );
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
@@ -131,10 +149,15 @@ describe("company action feedback", () => {
   it("prioritizes an error over a stale success flag", async () => {
     render(
       await AdminCompaniesPage({
-        searchParams: Promise.resolve({ ok: "1", error: "Invite failed" }),
+        searchParams: Promise.resolve({
+          ok: "1",
+          error: "admin_provision_failed",
+        }),
       }),
     );
-    expect(screen.getByRole("alert")).toHaveTextContent("Invite failed");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Unable to provision the company admin. Try again.",
+    );
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -142,10 +165,17 @@ describe("company action feedback", () => {
     "surfaces a %s read failure without database details",
     async (table) => {
       stubQuery(table);
-      render(await AdminCompaniesPage({ searchParams: Promise.resolve({}) }));
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Unable to load companies and member counts. Try again.",
+      render(
+        await AdminCompaniesPage({
+          searchParams: Promise.resolve({ error: "company_create_failed" }),
+        }),
       );
+      expect(
+        screen.getByText(
+          "Unable to load companies and member counts. Try again.",
+        ),
+      ).toHaveAttribute("role", "alert");
+      expect(screen.getAllByRole("alert")).toHaveLength(2);
       expect(screen.queryByText(/private database/)).not.toBeInTheDocument();
     },
   );
@@ -153,24 +183,28 @@ describe("company action feedback", () => {
   const wrappers = [
     {
       name: "create",
+      code: "company_create_failed",
       index: 0,
       action: h.createCompany,
       expected: { name: "Acme" },
     },
     {
       name: "suspend",
+      code: "company_suspend_failed",
       index: 1,
       action: h.suspendCompany,
       expected: { id: "active-company" },
     },
     {
       name: "provision",
+      code: "admin_provision_failed",
       index: 2,
       action: h.provisionCompanyAdmin,
       expected: { companyId: "active-company", email: "admin@example.com" },
     },
     {
       name: "reactivate",
+      code: "company_reactivate_failed",
       index: 3,
       action: h.reactivateCompany,
       expected: { id: "active-company" },
@@ -178,8 +212,8 @@ describe("company action feedback", () => {
   ];
 
   it.each(wrappers)(
-    "redirects $name failures with encoded error feedback",
-    async ({ index, action, expected }) => {
+    "redirects $name failures with fixed error codes, excluding provider text",
+    async ({ index, action, expected, code }) => {
       action.mockResolvedValue({
         ok: false,
         error: "Cannot invite: suspended & inactive?",
@@ -195,9 +229,7 @@ describe("company action feedback", () => {
 
       await expect(formActions(tree)[index](data)).rejects.toThrow("REDIRECT:");
       expect(action).toHaveBeenCalledWith(expected);
-      expect(h.redirect).toHaveBeenCalledWith(
-        `/admin/companies?error=${encodeURIComponent("Cannot invite: suspended & inactive?")}`,
-      );
+      expect(h.redirect).toHaveBeenCalledWith(`/admin/companies?error=${code}`);
     },
   );
 
