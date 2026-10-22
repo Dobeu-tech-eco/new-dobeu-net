@@ -1,4 +1,12 @@
-/** @type {import('@lhci/cli').Config} */
+/**
+ * Lighthouse CI — mobile (default `pnpm lighthouse:ci`).
+ * Desktop counterpart: lighthouserc.desktop.cjs
+ *   pnpm exec lhci autorun --config=lighthouserc.desktop.cjs
+ * Thresholds mirror the CLAUDE.md quality targets: Performance >= 90,
+ * Accessibility >= 95, Best Practices >= 90, SEO >= 95.
+ *
+ * @type {import('@lhci/cli').Config}
+ */
 module.exports = {
   ci: {
     collect: {
@@ -22,6 +30,9 @@ module.exports = {
     assert: {
       assertions: {
         "categories:performance": ["error", { minScore: 0.9 }],
+        "categories:accessibility": ["error", { minScore: 0.95 }],
+        "categories:best-practices": ["error", { minScore: 0.9 }],
+        "categories:seo": ["error", { minScore: 0.95 }],
       },
     },
     upload: {

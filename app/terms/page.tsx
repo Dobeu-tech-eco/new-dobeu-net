@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalLayout } from "@/components/landing/LegalLayout";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Dobeu Tech Solutions",
+  title: "Terms of Service",
   description: "Terms of Service for Dobeu Tech Solutions LLC — dobeu.net.",
   alternates: { canonical: "/terms" },
   robots: { index: true, follow: true },

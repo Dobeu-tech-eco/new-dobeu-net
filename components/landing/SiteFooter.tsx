@@ -1,6 +1,5 @@
-"use client";
-
 import Link from "next/link";
+import { CookiePreferencesButton } from "@/components/landing/CookiePreferencesButton";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import {
   FOOTER_SITE_LINKS,
@@ -104,20 +103,7 @@ export function SiteFooter() {
           <div className="flex items-center gap-5">
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-            <button
-              type="button"
-              className="hover:text-foreground transition-colors"
-              onClick={() => {
-                if (
-                  typeof window !== "undefined" &&
-                  (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences
-                ) {
-                  (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences!();
-                }
-              }}
-            >
-              Cookie preferences
-            </button>
+            <CookiePreferencesButton />
           </div>
         </div>
       </div>

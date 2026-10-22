@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
-import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { RouteLight } from "@/components/motion/RouteLight";
+import { DeferredToaster } from "@/components/landing/DeferredToaster";
 import { FOUNDER, NAP, ORGANIZATION_SAME_AS, PERSON_SAME_AS, SITE_IDENTITY } from "@/lib/jeremy-data";
 import { getSiteUrl, safeJsonLdStringify } from "@/lib/utils";
 import "./globals.css";
@@ -81,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <RouteLight />
           <AnalyticsProvider>{children}</AnalyticsProvider>
-          <Toaster position="bottom-right" theme="system" richColors closeButton />
+          <DeferredToaster />
         </ThemeProvider>
         {/* JSON-LD structured data — WebSite + Person + Organization graph
             WebSite: provides canonical name + URL signal.

@@ -8,7 +8,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { AVAILABILITY, FOUNDER, PRIMARY_NAV_LINKS, SUB_BRANDS } from "@/lib/jeremy-data";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { NavThemeToggle } from "@/components/landing/NavThemeToggle";
 
 const NAV_LINKS = PRIMARY_NAV_LINKS;
 
@@ -205,7 +205,7 @@ export function SiteNav() {
               <span>dobeutech</span>
             </Link>
 
-            <ThemeToggle />
+            <NavThemeToggle />
 
             <Button
               onClick={() => open("book")}

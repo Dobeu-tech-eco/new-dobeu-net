@@ -1,8 +1,5 @@
-"use client";
-
 import { ArrowRight, Check, ClipboardCheck, FileCheck2, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useLightbox } from "@/components/landing/LightboxProvider";
+import { OperationsContactActions } from "@/components/landing/LandingCtas";
 
 const outcomes = [
   { title: "Know where the work stands.", problem: "Updates scattered across calls, inboxes, and spreadsheets?", answer: "Bring responsibilities, records, and next steps into one place, so your team can act without piecing the story together." },
@@ -67,6 +64,5 @@ export function OperationsQuestions() {
 }
 
 export function OperationsContact() {
-  const { open } = useLightbox();
-  return <section id="contact" aria-labelledby="contact-heading" className="border-t border-border bg-card py-20 md:py-28"><div className="container flex max-w-7xl flex-col items-start gap-7"><h2 id="contact-heading" className="max-w-4xl text-balance font-display text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">You know what&apos;s not working.<br /><span className="text-primary">Let&apos;s work out what would.</span></h2><p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">Tell us where the work gets stuck, who it affects, and what a better day would look like. You don&apos;t need a technical brief.</p><Button size="lg" className="h-auto rounded-full px-7 py-4" onClick={() => open("form")}>Tell us about your operation <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></Button><button type="button" onClick={() => open("book")} className="rounded-md text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Prefer to talk it through? Book a conversation.</button></div></section>;
+  return <section id="contact" aria-labelledby="contact-heading" className="border-t border-border bg-card py-20 md:py-28"><div className="container flex max-w-7xl flex-col items-start gap-7"><h2 id="contact-heading" className="max-w-4xl text-balance font-display text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">You know what&apos;s not working.<br /><span className="text-primary">Let&apos;s work out what would.</span></h2><p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">Tell us where the work gets stuck, who it affects, and what a better day would look like. You don&apos;t need a technical brief.</p><OperationsContactActions /></div></section>;
 }
