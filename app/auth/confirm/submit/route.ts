@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizeNextPath } from "@/lib/utils";
-import { otpParamsSchema } from "./schema";
-import { OTP_COOKIE, OTP_COOKIE_PATH } from "./cookie";
+import { otpParamsSchema } from "../schema";
+import { OTP_COOKIE, OTP_COOKIE_PATH } from "../cookie";
 
 export const dynamic = "force-dynamic";
 

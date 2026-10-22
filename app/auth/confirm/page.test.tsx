@@ -29,6 +29,7 @@ describe("ConfirmPage", () => {
     await renderPage();
     expect(screen.getByRole("button", { name: "Continue signing in" })).toBeTruthy();
     expect(document.querySelector("form")?.getAttribute("method")).toBe("post");
+    expect(document.querySelector("form")?.getAttribute("action")).toBe("/auth/confirm/submit");
     expect(document.querySelector('input[name="token_hash"]')).toBeNull();
   });
 
