@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
-import { tooLargeMessage, MAX_DELIVERABLE_BYTES, ALLOWED_DELIVERABLE_MIME, EXTENSION_MIME, filenameError } from "@/lib/deliverable-limits";
+import { tooLargeMessage, MAX_DELIVERABLE_BYTES, ALLOWED_DELIVERABLE_MIME, EXTENSION_MIME, filenameError, keySafeName, canonicalMimeForName } from "@/lib/deliverable-limits";
 
 describe("deliverable-limits", () => {
   it("formats the over-cap message with one decimal", () => {
@@ -41,5 +41,19 @@ describe("deliverable-limits", () => {
       expect(filenameError(bad)).not.toBeNull();
     }
     expect(filenameError("a.pdf", "image/png")).not.toBeNull();
+  });
+});
+
+describe("key helpers", () => {
+  it("keySafeName replaces unsafe chars, collapses repeats and trims", () => {
+    expect(keySafeName("Q1 Report.pdf")).toBe("Q1-Report.pdf");
+    expect(keySafeName("a  b   c.pdf")).toBe("a-b-c.pdf");
+    expect(keySafeName(" x .txt")).toBe("x-.txt");
+  });
+
+  it("canonicalMimeForName maps by last extension only", () => {
+    expect(canonicalMimeForName("a-b.CSV")).toBe("text/csv");
+    expect(canonicalMimeForName("x.html")).toBeNull();
+    expect(canonicalMimeForName("noext")).toBeNull();
   });
 });

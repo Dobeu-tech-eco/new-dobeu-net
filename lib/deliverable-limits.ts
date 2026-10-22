@@ -63,8 +63,26 @@ export const MAX_FILENAME_LENGTH = 120;
 /** Allowlist charset; no percent-encodings, quotes, separators or control chars. */
 const FILENAME_CHARSET = /^[A-Za-z0-9._ -]+$/;
 
-/** Characters allowed in the server-built object name (adds nothing else). */
-export const OBJECT_NAME_CHARSET = FILENAME_CHARSET;
+/**
+ * Strict charset for the storage object key's file part (no spaces). Storage
+ * interpolates the key into URLs unencoded, so the key must stay URL-safe.
+ */
+export const OBJECT_NAME_CHARSET = /^[A-Za-z0-9._-]+$/;
+
+/** Derive the URL-safe part of an object key from a display filename. */
+export function keySafeName(filename: string): string {
+  return filename
+    .replace(/[^A-Za-z0-9._-]/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Canonical MIME for a name's last extension, or null when not allowlisted. */
+export function canonicalMimeForName(name: string): string | null {
+  const dot = name.lastIndexOf(".");
+  const ext = dot < 0 ? "" : name.slice(dot + 1).toLowerCase();
+  return Object.prototype.hasOwnProperty.call(EXTENSION_MIME, ext) ? EXTENSION_MIME[ext] : null;
+}
 
 /** Returns an error message, or null when the filename is acceptable for `mime`. */
 export function filenameError(filename: string, mime?: string): string | null {
