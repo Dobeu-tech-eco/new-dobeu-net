@@ -23,6 +23,15 @@ const h = vi.hoisted(() => {
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+vi.mock("@/lib/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/utils")>()),
+  buildServerAuthCallbackUrl: vi.fn(
+    (next: string) =>
+      `https://admin-test.example/auth/callback?next=${encodeURIComponent(next)}`,
+  ),
+}));
+import { buildServerAuthCallbackUrl } from "@/lib/utils";
+
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => h.state.client),
   createAdminClient: vi.fn(() => ({
@@ -112,6 +121,7 @@ describe("inviteMember", () => {
       ok: true,
       data: { id: "m_new", user_id: "new_user_1", email: "client@example.com" },
     });
+    expect(buildServerAuthCallbackUrl).toHaveBeenCalledWith("/company");
     expect(h.state.capturedInvite).toEqual({
       email: "client@example.com",
       options: {

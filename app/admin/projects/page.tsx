@@ -85,7 +85,10 @@ export default async function AdminProjectsPage({
         </p>
       )}
 
-      {!projects || projects.length === 0 ? (
+      {projectsError ||
+      ownersError ||
+      companiesError ||
+      assignedCompaniesError ? null : !projects || projects.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No projects yet. Click{" "}
           <span className="font-semibold">New project</span> to create the first

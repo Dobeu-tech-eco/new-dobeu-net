@@ -180,6 +180,53 @@ describe("company action feedback", () => {
     },
   );
 
+  it.each(["companies", "company_members"])(
+    "does not show an empty state after a %s read failure",
+    async (table) => {
+      h.createAdminClient.mockReturnValue(
+        buildStubClient({
+          tables: {
+            companies: {
+              selectSingle: {
+                data: table === "companies" ? null : [],
+                error:
+                  table === "companies" ? { message: "private details" } : null,
+              },
+            },
+            company_members: {
+              selectSingle: {
+                data: null,
+                error:
+                  table === "company_members"
+                    ? { message: "private details" }
+                    : null,
+              },
+            },
+          },
+        }).supabase,
+      );
+      render(await AdminCompaniesPage({ searchParams: Promise.resolve({}) }));
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Unable to load companies and member counts. Try again.",
+      );
+      expect(screen.queryByText("No companies yet.")).not.toBeInTheDocument();
+    },
+  );
+
+  it("shows the empty state after a successful empty read", async () => {
+    h.createAdminClient.mockReturnValue(
+      buildStubClient({
+        tables: {
+          companies: { selectSingle: { data: [] } },
+          company_members: { selectSingle: { data: [] } },
+        },
+      }).supabase,
+    );
+    render(await AdminCompaniesPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByText("No companies yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   const wrappers = [
     {
       name: "create",

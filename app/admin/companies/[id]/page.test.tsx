@@ -158,3 +158,66 @@ describe("company detail action feedback", () => {
     },
   );
 });
+
+describe("company detail read states", () => {
+  it.each([
+    { table: "company_members", empty: "No members yet." },
+    { table: "projects", empty: "No company projects." },
+    { table: "work_orders", empty: "No company work orders." },
+    { table: "asset_entitlements", empty: "No digital-asset entitlements." },
+  ])(
+    "does not show empty copy after a $table failure",
+    async ({ table, empty }) => {
+      h.createAdminClient.mockReturnValue(
+        buildStubClient({
+          tables: {
+            companies: {
+              selectSingle: {
+                data: {
+                  id: "company-id",
+                  name: "Acme",
+                  status: "active",
+                  created_at: "2026-10-20T12:00:00Z",
+                  stripe_customer_id: null,
+                },
+              },
+            },
+            [table]: {
+              selectSingle: {
+                data: null,
+                error: { message: "private details" },
+              },
+            },
+          },
+        }).supabase,
+      );
+      render(
+        await AdminCompanyDetailPage({
+          params: Promise.resolve({ id: "company-id" }),
+          searchParams: Promise.resolve({}),
+        }),
+      );
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Unable to load some company details. Try again.",
+      );
+      expect(screen.queryByText(empty)).not.toBeInTheDocument();
+    },
+  );
+  it("shows empty sections without alerts after successful reads", async () => {
+    render(
+      await AdminCompanyDetailPage({
+        params: Promise.resolve({ id: "company-id" }),
+        searchParams: Promise.resolve({}),
+      }),
+    );
+    for (const empty of [
+      "No members yet.",
+      "No company projects.",
+      "No company work orders.",
+      "No digital-asset entitlements.",
+    ]) {
+      expect(screen.getByText(empty)).toBeInTheDocument();
+    }
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});

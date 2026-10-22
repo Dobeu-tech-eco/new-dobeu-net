@@ -23,7 +23,7 @@
  * without a client component (the page owns no client bundle).
  */
 import { revalidatePath } from "next/cache";
-import { inviteRedirect } from "@/lib/actions/auth-redirect";
+import { buildServerAuthCallbackUrl } from "@/lib/utils";
 import { z } from "zod";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -173,7 +173,7 @@ export async function inviteMember(
   const admin = createAdminClient();
   const { data: invited, error: inviteErr } =
     await admin.auth.admin.inviteUserByEmail(input.email, {
-      redirectTo: inviteRedirect("/company"),
+      redirectTo: buildServerAuthCallbackUrl("/company"),
     });
   let invitedUserId = invited?.user?.id ?? null;
   if (!invitedUserId) {

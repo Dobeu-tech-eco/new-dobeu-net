@@ -186,9 +186,9 @@ export default async function AdminCompanyDetailPage({
 
       <section>
         <h2 className="font-display text-xl font-semibold mb-3">
-          Members ({members.length})
+          Members ({membersRes.error ? "\u2014" : members.length})
         </h2>
-        {members.length === 0 ? (
+        {membersRes.error ? null : members.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             No members yet.
           </p>
@@ -230,9 +230,9 @@ export default async function AdminCompanyDetailPage({
 
       <section>
         <h2 className="font-display text-xl font-semibold mb-3">
-          Projects ({projects.length})
+          Projects ({projectsRes.error ? "\u2014" : projects.length})
         </h2>
-        {projects.length === 0 ? (
+        {projectsRes.error ? null : projects.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             No company projects.
           </p>
@@ -258,9 +258,9 @@ export default async function AdminCompanyDetailPage({
 
       <section>
         <h2 className="font-display text-xl font-semibold mb-3">
-          Work orders ({workOrders.length})
+          Work orders ({workOrdersRes.error ? "\u2014" : workOrders.length})
         </h2>
-        {workOrders.length === 0 ? (
+        {workOrdersRes.error ? null : workOrders.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             No company work orders.
           </p>
@@ -293,9 +293,10 @@ export default async function AdminCompanyDetailPage({
 
       <section>
         <h2 className="font-display text-xl font-semibold mb-3">
-          Asset entitlements ({entitlements.length})
+          Asset entitlements (
+          {entitlementsRes.error ? "\u2014" : entitlements.length})
         </h2>
-        {entitlements.length === 0 ? (
+        {entitlementsRes.error ? null : entitlements.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             No digital-asset entitlements.
           </p>

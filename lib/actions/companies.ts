@@ -20,7 +20,7 @@
  * and grants `company_admin` with status 'active' instead of 're-inviting'.
  */
 import { revalidatePath } from "next/cache";
-import { inviteRedirect } from "@/lib/actions/auth-redirect";
+import { buildServerAuthCallbackUrl } from "@/lib/utils";
 import { z } from "zod";
 import { requireAdmin, AuthError, type DBClient } from "@/lib/actions/auth";
 import type { Json } from "@/lib/database.types";
@@ -62,7 +62,7 @@ async function writeAudit(
   if (error) {
     console.warn(
       "[companies] audit log insert failed (non-fatal):",
-      error.message,
+      error.code,
     );
   }
 }
@@ -237,7 +237,7 @@ export async function provisionCompanyAdmin(
 
   const { data: invited, error: inviteErr } =
     await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: inviteRedirect("/company"),
+      redirectTo: buildServerAuthCallbackUrl("/company"),
     });
 
   if (invited?.user) {

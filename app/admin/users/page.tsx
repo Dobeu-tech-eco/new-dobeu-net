@@ -65,7 +65,7 @@ export default async function AdminUsersPage({
         <InviteUserForm />
       </section>
 
-      {!profiles || profiles.length === 0 ? (
+      {error || authError ? null : !profiles || profiles.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No users yet. The first user is created on first magic-link login.
         </p>

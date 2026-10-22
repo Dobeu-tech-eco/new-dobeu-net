@@ -37,7 +37,7 @@ export default async function AdminLeadsPage({
         loadError={error ? "Unable to load leads. Try again." : null}
       />
 
-      {!leads || leads.length === 0 ? (
+      {error ? null : !leads || leads.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No leads yet.
         </p>

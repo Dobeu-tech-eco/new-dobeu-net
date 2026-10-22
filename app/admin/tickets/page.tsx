@@ -114,7 +114,7 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
         loadError={error ? "Unable to load tickets. Try again." : null}
       />
 
-      {!tickets || tickets.length === 0 ? (
+      {error ? null : !tickets || tickets.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <p className="font-semibold">No tickets matching those filters</p>
         </div>

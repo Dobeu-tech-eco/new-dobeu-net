@@ -16,7 +16,7 @@
  * must fall back to a manual magic-link / password reset for that address.
  */
 import { revalidatePath } from "next/cache";
-import { inviteRedirect } from "@/lib/actions/auth-redirect";
+import { buildServerAuthCallbackUrl } from "@/lib/utils";
 import { z } from "zod";
 import { requireAdmin, AuthError } from "@/lib/actions/auth";
 
@@ -67,7 +67,7 @@ export async function inviteUser(
   }
 
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: inviteRedirect("/portal"),
+    redirectTo: buildServerAuthCallbackUrl("/portal"),
     data: full_name ? { full_name } : undefined,
   });
 
