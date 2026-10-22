@@ -33,5 +33,10 @@ export function DeferredToaster() {
     return () => events.forEach((type) => window.removeEventListener(type, onInteract, { capture: true }));
   }, [eager, interacted]);
 
-  return eager || interacted ? <Toaster position="bottom-right" theme="system" richColors closeButton /> : null;
+  // Once mounted, stay mounted: leaving an eager route (e.g. /login) must not
+  // tear down a toast that is still on screen.
+  const latched = React.useRef(false);
+  if (eager || interacted) latched.current = true;
+
+  return latched.current ? <Toaster position="bottom-right" theme="system" richColors closeButton /> : null;
 }
