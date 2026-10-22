@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizeNextPath } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-
-const otpParamsSchema = z.object({
-  token_hash: z.string().min(1).max(512),
-  type: z.enum(["invite", "magiclink", "email", "recovery", "signup"]),
-});
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -21,18 +15,14 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(new URL(next, url.origin));
     }
-  } else {
-    const parsed = otpParamsSchema.safeParse({
-      token_hash: url.searchParams.get("token_hash"),
-      type: url.searchParams.get("type"),
-    });
-    if (parsed.success) {
-      const supabase = await createClient();
-      const { error } = await supabase.auth.verifyOtp(parsed.data);
-      if (!error) {
-        return NextResponse.redirect(new URL(next, url.origin));
-      }
-    }
+  } else if (url.searchParams.has("token_hash")) {
+    // Never verify an OTP on GET: a mail scanner or a crafted link would
+    // consume or plant a session. Hand off to an explicit confirm step.
+    const confirm = new URL("/auth/confirm", url.origin);
+    confirm.searchParams.set("token_hash", url.searchParams.get("token_hash") ?? "");
+    confirm.searchParams.set("type", url.searchParams.get("type") ?? "");
+    confirm.searchParams.set("next", next);
+    return NextResponse.redirect(confirm);
   }
 
   return NextResponse.redirect(

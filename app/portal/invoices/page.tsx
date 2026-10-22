@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
+import { safeStripeInvoiceUrl } from "@/lib/stripe-url";
 import { Button } from "@/components/ui/button";
 import { QueryError } from "../QueryError";
 
@@ -70,10 +71,10 @@ export default async function InvoicesPage() {
                   </td>
                   <td className="p-3 text-right">
                     {(inv.status === "open" || inv.status === "overdue") &&
-                    inv.hosted_invoice_url ? (
+                    safeStripeInvoiceUrl(inv.hosted_invoice_url) ? (
                       <Button asChild size="sm">
                         <a
-                          href={inv.hosted_invoice_url}
+                          href={safeStripeInvoiceUrl(inv.hosted_invoice_url) ?? undefined}
                           target="_blank"
                           rel="noreferrer"
                         >

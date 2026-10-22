@@ -51,45 +51,20 @@ describe("GET /auth/callback", () => {
     expect(exchangeCodeForSession).toHaveBeenCalledWith("abc");
   });
 
-  it.each(["invite", "magiclink", "email", "recovery", "signup"])(
-    "verifies token_hash with type %s",
-    async (type) => {
-      verifyOtp.mockResolvedValue({ error: null });
-      const res = await GET(
-        new Request(`http://localhost/auth/callback?token_hash=abc123&type=${type}&next=%2Fportal%2Ftickets`),
-      );
-      expect(verifyOtp).toHaveBeenCalledWith({ token_hash: "abc123", type });
-      expect(res.headers.get("location")).toBe("http://localhost/portal/tickets");
-    },
-  );
-
-  it("rejects an unknown type without calling verifyOtp", async () => {
-    const res = await GET(new Request("http://localhost/auth/callback?token_hash=abc&type=admin"));
-    expect(verifyOtp).not.toHaveBeenCalled();
-    expect(res.headers.get("location")).toBe("http://localhost/login?error=auth_callback_failed");
-  });
-
-  it("rejects empty or oversized token_hash", async () => {
-    const empty = await GET(new Request("http://localhost/auth/callback?token_hash=&type=invite"));
-    const big = await GET(
-      new Request(`http://localhost/auth/callback?token_hash=${"a".repeat(600)}&type=invite`),
-    );
-    expect(verifyOtp).not.toHaveBeenCalled();
-    expect(empty.headers.get("location")).toBe("http://localhost/login?error=auth_callback_failed");
-    expect(big.headers.get("location")).toBe("http://localhost/login?error=auth_callback_failed");
-  });
-
-  it("rejects open-redirect next on the verifyOtp path", async () => {
-    verifyOtp.mockResolvedValue({ error: null });
+  it("never verifies an OTP on GET; redirects to the confirm page", async () => {
     const res = await GET(
-      new Request("http://localhost/auth/callback?token_hash=abc&type=invite&next=//evil.example"),
+      new Request("http://localhost/auth/callback?token_hash=abc&type=invite&next=%2Fportal%2Ftickets"),
     );
-    expect(res.headers.get("location")).toBe("http://localhost/portal");
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(res.headers.get("location")).toBe(
+      "http://localhost/auth/confirm?token_hash=abc&type=invite&next=%2Fportal%2Ftickets",
+    );
   });
 
-  it("redirects to login error when verifyOtp fails", async () => {
-    verifyOtp.mockResolvedValue({ error: new Error("expired") });
-    const res = await GET(new Request("http://localhost/auth/callback?token_hash=abc&type=invite"));
-    expect(res.headers.get("location")).toBe("http://localhost/login?error=auth_callback_failed");
+  it("sanitizes next when handing off to confirm", async () => {
+    const res = await GET(
+      new Request("http://localhost/auth/callback?token_hash=abc&type=invite&next=/%09/evil.example"),
+    );
+    expect(res.headers.get("location")).toContain("next=%2Fportal");
   });
 });

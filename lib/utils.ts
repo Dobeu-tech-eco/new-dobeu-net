@@ -98,6 +98,7 @@ const AUTH_ORIGIN_HOSTS: ReadonlySet<string> = new Set([
   "dobeu.dev",
   "www.dobeu.dev",
   "localhost",
+  "127.0.0.1",
 ]);
 
 /**
@@ -106,13 +107,13 @@ const AUTH_ORIGIN_HOSTS: ReadonlySet<string> = new Set([
  * The PKCE verifier cookie lives on the host where sign-in started, so the
  * callback must return to that same host. In the browser we keep
  * `window.location.origin` when its hostname is allowlisted (dobeu.net,
- * dobeu.dev, localhost, *.vercel.app); otherwise (and during SSR) we fall back
+ * dobeu.dev, localhost, 127.0.0.1; never a shared *.vercel.app wildcard); otherwise (and during SSR) we fall back
  * to `getSiteUrl()`.
  */
 export function resolveAuthOrigin(): string {
   if (typeof window !== "undefined") {
     const { hostname, origin } = window.location;
-    if (AUTH_ORIGIN_HOSTS.has(hostname) || hostname.endsWith(".vercel.app")) {
+    if (AUTH_ORIGIN_HOSTS.has(hostname)) {
       return origin;
     }
   }
@@ -144,7 +145,22 @@ export function buildAuthCallbackUrl(nextPath: string, fallback = "/portal"): st
  */
 export function sanitizeNextPath(nextPath: string | null | undefined, fallback = "/portal"): string {
   if (!nextPath) return fallback;
-  if (!nextPath.startsWith("/") || nextPath.startsWith("//") || nextPath.startsWith("/\\")) return fallback;
+  // Reject C0 controls (URL parsers strip tab/CR/LF, turning "/	/evil" into "//evil") and backslashes.
+  if (/[\u0000-\u001F\u007F\\]/.test(nextPath)) return fallback;
+  if (!nextPath.startsWith("/") || nextPath.startsWith("//")) return fallback;
+  try {
+    const decoded = decodeURIComponent(nextPath);
+      if (/[\u0000-\u001F\u007F\\]/.test(decoded) || decoded.startsWith("//")) return fallback;
+  } catch {
+    return fallback;
+  }
+  try {
+    const base = "https://x.invalid";
+    const parsed = new URL(nextPath, base);
+    if (parsed.origin !== base || !parsed.pathname.startsWith("/")) return fallback;
+  } catch {
+    return fallback;
+  }
   return nextPath;
 }
 
