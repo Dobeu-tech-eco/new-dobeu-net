@@ -7,7 +7,7 @@ import { DeleteProjectButton } from "@/components/admin/DeleteProjectButton";
 import { DeliverableUpload } from "@/components/admin/DeliverableUpload";
 
 export default async function AdminProjectDetailPage({
-  params
+  params,
 }: {
   params: Promise<{ id: string }>;
 }) {
@@ -17,63 +17,122 @@ export default async function AdminProjectDetailPage({
   const { data: project, error } = await supabase
     .from("projects")
     .select(
-      "id,title,description,status,total_cents,owner_user_id,started_at,delivered_at,created_at,updated_at"
+      "id,title,description,status,total_cents,owner_user_id,company_id,started_at,delivered_at,created_at,updated_at",
     )
     .eq("id", id)
     .single();
 
   if (error || !project) notFound();
 
-  const ownerProfile = await supabase
-    .from("profiles")
-    .select("id,full_name,company")
-    .eq("id", project.owner_user_id)
-    .single();
+  const [
+    ownerProfile,
+    { data: companies, error: companiesError },
+    { data: company, error: companyError },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id,full_name,company")
+      .eq("id", project.owner_user_id)
+      .single(),
+    supabase
+      .from("companies")
+      .select("id,name")
+      .eq("status", "active")
+      .order("name"),
+    project.company_id
+      ? supabase
+          .from("companies")
+          .select("id,name")
+          .eq("id", project.company_id)
+          .single()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
 
   return (
     <div className="space-y-6">
       <header>
-        <Link href="/admin/projects" className="text-xs text-muted-foreground hover:text-foreground">
+        <Link
+          href="/admin/projects"
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
           ← All projects
         </Link>
-        <h1 className="font-display text-3xl font-bold tracking-tight mt-2">{project.title}</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight mt-2">
+          {project.title}
+        </h1>
         <p className="text-muted-foreground mt-1">
           Owned by{" "}
           <span className="font-medium text-foreground">
-            {ownerProfile.data?.full_name ?? ownerProfile.data?.company ?? project.owner_user_id.slice(0, 8)}
+            {ownerProfile.data?.full_name ??
+              ownerProfile.data?.company ??
+              project.owner_user_id.slice(0, 8)}
           </span>
           {" · "}value {formatCurrency(project.total_cents)}
-          {" · "}status <span className="uppercase tracking-wider text-xs">{project.status}</span>
+          {" · "}status{" "}
+          <span className="uppercase tracking-wider text-xs">
+            {project.status}
+          </span>
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Company:{" "}
+          {project.company_id ? (
+            <Link
+              href={`/admin/companies/${project.company_id}`}
+              className="text-primary hover:underline"
+            >
+              {company?.name ?? "Company unavailable"}
+            </Link>
+          ) : (
+            "No company"
+          )}
         </p>
       </header>
 
+      {(companiesError || companyError || ownerProfile.error) && (
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+        >
+          Unable to load all project details. Try again.
+        </p>
+      )}
+
       <section className="rounded-lg border border-border bg-card p-6">
-        <h2 className="font-display text-xl font-semibold mb-4">Edit project</h2>
+        <h2 className="font-display text-xl font-semibold mb-4">
+          Edit project
+        </h2>
         <EditProjectForm
+          companies={companies ?? []}
+          currentCompanyName={company?.name}
           project={{
             id: project.id,
+            company_id: project.company_id,
             title: project.title,
             description: project.description,
             status: project.status,
-            total_cents: project.total_cents
+            total_cents: project.total_cents,
           }}
         />
       </section>
 
       <section className="rounded-lg border border-border bg-card p-6">
-        <h2 className="font-display text-xl font-semibold mb-1">Upload deliverable</h2>
+        <h2 className="font-display text-xl font-semibold mb-1">
+          Upload deliverable
+        </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Files are stored privately in the <code>project-files</code> bucket and become visible to
-          the project owner in their portal.
+          Files are stored privately in the <code>project-files</code> bucket
+          and become visible to the project owner in their portal.
         </p>
         <DeliverableUpload projectId={project.id} />
       </section>
 
       <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
-        <h2 className="font-display text-xl font-semibold text-destructive mb-2">Danger zone</h2>
+        <h2 className="font-display text-xl font-semibold text-destructive mb-2">
+          Danger zone
+        </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Deleting a project cascades to its files and invoices. Storage objects must be reaped
-          separately.
+          Deleting a project cascades to its files and invoices. Storage objects
+          must be reaped separately.
         </p>
         <DeleteProjectButton id={project.id} title={project.title} />
       </section>

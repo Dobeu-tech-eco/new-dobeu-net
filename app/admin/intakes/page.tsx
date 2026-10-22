@@ -1,5 +1,6 @@
 /** Admin queue for review-first Typeform budget intakes. */
 import Link from "next/link";
+import { AdminStatusBanner } from "@/components/admin/AdminStatusBanner";
 import { Badge } from "@/components/ui/badge";
 import { requireAdminAal2 } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,12 @@ type StatusFilter = (typeof STATUS_FILTERS)[number];
 type MappingFilter = (typeof MAPPING_FILTERS)[number];
 
 interface PageProps {
-  searchParams: Promise<{ status?: string; mapping?: string; page?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    mapping?: string;
+    page?: string;
+    error?: string;
+  }>;
 }
 
 function isStatusFilter(value: string | undefined): value is StatusFilter {
@@ -111,11 +117,12 @@ export default async function AdminIntakesPage({ searchParams }: PageProps) {
         />
       </div>
 
-      {error && (
-        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          Unable to load the intake queue. Try again.
-        </p>
-      )}
+      <AdminStatusBanner
+        error={
+          params.error ||
+          (error ? "Unable to load the intake queue. Try again." : null)
+        }
+      />
 
       {!error && (!intakes || intakes.length === 0) ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">

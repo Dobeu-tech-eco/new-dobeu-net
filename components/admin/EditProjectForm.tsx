@@ -12,9 +12,18 @@ interface ProjectInput {
   description: string | null;
   status: "proposed" | "active" | "delivered" | "closed";
   total_cents: number;
+  company_id: string | null;
 }
 
-export function EditProjectForm({ project }: { project: ProjectInput }) {
+export function EditProjectForm({
+  project,
+  companies,
+  currentCompanyName,
+}: {
+  project: ProjectInput;
+  companies: { id: string; name: string }[];
+  currentCompanyName?: string;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -22,12 +31,18 @@ export function EditProjectForm({ project }: { project: ProjectInput }) {
   async function handleSubmit(formData: FormData) {
     setError(null);
     setSaved(false);
+    const companyId =
+      String(formData.get("company_id") ?? project.company_id ?? "") || null;
     const payload = {
       id: project.id,
+      // Preserve an existing suspended assignment when editing other fields.
+      ...(companyId !== project.company_id ? { company_id: companyId } : {}),
       title: String(formData.get("title") ?? ""),
       description: String(formData.get("description") ?? "") || null,
-      status: String(formData.get("status") ?? project.status) as ProjectInput["status"],
-      total_cents: Number(formData.get("total_cents") ?? 0)
+      status: String(
+        formData.get("status") ?? project.status,
+      ) as ProjectInput["status"],
+      total_cents: Number(formData.get("total_cents") ?? 0),
     };
     startTransition(async () => {
       const result = await updateProject(payload);
@@ -41,6 +56,28 @@ export function EditProjectForm({ project }: { project: ProjectInput }) {
 
   return (
     <form action={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="edit_project_company_id">Company</Label>
+        <select
+          id="edit_project_company_id"
+          name="company_id"
+          defaultValue={project.company_id ?? ""}
+          className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">No company</option>
+          {project.company_id &&
+            !companies.some((company) => company.id === project.company_id) && (
+              <option value={project.company_id} disabled>
+                {currentCompanyName ?? "Current company"} (unavailable)
+              </option>
+            )}
+          {companies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.name}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="space-y-1.5">
         <Label htmlFor="title">Title</Label>
         <Input

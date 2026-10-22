@@ -22,30 +22,36 @@ const projectStatus = z.enum(["proposed", "active", "delivered", "closed"]);
 
 const createInput = z.object({
   owner_user_id: uuid,
+  company_id: uuid.optional().nullable(),
   title: z.string().trim().min(2, "title too short").max(160, "title too long"),
   description: z.string().trim().max(8000).optional().nullable(),
   status: projectStatus.optional().default("proposed"),
-  total_cents: z.number().int().nonnegative().optional().default(0)
+  total_cents: z.number().int().nonnegative().optional().default(0),
 });
 
 const updateInput = z.object({
   id: uuid,
+  company_id: uuid.optional().nullable(),
   title: z.string().trim().min(2).max(160).optional(),
   description: z.string().trim().max(8000).optional().nullable(),
   status: projectStatus.optional(),
-  total_cents: z.number().int().nonnegative().optional()
+  total_cents: z.number().int().nonnegative().optional(),
 });
 
 const deleteInput = z.object({ id: uuid });
 
-export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
+export type ActionResult<T> =
+  { ok: true; data: T } | { ok: false; error: string };
 
 export async function createProject(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = createInput.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const input = parsed.data;
 
@@ -57,31 +63,49 @@ export async function createProject(
     throw e;
   }
 
+  if (input.company_id) {
+    const { data: company, error } = await admin
+      .from("companies")
+      .select("id,status")
+      .eq("id", input.company_id)
+      .single();
+    if (error || !company) return { ok: false, error: "Company not found" };
+    if (company.status !== "active") {
+      return { ok: false, error: "Company must be active" };
+    }
+  }
+
   const { data, error } = await admin
     .from("projects")
     .insert({
       owner_user_id: input.owner_user_id,
+      company_id: input.company_id ?? null,
       title: input.title,
       description: input.description ?? null,
       status: input.status,
-      total_cents: input.total_cents
+      total_cents: input.total_cents,
     })
     .select("id")
     .single();
 
-  if (error || !data) return { ok: false, error: error?.message ?? "insert failed" };
+  if (error || !data)
+    return { ok: false, error: error?.message ?? "insert failed" };
 
   revalidatePath("/admin/projects");
   revalidatePath("/portal/projects");
+  if (input.company_id) revalidatePath(`/admin/companies/${input.company_id}`);
   return { ok: true, data: { id: data.id } };
 }
 
 export async function updateProject(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = updateInput.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const { id, ...patch } = parsed.data;
 
@@ -98,6 +122,25 @@ export async function updateProject(
     throw e;
   }
 
+  const { data: existing, error: readError } = await admin
+    .from("projects")
+    .select("company_id")
+    .eq("id", id)
+    .single();
+  if (readError || !existing) return { ok: false, error: "Project not found" };
+
+  if (patch.company_id) {
+    const { data: company, error } = await admin
+      .from("companies")
+      .select("id,status")
+      .eq("id", patch.company_id)
+      .single();
+    if (error || !company) return { ok: false, error: "Company not found" };
+    if (company.status !== "active") {
+      return { ok: false, error: "Company must be active" };
+    }
+  }
+
   const { error } = await admin.from("projects").update(patch).eq("id", id);
   if (error) return { ok: false, error: error.message };
 
@@ -105,15 +148,21 @@ export async function updateProject(
   revalidatePath(`/admin/projects/${id}`);
   revalidatePath("/portal/projects");
   revalidatePath(`/portal/projects/${id}`);
+  for (const companyId of new Set([existing.company_id, patch.company_id])) {
+    if (companyId) revalidatePath(`/admin/companies/${companyId}`);
+  }
   return { ok: true, data: { id } };
 }
 
 export async function deleteProject(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = deleteInput.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const { id } = parsed.data;
 

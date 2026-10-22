@@ -1,38 +1,59 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import {
+  AdminStatusBanner,
+  type AdminStatusParams,
+} from "@/components/admin/AdminStatusBanner";
 import { createAdminClient } from "@/lib/supabase/server";
 import {
   createCompany,
   suspendCompany,
   reactivateCompany,
-  provisionCompanyAdmin
+  provisionCompanyAdmin,
 } from "@/lib/actions/companies";
 
 // Reads Supabase via service role; never pre-render.
 export const dynamic = "force-dynamic";
 
 // Progressive-enhancement wrappers: adapt FormData -> the typed server actions.
-// Each underlying action revalidates /admin/companies, so the list refreshes.
+// Preserve action outcomes across the progressive-enhancement redirect.
 async function createCompanyAction(formData: FormData): Promise<void> {
   "use server";
-  await createCompany({ name: String(formData.get("name") ?? "") });
+  const result = await createCompany({
+    name: String(formData.get("name") ?? ""),
+  });
+  redirect(
+    `/admin/companies?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+  );
 }
 
 async function suspendCompanyAction(formData: FormData): Promise<void> {
   "use server";
-  await suspendCompany({ id: String(formData.get("id") ?? "") });
+  const result = await suspendCompany({ id: String(formData.get("id") ?? "") });
+  redirect(
+    `/admin/companies?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+  );
 }
 
 async function reactivateCompanyAction(formData: FormData): Promise<void> {
   "use server";
-  await reactivateCompany({ id: String(formData.get("id") ?? "") });
+  const result = await reactivateCompany({
+    id: String(formData.get("id") ?? ""),
+  });
+  redirect(
+    `/admin/companies?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+  );
 }
 
 async function provisionAdminAction(formData: FormData): Promise<void> {
   "use server";
-  await provisionCompanyAdmin({
+  const result = await provisionCompanyAdmin({
     companyId: String(formData.get("companyId") ?? ""),
-    email: String(formData.get("email") ?? "")
+    email: String(formData.get("email") ?? ""),
   });
+  redirect(
+    `/admin/companies?${result.ok ? "ok=1" : `error=${encodeURIComponent(result.error)}`}`,
+  );
 }
 
 const primaryBtn =
@@ -40,7 +61,12 @@ const primaryBtn =
 const ghostBtn =
   "inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary";
 
-export default async function AdminCompaniesPage() {
+export default async function AdminCompaniesPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminStatusParams>;
+}) {
+  const params = await searchParams;
   const supabase = createAdminClient();
 
   const [companiesRes, membersRes] = await Promise.all([
@@ -48,7 +74,7 @@ export default async function AdminCompaniesPage() {
       .from("companies")
       .select("id,name,status,created_at")
       .order("created_at", { ascending: false }),
-    supabase.from("company_members").select("company_id")
+    supabase.from("company_members").select("company_id"),
   ]);
 
   const companies = companiesRes.data ?? [];
@@ -60,18 +86,36 @@ export default async function AdminCompaniesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Companies</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Companies
+        </h1>
         <p className="text-muted-foreground mt-1">
           Multi-tenant employer accounts. Suspend to revoke company-wide access.
         </p>
       </header>
 
+      <AdminStatusBanner
+        error={
+          params.error ||
+          (companiesRes.error || membersRes.error
+            ? "Unable to load companies and member counts. Try again."
+            : null)
+        }
+        success={params.ok === "1" ? "Company updated successfully." : null}
+      />
+
       <section className="rounded-lg border border-border bg-card p-6">
-        <h2 className="font-display text-xl font-semibold mb-1">Create a company</h2>
+        <h2 className="font-display text-xl font-semibold mb-1">
+          Create a company
+        </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Creates an active tenant. Provision a company admin from its row below.
+          Creates an active tenant. Provision a company admin from its row
+          below.
         </p>
-        <form action={createCompanyAction} className="flex flex-wrap items-end gap-3">
+        <form
+          action={createCompanyAction}
+          className="flex flex-wrap items-end gap-3"
+        >
           <div className="space-y-1.5">
             <label htmlFor="company_name" className="text-sm font-medium">
               Company name
@@ -132,7 +176,9 @@ export default async function AdminCompaniesPage() {
                       {c.status}
                     </span>
                   </td>
-                  <td className="p-3 tabular-nums">{memberCounts.get(c.id) ?? 0}</td>
+                  <td className="p-3 tabular-nums">
+                    {memberCounts.get(c.id) ?? 0}
+                  </td>
                   <td className="p-3 whitespace-nowrap text-xs text-muted-foreground">
                     {new Date(c.created_at).toLocaleDateString()}
                   </td>
@@ -168,7 +214,10 @@ export default async function AdminCompaniesPage() {
                           aria-label={`Provision admin for ${c.name}`}
                           className="h-8 w-52 rounded-md border border-border bg-background px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
-                        <button type="submit" className={ghostBtn + " h-8 text-xs"}>
+                        <button
+                          type="submit"
+                          className={ghostBtn + " h-8 text-xs"}
+                        >
                           Provision admin
                         </button>
                       </form>

@@ -16,6 +16,7 @@
  * must fall back to a manual magic-link / password reset for that address.
  */
 import { revalidatePath } from "next/cache";
+import { inviteRedirect } from "@/lib/actions/auth-redirect";
 import { z } from "zod";
 import { requireAdmin, AuthError } from "@/lib/actions/auth";
 
@@ -23,27 +24,37 @@ const uuid = z.string().uuid("invalid id");
 
 const inviteInput = z.object({
   email: z.string().trim().email("invalid email").max(254),
-  full_name: z.string().trim().min(1).max(160).optional().nullable()
+  full_name: z.string().trim().min(1).max(160).optional().nullable(),
 });
 
 const updateInput = z.object({
   id: uuid,
-  full_name: z.string().trim().min(1, "name required").max(160).optional().nullable(),
-  company: z.string().trim().max(160).optional().nullable()
+  full_name: z
+    .string()
+    .trim()
+    .min(1, "name required")
+    .max(160)
+    .optional()
+    .nullable(),
+  company: z.string().trim().max(160).optional().nullable(),
 });
 
-export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
+export type ActionResult<T> =
+  { ok: true; data: T } | { ok: false; error: string };
 
 /**
  * Invite a new user by email. Uses `auth.admin.inviteUserByEmail`, which emails
  * a sign-up link and creates the auth user (profile row follows via trigger).
  */
 export async function inviteUser(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ id: string; email: string }>> {
   const parsed = inviteInput.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const { email, full_name } = parsed.data;
 
@@ -56,7 +67,8 @@ export async function inviteUser(
   }
 
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: full_name ? { full_name } : undefined
+    redirectTo: inviteRedirect("/portal"),
+    data: full_name ? { full_name } : undefined,
   });
 
   if (error || !data?.user) {
@@ -71,11 +83,14 @@ export async function inviteUser(
  * Patch an existing profile's `full_name` / `company`.
  */
 export async function updateUser(
-  raw: unknown
+  raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = updateInput.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const { id, ...patch } = parsed.data;
 

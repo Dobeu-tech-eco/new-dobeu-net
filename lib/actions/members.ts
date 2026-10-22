@@ -23,6 +23,7 @@
  * without a client component (the page owns no client bundle).
  */
 import { revalidatePath } from "next/cache";
+import { inviteRedirect } from "@/lib/actions/auth-redirect";
 import { z } from "zod";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -32,26 +33,31 @@ import { createAdminClient } from "@/lib/supabase/server";
 import type { DBClient } from "@/lib/actions/auth";
 
 const uuid = z.string().uuid("invalid id");
-const roleKey = z.string().trim().min(1, "role required").max(64, "role too long");
+const roleKey = z
+  .string()
+  .trim()
+  .min(1, "role required")
+  .max(64, "role too long");
 
 const inviteInput = z.object({
   companyId: uuid,
   email: z.string().trim().email("invalid email").max(254),
-  roleKey
+  roleKey,
 });
 
 const changeRoleInput = z.object({
   companyId: uuid,
   memberId: uuid,
-  roleKey
+  roleKey,
 });
 
 const deactivateInput = z.object({
   companyId: uuid,
-  memberId: uuid
+  memberId: uuid,
 });
 
-export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
+export type ActionResult<T> =
+  { ok: true; data: T } | { ok: false; error: string };
 
 // ---------------------------------------------------------------------------
 // Rate limiting (mirrors app/api/lead/route.ts): Upstash sliding window when
@@ -61,12 +67,13 @@ const INVITE_RL_WINDOW_MS = 60_000;
 const INVITE_RL_MAX = 5;
 const inviteBuckets = new Map<string, { count: number; resetAt: number }>();
 const upstashReady =
-  Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
+  Boolean(process.env.UPSTASH_REDIS_REST_URL) &&
+  Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
 const upstashRatelimit = upstashReady
   ? new Ratelimit({
       redis: Redis.fromEnv(),
       limiter: Ratelimit.slidingWindow(INVITE_RL_MAX, "1 m"),
-      prefix: "action:invite-member"
+      prefix: "action:invite-member",
     })
   : null;
 
@@ -108,7 +115,7 @@ async function roleExists(supabase: DBClient, key: string): Promise<boolean> {
  */
 async function findUserIdByEmail(
   admin: ReturnType<typeof createAdminClient>,
-  email: string
+  email: string,
 ): Promise<string | null> {
   const target = email.toLowerCase();
   const perPage = 200;
@@ -130,11 +137,18 @@ async function findUserIdByEmail(
 export async function inviteMember(
   companyId: string,
   email: string,
-  roleKeyArg: string
+  roleKeyArg: string,
 ): Promise<ActionResult<{ id: string; user_id: string; email: string }>> {
-  const parsed = inviteInput.safeParse({ companyId, email, roleKey: roleKeyArg });
+  const parsed = inviteInput.safeParse({
+    companyId,
+    email,
+    roleKey: roleKeyArg,
+  });
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const input = parsed.data;
 
@@ -157,7 +171,10 @@ export async function inviteMember(
   // Resolve the invitee's auth user: try to invite; if already registered,
   // fall back to a lookup so they're still added (no duplicate email sent).
   const admin = createAdminClient();
-  const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(input.email);
+  const { data: invited, error: inviteErr } =
+    await admin.auth.admin.inviteUserByEmail(input.email, {
+      redirectTo: inviteRedirect("/company"),
+    });
   let invitedUserId = invited?.user?.id ?? null;
   if (!invitedUserId) {
     invitedUserId = await findUserIdByEmail(admin, input.email);
@@ -173,7 +190,7 @@ export async function inviteMember(
       user_id: invitedUserId,
       role: input.roleKey,
       status: "invited",
-      invited_by: user.id
+      invited_by: user.id,
     })
     .select("id")
     .single();
@@ -184,18 +201,28 @@ export async function inviteMember(
 
   revalidatePath("/company");
   revalidatePath("/company/members");
-  return { ok: true, data: { id: member.id, user_id: invitedUserId, email: input.email } };
+  return {
+    ok: true,
+    data: { id: member.id, user_id: invitedUserId, email: input.email },
+  };
 }
 
 /** Change an existing member's role to another catalog role. */
 export async function changeMemberRole(
   companyId: string,
   memberId: string,
-  roleKeyArg: string
+  roleKeyArg: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const parsed = changeRoleInput.safeParse({ companyId, memberId, roleKey: roleKeyArg });
+  const parsed = changeRoleInput.safeParse({
+    companyId,
+    memberId,
+    roleKey: roleKeyArg,
+  });
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const input = parsed.data;
 
@@ -226,11 +253,14 @@ export async function changeMemberRole(
 /** Disable a member (status='disabled'). A caller cannot disable themselves. */
 export async function deactivateMember(
   companyId: string,
-  memberId: string
+  memberId: string,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = deactivateInput.safeParse({ companyId, memberId });
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => i.message).join("; "),
+    };
   }
   const input = parsed.data;
 
@@ -249,7 +279,8 @@ export async function deactivateMember(
     .eq("company_id", input.companyId)
     .single();
 
-  if (readErr || !target) return { ok: false, error: readErr?.message ?? "member not found" };
+  if (readErr || !target)
+    return { ok: false, error: readErr?.message ?? "member not found" };
   if (target.user_id === user.id) {
     return { ok: false, error: "cannot disable yourself" };
   }
@@ -272,26 +303,33 @@ export async function deactivateMember(
 // They return void (the form ignores the result) so the typed core actions
 // stay the tested, value-returning API.
 // ---------------------------------------------------------------------------
-export async function inviteMemberForm(companyId: string, formData: FormData): Promise<void> {
+export async function inviteMemberForm(
+  companyId: string,
+  formData: FormData,
+): Promise<void> {
   await inviteMember(
     companyId,
     String(formData.get("email") ?? ""),
-    String(formData.get("roleKey") ?? "")
+    String(formData.get("roleKey") ?? ""),
   );
 }
 
 export async function changeMemberRoleForm(
   companyId: string,
   memberId: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<void> {
-  await changeMemberRole(companyId, memberId, String(formData.get("roleKey") ?? ""));
+  await changeMemberRole(
+    companyId,
+    memberId,
+    String(formData.get("roleKey") ?? ""),
+  );
 }
 
 export async function deactivateMemberForm(
   companyId: string,
   memberId: string,
-  _formData: FormData
+  _formData: FormData,
 ): Promise<void> {
   void _formData;
   await deactivateMember(companyId, memberId);
