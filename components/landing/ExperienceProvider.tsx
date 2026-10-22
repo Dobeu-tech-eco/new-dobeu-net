@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -11,6 +12,7 @@ import {
 } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { FADE_UP, useMotionProps } from "@/hooks/use-motion-props";
+import { clampStep, getViewportStep } from "./viewpoint";
 
 const ExperienceContext = createContext({
   stopped: true,
@@ -85,30 +87,24 @@ export function Reveal({
   );
 }
 
-function clampStep(index: number, count: number) {
-  return Math.min(Math.max(index, 0), Math.max(count - 1, 0));
-}
-
-function getViewportStep(element: HTMLElement, count: number) {
-  const viewportHeight =
-    window.visualViewport?.height ||
-    window.innerHeight ||
-    document.documentElement.clientHeight ||
-    1;
-  const rect = element.getBoundingClientRect();
-  const startLine = viewportHeight * 0.78;
-  const endLine = viewportHeight * 0.18;
-  const travel = Math.max(1, rect.height + startLine - endLine);
-  const progress = Math.min(Math.max((startLine - rect.top) / travel, 0), 1);
-
-  return clampStep(Math.floor(progress * count), count);
-}
-
 export function useAutoStep(count: number) {
   const { stopped } = useExperience();
   const ref = useRef<HTMLDivElement>(null);
+  const stepRef = useRef(0);
   const [active, setActive] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const playing = !stopped;
+
+  const commit = useCallback(
+    (index: number) => {
+      const next = clampStep(index, count);
+      if (next === stepRef.current) return;
+      setDirection(next > stepRef.current ? 1 : -1);
+      stepRef.current = next;
+      setActive(next);
+    },
+    [count],
+  );
 
   useEffect(() => {
     if (count < 2 || stopped) return;
@@ -117,7 +113,7 @@ export function useAutoStep(count: number) {
     const update = () => {
       const element = ref.current;
       if (!element || document.hidden) return;
-      setActive(getViewportStep(element, count));
+      commit(getViewportStep(element, count));
     };
     const schedule = () => {
       if (frame) return;
@@ -140,13 +136,14 @@ export function useAutoStep(count: number) {
       window.visualViewport?.removeEventListener("resize", schedule);
       document.removeEventListener("visibilitychange", schedule);
     };
-  }, [count, stopped]);
+  }, [commit, count, stopped]);
 
   return {
     ref,
     active,
+    direction,
     playing,
-    select: (index: number) => setActive(clampStep(index, count)),
+    select: commit,
     interactionProps: {},
   };
 }

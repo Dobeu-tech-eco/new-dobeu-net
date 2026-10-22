@@ -1,18 +1,28 @@
 "use client";
 
 import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from "react";
+import {
   ArrowRight,
   Check,
   ClipboardCheck,
   FileText,
   Users,
 } from "lucide-react";
-import { motion } from "motion/react";
 import { useExperience } from "./ExperienceProvider";
+import {
+  clamp01,
+  elementViewpointProgress,
+  itemCheckProgress,
+  readViewportHeight,
+} from "./viewpoint";
 
-const viewport = { once: true, amount: 0.72 } as const;
 const brandSignal = "hsl(var(--dobeu-violet-500))";
-const quietSignal = "hsl(var(--dobeu-violet-500) / 0.3)";
 const quietBorder = "hsl(var(--dobeu-violet-500) / 0.35)";
 const panelBackground = "hsl(var(--background))";
 const successSignal = "hsl(122 39% 49%)";
@@ -26,229 +36,238 @@ const driverTasks = [
   "Trainer sign-off logged",
 ];
 
-function scrollProps(
-  stopped: boolean,
-  hidden: Record<string, string | number>,
-  visible: Record<string, string | number>,
-  delay = 0,
-) {
-  if (stopped) {
-    return {
-      initial: false as const,
-      animate: visible,
-      transition: { duration: 0 },
-    };
-  }
+function percent(progress: number) {
+  return (clamp01(progress) * 100).toFixed(1);
+}
 
+function lerp(from: number, to: number, progress: number) {
+  const t = clamp01(progress);
+  return from + (to - from) * t;
+}
+
+function tone(progress: number): CSSProperties {
+  const checked = percent(progress);
+  const info = percent(1 - progress);
   return {
-    initial: hidden,
-    whileInView: visible,
-    viewport,
-    transition: { duration: 0.58, ease: "easeOut" as const, delay },
+    color: `color-mix(in srgb, ${successSignal} ${checked}%, ${brandSignal} ${info}%)`,
+    borderColor: `color-mix(in srgb, ${successBorder} ${checked}%, ${quietBorder} ${info}%)`,
+    backgroundColor: `color-mix(in srgb, ${successBackground} ${checked}%, ${panelBackground} ${info}%)`,
   };
 }
 
-export function OutcomeVisual({ index }: { index: number }) {
+function phaseFor(progress: number) {
+  if (progress <= 0.02) return "info";
+  if (progress >= 0.98) return "checked";
+  return "checking";
+}
+
+function useIllustrationProgress(ref: RefObject<HTMLDivElement | null>) {
   const { stopped } = useExperience();
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (stopped) return;
+    const node = ref.current;
+    if (!node) return;
+
+    let frame = 0;
+    let last = -1;
+    const update = () => {
+      const next = elementViewpointProgress(
+        node.getBoundingClientRect().top,
+        readViewportHeight(),
+      );
+      const settled = next === 0 || next === 1;
+      if (!settled && Math.abs(next - last) < 0.008) return;
+      last = next;
+      setProgress(next);
+    };
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    window.visualViewport?.addEventListener("resize", schedule);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      window.visualViewport?.removeEventListener("resize", schedule);
+    };
+  }, [ref, stopped]);
+
+  return stopped ? 1 : progress;
+}
+
+function DriverTasks({ progress }: { progress: number }) {
+  return (
+    <div
+      className="flex w-full max-w-64 flex-col gap-3 rounded-md border p-4 text-xs"
+      style={tone(progress)}
+    >
+      <div className="flex items-center justify-between gap-3 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-current/70">
+        <span>Driver tasks</span>
+        <span>Live</span>
+      </div>
+      <ul className="flex flex-col gap-2.5">
+        {driverTasks.map((task, taskIndex) => {
+          const checked = itemCheckProgress(
+            progress,
+            taskIndex,
+            driverTasks.length,
+          );
+          return (
+            <li
+              key={task}
+              className="flex min-w-0 items-center gap-2 text-current"
+            >
+              <span className="flex size-3.5 shrink-0 items-center justify-center rounded-sm border border-current">
+                <Check
+                  className="size-2.5"
+                  style={{
+                    opacity: checked,
+                    transform: `scale(${lerp(0.6, 1, checked)})`,
+                  }}
+                />
+              </span>
+              <span className="relative min-w-0 flex-1 text-left leading-tight">
+                <span className="block truncate">{task}</span>
+                <span
+                  className="absolute left-0 top-1/2 h-px w-full origin-left bg-current"
+                  style={{ transform: `scaleX(${checked})` }}
+                />
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function Handoff({ progress }: { progress: number }) {
+  const people = itemCheckProgress(progress, 0, 3);
+  const arrow = itemCheckProgress(progress, 1, 3);
+  const document = itemCheckProgress(progress, 2, 3);
+  return (
+    <div className="flex items-center gap-4">
+      <Users
+        className="size-12 stroke-1"
+        style={{
+          color: tone(people).color,
+          opacity: lerp(0.72, 1, people),
+          transform: `translateX(${lerp(-10, 0, people)}px)`,
+        }}
+      />
+      <ArrowRight
+        className="size-8 stroke-1"
+        style={{
+          color: tone(arrow).color,
+          opacity: lerp(0.45, 1, arrow),
+          transform: `scaleX(${lerp(0.7, 1, arrow)})`,
+        }}
+      />
+      <div
+        className="flex size-20 items-center justify-center rounded-md border"
+        style={{
+          ...tone(document),
+          opacity: lerp(0.78, 1, document),
+          transform: `translateX(${lerp(10, 0, document)}px)`,
+        }}
+      >
+        <FileText className="size-10 stroke-1" />
+      </div>
+    </div>
+  );
+}
+
+function ApprovalChecks({ progress }: { progress: number }) {
+  return (
+    <div className="flex items-center gap-3">
+      {[0, 1, 2].map((item) => {
+        const checked = itemCheckProgress(progress, item, 3);
+        return (
+          <div
+            key={item}
+            className="flex size-14 items-center justify-center rounded-pill border"
+            style={{
+              ...tone(checked),
+              transform: `scale(${lerp(0.95, 1, checked)})`,
+            }}
+          >
+            <Check
+              className="size-6"
+              style={{
+                opacity: checked,
+                transform: `scale(${lerp(0.6, 1, checked)})`,
+              }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Handover({ progress }: { progress: number }) {
+  const signed = itemCheckProgress(progress, 1, 2);
+  return (
+    <div className="flex items-center gap-5">
+      <div
+        className="flex flex-col gap-2 rounded-md border p-4"
+        style={{
+          ...tone(progress),
+          transform: `translate(${lerp(-34, 0, progress)}px, ${lerp(-12, 0, progress)}px) rotate(${lerp(-4, 0, progress)}deg)`,
+        }}
+      >
+        <FileText className="size-10 stroke-1" />
+        <span className="h-1 w-10 rounded-pill bg-current/40" />
+      </div>
+      <ClipboardCheck
+        className="size-14 stroke-1"
+        style={{
+          color: tone(signed).color,
+          opacity: lerp(0.45, 1, signed),
+          transform: `scale(${lerp(0.92, 1, signed)})`,
+        }}
+      />
+    </div>
+  );
+}
+
+function Illustration({
+  index,
+  progress,
+}: {
+  index: number;
+  progress: number;
+}) {
+  if (index === 0) return <DriverTasks progress={progress} />;
+  if (index === 1) return <Handoff progress={progress} />;
+  if (index === 2) return <ApprovalChecks progress={progress} />;
+  return <Handover progress={progress} />;
+}
+
+export function OutcomeVisual({ index }: { index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const progress = useIllustrationProgress(ref);
 
   return (
     <div
+      ref={ref}
       aria-hidden="true"
+      data-viewpoint={progress.toFixed(2)}
+      data-phase={phaseFor(progress)}
       className="flex h-48 items-center justify-center overflow-hidden rounded-md bg-muted p-5 text-dobeu-indigo-500 sm:p-6"
     >
-      {index === 0 && (
-        <motion.div
-          className="flex w-full max-w-64 flex-col gap-3 rounded-md border p-4 text-xs"
-          {...scrollProps(
-            stopped,
-            {
-              opacity: 0.88,
-              y: 10,
-              color: brandSignal,
-              borderColor: quietBorder,
-              backgroundColor: panelBackground,
-            },
-            {
-              opacity: 1,
-              y: 0,
-              color: successSignal,
-              borderColor: successBorder,
-              backgroundColor: successBackground,
-            },
-          )}
-        >
-          <div className="flex items-center justify-between gap-3 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-current/70">
-            <span>Driver tasks</span>
-            <span>Live</span>
-          </div>
-          <ul className="flex flex-col gap-2.5">
-            {driverTasks.map((task, taskIndex) => (
-              <motion.li
-                key={task}
-                className="flex min-w-0 items-center gap-2 text-current"
-                {...scrollProps(
-                  stopped,
-                  { opacity: 0, x: -8 },
-                  { opacity: 1, x: 0 },
-                  0.08 + taskIndex * 0.1,
-                )}
-              >
-                <motion.span
-                  className="flex size-3.5 shrink-0 items-center justify-center rounded-sm border"
-                  {...scrollProps(
-                    stopped,
-                    {
-                      color: brandSignal,
-                      borderColor: "hsl(var(--dobeu-violet-500) / 0.45)",
-                      backgroundColor: panelBackground,
-                    },
-                    {
-                      color: successSignal,
-                      borderColor: successBorder,
-                      backgroundColor: successBackground,
-                    },
-                    0.18 + taskIndex * 0.1,
-                  )}
-                >
-                  <Check className="size-2.5" />
-                </motion.span>
-                <span className="relative min-w-0 flex-1 text-left leading-tight">
-                  <span className="block truncate">{task}</span>
-                  <motion.span
-                    className="absolute left-0 top-1/2 h-px bg-current"
-                    {...scrollProps(
-                      stopped,
-                      { width: "0%" },
-                      { width: "100%" },
-                      0.32 + taskIndex * 0.1,
-                    )}
-                  />
-                </span>
-              </motion.li>
-            ))}
-          </ul>
-        </motion.div>
-      )}
-      {index === 1 && (
-        <div className="flex items-center gap-4">
-          <motion.div
-            {...scrollProps(
-              stopped,
-              { opacity: 0.72, x: -10, color: brandSignal },
-              { opacity: 1, x: 0, color: successSignal },
-            )}
-          >
-            <Users className="size-12 stroke-1" />
-          </motion.div>
-          <motion.div
-            {...scrollProps(
-              stopped,
-              { opacity: 0.45, scaleX: 0.7, color: brandSignal },
-              { opacity: 1, scaleX: 1, color: successSignal },
-              0.12,
-            )}
-          >
-            <ArrowRight className="size-8 stroke-1" />
-          </motion.div>
-          <motion.div
-            className="flex size-20 items-center justify-center rounded-md border"
-            {...scrollProps(
-              stopped,
-              {
-                opacity: 0.78,
-                x: 10,
-                color: brandSignal,
-                borderColor: quietBorder,
-                backgroundColor: panelBackground,
-              },
-              {
-                opacity: 1,
-                x: 0,
-                color: successSignal,
-                borderColor: successBorder,
-                backgroundColor: successBackground,
-              },
-              0.22,
-            )}
-          >
-            <FileText className="size-10 stroke-1" />
-          </motion.div>
-        </div>
-      )}
-      {index === 2 && (
-        <div className="flex items-center gap-3">
-          {[0, 1, 2].map((item) => (
-            <motion.div
-              key={item}
-              className="flex size-14 items-center justify-center rounded-pill border"
-              {...scrollProps(
-                stopped,
-                {
-                  scale: 0.95,
-                  color: brandSignal,
-                  borderColor: quietBorder,
-                  backgroundColor: panelBackground,
-                },
-                {
-                  scale: 1,
-                  color: successSignal,
-                  borderColor: successBorder,
-                  backgroundColor: successBackground,
-                },
-                item * 0.14,
-              )}
-            >
-              <Check className="size-6" />
-            </motion.div>
-          ))}
-        </div>
-      )}
-      {index === 3 && (
-        <div className="flex items-center gap-5">
-          <motion.div
-            className="flex flex-col gap-2 rounded-md border p-4"
-            {...scrollProps(
-              stopped,
-              {
-                x: -34,
-                y: -12,
-                rotate: -4,
-                color: brandSignal,
-                borderColor: quietBorder,
-                backgroundColor: panelBackground,
-              },
-              {
-                x: 0,
-                y: 0,
-                rotate: 0,
-                color: successSignal,
-                borderColor: successBorder,
-                backgroundColor: successBackground,
-              },
-              0.04,
-            )}
-          >
-            <FileText className="size-10 stroke-1" />
-            <span className="h-1 w-10 rounded-pill bg-current/40" />
-          </motion.div>
-          <motion.div
-            {...scrollProps(
-              stopped,
-              {
-                scale: 0.92,
-                color: quietSignal,
-              },
-              {
-                scale: 1,
-                color: successSignal,
-              },
-              0.2,
-            )}
-          >
-            <ClipboardCheck className="size-14 stroke-1" />
-          </motion.div>
-        </div>
-      )}
+      <Illustration index={index} progress={progress} />
     </div>
   );
 }
