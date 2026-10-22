@@ -70,7 +70,7 @@ describe("GET /api/cron/cleanup", () => {
     expect(runCleanup).not.toHaveBeenCalled();
   });
 
-  it("returns partial cleanup results when an individual target fails", async () => {
+  it("returns 500 with the summary when a target fails", async () => {
     const partial = {
       ...summary,
       pageEvents: 0,
@@ -78,7 +78,7 @@ describe("GET /api/cron/cleanup", () => {
     };
     vi.mocked(runCleanup).mockResolvedValue(partial);
     const res = await GET(request("Bearer test-secret"));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     expect(await res.json()).toEqual(partial);
   });
 });

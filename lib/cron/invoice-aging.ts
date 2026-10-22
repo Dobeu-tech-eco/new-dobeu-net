@@ -2,10 +2,10 @@ import type { createAdminClient } from "@/lib/supabase/server";
 import { logToDatadog } from "@/lib/datadog-server";
 import { sendEmail } from "@/lib/resend";
 import { invoiceAgingToAdmin } from "@/lib/resend-templates";
+import { parseAdminEmails } from "@/lib/utils";
+import { DAY_MS, PAGE_SIZE } from "./constants";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
-const DAY_MS = 86_400_000;
-const PAGE_SIZE = 1000;
 
 export async function runInvoiceAging(client: AdminClient, now = new Date()) {
   // due_date is a SQL date; use UTC calendar days, independent of invocation time.
@@ -33,7 +33,6 @@ export async function runInvoiceAging(client: AdminClient, now = new Date()) {
       if (!invoice.due_date) continue;
       const days =
         (midnight - Date.parse(`${invoice.due_date}T00:00:00.000Z`)) / DAY_MS;
-      if (!(days > 0)) continue;
       summary.overdue++;
       // Cumulative thresholds: a 31-day invoice appears in all three counts.
       if (days > 7) summary.over7++;
@@ -43,14 +42,7 @@ export async function runInvoiceAging(client: AdminClient, now = new Date()) {
     if (data.length < PAGE_SIZE) break;
   }
 
-  const admins = [
-    ...new Set(
-      (process.env.ADMIN_EMAILS ?? "")
-        .split(",")
-        .map((email) => email.trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  ];
+  const admins = [...new Set(parseAdminEmails())];
   if (summary.overdue > 0 && admins.length > 0) {
     try {
       const result = await sendEmail({

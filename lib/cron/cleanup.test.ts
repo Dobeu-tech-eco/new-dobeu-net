@@ -26,9 +26,11 @@ function stubCleanup(
     files?: Record<string, StoredFile[]>;
     references?: Record<string, string[]>;
     events?: PageEvent[];
-    failEvents?: boolean;
+    failEvents?: "select" | "delete";
+    failEventDeleteBatch?: number;
     failReferences?: string;
     truncateReferences?: string;
+    truncateOnCheck?: number;
     linkOnRecheck?: string;
     failList?: string;
     failLaterPage?: boolean;
@@ -42,26 +44,50 @@ function stubCleanup(
   const checks: Record<string, number> = {};
   const originalFrom = stub.supabase.from.getMockImplementation()!;
   const lt = vi.fn();
+  const deletes: string[][] = [];
   stub.supabase.from.mockImplementation((table: string) => {
     const result = originalFrom(table);
     const originalDelete = result.delete.getMockImplementation()!;
     result.delete.mockImplementation((...args: unknown[]) => {
       const chain = originalDelete(...args);
-      chain.lt = lt.mockImplementation((column: string, cutoff: string) => {
-        if (opts.failEvents)
+      chain.in = (column: string, ids: string[]) => {
+        deletes.push(ids);
+        if (
+          opts.failEvents === "delete" ||
+          opts.failEventDeleteBatch === deletes.length
+        )
           return Promise.resolve({
             error: { message: "offline" },
             count: null,
           });
-        const deleted = events.filter((event) => event.occurred_at < cutoff);
-        events = events.filter((event) => !deleted.includes(event));
-        return Promise.resolve({ error: null, count: deleted.length });
-      });
+        const before = events.length;
+        events = events.filter((event) => !ids.includes(event.id));
+        return Promise.resolve({ error: null, count: before - events.length });
+      };
       return chain;
     });
     const originalSelect = result.select.getMockImplementation()!;
     result.select.mockImplementation((...args: unknown[]) => {
       const chain = originalSelect(...args);
+      if (table === "page_events") {
+        chain.lt = lt.mockReturnValue(chain);
+        chain.limit = (n: number) => {
+          const cutoff = lt.mock.calls.at(-1)?.[1] as string;
+          if (opts.failEvents === "select")
+            return Promise.resolve({
+              data: null,
+              error: { message: "offline" },
+            });
+          return Promise.resolve({
+            data: events
+              .filter((event) => event.occurred_at < cutoff)
+              .slice(0, n)
+              .map(({ id }) => ({ id })),
+            error: null,
+          });
+        };
+        return chain;
+      }
       const originalIn = chain.in as (...args: unknown[]) => unknown;
       chain.in = (column: string, paths: string[]) => {
         originalIn(column, paths);
@@ -74,7 +100,11 @@ function stubCleanup(
         );
         const data = matches.map((storage_path) => ({ storage_path }));
         return Promise.resolve({
-          data: opts.truncateReferences === table ? data.slice(0, 1) : data,
+          data:
+            opts.truncateReferences === table &&
+            (!opts.truncateOnCheck || checks[table] === opts.truncateOnCheck)
+              ? data.slice(0, 1)
+              : data,
           count: data.length,
           error: opts.failReferences === table ? { message: "offline" } : null,
         });
@@ -141,6 +171,7 @@ function stubCleanup(
     list,
     remove,
     lt,
+    deletes,
     events: () => events,
   };
 }
@@ -205,11 +236,7 @@ describe("runCleanup", () => {
     });
     expect((await runCleanup(stub.client, NOW)).pageEvents).toBe(1);
     expect(stub.lt).toHaveBeenCalledWith("occurred_at", ago(90));
-    expect(stub.recorded).toContainEqual({
-      table: "page_events",
-      method: "delete",
-      args: [{ count: "exact" }],
-    });
+    expect(stub.deletes).toEqual([["old"]]);
     expect(stub.events().map((event) => event.id)).toEqual([
       "boundary",
       "recent",
@@ -240,25 +267,25 @@ describe("runCleanup", () => {
     expect(stub.remove).toHaveBeenCalledTimes(removeCount);
   });
 
-  it("shares the 500 deletion cap across both buckets", async () => {
+  it("gives each bucket its own 500 deletion cap", async () => {
     const stub = stubCleanup({
       files: {
-        "project-files": Array.from({ length: 499 }, (_, i) =>
+        "project-files": Array.from({ length: 600 }, (_, i) =>
           file(`file-${i}`),
         ),
-        "work-order-attachments": [file("a"), file("b"), file("c")],
+        "work-order-attachments": Array.from({ length: 601 }, (_, i) =>
+          file(`attachment-${i}`),
+        ),
       },
     });
     const summary = await runCleanup(stub.client, NOW);
-    expect(summary.projectFiles).toBe(499);
-    expect(summary.workOrderAttachments).toBe(1);
-    expect(
-      stub.remove.mock.calls.reduce((sum, call) => sum + call[1].length, 0),
-    ).toBe(500);
-    expect(stub.files["work-order-attachments"]).toHaveLength(2);
+    expect(summary.projectFiles).toBe(500);
+    expect(summary.workOrderAttachments).toBe(500);
+    expect(stub.files["project-files"]).toHaveLength(100);
+    expect(stub.files["work-order-attachments"]).toHaveLength(101);
   });
 
-  it("caps a single bucket at 500 and leaves the next bucket untouched", async () => {
+  it("caps a single bucket at 500 deletions", async () => {
     const stub = stubCleanup({
       files: {
         "project-files": Array.from({ length: 501 }, (_, i) =>
@@ -269,9 +296,8 @@ describe("runCleanup", () => {
     });
     const summary = await runCleanup(stub.client, NOW);
     expect(summary.projectFiles).toBe(500);
-    expect(summary.workOrderAttachments).toBe(0);
+    expect(summary.workOrderAttachments).toBe(1);
     expect(stub.files["project-files"]).toHaveLength(1);
-    expect(stub.remove).toHaveBeenCalledTimes(1);
   });
 
   it("paginates storage listings past 1000 referenced objects without skipping an orphan", async () => {
@@ -295,7 +321,7 @@ describe("runCleanup", () => {
 
   it("continues the other targets when event deletion and one storage listing fail", async () => {
     const stub = stubCleanup({
-      failEvents: true,
+      failEvents: "select",
       failList: "project-files",
       files: { "work-order-attachments": [file("orphan")] },
     });
@@ -355,7 +381,7 @@ describe("runCleanup", () => {
     expect(stub.remove).not.toHaveBeenCalled();
   });
 
-  it("counts failed removal attempts toward the cap and continues without throwing", async () => {
+  it("continues the next bucket after a failed removal without throwing", async () => {
     const stub = stubCleanup({
       failRemove: "project-files",
       files: {
@@ -368,12 +394,128 @@ describe("runCleanup", () => {
     expect(await runCleanup(stub.client, NOW)).toEqual({
       pageEvents: 0,
       projectFiles: 0,
-      workOrderAttachments: 0,
+      workOrderAttachments: 1,
       failedTargets: ["project-files"],
     });
-    expect(stub.remove).toHaveBeenCalledTimes(1);
+    expect(stub.remove).toHaveBeenCalledTimes(2);
     expect(logToDatadog).toHaveBeenCalledWith("warn", "Cleanup target failed", {
       target: "project-files",
     });
+  });
+
+  it.each([
+    ["project-files", "project_files", "projectFiles"],
+    [
+      "work-order-attachments",
+      "work_order_attachments",
+      "workOrderAttachments",
+    ],
+  ] as const)(
+    "chunks discovery and recheck lookups to at most 100 paths for %s",
+    async (bucket, table, key) => {
+      const stub = stubCleanup({
+        files: {
+          [bucket]: Array.from({ length: 250 }, (_, i) =>
+            file(`file-${String(i).padStart(3, "0")}`),
+          ),
+        },
+      });
+      expect((await runCleanup(stub.client, NOW))[key]).toBe(250);
+      const lookups = stub.recorded.filter(
+        (call) => call.table === table && call.method === "in",
+      );
+      // 250 paths -> 3 chunks for discovery + 3 for the pre-delete recheck.
+      expect(lookups).toHaveLength(6);
+      for (const call of lookups) {
+        expect((call.args[1] as string[]).length).toBeLessThanOrEqual(100);
+      }
+    },
+  );
+
+  it("fails closed if a later reference chunk is truncated", async () => {
+    const protectedPaths = Array.from(
+      { length: 202 },
+      (_, i) => `file-${String(i).padStart(3, "0")}`,
+    );
+    const stub = stubCleanup({
+      files: { "project-files": protectedPaths.map((path) => file(path)) },
+      references: { project_files: protectedPaths },
+      truncateReferences: "project_files",
+      truncateOnCheck: 3,
+    });
+    expect((await runCleanup(stub.client, NOW)).failedTargets).toEqual([
+      "project-files",
+    ]);
+    expect(stub.remove).not.toHaveBeenCalled();
+  });
+
+  it("fails closed if the pre-delete reference recheck is truncated", async () => {
+    const stub = stubCleanup({
+      files: { "project-files": [file("new-a"), file("new-b")] },
+      linkOnRecheck: "project_files",
+      truncateReferences: "project_files",
+      truncateOnCheck: 2,
+    });
+    expect((await runCleanup(stub.client, NOW)).failedTargets).toEqual([
+      "project-files",
+    ]);
+    expect(stub.remove).not.toHaveBeenCalled();
+  });
+
+  it("purges page events in bounded batches until none remain", async () => {
+    const stub = stubCleanup({
+      events: Array.from({ length: 2300 }, (_, i) => ({
+        id: `e-${i}`,
+        occurred_at: ago(100),
+      })),
+    });
+    expect((await runCleanup(stub.client, NOW)).pageEvents).toBe(2300);
+    expect(stub.events()).toHaveLength(0);
+    expect(stub.deletes.length).toBeGreaterThan(1);
+    expect(
+      Math.max(...stub.deletes.map((ids) => ids.length)),
+    ).toBeLessThanOrEqual(1000);
+  });
+
+  it("caps page event purging at 20 batches per run", async () => {
+    const stub = stubCleanup({
+      events: Array.from({ length: 21_000 }, (_, i) => ({
+        id: `e-${i}`,
+        occurred_at: ago(100),
+      })),
+    });
+    const summary = await runCleanup(stub.client, NOW);
+    expect(summary.pageEvents).toBe(20_000);
+    expect(summary.failedTargets).toEqual(["page_events"]);
+    expect(stub.deletes).toHaveLength(20);
+    expect(stub.events()).toHaveLength(1000);
+  });
+
+  it("reports a failed page_events delete without throwing", async () => {
+    const stub = stubCleanup({
+      failEvents: "delete",
+      events: [{ id: "old", occurred_at: ago(91) }],
+    });
+    const summary = await runCleanup(stub.client, NOW);
+    expect(summary.pageEvents).toBe(0);
+    expect(summary.failedTargets).toEqual(["page_events"]);
+  });
+
+  it("retains successful batch counts and cleans storage after a later event delete fails", async () => {
+    const stub = stubCleanup({
+      events: Array.from({ length: 2300 }, (_, i) => ({
+        id: `e-${i}`,
+        occurred_at: ago(100),
+      })),
+      failEventDeleteBatch: 2,
+      files: { "project-files": [file("orphan")] },
+    });
+    expect(await runCleanup(stub.client, NOW)).toEqual({
+      pageEvents: 1000,
+      projectFiles: 1,
+      workOrderAttachments: 0,
+      failedTargets: ["page_events"],
+    });
+    expect(stub.events()).toHaveLength(1300);
   });
 });
