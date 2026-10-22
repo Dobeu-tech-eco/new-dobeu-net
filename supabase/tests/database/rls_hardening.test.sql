@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(32);
 
 -- -----------------------------------------------------------------------------
 -- Fixtures (as the migration owner, bypassing RLS)
@@ -194,6 +194,23 @@ select throws_ok(
       where user_id = '33333333-3333-3333-3333-333333333333' $$,
   '42501', null,
   'company admin cannot rewrite a member''s user_id');
+
+select lives_ok(
+  $$ insert into public.company_members (company_id, user_id, role, status, invited_by)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222',
+             'company_admin', 'invited', '44444444-4444-4444-4444-444444444444') $$,
+  'company admin can still invite a member (inviteMember path)');
+
+select throws_ok(
+  $$ update public.company_members set status = 'active'
+      where user_id = '22222222-2222-2222-2222-222222222222' $$,
+  '42501', null,
+  'company admin cannot activate a member (invite then activate escalation is closed)');
+
+select lives_ok(
+  $$ update public.company_members set role = 'viewer'
+      where user_id = '33333333-3333-3333-3333-333333333333' $$,
+  'company admin can still change an active member''s role (changeMemberRole path)');
 
 -- -----------------------------------------------------------------------------
 -- As user A (owner)

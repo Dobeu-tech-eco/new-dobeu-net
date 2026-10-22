@@ -66,7 +66,7 @@ describe("20261022000100_rls_advisor_hardening.sql", () => {
     ]) {
       const escaped = fn.replace(/[()]/g, "\\$&");
       expect(sql).toMatch(
-        new RegExp(`alter function public\\.${escaped} set search_path = pg_catalog, public;`)
+        new RegExp(`alter function public\\.${escaped} set search_path = pg_catalog, public(, pg_temp)?;`)
       );
     }
   });
@@ -118,8 +118,24 @@ describe("20261022000100_rls_advisor_hardening.sql", () => {
     expect(sql).not.toMatch(/drop\s+table/);
   });
 
-  it("does not list pg_temp in any search_path", () => {
-    expect(sql).not.toMatch(/search_path[^;]*pg_temp/);
+  it("lists pg_temp explicitly last on every SECURITY DEFINER search_path", () => {
+    for (const fn of [
+      "handle_new_user()",
+      "is_company_member(uuid)",
+      "company_role_rank(uuid)",
+      "audit_typeform_budget_intake_review()"
+    ]) {
+      const escaped = fn.replace(/[()]/g, "\\$&");
+      expect(sql).toMatch(
+        new RegExp(
+          `alter function public\\.${escaped} set search_path = pg_catalog, public, pg_temp;`
+        )
+      );
+    }
+    // pg_temp must never appear anywhere but last.
+    for (const m of sql.match(/set search_path = [^;\n]*/g) ?? []) {
+      expect(m, m).toMatch(/^set search_path = pg_catalog, public(, pg_temp)?;?$/);
+    }
   });
 
   it("re-revokes EXECUTE on the typeform trigger functions, guarded by existence", () => {
@@ -162,6 +178,31 @@ describe("20261022000100_rls_advisor_hardening.sql", () => {
       expect(pol, name).toMatch(
         /company_roles r where r\.key = company_members\.role\), 0 \) <= public\.company_role_rank\(company_id\)/
       );
+    }
+  });
+
+  it("blocks client activation of company members via a trigger", () => {
+    expect(sql).toMatch(
+      /create or replace function public\.enforce_company_member_activation\(\)[\s\S]*?set search_path = pg_catalog, public\s+as \$\$/
+    );
+    expect(sql).toMatch(/current_user in \('anon', 'authenticated'\)/);
+    expect(sql).toMatch(/new\.status = 'active'/);
+    expect(sql).toMatch(
+      /create trigger company_members_block_client_activation\s+before insert or update of status on public\.company_members/
+    );
+    expect(sql).toMatch(
+      /revoke execute on function public\.enforce_company_member_activation\(\) from public, anon, authenticated;/
+    );
+  });
+
+  it("every wo_insert_own variant that can see company_id checks the project's company", () => {
+    const wos = policies.filter((p) => p.includes('"wo_insert_own"'));
+    expect(wos.length).toBe(3);
+    const withCompany = wos.filter((p) => p.includes("work_orders.company_id"));
+    expect(withCompany.length).toBe(2);
+    for (const p of withCompany) {
+      expect(p, p).toMatch(/p\.company_id = work_orders\.company_id/);
+      expect(p, p).toMatch(/is_company_member\(company_id\)/);
     }
   });
 

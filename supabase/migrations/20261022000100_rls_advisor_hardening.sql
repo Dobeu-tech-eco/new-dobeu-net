@@ -42,12 +42,15 @@
 
 -- =============================================================================
 -- 1. Functions: pin search_path.
---    Every function gets `pg_catalog, public`: pg_catalog first so built-ins
---    cannot be shadowed, and pg_temp deliberately NOT listed (Postgres
---    guidance for SECURITY DEFINER; the bodies reference only public.* and
---    auth.uid(), never temp objects). An empty path was rejected because the
---    live schema has not been diffed (S2) and a drifted body with
---    unqualified names would break signups.
+--    SECURITY DEFINER functions get `pg_catalog, public, pg_temp`: pg_catalog
+--    first so built-ins cannot be shadowed, and pg_temp listed explicitly LAST.
+--    When pg_temp is not named, Postgres searches it FIRST for relations and
+--    types, so omitting it is the unsafe form (CREATE FUNCTION docs, "Writing
+--    SECURITY DEFINER Functions Safely"). SECURITY INVOKER functions
+--    (set_updated_at, enforce_typeform_budget_intake_state, the member-status
+--    guard) use `pg_catalog, public`. An empty path was rejected because the
+--    live schema has not been diffed (S2) and a drifted body with unqualified
+--    names would break signups.
 -- =============================================================================
 do $$
 begin
@@ -56,15 +59,15 @@ begin
   end if;
 
   if to_regprocedure('public.handle_new_user()') is not null then
-    alter function public.handle_new_user() set search_path = pg_catalog, public;
+    alter function public.handle_new_user() set search_path = pg_catalog, public, pg_temp;
   end if;
 
   if to_regprocedure('public.is_company_member(uuid)') is not null then
-    alter function public.is_company_member(uuid) set search_path = pg_catalog, public;
+    alter function public.is_company_member(uuid) set search_path = pg_catalog, public, pg_temp;
   end if;
 
   if to_regprocedure('public.company_role_rank(uuid)') is not null then
-    alter function public.company_role_rank(uuid) set search_path = pg_catalog, public;
+    alter function public.company_role_rank(uuid) set search_path = pg_catalog, public, pg_temp;
   end if;
 
   if to_regprocedure('public.enforce_typeform_budget_intake_state()') is not null then
@@ -72,9 +75,31 @@ begin
   end if;
 
   if to_regprocedure('public.audit_typeform_budget_intake_review()') is not null then
-    alter function public.audit_typeform_budget_intake_review() set search_path = pg_catalog, public;
+    alter function public.audit_typeform_budget_intake_review() set search_path = pg_catalog, public, pg_temp;
   end if;
 end $$;
+
+
+-- Client-activation guard (see section 11). SECURITY INVOKER: current_user is
+-- the API role (authenticated) for PostgREST calls and the owner / service_role
+-- for server-side writes, which are allowed through.
+create or replace function public.enforce_company_member_activation()
+returns trigger
+language plpgsql
+set search_path = pg_catalog, public
+as $$
+begin
+  if new.status = 'active'
+     and (tg_op = 'INSERT' or old.status is distinct from 'active')
+     and current_user in ('anon', 'authenticated') then
+    raise exception 'company members can only be activated by the service role'
+      using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+revoke execute on function public.enforce_company_member_activation() from public, anon, authenticated;
 
 
 -- =============================================================================
@@ -473,6 +498,31 @@ begin
             )
           )
         );
+    elsif v_company then
+      create policy "wo_insert_own" on public.work_orders
+        for insert
+        to authenticated
+        with check (
+          created_by = (select auth.uid())
+          and status = 'open'
+          and quoted_amount_cents is null
+          and quoted_at is null
+          and accepted_at is null
+          and invoice_id is null
+          and (company_id is null or public.is_company_member(company_id))
+          and (
+            project_id is null
+            or exists (
+              select 1 from public.projects p
+              where p.id = work_orders.project_id
+                and p.owner_user_id = (select auth.uid())
+                and (
+                  work_orders.company_id is null
+                  or p.company_id = work_orders.company_id
+                )
+            )
+          )
+        );
     else
       create policy "wo_insert_own" on public.work_orders
         for insert
@@ -644,6 +694,18 @@ begin
           (select r.rank from public.company_roles r where r.key = company_members.role), 0
         ) <= public.company_role_rank(company_id)
       );
+
+    -- A policy WITH CHECK cannot see the old row, so it cannot allow role edits
+    -- on active rows while refusing a transition TO active. A trigger can:
+    -- activation (invited/disabled -> active) is service-role only. No
+    -- cookie-bound action activates members (inviteMember inserts 'invited',
+    -- changeMemberRole writes role, deactivateMember writes 'disabled';
+    -- provisionCompanyAdmin uses the service role), and no accept-invite flow
+    -- exists, so there is no invitee self-accept path to preserve.
+    drop trigger if exists company_members_block_client_activation on public.company_members;
+    create trigger company_members_block_client_activation
+      before insert or update of status on public.company_members
+      for each row execute function public.enforce_company_member_activation();
 
     drop policy if exists "company_members_admin_delete" on public.company_members;
     create policy "company_members_admin_delete" on public.company_members
