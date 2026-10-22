@@ -10,7 +10,7 @@ import {
 } from "@/lib/actions/files";
 import {
   MAX_DELIVERABLE_BYTES,
-  ALLOWED_DELIVERABLE_MIME,
+  EXTENSION_MIME,
   ALLOWED_EXTENSIONS_LABEL,
   MAX_FILENAME_LENGTH,
   filenameError,
@@ -39,9 +39,12 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
       setError(tooLargeMessage(file.size));
       return;
     }
-    const mime = file.type;
-    if (!(ALLOWED_DELIVERABLE_MIME as readonly string[]).includes(mime)) {
-      setError(`Unsupported file type${mime ? `: ${mime}` : ""}.`);
+    // Canonical MIME comes from the extension; the browser's file.type is ignored.
+    const dot = file.name.lastIndexOf(".");
+    const ext = dot < 0 ? "" : file.name.slice(dot + 1).toLowerCase();
+    const mime = Object.prototype.hasOwnProperty.call(EXTENSION_MIME, ext) ? EXTENSION_MIME[ext] : undefined;
+    if (!mime) {
+      setError("Unsupported file type.");
       return;
     }
 

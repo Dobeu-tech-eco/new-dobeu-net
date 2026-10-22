@@ -11,12 +11,17 @@
  *      BEFORE a URL is minted; the bucket enforces the same limits in storage
  *      (see 20261022000200_storage_deliverable_size_limit.sql).
  *   2. The BROWSER PUTs the bytes directly to storage via `uploadToSignedUrl`
- *      (see components/admin/DeliverableUpload.tsx). Size + MIME are pre-checked
+ *      (see components/admin/DeliverableUpload.tsx). Size + type are pre-checked
  *      client-side there.
  *   3. `recordDeliverable(...)` — admin inserts the `project_files` row with
- *      `uploaded_by` = admin uuid. MIME is re-validated server-side against the
- *      allowlist; size is the client-reported value (best-effort — the action
- *      never sees the bytes, so this is not a hard server-side guarantee).
+ *      `uploaded_by` = admin uuid. The action never sees the bytes, so it reads
+ *      the real object metadata from storage and records THAT size and MIME;
+ *      client-declared values are not trusted. The canonical MIME is derived
+ *      from the object key's extension (EXTENSION_MIME), not from the browser.
+ *
+ * Object keys are server-generated and unique:
+ * `<project_id>/<uuid>-<url-safe name>`. The display filename (spaces allowed)
+ * is stored separately in `project_files.filename`.
  *
  * Both actions require `requireAdminAal2()`.
  */
@@ -27,6 +32,8 @@ import {
   MAX_DELIVERABLE_BYTES,
   ALLOWED_DELIVERABLE_MIME,
   OBJECT_NAME_CHARSET,
+  canonicalMimeForName,
+  keySafeName,
   filenameError,
   tooLargeMessage
 } from "@/lib/deliverable-limits";
@@ -51,25 +58,23 @@ const createUrlInput = z
     if (msg) ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["filename"] });
   });
 
-const recordInput = z
-  .object({
-    project_id: uuid,
-    storage_path: z.string().trim().min(1).max(400),
-    filename: z.string().trim(),
-    mime: mimeEnum,
-    size_bytes: z.number().int().positive().max(MAX_DELIVERABLE_BYTES, "file too large (25MB max)")
-  })
-  .superRefine((v, ctx) => {
-    const msg = filenameError(v.filename, v.mime);
-    if (msg) ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["filename"] });
-  });
+const recordInput = z.object({
+  project_id: uuid,
+  storage_path: z.string().trim().min(1).max(400),
+  filename: z.string().trim(),
+  // Optional and advisory: the canonical MIME is derived from the key.
+  mime: mimeEnum.optional(),
+  size_bytes: z.number().int().positive().max(MAX_DELIVERABLE_BYTES, "file too large (25MB max)").optional()
+});
+
+/** `<uuid>-<key-safe name>`: the only object-name shape this module mints. */
+const OBJECT_KEY_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-[A-Za-z0-9._-]+$/i;
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
-/** Build a collision-resistant storage path: `<projectId>/<ts>-<filename>`. */
+/** Build a unique storage key: `<projectId>/<uuid>-<key-safe name>`. */
 function buildStoragePath(projectId: string, filename: string): string {
-  const stamp = Date.now().toString(36);
-  return `${projectId}/${stamp}-${filename}`;
+  return `${projectId}/${crypto.randomUUID()}-${keySafeName(filename)}`;
 }
 
 /**
@@ -107,8 +112,9 @@ export async function createDeliverableUploadUrl(
     return { ok: false, error: projectError?.message ?? "project not found" };
   }
 
+  // upsert:false: the signed token cannot overwrite an existing object.
   const path = buildStoragePath(project_id, filename);
-  const { data, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(path);
+  const { data, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(path, { upsert: false });
   if (error || !data) {
     return { ok: false, error: error?.message ?? "could not create upload url" };
   }
@@ -126,7 +132,7 @@ export async function recordDeliverable(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
   }
-  const { project_id, storage_path, filename } = parsed.data;
+  const { project_id, storage_path, filename, mime: declaredMime } = parsed.data;
 
   let admin, user;
   try {
@@ -136,12 +142,40 @@ export async function recordDeliverable(
     throw e;
   }
 
-  // The path must live under this project's prefix (mirrors work-orders) and
-  // the object name must be a single safe segment.
+  // The path must live under this project's prefix and be a single object
+  // name of the exact shape createDeliverableUploadUrl mints.
   const prefix = `${project_id}/`;
   const objectName = storage_path.startsWith(prefix) ? storage_path.slice(prefix.length) : "";
-  if (!objectName || !OBJECT_NAME_CHARSET.test(objectName) || objectName.includes("..")) {
+  if (
+    !objectName ||
+    !OBJECT_NAME_CHARSET.test(objectName) ||
+    !OBJECT_KEY_RE.test(objectName) ||
+    objectName.includes("..")
+  ) {
     return { ok: false, error: "storage_path outside project namespace" };
+  }
+  // The key's extension decides the canonical MIME, never the browser.
+  const canonicalMime = canonicalMimeForName(objectName);
+  if (!canonicalMime) return { ok: false, error: "unsupported file extension" };
+  if (declaredMime !== undefined && declaredMime !== canonicalMime) {
+    return { ok: false, error: "file extension does not match file type" };
+  }
+  const nameMsg = filenameError(filename, canonicalMime);
+  if (nameMsg) return { ok: false, error: nameMsg };
+
+  // true / false, or null when the lookup failed (callers fail closed).
+  const isReferenced = async (): Promise<boolean | null> => {
+    const { data: rows, error: refError } = await admin
+      .from("project_files")
+      .select("id")
+      .eq("storage_path", storage_path)
+      .limit(1);
+    if (refError) return null;
+    return (rows ?? []).length > 0;
+  };
+  // A key is recorded once; never touch bytes a row already points at.
+  if ((await isReferenced()) !== false) {
+    return { ok: false, error: "storage_path already recorded" };
   }
 
   // Never trust client-declared size/mime: read the real object metadata.
@@ -153,18 +187,15 @@ export async function recordDeliverable(
   const realSize = info.size;
   const realMime = (info.contentType ?? "").split(";")[0].trim().toLowerCase();
   const reject = async (message: string): Promise<ActionResult<{ id: string }>> => {
-    await bucket.remove([storage_path]);
+    // Remove only when no row references the key (fail closed on lookup error).
+    if ((await isReferenced()) === false) await bucket.remove([storage_path]);
     return { ok: false, error: message };
   };
   if (typeof realSize !== "number" || !Number.isFinite(realSize) || realSize <= 0) {
     return reject("uploaded object has no size");
   }
   if (realSize > MAX_DELIVERABLE_BYTES) return reject(tooLargeMessage(realSize));
-  if (!(ALLOWED_DELIVERABLE_MIME as readonly string[]).includes(realMime)) {
-    return reject("Unsupported file type.");
-  }
-  const realMsg = filenameError(filename, realMime);
-  if (realMsg) return reject(realMsg);
+  if (realMime !== canonicalMime) return reject("file extension does not match file type");
 
   const { data, error } = await admin
     .from("project_files")
