@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalLayout } from "@/components/landing/LegalLayout";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Dobeu Tech Solutions",
+  title: "Privacy Policy",
   description: "How Dobeu Tech Solutions LLC collects, uses, and protects your personal data.",
   alternates: { canonical: "/privacy" },
   robots: { index: true, follow: true },

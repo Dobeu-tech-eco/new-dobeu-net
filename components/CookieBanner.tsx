@@ -13,6 +13,10 @@ import { useCookieConsent, type ConsentState } from "@/hooks/use-cookie-consent"
  * A `window.openCookiePreferences()` global is exposed so the footer
  * "Cookie preferences" link can re-open the dialog at any time.
  */
+const OFFSET_VAR = "--cookie-banner-offset";
+/** Elements whose styles reference the offset variable (class or inline style). */
+const OFFSET_READER_SELECTOR = '[class*="cookie-banner-offset"],[style*="cookie-banner-offset"]';
+
 export function CookieBanner() {
   const { consent, acceptAll, declineAll, savePreferences, isDNT } = useCookieConsent();
   const [showPrefs, setShowPrefs] = React.useState(false);
@@ -36,25 +40,55 @@ export function CookieBanner() {
     };
   }, [consent]);
 
-  // Publish banner height so sticky CTAs and the hero pad instead of hiding.
+  // Publish banner height so offset-aware elements (StickyMobileCTA, the
+  // pricing CTA section) pad instead of hiding behind it. The value is written
+  // onto those reader elements only — never onto <html> — because changing an
+  // inherited custom property on the root restyles the entire document right
+  // in the middle of hydration. Readers are found by their use of the variable
+  // and re-scanned when the DOM changes, so late mounts (the sticky bar appears
+  // on scroll; client-side navigation) still pick it up.
   React.useLayoutEffect(() => {
-    const root = document.documentElement;
-    if (!showFirstVisitBanner) {
-      root.style.removeProperty("--cookie-banner-offset");
-      return;
-    }
+    if (!showFirstVisitBanner) return;
     const node = bannerRef.current;
     if (!node) return;
+
+    const touched = new Set<HTMLElement>();
+    let offset = "";
     const apply = () => {
-      const extra = 0; // flush to the bottom edge; the floating card used 16 to match bottom-4
-      root.style.setProperty("--cookie-banner-offset", `${Math.ceil(node.getBoundingClientRect().height + extra)}px`);
+      if (!offset) return;
+      const readers = document.querySelectorAll<HTMLElement>(OFFSET_READER_SELECTOR);
+      readers.forEach((el) => {
+        if (el.style.getPropertyValue(OFFSET_VAR) !== offset) el.style.setProperty(OFFSET_VAR, offset);
+        touched.add(el);
+      });
     };
-    apply();
-    const observer = new ResizeObserver(apply);
-    observer.observe(node);
+    // ResizeObserver delivers the first size after the browser's own layout,
+    // so mounting does not force a synchronous layout during hydration.
+    const extra = 0; // flush to the bottom edge; the floating card used 16 to match bottom-4
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      const box = entry?.borderBoxSize?.[0];
+      const height = box ? box.blockSize : node.getBoundingClientRect().height;
+      offset = `${Math.ceil(height + extra)}px`;
+      apply();
+    });
+    resizeObserver.observe(node);
+
+    let frame = 0;
+    const mutationObserver = new MutationObserver(() => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        apply();
+      });
+    });
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
+
     return () => {
-      observer.disconnect();
-      root.style.removeProperty("--cookie-banner-offset");
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+      touched.forEach((el) => el.style.removeProperty(OFFSET_VAR));
     };
   }, [showFirstVisitBanner]);
 
