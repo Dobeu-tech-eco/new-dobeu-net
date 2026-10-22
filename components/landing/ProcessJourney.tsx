@@ -49,9 +49,8 @@ const steps = [
 ];
 
 export function ProcessJourney() {
-  const { ref, active, select, interactionProps, playing } = useAutoStep(
-    steps.length,
-  );
+  const { ref, active, direction, select, interactionProps, playing } =
+    useAutoStep(steps.length);
   const step = steps[active];
   return (
     <div
@@ -102,7 +101,9 @@ export function ProcessJourney() {
         <motion.div
           key={step.label}
           className="flex h-full flex-col gap-6"
-          initial={playing ? { opacity: 0.72, y: 12 } : false}
+          initial={
+            playing ? { opacity: 0.72, y: direction > 0 ? 12 : -12 } : false
+          }
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: playing ? 0.62 : 0, ease: "easeOut" }}
         >
@@ -115,7 +116,9 @@ export function ProcessJourney() {
               <motion.li
                 key={item}
                 className="flex items-start gap-3 text-base leading-relaxed"
-                initial={playing ? { opacity: 0, y: 8 } : false}
+                initial={
+                  playing ? { opacity: 0, y: direction > 0 ? 8 : -8 } : false
+                }
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
                   duration: playing ? 0.46 : 0,

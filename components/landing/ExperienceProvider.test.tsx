@@ -176,17 +176,20 @@ describe("marketing experience controls", () => {
     }
   });
 
-  it("advances illustrations from viewport scroll instead of timers", () => {
+  it("advances illustrations from the viewing band and restores them when scrolling up", () => {
     renderJourney();
 
     setJourneyTop(780);
     expect(screen.getByTestId("active")).toHaveTextContent("0");
 
-    setJourneyTop(240);
+    setJourneyTop(590);
     expect(screen.getByTestId("active")).toHaveTextContent("1");
 
     setJourneyTop(-420);
     expect(screen.getByTestId("active")).toHaveTextContent("2");
+
+    setJourneyTop(780);
+    expect(screen.getByTestId("active")).toHaveTextContent("0");
   });
 
   it("does not scroll-cycle when reduced motion keeps playback paused", () => {

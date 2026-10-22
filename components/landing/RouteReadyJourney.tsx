@@ -35,9 +35,8 @@ const stages = [
 ];
 
 export function RouteReadyJourney() {
-  const { ref, active, select, interactionProps, playing } = useAutoStep(
-    stages.length,
-  );
+  const { ref, active, direction, select, interactionProps, playing } =
+    useAutoStep(stages.length);
   const stage = stages[active];
   const Icon = stage.icon;
   return (
@@ -61,7 +60,9 @@ export function RouteReadyJourney() {
         <motion.div
           key={stage.title}
           className="flex flex-col items-start gap-4"
-          initial={playing ? { opacity: 0.72, y: 10 } : false}
+          initial={
+            playing ? { opacity: 0.72, y: direction > 0 ? 10 : -10 } : false
+          }
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: playing ? 0.58 : 0, ease: "easeOut" }}
         >
@@ -92,17 +93,27 @@ export function RouteReadyJourney() {
             >
               <span
                 className={cn(
-                  "flex size-6 shrink-0 items-center justify-center rounded-pill border font-mono text-xs",
+                  "grid size-6 shrink-0 place-items-center rounded-pill border font-mono text-xs",
                   active >= index
                     ? "border-primary text-primary"
                     : "border-border",
                 )}
               >
-                {index < active ? (
-                  <Check className="size-3" aria-hidden="true" />
-                ) : (
-                  index + 1
-                )}
+                <span
+                  className={cn(
+                    "col-start-1 row-start-1 transition-opacity duration-200",
+                    index < active ? "opacity-0" : "opacity-100",
+                  )}
+                >
+                  {index + 1}
+                </span>
+                <Check
+                  className={cn(
+                    "col-start-1 row-start-1 size-3 transition-transform duration-200 ease-out",
+                    index < active ? "scale-100" : "scale-0",
+                  )}
+                  aria-hidden="true"
+                />
               </span>
               {item.title}
             </button>
