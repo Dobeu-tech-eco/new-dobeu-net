@@ -6,16 +6,15 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import {
   createDeliverableUploadUrl,
-  recordDeliverable,
-  MAX_DELIVERABLE_BYTES,
-  ALLOWED_DELIVERABLE_MIME
+  recordDeliverable
 } from "@/lib/actions/files";
+import {
+  MAX_DELIVERABLE_BYTES,
+  ALLOWED_DELIVERABLE_MIME,
+  tooLargeMessage
+} from "@/lib/deliverable-limits";
 
 const BUCKET = "project-files";
-
-function tooLargeMessage(bytes: number): string {
-  return `File too large: ${(bytes / (1024 * 1024)).toFixed(1)} MB. Deliverables are capped at 25 MB.`;
-}
 
 export function DeliverableUpload({ projectId }: { projectId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,8 +64,8 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
         });
       if (uploadError) {
         const e = uploadError as { message: string; statusCode?: string | number; status?: number };
-        const tooBig =
-          String(e.statusCode ?? e.status ?? "") === "413" || /exceed/i.test(e.message);
+        const code = Number(e.statusCode ?? e.status);
+        const tooBig = code === 413 || (Number.isNaN(code) && /exceed|too large/i.test(e.message));
         setError(tooBig ? tooLargeMessage(file.size) : e.message);
         return;
       }

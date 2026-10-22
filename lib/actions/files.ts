@@ -23,36 +23,13 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin, AuthError } from "@/lib/actions/auth";
+import {
+  MAX_DELIVERABLE_BYTES,
+  ALLOWED_DELIVERABLE_MIME,
+  tooLargeMessage
+} from "@/lib/deliverable-limits";
 
 const BUCKET = "project-files";
-
-/** 25 MB ceiling, mirrored client-side as a pre-check. */
-export const MAX_DELIVERABLE_BYTES = 25 * 1024 * 1024;
-
-/**
- * MIME allowlist for admin deliverables: pdf, common images (png/jpeg/webp/
- * gif/svg), zip, Office docs (doc/docx/xls/xlsx/ppt/pptx), text/plain,
- * text/csv, video/mp4. Keep in sync with the storage bucket migration
- * `20261022000200_storage_deliverable_size_limit.sql`.
- */
-export const ALLOWED_DELIVERABLE_MIME = [
-  "application/pdf",
-  "application/zip",
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-  "image/svg+xml",
-  "text/plain",
-  "text/csv",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "video/mp4"
-] as const;
 
 const uuid = z.string().uuid("invalid id");
 
@@ -104,8 +81,7 @@ export async function createDeliverableUploadUrl(
   const { project_id, filename, size_bytes } = parsed.data;
 
   if (size_bytes > MAX_DELIVERABLE_BYTES) {
-    const mb = (size_bytes / (1024 * 1024)).toFixed(1);
-    return { ok: false, error: `File too large: ${mb} MB. Deliverables are capped at 25 MB.` };
+    return { ok: false, error: tooLargeMessage(size_bytes) };
   }
 
   let admin;
