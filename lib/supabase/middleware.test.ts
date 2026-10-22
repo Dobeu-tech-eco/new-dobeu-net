@@ -45,6 +45,18 @@ describe("updateSession — stray ?code= forwarder", () => {
     expect(location.searchParams.get("next")).toBe("/portal");
   });
 
+  it("forwards a stray OTP token_hash to /auth/callback with its type and next", async () => {
+    const res = await updateSession(
+      new NextRequest("https://dobeu.net/?token_hash=th_abc&type=invite&next=%2Fcompany"),
+    );
+    expect(res.status).toBe(307);
+    const location = new URL(res.headers.get("location") as string);
+    expect(location.pathname).toBe("/auth/callback");
+    expect(location.searchParams.get("token_hash")).toBe("th_abc");
+    expect(location.searchParams.get("type")).toBe("invite");
+    expect(location.searchParams.get("next")).toBe("/company");
+  });
+
   it("does NOT forward when the code is already on /auth/callback (no redirect loop)", async () => {
     const res = await updateSession(
       new NextRequest("https://dobeu.net/auth/callback?code=abc"),

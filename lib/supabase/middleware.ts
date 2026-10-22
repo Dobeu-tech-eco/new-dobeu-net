@@ -21,8 +21,12 @@ export async function updateSession(request: NextRequest) {
   // path) instead of `/auth/callback`, so the session is never exchanged.
   // Forward any stray `code` to the real callback (preserving `next`) so auth
   // completes even if the Supabase dashboard allowlist is misconfigured.
+  // Same rescue for a stray OTP `token_hash` (invite / magic-link email
+  // templates): /auth/callback moves it into a short-lived strict cookie so it
+  // never sits in a page URL where analytics or Referer could pick it up.
   const strayCode = request.nextUrl.searchParams.get("code");
-  if (strayCode && path !== "/auth/callback") {
+  const strayToken = request.nextUrl.searchParams.get("token_hash");
+  if ((strayCode || strayToken) && path !== "/auth/callback") {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/callback";
     return NextResponse.redirect(url);

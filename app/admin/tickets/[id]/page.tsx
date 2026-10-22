@@ -15,6 +15,7 @@ import { AdminQuoteForm } from "@/components/admin/AdminQuoteForm";
 import { AdminStatusButtons } from "@/components/admin/AdminStatusButtons";
 import { AdminMarkPaidButton } from "@/components/admin/AdminMarkPaidButton";
 import { AdminCreateInvoiceButton } from "@/components/admin/AdminCreateInvoiceButton";
+import { safeStripeInvoiceUrl } from "@/lib/stripe-url";
 
 export const dynamic = "force-dynamic";
 
@@ -207,9 +208,9 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
               {invoice.status}
             </Badge>
           </p>
-          {invoice.hosted_invoice_url && (
+          {safeStripeInvoiceUrl(invoice.hosted_invoice_url) && (
             <Button asChild variant="ghost" size="sm">
-              <a href={invoice.hosted_invoice_url} target="_blank" rel="noreferrer">
+              <a href={safeStripeInvoiceUrl(invoice.hosted_invoice_url)!} target="_blank" rel="noreferrer">
                 View Stripe hosted invoice →
                 <span className="sr-only"> (opens in new tab)</span>
               </a>

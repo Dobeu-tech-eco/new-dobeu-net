@@ -7,6 +7,7 @@ import {
   AdminStatusBanner,
   type AdminStatusParams,
 } from "@/components/admin/AdminStatusBanner";
+import { safeStripeInvoiceUrl } from "@/lib/stripe-url";
 
 export const dynamic = "force-dynamic";
 
@@ -135,9 +136,9 @@ export default async function AdminInvoicesPage({
                       : "—"}
                   </td>
                   <td className="p-3 text-xs">
-                    {inv.hosted_invoice_url ? (
+                    {safeStripeInvoiceUrl(inv.hosted_invoice_url) ? (
                       <a
-                        href={inv.hosted_invoice_url}
+                        href={safeStripeInvoiceUrl(inv.hosted_invoice_url)!}
                         target="_blank"
                         rel="noreferrer"
                         className="text-primary hover:underline"
