@@ -10,6 +10,7 @@ export const SENSITIVE_QUERY_KEYS = [
   "access_token",
   "refresh_token",
   "code",
+  "token_hash",
   "session",
   "signature",
   "api_key",

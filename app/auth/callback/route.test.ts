@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const exchangeCodeForSession = vi.fn();
+const verifyOtp = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
-    auth: { exchangeCodeForSession }
+    auth: { exchangeCodeForSession, verifyOtp }
   }))
 }));
 
@@ -12,6 +13,7 @@ import { GET } from "@/app/auth/callback/route";
 
 beforeEach(() => {
   exchangeCodeForSession.mockReset();
+  verifyOtp.mockReset();
 });
 
 describe("GET /auth/callback", () => {
@@ -40,5 +42,54 @@ describe("GET /auth/callback", () => {
 
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("http://localhost/login?error=auth_callback_failed");
+  });
+
+  it("does not call verifyOtp when a code is present", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null });
+    await GET(new Request("http://localhost/auth/callback?code=abc&token_hash=h&type=invite"));
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(exchangeCodeForSession).toHaveBeenCalledWith("abc");
+  });
+
+  it("never verifies on GET; parks the token in a Strict httpOnly cookie, not the URL", async () => {
+    const res = await GET(
+      new Request("http://localhost/auth/callback?token_hash=abc&type=invite&next=%2Fportal%2Ftickets"),
+    );
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("http://localhost/auth/confirm?next=%2Fportal%2Ftickets");
+    expect(res.headers.get("location")).not.toContain("abc");
+    const cookie = res.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("sb-otp-pending=");
+    expect(cookie).toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/SameSite=strict/i);
+    expect(cookie).toContain("Path=/auth/confirm");
+    expect(cookie).toMatch(/Max-Age=600/);
+    expect(cookie).not.toMatch(/Secure/i);
+  });
+
+  it("sets Secure off localhost", async () => {
+    const res = await GET(new Request("https://dobeu.net/auth/callback?token_hash=abc&type=invite"));
+    expect(res.headers.get("set-cookie") ?? "").toMatch(/Secure/i);
+  });
+
+  it("rejects invalid type or token without setting a cookie", async () => {
+    const bad = [
+      "token_hash=abc&type=recovery",
+      "token_hash=&type=invite",
+      `token_hash=${"a".repeat(600)}&type=invite`,
+    ];
+    for (const q of bad) {
+      const res = await GET(new Request(`http://localhost/auth/callback?${q}`));
+      expect(res.headers.get("location")).toBe("http://localhost/login?error=auth_callback_failed");
+      expect(res.headers.get("set-cookie")).toBeNull();
+    }
+  });
+
+  it("sanitizes next when handing off to confirm", async () => {
+    const res = await GET(
+      new Request("http://localhost/auth/callback?token_hash=abc&type=invite&next=/%09/evil.example"),
+    );
+    expect(res.headers.get("location")).toBe("http://localhost/auth/confirm?next=%2Fportal");
   });
 });

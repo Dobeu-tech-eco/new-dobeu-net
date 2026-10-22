@@ -9,6 +9,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
+import { safeStripeInvoiceUrl } from "@/lib/stripe-url";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AcceptQuoteForm } from "@/components/portal/AcceptQuoteForm";
@@ -184,9 +185,9 @@ export default async function TicketDetailPage({ params }: PageProps) {
               {invoice.status}
             </Badge>
           </p>
-          {invoice.hosted_invoice_url && (
+          {safeStripeInvoiceUrl(invoice.hosted_invoice_url) && (
             <Button asChild size="sm">
-              <a href={invoice.hosted_invoice_url} target="_blank" rel="noreferrer">
+              <a href={safeStripeInvoiceUrl(invoice.hosted_invoice_url) ?? undefined} target="_blank" rel="noreferrer">
                 Pay invoice →
                 <span className="sr-only"> (opens in new tab)</span>
               </a>

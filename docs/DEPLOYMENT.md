@@ -99,11 +99,16 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
 7. **Authentication → URL Configuration** (project `ipmjokuezeuukhrilduq`):
    - **Site URL:** `https://dobeu.net`
    - **Redirect URLs** (add each line):
-     - `https://dobeu.net/**`
      - `https://dobeu.net/auth/callback`
-     - `https://*.vercel.app/**`
-     - `http://localhost:3000/**`
+     - `https://www.dobeu.net/auth/callback`
+     - `https://dobeu.dev/auth/callback`
+     - `https://www.dobeu.dev/auth/callback`
      - `http://localhost:3000/auth/callback`
+
+   **Warning:** never allowlist a shared `https://*.vercel.app/**` wildcard. Any Vercel user could
+   then request a magic link whose `redirect_to` is their own app and receive the auth code. For
+   previews, add only this team's exact preview hostnames (one entry per host).
+
    If Site URL is still `http://localhost:3000`, magic links fall back to localhost even when
    requested from production. After saving, request a **new** magic link (old emails keep the
    stale `redirect_to`).

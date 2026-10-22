@@ -36,7 +36,11 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   // Fire pageview on navigation (analytics only).
   React.useEffect(() => {
     if (!consent.analytics) return;
-    const search = typeof window !== "undefined" ? window.location.search : "";
+    // Never forward the query string for /auth/* (codes, OTP tokens).
+    const search =
+      typeof window !== "undefined" && !pathname.startsWith("/auth/")
+        ? window.location.search
+        : "";
     pageView(pathname + search);
   }, [pathname, consent.analytics]);
 
