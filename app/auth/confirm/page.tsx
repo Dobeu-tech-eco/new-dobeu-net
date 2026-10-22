@@ -34,7 +34,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Sear
       {pending ? (
         <>
           <h1 className="font-display text-2xl font-bold tracking-tight">Continue signing in</h1>
-          <form method="post" action="/auth/confirm">
+          <form method="post" action="/auth/confirm/submit">
             <input type="hidden" name="next" value={next} />
             <button
               type="submit"

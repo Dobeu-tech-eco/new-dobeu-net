@@ -5,7 +5,8 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({ auth: { verifyOtp } })),
 }));
 
-import { POST } from "@/app/auth/confirm/route";
+import { POST } from "@/app/auth/confirm/submit/route";
+import { OTP_COOKIE_PATH } from "@/app/auth/confirm/cookie";
 
 function pending(token_hash = "abc", type = "invite") {
   return `sb-otp-pending=${encodeURIComponent(JSON.stringify({ token_hash, type }))}`;
@@ -18,7 +19,7 @@ function post(opts: { cookie?: string; origin?: string | null; fetchSite?: strin
   if (origin !== null) headers.origin = origin;
   if (opts.fetchSite) headers["sec-fetch-site"] = opts.fetchSite;
   return POST(
-    new Request("http://localhost/auth/confirm", {
+    new Request("http://localhost/auth/confirm/submit", {
       method: "POST",
       headers,
       body: new URLSearchParams({ next: opts.next ?? "/portal/files" }),
@@ -28,7 +29,14 @@ function post(opts: { cookie?: string; origin?: string | null; fetchSite?: strin
 
 beforeEach(() => verifyOtp.mockReset());
 
-describe("POST /auth/confirm", () => {
+describe("cookie scope", () => {
+  it("cookie path covers the submit route (browsers send it to a sub-path)", () => {
+    expect(OTP_COOKIE_PATH).toBe("/auth/confirm");
+    expect("/auth/confirm/submit".startsWith(OTP_COOKIE_PATH + "/")).toBe(true);
+  });
+});
+
+describe("POST /auth/confirm/submit", () => {
   it.each(["invite", "magiclink", "email", "signup"])("verifies cookie type %s and clears the cookie", async (type) => {
     verifyOtp.mockResolvedValue({ error: null });
     const res = await post({ cookie: pending("abc", type) });
@@ -66,7 +74,7 @@ describe("POST /auth/confirm", () => {
 
   it("ignores token fields in the form body", async () => {
     const res = await POST(
-      new Request("http://localhost/auth/confirm", {
+      new Request("http://localhost/auth/confirm/submit", {
         method: "POST",
         headers: { origin: "http://localhost", "content-type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ token_hash: "abc", type: "invite" }),
