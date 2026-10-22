@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/utils";
+import { AuthError, requireAdminAal2 } from "@/lib/actions/auth";
 import { runAgent } from "@/lib/agent";
 
 export const runtime = "nodejs";
@@ -24,13 +23,16 @@ const AgentRequestSchema = z.object({
  * of band, since serverless has time limits even with maxDuration raised.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  if (!user || !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  let user;
+  try {
+    ({ user } = await requireAdminAal2());
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.code }, {
+        status: error.code === "not_authenticated" ? 401 : 403
+      });
+    }
+    throw error;
   }
 
   let body: unknown;

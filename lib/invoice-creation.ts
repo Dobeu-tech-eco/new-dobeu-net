@@ -90,6 +90,9 @@ export async function createInvoiceForUser(
     });
     const result = await createHostedInvoice({
       customerId,
+      // Stripe retains keys for a limited window; durable reservation is still
+      // required to protect retries after that window or after local failures.
+      idempotencyKey: input.work_order_id ? `work-order-invoice:${input.work_order_id}:v1` : undefined,
       amountCents: input.amount_cents,
       currency: input.currency.toLowerCase(),
       description: input.description ?? undefined,

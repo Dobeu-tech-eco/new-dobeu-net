@@ -14,6 +14,7 @@
       "root": "containers/function",
       "runtime": "container",
       "entrypoint": "Dockerfile",
+      "devCommand": "node server.mjs",
       "routes": [
         {
           "src": "/oci",

@@ -14,9 +14,19 @@ const BookingTab = dynamic(
   { ssr: false, loading: () => <p className="text-sm text-muted-foreground py-4">Loading scheduler…</p> }
 );
 
-export type LightboxTab = "book" | "form" | "email";
+const TypeformTab = dynamic(
+  () => import("@/components/landing/TypeformTab").then((m) => m.TypeformTab),
+  { ssr: false, loading: () => <p className="py-4 text-sm text-muted-foreground">Loading project intake…</p> }
+);
+
+export type LightboxTab = "book" | "form" | "email" | "intake";
 
 const COPY: Record<LightboxTab, { title: string; description: string }> = {
+  intake: {
+    title: "Tell us about your operation",
+    description:
+      "This project intake goes to admin review. It does not generate an automatic quote or customer email.",
+  },
   book: {
     title: "Book a call",
     description: "Thirty minutes. I come back with a price band.",
@@ -33,6 +43,8 @@ const COPY: Record<LightboxTab, { title: string; description: string }> = {
 
 function DialogBody({ tab, onClose }: { tab: LightboxTab; onClose: () => void }) {
   switch (tab) {
+    case "intake":
+      return <TypeformTab />;
     case "book":
       return <BookingTab onClose={onClose} />;
     case "form":

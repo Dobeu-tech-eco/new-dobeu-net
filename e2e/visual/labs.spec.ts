@@ -7,6 +7,9 @@ test.describe("Labs visual regression", () => {
     await seedCookieConsent(page);
     await page.goto("/labs");
     await settleFonts(page);
+    await page.addStyleTag({
+      content: "nextjs-portal{display:none!important}",
+    });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 

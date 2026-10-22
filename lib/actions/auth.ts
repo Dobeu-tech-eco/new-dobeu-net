@@ -4,7 +4,7 @@
  * Pattern (per CLAUDE.md Phase 2):
  *   - Client actions use `requireUser()` -> cookie-bound `createClient()` so
  *     RLS enforces ownership.
- *   - Admin actions use `requireAdmin()` -> checks ADMIN_EMAILS env, then
+ *   - Admin actions use `requireAdmin()` -> checks ADMIN_EMAILS and AAL2, then
  *     returns the cookie-bound client (for the auth identity) AND a paired
  *     service-role `createAdminClient()` for the actual mutation (admin pages
  *     read/write through service role, not RLS).
@@ -41,20 +41,16 @@ export async function requireUser(): Promise<{
 }
 
 /**
- * Resolve the current admin caller. Returns the user, the cookie-bound client
- * (RLS-respecting, used for identity/audit), AND a separate service-role
- * client for actual mutations (admin reads/writes bypass RLS by convention).
+ * Resolve an allowlisted admin with an AAL2 session. Returns the user, the
+ * cookie-bound client for identity/audit, and a service-role client only after
+ * MFA succeeds. Admin reads/writes bypass RLS by convention.
  */
 export async function requireAdmin(): Promise<{
   user: User;
   supabase: DBClient;
   admin: DBClient;
 }> {
-  const { user, supabase } = await requireUser();
-  if (!isAdminEmail(user.email)) {
-    throw new AuthError("forbidden");
-  }
-  return { user, supabase, admin: createAdminClient() as DBClient };
+  return requireAdminAal2();
 }
 
 /**
@@ -74,8 +70,8 @@ export async function requireAdminAal2(): Promise<{
     throw new AuthError("forbidden");
   }
 
-  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  const assurance = data ?? null;
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const assurance = error ? null : data ?? null;
   if (requiresMfaEnrollment(assurance, true) || requiresAal2Stepup(assurance)) {
     throw new AuthError("mfa_required");
   }

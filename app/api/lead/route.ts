@@ -54,25 +54,33 @@ export async function POST(request: Request) {
   }
 
   const { email, name, company, message, source, utm, referrer } = parsed.data;
-  const { leadId, apolloContactId } = await processLead({
-    email,
-    name,
-    company,
-    message,
-    source,
-    // Zod's optional UTM values type as `string | undefined`; processLead wants
-    // a clean Record<string, string>, so drop the undefined entries here.
-    utm: utm
-      ? (Object.fromEntries(Object.entries(utm).filter(([, v]) => v !== undefined)) as Record<
-          string,
-          string
-        >)
-      : undefined,
-    referrer,
-    ipHash: hashIp(ip)
-  });
+  try {
+    const { leadId, apolloContactId } = await processLead({
+      email,
+      name,
+      company,
+      message,
+      source,
+      // Zod's optional UTM values type as `string | undefined`; processLead wants
+      // a clean Record<string, string>, so drop the undefined entries here.
+      utm: utm
+        ? (Object.fromEntries(Object.entries(utm).filter(([, v]) => v !== undefined)) as Record<
+            string,
+            string
+          >)
+        : undefined,
+      referrer,
+      ipHash: hashIp(ip)
+    });
 
-  return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
+    if (!leadId) throw new Error("lead_persistence_failed");
+    return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "We couldn’t save your message. Please try again or email jeremyw@dobeu.net." },
+      { status: 503, headers: { "Retry-After": "60" } }
+    );
+  }
 }
 
 // ---- helpers ----

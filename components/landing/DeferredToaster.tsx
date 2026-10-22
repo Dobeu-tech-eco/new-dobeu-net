@@ -35,8 +35,10 @@ export function DeferredToaster() {
 
   // Once mounted, stay mounted: leaving an eager route (e.g. /login) must not
   // tear down a toast that is still on screen.
-  const latched = React.useRef(false);
-  if (eager || interacted) latched.current = true;
+  // State (not a ref) so render stays pure; this is React's "adjust state
+  // while rendering" pattern and settles in one extra render.
+  const [latched, setLatched] = React.useState(eager);
+  if ((eager || interacted) && !latched) setLatched(true);
 
-  return latched.current ? <Toaster position="bottom-right" theme="system" richColors closeButton /> : null;
+  return latched ? <Toaster position="bottom-right" theme="system" richColors closeButton /> : null;
 }

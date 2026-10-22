@@ -23,7 +23,6 @@ export function CookieBanner() {
   const [showPrefs, setShowPrefs] = React.useState(false);
   const [draft, setDraft] = React.useState<Omit<ConsentState, "decided">>({
     analytics: false,
-    support: false,
     marketing: false,
   });
 
@@ -35,7 +34,7 @@ export function CookieBanner() {
   // Expose a global so the footer "Cookie preferences" link works.
   React.useEffect(() => {
     (window as Window & { openCookiePreferences?: () => void }).openCookiePreferences = () => {
-      setDraft({ analytics: consent.analytics, support: consent.support, marketing: consent.marketing });
+      setDraft({ analytics: consent.analytics, marketing: consent.marketing });
       setShowPrefs(true);
     };
     return () => {
@@ -152,14 +151,6 @@ export function CookieBanner() {
               onChange={(v) => setDraft((d) => ({ ...d, analytics: v }))}
             />
 
-            {/* Support / Chat */}
-            <CategoryRow
-              label="Support & chat"
-              description="Intercom live chat. Allows you to message us directly from the site."
-              checked={draft.support}
-              onChange={(v) => setDraft((d) => ({ ...d, support: v }))}
-            />
-
             {/* Marketing */}
             <CategoryRow
               label="Marketing communications"
@@ -212,7 +203,7 @@ export function CookieBanner() {
         <button
           className="underline hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           onClick={() => {
-            setDraft({ analytics: false, support: false, marketing: false });
+            setDraft({ analytics: false, marketing: false });
             setShowPrefs(true);
           }}
         >

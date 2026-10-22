@@ -7,7 +7,6 @@ import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { initAnalytics, pageView, setAnalyticsConsent } from "@/lib/analytics";
 import { setDatadogConsent } from "@/lib/datadog";
-import { IntercomSecureBoot } from "@/components/intercom/IntercomSecureBoot";
 import { CookieBanner } from "@/components/CookieBanner";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 
@@ -15,7 +14,6 @@ import { useCookieConsent } from "@/hooks/use-cookie-consent";
  * AnalyticsProvider — gates all third-party scripts on granular cookie consent.
  *
  * Analytics (PostHog, Mixpanel, GA4, GTM, Datadog) → consent.analytics
- * Support / chat (Intercom)                         → consent.support
  * Marketing sequences (Customer.io)                 → consent.marketing
  *
  * NOTE: We read query string from window.location directly (not useSearchParams)
@@ -75,9 +73,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       )}
 
       {children}
-
-      {/* Intercom — support consent required */}
-      <IntercomSecureBoot enabled={consent.support} />
 
       {/* Vercel observability — analytics consent required */}
       {consent.analytics && (

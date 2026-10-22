@@ -70,12 +70,13 @@ Thumbs.db
 .swarm/
 .claude-flow/
 
-.env*
-!.env.example
+# dts2-harness runtime (config + checklist + lessons are committed)
 .harness/runs/
 .harness/lessons-inbox.md
 .harness.bak-*/
 .claude/*.local.md
+.env*
+!.env.example
 .harness/review/screens/
 .harness/gtm/*/screens/
 .harness/handoff/latest.md

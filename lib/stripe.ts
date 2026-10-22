@@ -118,7 +118,7 @@ export async function getOrCreateStripeCustomer(
       email,
       name: resolvedName ?? undefined,
       metadata: { supabase_user_id: supabaseUserId }
-    });
+    }, { idempotencyKey: `customer:${supabaseUserId}:v1` });
     customerId = created.id;
   }
 
@@ -150,6 +150,7 @@ export interface CreateHostedInvoiceArgs {
    * collection on some accounts; we cap at 60 as a sanity bound.
    */
   daysUntilDue?: number;
+  idempotencyKey?: string;
 }
 
 export interface CreatedHostedInvoice {
@@ -172,6 +173,7 @@ export async function createHostedInvoice(
     throw new Error("createHostedInvoice: amountCents must be a positive integer");
   }
   const stripe = getStripe();
+  const operationKey = args.idempotencyKey ?? crypto.randomUUID();
 
   // Stripe metadata values must be strings. Drop undefineds.
   const cleanMeta: Record<string, string> = {};
@@ -187,7 +189,7 @@ export async function createHostedInvoice(
     description: description ?? undefined,
     metadata: cleanMeta,
     auto_advance: false
-  });
+  }, { idempotencyKey: `${operationKey}:draft` });
   if (!draft.id) {
     throw new Error("createHostedInvoice: Stripe returned invoice with no id");
   }
@@ -199,10 +201,12 @@ export async function createHostedInvoice(
     amount: amountCents,
     currency,
     description: description ?? undefined
-  });
+  }, { idempotencyKey: `${operationKey}:item` });
 
   // 3. Finalize → returns the hosted_invoice_url.
-  const finalized = await stripe.invoices.finalizeInvoice(draft.id);
+  const finalized = await stripe.invoices.finalizeInvoice(draft.id, {}, {
+    idempotencyKey: `${operationKey}:finalize`
+  });
 
   return {
     id: finalized.id ?? draft.id,

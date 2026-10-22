@@ -59,7 +59,7 @@ vi.mock("@/lib/supabase/server", () => ({
               : Promise.resolve(value);
           const terminal = {
             select: () => ({
-              single: () =>
+              maybeSingle: () =>
                 rejectIfNeeded({
                   data: h.adminBehavior.updatedRow,
                   error: h.adminBehavior.updateError
@@ -267,6 +267,7 @@ describe("POST /api/webhooks/stripe", () => {
       type: "checkout.session.completed",
       data: {
         object: {
+          payment_status: "paid",
           id: "cs_user_1",
           metadata: { digital_asset_id: "asset_1", user_id: "user_9" }
         }
@@ -294,6 +295,7 @@ describe("POST /api/webhooks/stripe", () => {
       type: "checkout.session.completed",
       data: {
         object: {
+          payment_status: "paid",
           id: "cs_company_1",
           metadata: { digital_asset_id: "asset_2", company_id: "co_1", user_id: "user_9" }
         }
@@ -327,6 +329,7 @@ describe("POST /api/webhooks/stripe", () => {
       type: "checkout.session.completed",
       data: {
         object: {
+          payment_status: "paid",
           id: "cs_dupe_1",
           metadata: { digital_asset_id: "asset_1", user_id: "user_9" }
         }
@@ -346,6 +349,7 @@ describe("POST /api/webhooks/stripe", () => {
       type: "checkout.session.completed",
       data: {
         object: {
+          payment_status: "paid",
           id: "cs_err_1",
           metadata: { digital_asset_id: "asset_1", user_id: "user_9" }
         }
@@ -355,6 +359,48 @@ describe("POST /api/webhooks/stripe", () => {
     const { POST } = await importRouteFresh();
     const res = await POST(makeRequest("{}"));
     expect(res.status).toBe(500);
+  });
+
+  it.each(["invoice.paid", "invoice.payment_failed", "invoice.finalized", "invoice.voided"])(
+    "%s database error returns 500 and allows retry", async (type) => {
+      h.verifyMock.mockReturnValue({
+        id: `evt_db_${type}`, type,
+        data: { object: { id: "in_1", hosted_invoice_url: "https://pay.stripe.test/1" } }
+      });
+      h.adminBehavior.updateError = { message: "database unavailable" };
+      const { POST } = await importRouteFresh();
+      expect((await POST(makeRequest("{}"))).status).toBe(500);
+      h.adminBehavior.updateError = null;
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(h.adminInvocations).toHaveLength(2);
+    }
+  );
+
+  it.each(["invoice.paid", "invoice.payment_failed"])("%s already applied sends no duplicate email", async (type) => {
+    h.verifyMock.mockReturnValue({ id: `evt_already_${type}`, type, data: { object: { id: "in_1" } } });
+    const { POST } = await importRouteFresh();
+    expect((await POST(makeRequest("{}"))).status).toBe(200);
+    expect(h.sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["checkout.session.completed", "unpaid", 0],
+    ["checkout.session.completed", "paid", 1],
+    ["checkout.session.completed", "no_payment_required", 1],
+    ["checkout.session.async_payment_succeeded", "paid", 1],
+    ["checkout.session.async_payment_failed", "unpaid", 0],
+    ["checkout.session.completed", undefined, 0],
+  ])("%s with payment status %s makes %i grants", async (type, paymentStatus, count) => {
+    h.verifyMock.mockReturnValue({
+      id: "evt_settlement", type,
+      data: { object: {
+        id: "cs_settlement", payment_status: paymentStatus,
+        metadata: { digital_asset_id: "asset_1", user_id: "user_1" }
+      } }
+    });
+    const { POST } = await importRouteFresh();
+    expect((await POST(makeRequest("{}"))).status).toBe(200);
+    expect(h.adminInvocations).toHaveLength(count);
   });
 
   it("unknown event type → 200 ignored, no DB writes", async () => {

@@ -3,8 +3,8 @@
  * /api/lead form POST, the Calendly webhook, future imports) calls processLead()
  * so the Supabase + Apollo + Customer.io + Resend side effects stay in one place.
  *
- * Every step is best-effort: a failure in one provider never throws out of
- * processLead, so one integration being down can't drop the lead on the floor.
+ * Durable Supabase storage is required before confirming receipt. Downstream
+ * enrichment and notifications are best-effort after the lead has been saved.
  */
 import { createAdminClient } from "@/lib/supabase/server";
 import { upsertApolloContact } from "@/lib/apollo";
@@ -43,9 +43,7 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
   const referrer = input.referrer ?? null;
 
   // 1. Write to Supabase leads table (admin client bypasses RLS).
-  // Schema is now unified — write directly to `leads` and surface real errors
-  // instead of probing legacy candidate names. If the insert fails, the lead
-  // still flows through Apollo / Customer.io / Resend below.
+  // A failed insert must not send a confirmation or trigger downstream fan-out.
   let leadId: string | null = null;
   try {
     const supa = createAdminClient();
@@ -73,8 +71,10 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
     }
   } catch (e) {
     console.error("[processLead] Supabase insert threw", e);
-    // Don't fail the flow if Supabase is down — Apollo + email still try.
   }
+
+  // Never send a receipt or report success for a lead we cannot recover later.
+  if (!leadId) throw new Error("lead_persistence_failed");
 
   // 2. Upsert Apollo contact (server-side, key in env)
   let apolloContactId: string | undefined;
@@ -118,12 +118,16 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
       apollo_contact_id: apolloContactId,
       supabase_lead_id: leadId
     };
-    const [idRes, trackRes] = await Promise.all([
-      cioIdentify({ email, attributes: cioAttrs }),
-      cioTrack({ email, name: "lead_captured", data: { source, has_message: !!message, ...utm } })
-    ]);
-    if (!idRes.ok) console.warn("[processLead] Customer.io identify:", idRes.error);
-    if (!trackRes.ok) console.warn("[processLead] Customer.io track:", trackRes.error);
+    try {
+      const [idRes, trackRes] = await Promise.all([
+        cioIdentify({ email, attributes: cioAttrs }),
+        cioTrack({ email, name: "lead_captured", data: { source, has_message: !!message, ...utm } })
+      ]);
+      if (!idRes.ok) console.warn("[processLead] Customer.io identify:", idRes.error);
+      if (!trackRes.ok) console.warn("[processLead] Customer.io track:", trackRes.error);
+    } catch (error) {
+      console.warn("[processLead] Customer.io failed (non-fatal)", error);
+    }
   }
 
   // 4. Send confirmation email via Resend + notify admin (Phase 3: now uses

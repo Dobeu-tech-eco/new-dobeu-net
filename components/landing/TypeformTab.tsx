@@ -29,19 +29,31 @@ export function TypeformTab() {
   }
 
   return (
-    <div
-      className="rounded-lg border border-border overflow-hidden"
-      data-testid="typeform-widget"
-      data-tf-live={TYPEFORM_LIVE_EMBED_ID}
-      data-tf-form={formId}
-    >
-      <Widget
-        id={formId || TYPEFORM_PUBLIC_FORM_ID}
-        style={{ height: 560 }}
-        className="w-full"
-        onSubmit={() => track("typeform_submitted", { form_id: formId })}
-        onReady={() => track("typeform_loaded", { form_id: formId })}
-      />
+    <div className="flex flex-col gap-4">
+      <div
+        className="rounded-lg border border-border overflow-hidden"
+        data-testid="typeform-widget"
+        data-tf-live={TYPEFORM_LIVE_EMBED_ID}
+        data-tf-form={formId}
+      >
+        <Widget
+          id={formId || TYPEFORM_PUBLIC_FORM_ID}
+          style={{ height: 560 }}
+          className="w-full"
+          onSubmit={() => track("typeform_submitted", { form_id: formId })}
+          onReady={() => track("typeform_loaded", { form_id: formId })}
+        />
+      </div>
+      <a
+        href={`https://dobeutech.typeform.com/to/${encodeURIComponent(formId)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex min-h-11 items-center gap-2 self-start rounded-md text-sm text-primary underline underline-offset-4"
+      >
+        Open the intake in a new tab{" "}
+        <ExternalLink className="size-4" aria-hidden="true" />
+        <span className="sr-only"> (opens in new tab)</span>
+      </a>
     </div>
   );
 }

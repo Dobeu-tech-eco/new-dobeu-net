@@ -201,33 +201,22 @@ describe("processLead — happy path", () => {
   });
 });
 
-describe("processLead — Supabase failures stay non-fatal", () => {
-  it("insert error -> leadId null but apollo + emails still attempted", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    supaConfig.insert = "error";
-
-    const result = await processLead(baseInput);
-
-    expect(result.leadId).toBeNull();
-    expect(result.apolloContactId).toBe("apollo_1");
-    expect(upsertApolloContact).toHaveBeenCalled();
-    expect(emailsSend).toHaveBeenCalledTimes(2);
-    // No backfill when leadId is null
+describe("processLead — durable acceptance is required", () => {
+  it.each(["error", "throw"] as const)("rejects %s before downstream fan-out", async (mode) => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    supaConfig.insert = mode;
+    await expect(processLead(baseInput)).rejects.toThrow("lead_persistence_failed");
+    expect(upsertApolloContact).not.toHaveBeenCalled();
+    expect(cioIdentify).not.toHaveBeenCalled();
+    expect(cioTrack).not.toHaveBeenCalled();
+    expect(emailsSend).not.toHaveBeenCalled();
     expect(updateEq).not.toHaveBeenCalled();
-
-    errSpy.mockRestore();
   });
 
-  it("createAdminClient throws -> leadId null, no throw, flow continues", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    supaConfig.insert = "throw";
-
-    await expect(processLead(baseInput)).resolves.toEqual(
-      expect.objectContaining({ leadId: null, apolloContactId: "apollo_1" })
-    );
-    expect(emailsSend).toHaveBeenCalledTimes(2);
-
-    errSpy.mockRestore();
+  it("rejects a missing saved lead id", async () => {
+    supaConfig.insertId = null;
+    await expect(processLead(baseInput)).rejects.toThrow("lead_persistence_failed");
+    expect(emailsSend).not.toHaveBeenCalled();
   });
 });
 

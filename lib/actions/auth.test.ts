@@ -5,9 +5,11 @@ const h = vi.hoisted(() => {
   const state: {
     user: { id: string; email: string } | null;
     aal: { currentLevel: "aal1" | "aal2"; nextLevel: "aal1" | "aal2" } | null;
+    aalError: { message: string } | null;
   } = {
     user: { id: "user_1", email: "client@example.com" },
     aal: { currentLevel: "aal2", nextLevel: "aal2" },
+    aalError: null,
   };
   return { state };
 });
@@ -24,7 +26,7 @@ vi.mock("@/lib/supabase/server", () => {
       mfa: {
         getAuthenticatorAssuranceLevel: vi.fn(async () => ({
           data: h.state.aal,
-          error: null,
+          error: h.state.aalError,
         })),
       },
     },
@@ -46,6 +48,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   h.state.user = { id: "user_1", email: "client@example.com" };
   h.state.aal = { currentLevel: "aal2", nextLevel: "aal2" };
+  h.state.aalError = null;
   // isAdminEmail() reads ADMIN_EMAILS — set a known admin allowlist.
   process.env.ADMIN_EMAILS = "admin@dobeu.net";
 });
@@ -76,6 +79,18 @@ describe("requireAdmin", () => {
     expect(admin).toBe(adminClientSentinel);
   });
 
+  it.each([
+    { currentLevel: "aal1", nextLevel: "aal1" },
+    { currentLevel: "aal1", nextLevel: "aal2" },
+    null,
+  ] as const)("requires AAL2 before creating the admin client (%j)", async (aal) => {
+    h.state.user = { id: "admin_1", email: "admin@dobeu.net" };
+    h.state.aal = aal;
+    await expect(requireAdmin()).rejects.toMatchObject({ code: "mfa_required" });
+    const { createAdminClient } = await import("@/lib/supabase/server");
+    expect(createAdminClient).not.toHaveBeenCalled();
+  });
+
   it("throws AuthError('forbidden') for an authenticated non-admin", async () => {
     h.state.user = { id: "user_1", email: "client@example.com" };
     await expect(requireAdmin()).rejects.toMatchObject({
@@ -101,6 +116,12 @@ describe("requireAdminAal2", () => {
 
     expect(user.id).toBe("admin_1");
     expect(admin).toBe(adminClientSentinel);
+  });
+
+  it("rejects assurance errors even with an AAL2-shaped result", async () => {
+    h.state.user = { id: "admin_1", email: "admin@dobeu.net" };
+    h.state.aalError = { message: "assurance lookup failed" };
+    await expect(requireAdminAal2()).rejects.toMatchObject({ code: "mfa_required" });
   });
 
   it("rejects an unenrolled AAL1 admin", async () => {

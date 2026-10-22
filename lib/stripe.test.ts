@@ -127,7 +127,7 @@ describe("getOrCreateStripeCustomer (idempotent)", () => {
       email: "fresh@example.com",
       name: "Fresh Client",
       metadata: { supabase_user_id: "user_1" }
-    });
+    }, { idempotencyKey: "customer:user_1:v1" });
   });
 
   it("falls back to customers.list when search throws", async () => {
@@ -156,7 +156,8 @@ describe("createHostedInvoice (finalization flow)", () => {
       customerId: "cus_x",
       amountCents: 50000,
       description: "Logo design",
-      metadata: { work_order_id: "wo_1", drop_me: undefined }
+      metadata: { work_order_id: "wo_1", drop_me: undefined },
+      idempotencyKey: "work-order-invoice:wo_1:v1"
     });
     expect(result).toEqual({
       id: "in_final",
@@ -168,12 +169,16 @@ describe("createHostedInvoice (finalization flow)", () => {
         customer: "cus_x",
         collection_method: "send_invoice",
         metadata: { work_order_id: "wo_1" }
-      })
+      }),
+      { idempotencyKey: "work-order-invoice:wo_1:v1:draft" }
     );
     expect(h.stripeMock.invoiceItems.create).toHaveBeenCalledWith(
-      expect.objectContaining({ invoice: "in_draft", amount: 50000 })
+      expect.objectContaining({ invoice: "in_draft", amount: 50000 }),
+      { idempotencyKey: "work-order-invoice:wo_1:v1:item" }
     );
-    expect(h.stripeMock.invoices.finalizeInvoice).toHaveBeenCalledWith("in_draft");
+    expect(h.stripeMock.invoices.finalizeInvoice).toHaveBeenCalledWith("in_draft", {}, {
+      idempotencyKey: "work-order-invoice:wo_1:v1:finalize"
+    });
   });
 
   it("rejects non-positive amount", async () => {
