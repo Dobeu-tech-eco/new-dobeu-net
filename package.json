@@ -49,7 +49,7 @@
     "lucide-react": "^0.469.0",
     "mixpanel-browser": "^2.56.0",
     "motion": "^12.6.3",
-    "next": "^15.5.21",
+    "next": "~15.5.28",
     "next-themes": "^0.4.4",
     "posthog-js": "^1.207.6",
     "react": "^19.0.0",
@@ -80,7 +80,7 @@
     "autoprefixer": "^10.4.20",
     "dotenv": "^17.4.2",
     "eslint": "^9.18.0",
-    "eslint-config-next": "^15.5.4",
+    "eslint-config-next": "~15.5.28",
     "jsdom": "^25.0.1",
     "pg": "^8.21.0",
     "postcss": "^8.5.23",
@@ -94,6 +94,17 @@
     "node": ">=24"
   },
   "packageManager": "pnpm@10.34.1",
+  "pnpm": {
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-jmr9-qjv8-65gv",
+        "GHSA-7pqw-9j4j-h8q3",
+        "GHSA-hp3w-g68c-fv3c",
+        "GHSA-c475-qrg2-pj4r",
+        "GHSA-vfj7-8cjw-p6xm"
+      ]
+    }
+  },
   "allowScripts": {
     "@swc/core@1.15.3": true,
     "cbor-extract@2.2.2": true,

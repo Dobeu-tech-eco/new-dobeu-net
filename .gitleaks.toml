@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+# Narrow allowlist: only the root .env.example, and only the documented
+# placeholder shapes (your-<name>-here, optionally behind a provider prefix).
+# A real-looking key in .env.example does not match and is still flagged.
+[[allowlists]]
+description = "Placeholder values in the root .env.example template"
+condition = "AND"
+paths = ['''^\.env\.example$''']
+regexes = ['''^(?:sk_test_|ghp_|whsec_|re_)?your-[a-z0-9-]+-here$''']

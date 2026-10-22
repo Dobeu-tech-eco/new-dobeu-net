@@ -69,3 +69,14 @@ Thumbs.db
 # Ruflo hub-only policy (memory lives at repos root; never per-repo)
 .swarm/
 .claude-flow/
+
+.env*
+!.env.example
+.harness/runs/
+.harness/lessons-inbox.md
+.harness.bak-*/
+.claude/*.local.md
+.harness/review/screens/
+.harness/gtm/*/screens/
+.harness/handoff/latest.md
+.claude/worktrees/
