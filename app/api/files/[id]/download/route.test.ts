@@ -57,6 +57,7 @@ describe("POST /api/files/[id]/download", () => {
     expect(res.status).toBe(303);
     expect(res.headers.get("location")).toBe("https://signed.example/file.pdf");
     expect(storageFrom).toHaveBeenCalledWith("project-files");
+    expect(createSignedUrl).toHaveBeenCalledWith("private/file.pdf", 60, { download: true });
   });
 
   it("returns 404 when file does not exist", async () => {

@@ -40,7 +40,7 @@ async function issueSignedUrl(id: string) {
 
   const { data: signed, error: signedError } = await supabase.storage
     .from("project-files")
-    .createSignedUrl(file.storage_path, SIGNED_URL_TTL_SECONDS);
+    .createSignedUrl(file.storage_path, SIGNED_URL_TTL_SECONDS, { download: true });
 
   if (signedError || !signed?.signedUrl) {
     return NextResponse.json({ error: "Could not create download URL" }, { status: 500 });
