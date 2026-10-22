@@ -92,21 +92,40 @@ export function captureAcquisition(searchParams: URLSearchParams, referrer = "")
   return out;
 }
 
+const AUTH_ORIGIN_HOSTS: ReadonlySet<string> = new Set([
+  "dobeu.net",
+  "www.dobeu.net",
+  "dobeu.dev",
+  "www.dobeu.dev",
+  "localhost",
+]);
+
 /**
  * Origin for Supabase magic-link `emailRedirectTo` callbacks.
  *
- * - localhost / *.vercel.app → use the live browser origin (dev + preview).
- * - Production custom domain → `getSiteUrl()` so links always target
- *   `https://dobeu.net` even if Supabase Site URL is misconfigured.
+ * The PKCE verifier cookie lives on the host where sign-in started, so the
+ * callback must return to that same host. In the browser we keep
+ * `window.location.origin` when its hostname is allowlisted (dobeu.net,
+ * dobeu.dev, localhost, *.vercel.app); otherwise (and during SSR) we fall back
+ * to `getSiteUrl()`.
  */
 export function resolveAuthOrigin(): string {
   if (typeof window !== "undefined") {
     const { hostname, origin } = window.location;
-    if (hostname === "localhost" || hostname.endsWith(".vercel.app")) {
+    if (AUTH_ORIGIN_HOSTS.has(hostname) || hostname.endsWith(".vercel.app")) {
       return origin;
     }
   }
   return getSiteUrl();
+}
+
+/**
+ * Server-safe `/auth/callback` URL (always the canonical site URL, never
+ * `window`). Used by server-side invite / magic-link generation.
+ */
+export function buildServerAuthCallbackUrl(next: string): string {
+  const safeNext = sanitizeNextPath(next, "/portal");
+  return `${getSiteUrl().replace(/\/$/, "")}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 }
 
 /**

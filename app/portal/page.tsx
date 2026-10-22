@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { FolderKanban, Receipt, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { QueryError } from "./QueryError";
 
 export default async function PortalDashboard() {
   const supabase = await createClient();
@@ -8,17 +9,21 @@ export default async function PortalDashboard() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [projectsRes, invoicesRes] = await Promise.all([
+  const [projectsRes, activeCountRes, openCountRes] = await Promise.all([
     supabase.from("projects").select("id,title,status").limit(5),
     supabase
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "active"),
+    supabase
       .from("invoices")
-      .select("id,project_id,amount_cents,currency,status,due_date")
-      .in("status", ["open", "overdue"])
-      .limit(5),
+      .select("id", { count: "exact", head: true })
+      .in("status", ["open", "overdue"]),
   ]);
 
   const projects = projectsRes.data ?? [];
-  const openInvoices = invoicesRes.data ?? [];
+  const activeCount = activeCountRes.error ? null : (activeCountRes.count ?? 0);
+  const openInvoiceCount = openCountRes.error ? null : (openCountRes.count ?? 0);
   const firstName =
     user?.user_metadata?.full_name?.split(" ")[0] ?? null;
 
@@ -38,15 +43,15 @@ export default async function PortalDashboard() {
         <DashboardTile
           href="/portal/projects"
           icon={<FolderKanban className="h-5 w-5" />}
-          value={projects.filter((p) => p.status === "active").length}
+          value={activeCount}
           label="Active projects"
         />
         <DashboardTile
           href="/portal/invoices"
           icon={<Receipt className="h-5 w-5 text-accent" />}
-          value={openInvoices.length}
+          value={openInvoiceCount}
           label="Open invoices"
-          highlight={openInvoices.length > 0}
+          highlight={(openInvoiceCount ?? 0) > 0}
         />
       </div>
 
@@ -62,7 +67,9 @@ export default async function PortalDashboard() {
             <ArrowRight className="h-3 w-3" aria-hidden="true" />
           </Link>
         </div>
-        {projects.length === 0 ? (
+        {projectsRes.error ? (
+          <QueryError what="projects" />
+        ) : projects.length === 0 ? (
           <EmptyState
             title="No projects yet"
             body="When we start working together, projects show up here with files and invoices."
@@ -105,7 +112,7 @@ function DashboardTile({
 }: {
   href: string;
   icon: React.ReactNode;
-  value: number;
+  value: number | null;
   label: string;
   highlight?: boolean;
 }) {
@@ -121,7 +128,7 @@ function DashboardTile({
     >
       <span className="text-muted-foreground">{icon}</span>
       <div>
-        <p className="font-display text-3xl font-bold tabular-nums">{value}</p>
+        <p className="font-display text-3xl font-bold tabular-nums">{value ?? "—"}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
       </div>
     </Link>

@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { QueryError } from "../../QueryError";
 
 export default async function ProjectDetailPage({
   params,
@@ -29,6 +31,8 @@ export default async function ProjectDetailPage({
   const project = projectRes.data;
   const files = filesRes.data ?? [];
   const invoices = invoicesRes.data ?? [];
+  const filesFailed = Boolean(filesRes.error);
+  const invoicesFailed = Boolean(invoicesRes.error);
 
   return (
     <div className="space-y-8">
@@ -52,9 +56,11 @@ export default async function ProjectDetailPage({
 
       <section>
         <h2 className="font-display text-xl font-semibold mb-3">
-          Files ({files.length})
+          Files{filesFailed ? "" : ` (${files.length})`}
         </h2>
-        {files.length === 0 ? (
+        {filesFailed ? (
+          <QueryError what="files" />
+        ) : files.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No files attached yet.
           </p>
@@ -82,9 +88,11 @@ export default async function ProjectDetailPage({
 
       <section>
         <h2 className="font-display text-xl font-semibold mb-3">
-          Invoices ({invoices.length})
+          Invoices{invoicesFailed ? "" : ` (${invoices.length})`}
         </h2>
-        {invoices.length === 0 ? (
+        {invoicesFailed ? (
+          <QueryError what="invoices" />
+        ) : invoices.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No invoices for this project yet.
           </p>
@@ -96,8 +104,27 @@ export default async function ProjectDetailPage({
                 className="p-3 flex justify-between items-center text-sm"
               >
                 <span>{formatCurrency(inv.amount_cents, inv.currency)}</span>
-                <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  {inv.status}
+                <span className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">
+                    {inv.due_date
+                      ? `Due ${new Date(inv.due_date).toLocaleDateString()}`
+                      : "No due date"}
+                  </span>
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                    {inv.status}
+                  </span>
+                  {(inv.status === "open" || inv.status === "overdue") &&
+                  inv.hosted_invoice_url ? (
+                    <Button asChild size="sm">
+                      <a
+                        href={inv.hosted_invoice_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Pay
+                      </a>
+                    </Button>
+                  ) : null}
                 </span>
               </li>
             ))}

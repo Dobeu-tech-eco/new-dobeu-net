@@ -9,6 +9,7 @@ import {
   getPosthogHost,
   buildAuthCallbackUrl,
   resolveAuthOrigin,
+  buildServerAuthCallbackUrl,
   requiresAal2Stepup,
   requiresMfaEnrollment
 } from "@/lib/utils";
@@ -136,6 +137,31 @@ describe("buildAuthCallbackUrl", () => {
       },
     });
     expect(resolveAuthOrigin()).toBe("https://dobeu-net-git-main-dobeu.vercel.app");
+  });
+
+  it("keeps dobeu.dev origin so the PKCE verifier cookie matches", () => {
+    vi.stubGlobal("window", {
+      location: { hostname: "dobeu.dev", origin: "https://dobeu.dev" },
+    });
+    expect(resolveAuthOrigin()).toBe("https://dobeu.dev");
+  });
+
+  it("falls back to site url for unknown hosts", () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    vi.stubGlobal("window", {
+      location: { hostname: "evil.example", origin: "https://evil.example" },
+    });
+    expect(resolveAuthOrigin()).toBe("https://dobeu.net");
+  });
+
+  it("buildServerAuthCallbackUrl uses site url and sanitizes next", () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    expect(buildServerAuthCallbackUrl("/portal/files")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal%2Ffiles",
+    );
+    expect(buildServerAuthCallbackUrl("//evil.example")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal",
+    );
   });
 
   it("uses canonical site url on production custom domain", () => {

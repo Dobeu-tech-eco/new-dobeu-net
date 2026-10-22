@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { QueryError } from "../QueryError";
 
 export default async function InvoicesPage() {
   const supabase = await createClient();
-  const { data: invoices } = await supabase
+  const { data: invoices, error } = await supabase
     .from("invoices")
     .select(
       "id,project_id,amount_cents,currency,status,due_date,paid_at,stripe_invoice_id,hosted_invoice_url",
@@ -22,7 +23,9 @@ export default async function InvoicesPage() {
         </p>
       </header>
 
-      {!invoices || invoices.length === 0 ? (
+      {error ? (
+        <QueryError what="invoices" />
+      ) : !invoices || invoices.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <p className="font-semibold">No invoices yet</p>
         </div>
