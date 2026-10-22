@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+# Only the root environment template may contain placeholder credentials.
+[allowlist]
+paths = ['^\.env\.example$']

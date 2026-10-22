@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if command -v gitleaks >/dev/null 2>&1; then
+  exec gitleaks protect --staged --redact
+fi
+
+printf '%s\n' 'Install gitleaks: winget install gitleaks / brew install gitleaks'
+exit 0
