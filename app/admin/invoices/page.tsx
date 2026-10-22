@@ -90,7 +90,10 @@ export default async function AdminInvoicesPage({
         }
       />
 
-      {!invoices || invoices.length === 0 ? (
+      {invoicesError ||
+      profilesError ||
+      projectsError ||
+      authError ? null : !invoices || invoices.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No invoices yet.
         </p>

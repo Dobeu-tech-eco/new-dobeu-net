@@ -137,7 +137,8 @@ export default async function AdminCompaniesPage({
         </form>
       </section>
 
-      {companies.length === 0 ? (
+      {companiesRes.error || membersRes.error ? null : companies.length ===
+        0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No companies yet.
         </p>

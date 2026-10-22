@@ -15,6 +15,15 @@ const h = vi.hoisted(() => {
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+vi.mock("@/lib/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/utils")>()),
+  buildServerAuthCallbackUrl: vi.fn(
+    (next: string) =>
+      `https://admin-test.example/auth/callback?next=${encodeURIComponent(next)}`,
+  ),
+}));
+import { buildServerAuthCallbackUrl } from "@/lib/utils";
+
 vi.mock("@/lib/supabase/server", () => ({
   // Cookie-bound client: only needs auth.getUser for the requireAdmin gate.
   createClient: vi.fn(async () => ({
@@ -98,6 +107,31 @@ const COMPANY_ID = "c0000000-0000-0000-0000-000000000001";
 const MEMBER_ROW_ID = "m0000000-0000-0000-0000-000000000001";
 
 describe("createCompany", () => {
+  it("logs only the audit error code while preserving primary success", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const auditError = { message: "private database details", code: "42501" };
+    const admin = buildAdmin({
+      tables: {
+        companies: { insert: { data: { id: "comp_1" } } },
+        admin_audit_log: { insert: { error: auditError } },
+      },
+    });
+    h.state.adminClient = admin.client;
+    try {
+      const { createCompany } = await import("@/lib/actions/companies");
+      expect(await createCompany({ name: "Acme" })).toEqual({
+        ok: true,
+        data: { id: "comp_1" },
+      });
+      expect(warn).toHaveBeenCalledExactlyOnceWith(
+        "[companies] audit log insert failed (non-fatal):",
+        "42501",
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it("inserts, audits, and returns the id when admin", async () => {
     const admin = buildAdmin({
       tables: {
@@ -230,6 +264,7 @@ describe("provisionCompanyAdmin", () => {
         redirectTo: "https://admin-test.example/auth/callback?next=%2Fcompany",
       },
     );
+    expect(buildServerAuthCallbackUrl).toHaveBeenCalledWith("/company");
     expect(auditWritten(admin.recorded)).toBe(true);
   });
 

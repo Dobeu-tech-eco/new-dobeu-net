@@ -129,7 +129,7 @@ export default async function AdminIntakesPage({ searchParams }: PageProps) {
             New signed Typeform submissions will appear here for review.
           </p>
         </div>
-      ) : intakes && intakes.length > 0 ? (
+      ) : !error && intakes && intakes.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
             <caption className="sr-only">

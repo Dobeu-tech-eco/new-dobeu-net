@@ -20,7 +20,7 @@ export default async function AdminBookingsPage({
   // Schema is now unified — surface bookings errors honestly instead of
   // masking them behind a fallback read against the leads table.
   if (error) {
-    console.error("[admin/bookings] supabase error:", error.message ?? error);
+    console.error("[admin/bookings] supabase error:", error.code);
   }
   const rows = bookings ?? [];
 
@@ -44,7 +44,7 @@ export default async function AdminBookingsPage({
         }
       />
 
-      {rows.length === 0 ? (
+      {error ? null : rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No bookings yet. As soon as someone books through Calendly, they
           appear here.

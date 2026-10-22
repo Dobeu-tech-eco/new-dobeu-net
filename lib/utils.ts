@@ -36,6 +36,11 @@ export function getSiteUrl(): string {
   return raw && raw.length > 0 ? raw : "https://dobeu.net";
 }
 
+// replaced at merge by the sanitizing version from B2
+export function buildServerAuthCallbackUrl(next: string): string {
+  return `${getSiteUrl()}/auth/callback?next=${encodeURIComponent(next)}`;
+}
+
 /**
  * Resolve the PostHog host with the same empty-string guard. Vercel's
  * sensitive-env inlining can also injected `""` here, which would otherwise

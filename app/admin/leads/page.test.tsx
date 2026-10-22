@@ -55,6 +55,24 @@ describe("admin leads errors", () => {
     ).toHaveAttribute("role", "alert");
     expect(screen.getAllByRole("alert")).toHaveLength(2);
     expect(screen.queryByText(/private_schema/)).not.toBeInTheDocument();
+    expect(screen.queryByText("No leads yet.")).not.toBeInTheDocument();
+  });
+
+  it("shows only the read alert when a read fails", async () => {
+    h.createAdminClient.mockReturnValue(
+      buildStubClient({
+        tables: {
+          leads: {
+            selectSingle: { data: null, error: { message: "private details" } },
+          },
+        },
+      }).supabase,
+    );
+    render(await AdminLeadsPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Unable to load leads. Try again.",
+    );
+    expect(screen.queryByText("No leads yet.")).not.toBeInTheDocument();
   });
 
   it("keeps a successful empty read free of errors", async () => {
