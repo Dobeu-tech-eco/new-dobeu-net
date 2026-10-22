@@ -26,7 +26,7 @@ begin
   where id = 'project-files';
 
   if not found then
-    raise notice 'bucket project-files not found: the 25MB deliverable cap and MIME allowlist are NOT active at the storage layer';
+    raise exception 'bucket project-files not found: refusing to deploy without the 25MB deliverable cap and MIME allowlist at the storage layer';
   end if;
 end
 $$;

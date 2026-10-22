@@ -11,6 +11,9 @@ import {
 import {
   MAX_DELIVERABLE_BYTES,
   ALLOWED_DELIVERABLE_MIME,
+  ALLOWED_EXTENSIONS_LABEL,
+  MAX_FILENAME_LENGTH,
+  filenameError,
   tooLargeMessage
 } from "@/lib/deliverable-limits";
 
@@ -39,6 +42,12 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
     const mime = file.type;
     if (!(ALLOWED_DELIVERABLE_MIME as readonly string[]).includes(mime)) {
       setError(`Unsupported file type${mime ? `: ${mime}` : ""}.`);
+      return;
+    }
+
+    const nameError = filenameError(file.name, mime);
+    if (nameError) {
+      setError(`${nameError}. Rename the file (letters, digits, dot, space, underscore, hyphen; max ${MAX_FILENAME_LENGTH} chars).`);
       return;
     }
 
@@ -99,7 +108,7 @@ export function DeliverableUpload({ projectId }: { projectId: string }) {
           type="file"
           className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:opacity-90"
         />
-        <p className="text-xs text-muted-foreground">PDF, images, Office docs, zip. 25MB max.</p>
+        <p className="text-xs text-muted-foreground">Allowed: {ALLOWED_EXTENSIONS_LABEL}. 25MB max. Names: letters, digits, dot, space, underscore, hyphen.</p>
       </div>
       {error && (
         <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
