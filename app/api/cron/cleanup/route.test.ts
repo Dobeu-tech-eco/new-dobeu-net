@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildStubClient } from "@/lib/actions/__test-helpers";
 import { createAdminClient } from "@/lib/supabase/server";
 import { runCleanup } from "@/lib/cron/cleanup";
-import { GET, runtime, dynamic } from "./route";
+import { GET, runtime, dynamic, maxDuration } from "./route";
 
 vi.mock("@/lib/supabase/server", () => ({ createAdminClient: vi.fn() }));
 vi.mock("@/lib/cron/cleanup", () => ({ runCleanup: vi.fn() }));
@@ -11,6 +11,7 @@ const summary = {
   pageEvents: 3,
   projectFiles: 2,
   workOrderAttachments: 1,
+  truncated: false,
   failedTargets: [],
 };
 const request = (token?: string) =>
@@ -80,5 +81,17 @@ describe("GET /api/cron/cleanup", () => {
     const res = await GET(request("Bearer test-secret"));
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual(partial);
+  });
+
+  it("returns 200 when the purge was truncated but nothing failed", async () => {
+    const truncated = { ...summary, truncated: true };
+    vi.mocked(runCleanup).mockResolvedValue(truncated);
+    const res = await GET(request("Bearer test-secret"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(truncated);
+  });
+
+  it("exports an explicit 300s maxDuration", () => {
+    expect(maxDuration).toBe(300);
   });
 });

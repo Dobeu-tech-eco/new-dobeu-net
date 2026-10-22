@@ -157,7 +157,7 @@ describe("runInvoiceAging", () => {
   });
 
   it.each(["result", "throw"])(
-    "treats email failure (%s) as non-fatal",
+    "reports email failure (%s) as emailSent false without throwing",
     async (mode) => {
       if (mode === "result")
         vi.mocked(sendEmail).mockResolvedValue({

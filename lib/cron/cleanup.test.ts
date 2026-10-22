@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildStubClient } from "@/lib/actions/__test-helpers";
 import type { createAdminClient } from "@/lib/supabase/server";
 import { logToDatadog } from "@/lib/datadog-server";
-import { runCleanup } from "./cleanup";
+import { chunkByBytes, runCleanup } from "./cleanup";
 
 vi.mock("@/lib/datadog-server", () => ({ logToDatadog: vi.fn() }));
 
@@ -32,6 +32,8 @@ function stubCleanup(
     truncateReferences?: string;
     truncateOnCheck?: number;
     linkOnRecheck?: string;
+    linkAtCheck?: { table: string; check: number; path: string };
+    shortRemove?: string;
     failList?: string;
     failLaterPage?: boolean;
     failRemove?: string;
@@ -95,6 +97,15 @@ function stubCleanup(
         if (opts.linkOnRecheck === table && checks[table] === 2) {
           references[table] = [...(references[table] ?? []), ...paths];
         }
+        if (
+          opts.linkAtCheck?.table === table &&
+          opts.linkAtCheck.check === checks[table]
+        ) {
+          references[table] = [
+            ...(references[table] ?? []),
+            opts.linkAtCheck.path,
+          ];
+        }
         const matches = (references[table] ?? []).filter((path) =>
           paths.includes(path),
         );
@@ -153,7 +164,8 @@ function stubCleanup(
     files[bucket] = (files[bucket] ?? []).filter(
       (object) => !paths.includes(object.path),
     );
-    return { data: paths.map((name) => ({ name })), error: null };
+    const removed = opts.shortRemove === bucket ? paths.slice(1) : paths;
+    return { data: removed.map((name) => ({ name })), error: null };
   });
   const supabase = Object.assign(stub.supabase, {
     storage: {
@@ -204,6 +216,7 @@ describe("runCleanup", () => {
       pageEvents: 0,
       projectFiles: 1,
       workOrderAttachments: 1,
+      truncated: false,
       failedTargets: [],
     });
     expect(stub.remove.mock.calls).toEqual([
@@ -221,6 +234,7 @@ describe("runCleanup", () => {
         {
           target,
           deleted: target === "page_events" ? 0 : 1,
+          ...(target === "page_events" ? { truncated: false } : {}),
         },
       );
     }
@@ -255,6 +269,7 @@ describe("runCleanup", () => {
       pageEvents: 1,
       projectFiles: 1,
       workOrderAttachments: 1,
+      truncated: false,
       failedTargets: [],
     });
     const removeCount = stub.remove.mock.calls.length;
@@ -262,6 +277,7 @@ describe("runCleanup", () => {
       pageEvents: 0,
       projectFiles: 0,
       workOrderAttachments: 0,
+      truncated: false,
       failedTargets: [],
     });
     expect(stub.remove).toHaveBeenCalledTimes(removeCount);
@@ -329,7 +345,8 @@ describe("runCleanup", () => {
       pageEvents: 0,
       projectFiles: 0,
       workOrderAttachments: 1,
-      failedTargets: ["page_events", "project-files"],
+      truncated: false,
+      failedTargets: ["project-files", "page_events"],
     });
   });
 
@@ -395,6 +412,7 @@ describe("runCleanup", () => {
       pageEvents: 0,
       projectFiles: 0,
       workOrderAttachments: 1,
+      truncated: false,
       failedTargets: ["project-files"],
     });
     expect(stub.remove).toHaveBeenCalledTimes(2);
@@ -477,7 +495,7 @@ describe("runCleanup", () => {
     ).toBeLessThanOrEqual(100);
   });
 
-  it("caps page event purging at 200 batches per run", async () => {
+  it("caps page event purging at 200 batches per run and reports truncated", async () => {
     const stub = stubCleanup({
       events: Array.from({ length: 21_000 }, (_, i) => ({
         id: `e-${i}`,
@@ -487,6 +505,7 @@ describe("runCleanup", () => {
     const summary = await runCleanup(stub.client, NOW);
     expect(summary.pageEvents).toBe(20_000);
     expect(summary.failedTargets).toEqual([]);
+    expect(summary.truncated).toBe(true);
     expect(stub.deletes).toHaveLength(200);
     expect(stub.events()).toHaveLength(1000);
   });
@@ -514,8 +533,100 @@ describe("runCleanup", () => {
       pageEvents: 100,
       projectFiles: 1,
       workOrderAttachments: 0,
+      truncated: false,
       failedTargets: ["page_events"],
     });
     expect(stub.events()).toHaveLength(2200);
+  });
+
+  it("removes per chunk: a reference appearing after chunk 1's delete protects chunk 2's path", async () => {
+    const paths = Array.from(
+      { length: 150 },
+      (_, i) => `file-${String(i).padStart(3, "0")}`,
+    );
+    const stub = stubCleanup({
+      files: { "project-files": paths.map((path) => file(path)) },
+      // checks 1-2 discovery, 3 recheck chunk 1, 4 recheck chunk 2.
+      linkAtCheck: { table: "project_files", check: 4, path: "file-120" },
+    });
+    const summary = await runCleanup(stub.client, NOW);
+    expect(summary.projectFiles).toBe(149);
+    expect(stub.remove).toHaveBeenCalledTimes(2);
+    expect(stub.remove.mock.calls[0][1]).toEqual(paths.slice(0, 100));
+    expect(stub.remove.mock.calls[1][1]).not.toContain("file-120");
+    expect(stub.files["project-files"].map((o) => o.path)).toEqual([
+      "file-120",
+    ]);
+  });
+
+  it("keeps every storage-path lookup within the URL byte budget for long paths", async () => {
+    const long = (i: number) =>
+      `${"w".repeat(36)}/${"u".repeat(36)}-${String(i).padStart(3, "0")}${"f".repeat(250)}.png`;
+    const paths = Array.from({ length: 120 }, (_, i) => long(i));
+    expect(paths[0].length).toBeGreaterThan(325);
+    const stub = stubCleanup({
+      files: { "project-files": paths.map((path) => file(path)) },
+    });
+    expect(chunkByBytes(paths).length).toBeGreaterThan(1);
+    for (const chunk of chunkByBytes(paths)) {
+      const bytes = chunk.reduce(
+        (sum, path) => sum + encodeURIComponent(path).length + 1,
+        0,
+      );
+      expect(bytes).toBeLessThanOrEqual(6000);
+      expect(chunk.length).toBeLessThanOrEqual(100);
+    }
+    await runCleanup(stub.client, NOW);
+    const lookups = stub.recorded.filter(
+      (call) => call.table === "project_files" && call.method === "in",
+    );
+    expect(lookups.length).toBeGreaterThan(0);
+    for (const call of lookups) {
+      const bytes = (call.args[1] as string[]).reduce(
+        (sum, path) => sum + encodeURIComponent(path).length + 1,
+        0,
+      );
+      expect(bytes).toBeLessThanOrEqual(6000);
+    }
+  });
+
+  it("stops starting event batches after the wall-clock budget and reports truncated, not failed", async () => {
+    const stub = stubCleanup({
+      events: Array.from({ length: 5000 }, (_, i) => ({
+        id: `e-${i}`,
+        occurred_at: ago(100),
+      })),
+    });
+    let t = 0;
+    // First call sets the start; each later check advances 50s.
+    const clock = vi.fn(() => (t += 50_000) - 50_000);
+    const summary = await runCleanup(stub.client, NOW, clock);
+    expect(summary.truncated).toBe(true);
+    expect(summary.failedTargets).toEqual([]);
+    // start 0; checks at 50s and 100s pass, 150s exceeds 120s -> two batches.
+    expect(stub.deletes).toHaveLength(2);
+    expect(summary.pageEvents).toBe(200);
+    expect(stub.events()).toHaveLength(4800);
+  });
+
+  it("runs storage cleanup before the page_events purge", async () => {
+    const stub = stubCleanup({
+      events: [{ id: "old", occurred_at: ago(91) }],
+      files: { "project-files": [file("orphan")] },
+    });
+    await runCleanup(stub.client, NOW);
+    expect(stub.remove.mock.invocationCallOrder[0]).toBeLessThan(
+      stub.lt.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("counts a short remove result as a failed bucket", async () => {
+    const stub = stubCleanup({
+      shortRemove: "project-files",
+      files: { "project-files": [file("a"), file("b"), file("c")] },
+    });
+    const summary = await runCleanup(stub.client, NOW);
+    expect(summary.projectFiles).toBe(2);
+    expect(summary.failedTargets).toEqual(["project-files"]);
   });
 });

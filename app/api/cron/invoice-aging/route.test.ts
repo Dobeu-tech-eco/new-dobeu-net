@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildStubClient } from "@/lib/actions/__test-helpers";
 import { createAdminClient } from "@/lib/supabase/server";
 import { runInvoiceAging } from "@/lib/cron/invoice-aging";
-import { GET, runtime, dynamic } from "./route";
+import { GET, runtime, dynamic, maxDuration } from "./route";
 
 vi.mock("@/lib/supabase/server", () => ({ createAdminClient: vi.fn() }));
 vi.mock("@/lib/cron/invoice-aging", () => ({ runInvoiceAging: vi.fn() }));
@@ -73,5 +73,31 @@ describe("GET /api/cron/invoice-aging", () => {
     const res = await GET(request("Bearer test-secret"));
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "invoice_aging_failed" });
+  });
+
+  it("returns 500 with the summary when overdue invoices exist but the email was not sent", async () => {
+    const failed = { ...summary, emailSent: false };
+    vi.mocked(runInvoiceAging).mockResolvedValue(failed);
+    const res = await GET(request("Bearer test-secret"));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual(failed);
+  });
+
+  it("returns 200 when nothing is overdue and no email was needed", async () => {
+    const none = {
+      ...summary,
+      overdue: 0,
+      over7: 0,
+      over14: 0,
+      emailSent: false,
+    };
+    vi.mocked(runInvoiceAging).mockResolvedValue(none);
+    const res = await GET(request("Bearer test-secret"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(none);
+  });
+
+  it("exports an explicit 300s maxDuration", () => {
+    expect(maxDuration).toBe(300);
   });
 });

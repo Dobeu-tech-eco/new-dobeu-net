@@ -4,6 +4,7 @@ import { runCleanup } from "@/lib/cron/cleanup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export const GET = withCron(async (client) => {
   const summary = await runCleanup(client);
