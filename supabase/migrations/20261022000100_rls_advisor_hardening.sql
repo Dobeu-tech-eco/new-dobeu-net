@@ -42,12 +42,12 @@
 
 -- =============================================================================
 -- 1. Functions: pin search_path.
---    SECURITY DEFINER functions get `pg_catalog, public, pg_temp`: pg_catalog
---    first so built-ins cannot be shadowed, and pg_temp explicitly LAST
---    (when unlisted, Postgres searches pg_temp first for relations). An
---    empty path was rejected because the live schema has not been diffed
---    (S2) and a drifted body with unqualified names would break signups.
---    Invoker functions get `pg_catalog, public`.
+--    Every function gets `pg_catalog, public`: pg_catalog first so built-ins
+--    cannot be shadowed, and pg_temp deliberately NOT listed (Postgres
+--    guidance for SECURITY DEFINER; the bodies reference only public.* and
+--    auth.uid(), never temp objects). An empty path was rejected because the
+--    live schema has not been diffed (S2) and a drifted body with
+--    unqualified names would break signups.
 -- =============================================================================
 do $$
 begin
@@ -56,15 +56,15 @@ begin
   end if;
 
   if to_regprocedure('public.handle_new_user()') is not null then
-    alter function public.handle_new_user() set search_path = pg_catalog, public, pg_temp;
+    alter function public.handle_new_user() set search_path = pg_catalog, public;
   end if;
 
   if to_regprocedure('public.is_company_member(uuid)') is not null then
-    alter function public.is_company_member(uuid) set search_path = pg_catalog, public, pg_temp;
+    alter function public.is_company_member(uuid) set search_path = pg_catalog, public;
   end if;
 
   if to_regprocedure('public.company_role_rank(uuid)') is not null then
-    alter function public.company_role_rank(uuid) set search_path = pg_catalog, public, pg_temp;
+    alter function public.company_role_rank(uuid) set search_path = pg_catalog, public;
   end if;
 
   if to_regprocedure('public.enforce_typeform_budget_intake_state()') is not null then
@@ -72,7 +72,7 @@ begin
   end if;
 
   if to_regprocedure('public.audit_typeform_budget_intake_review()') is not null then
-    alter function public.audit_typeform_budget_intake_review() set search_path = pg_catalog, public, pg_temp;
+    alter function public.audit_typeform_budget_intake_review() set search_path = pg_catalog, public;
   end if;
 end $$;
 
@@ -103,6 +103,16 @@ begin
   if to_regprocedure('public.company_role_rank(uuid)') is not null then
     revoke execute on function public.company_role_rank(uuid) from public, anon;
     grant execute on function public.company_role_rank(uuid) to authenticated, service_role;
+  end if;
+
+  -- Defensive re-revoke: a database that skipped 20260829010000 would keep
+  -- the default PUBLIC execute on these trigger functions.
+  if to_regprocedure('public.enforce_typeform_budget_intake_state()') is not null then
+    revoke execute on function public.enforce_typeform_budget_intake_state() from public, anon, authenticated;
+  end if;
+
+  if to_regprocedure('public.audit_typeform_budget_intake_review()') is not null then
+    revoke execute on function public.audit_typeform_budget_intake_review() from public, anon, authenticated;
   end if;
 end $$;
 
@@ -145,11 +155,17 @@ end $$;
 
 
 -- =============================================================================
--- 4. profiles — own-row read + own-row update.
+-- 4. profiles — own-row read + own-row update of NON-sensitive columns only.
 --    No client INSERT (the handle_new_user trigger creates the row) and no
---    client DELETE (auth.users cascade).
+--    client DELETE (auth.users cascade). Table-level write privileges are
+--    revoked from the API roles; `authenticated` gets UPDATE only on the
+--    columns updateProfile (lib/actions/profile.ts) writes, so a client can
+--    never set stripe_customer_id / apollo_contact_id (getOrCreateStripeCustomer
+--    trusts the cached Stripe id). service_role is unaffected.
 -- =============================================================================
 do $$
+declare
+  v_cols text;
 begin
   if to_regclass('public.profiles') is not null then
     alter table public.profiles enable row level security;
@@ -166,6 +182,19 @@ begin
       to authenticated
       using ((select auth.uid()) = id)
       with check ((select auth.uid()) = id);
+
+    revoke insert, update, delete on table public.profiles from anon, authenticated;
+
+    select string_agg(quote_ident(attname), ', ' order by attname)
+      into v_cols
+      from pg_attribute
+      where attrelid = to_regclass('public.profiles')
+        and attname in ('full_name', 'company', 'phone', 'notify_email')
+        and not attisdropped;
+
+    if v_cols is not null then
+      execute format('grant update (%s) on table public.profiles to authenticated', v_cols);
+    end if;
   end if;
 end $$;
 
@@ -370,7 +399,8 @@ end $$;
 --            pristine 'open' state with no quote, acceptance, invoice link or
 --            milestone timestamps. company_id (if set) must be a company the
 --            caller is an active member of; project_id (if set) must be a
---            project the caller owns. submitWorkOrder (lib/actions/work-orders.ts)
+--            project the caller owns, and when company_id is also set the
+--            project's company_id must equal it. submitWorkOrder (lib/actions/work-orders.ts)
 --            only sets created_by/service_type/title/description/status='open',
 --            so it is unaffected. Quote/accept/status transitions run through
 --            the service-role client.
@@ -436,6 +466,10 @@ begin
               select 1 from public.projects p
               where p.id = work_orders.project_id
                 and p.owner_user_id = (select auth.uid())
+                and (
+                  work_orders.company_id is null
+                  or p.company_id = work_orders.company_id
+                )
             )
           )
         );
@@ -573,18 +607,43 @@ begin
         or public.is_company_member(company_id)
       );
 
+    -- Column-level privileges: a client may INSERT only the invite columns
+    -- and UPDATE only role/status, so user_id and company_id can never be
+    -- rewritten. inviteMember inserts through the cookie-bound client
+    -- (lib/actions/members.ts), so the insert policy must stay; it is
+    -- constrained to the 'invited' state attributed to the caller. Both insert
+    -- and update also cap the assigned role's rank at the caller's own rank, so
+    -- a role added later with rank > 100 cannot be self-assigned. Rows that
+    -- start 'active' (companies.ts) are written with the service role.
+    revoke insert, update on table public.company_members from anon, authenticated;
+    grant insert (company_id, user_id, role, status, invited_by)
+      on table public.company_members to authenticated;
+    grant update (role, status) on table public.company_members to authenticated;
+
     drop policy if exists "company_members_admin_insert" on public.company_members;
     create policy "company_members_admin_insert" on public.company_members
       for insert
       to authenticated
-      with check (public.company_role_rank(company_id) >= 100);
+      with check (
+        public.company_role_rank(company_id) >= 100
+        and status = 'invited'
+        and invited_by = (select auth.uid())
+        and coalesce(
+          (select r.rank from public.company_roles r where r.key = company_members.role), 0
+        ) <= public.company_role_rank(company_id)
+      );
 
     drop policy if exists "company_members_admin_update" on public.company_members;
     create policy "company_members_admin_update" on public.company_members
       for update
       to authenticated
       using (public.company_role_rank(company_id) >= 100)
-      with check (public.company_role_rank(company_id) >= 100);
+      with check (
+        public.company_role_rank(company_id) >= 100
+        and coalesce(
+          (select r.rank from public.company_roles r where r.key = company_members.role), 0
+        ) <= public.company_role_rank(company_id)
+      );
 
     drop policy if exists "company_members_admin_delete" on public.company_members;
     create policy "company_members_admin_delete" on public.company_members
@@ -593,13 +652,29 @@ begin
       using (public.company_role_rank(company_id) >= 100);
   end if;
 
-  if to_regclass('public.digital_assets') is not null then
+  -- digital_assets exposes storage_path / stripe_product_id / price_cents, so
+  -- reads are limited to ACTIVE assets the caller is entitled to (directly or
+  -- via an active company membership). Every app reader is entitlement-gated
+  -- (lib/actions/assets.ts) or uses the service role (admin pages).
+  if to_regclass('public.digital_assets') is not null
+     and to_regclass('public.asset_entitlements') is not null
+     and to_regprocedure('public.is_company_member(uuid)') is not null then
     alter table public.digital_assets enable row level security;
     drop policy if exists "digital_assets_select_active" on public.digital_assets;
     create policy "digital_assets_select_active" on public.digital_assets
       for select
       to authenticated
-      using ((select auth.uid()) is not null and active);
+      using (
+        active
+        and exists (
+          select 1 from public.asset_entitlements e
+          where e.asset_id = digital_assets.id
+            and (
+              e.user_id = (select auth.uid())
+              or (e.company_id is not null and public.is_company_member(e.company_id))
+            )
+        )
+      );
   end if;
 
   if to_regclass('public.asset_entitlements') is not null

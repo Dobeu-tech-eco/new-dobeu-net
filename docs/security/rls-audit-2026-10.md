@@ -17,19 +17,19 @@ Legend: S/I/U/D = select/insert/update/delete. "uid wrapped" means every caller-
 
 | Table | RLS on | Policies per command (before) | USING / WITH CHECK | uid wrapped | FK index | Finding | Fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `profiles` | yes | S: `profiles_select_own`; U: `profiles_update_own` | U has both (since 20260717053750) | S no, U yes | ok (PK = FK) | F1: bare uid in SELECT, no `to` role | recreated with wrapped uid, `to authenticated` |
+| `profiles` | yes | S: `profiles_select_own`; U: `profiles_update_own` | U has both (since 20260717053750) | S no, U yes | ok (PK = FK) | F1: bare uid in SELECT, no `to` role; F8: client could write `stripe_customer_id` / `apollo_contact_id` (row-level policy cannot restrict columns) | recreated with wrapped uid, `to authenticated`; INSERT/UPDATE/DELETE revoked from anon/authenticated, UPDATE re-granted only on `full_name, company, phone, notify_email` (the `updateProfile` column list) |
 | `projects` | yes | S: `projects_select_own` + `projects_select_company` | S only | no | ok | F1; F2: 2 permissive SELECT policies | merged into `projects_select_owner_or_company` |
 | `project_files` | yes | S: `project_files_select_own` + `project_files_select_company` | S only | no | `uploaded_by` missing | F1; F2; F7 | merged into `project_files_select_owner_or_company`; `project_files_uploaded_by_idx` |
 | `invoices` | yes | S: `invoices_select_own` + `invoices_select_company` | S only | no | ok (`project_id`, `user_id`) | F1; F2 | merged into `invoices_select_owner_or_company` |
 | `leads` | yes | none (anon insert dropped 20260717064702) | n/a | n/a | n/a | F6: anon/authenticated keep default table grants (exposed in the API schema with no use) | re-drops legacy policies; `revoke all ... from anon, authenticated` |
 | `bookings` | yes | none (anon insert dropped 20260717064702) | n/a | n/a | `lead_id` missing | F6; F7 | revoke grants; `bookings_lead_idx` |
 | `page_events` | yes | I: `page_events_insert_anon` `with check (true)`, no `to` role | I: `true` | n/a | `user_id` missing | F5: unauthenticated, un-rate-limited insert with no app writer (no code references `page_events`); F7 | policy dropped; grants revoked (service-role only); `page_events_user_idx` |
-| `work_orders` | yes | S: `wo_select_own` + `wo_select_company`; I: `wo_insert_own` | I: `created_by` only | no | `invoice_id` missing | F1; F2; F4: a client can insert directly through PostgREST with `company_id` of any company (shows up in that tenant's view), a pre-set `status='quoted'` + `quoted_amount_cents`, `invoice_id`, or another user's `project_id`; F7 | merged SELECT; `wo_insert_own` now requires the `open` state, null quote/accept/invoice/milestone columns, own-company `company_id`, own `project_id`; `work_orders_invoice_idx` |
+| `work_orders` | yes | S: `wo_select_own` + `wo_select_company`; I: `wo_insert_own` | I: `created_by` only | no | `invoice_id` missing | F1; F2; F4: a client can insert directly through PostgREST with `company_id` of any company (shows up in that tenant's view), a pre-set `status='quoted'` + `quoted_amount_cents`, `invoice_id`, or another user's `project_id`; F7 | merged SELECT; `wo_insert_own` now requires the `open` state, null quote/accept/invoice/milestone columns, own-company `company_id`, own `project_id` whose `company_id` equals the work order's `company_id` (F9); `work_orders_invoice_idx` |
 | `work_order_attachments` | yes | S: `wo_att_select_own` + `wo_attachments_select_company`; I: `wo_att_insert_own` | I: ownership only | no | ok | F1; F2; F4b: `storage_path` not bound to the work-order namespace in RLS (code checks it) | merged SELECT; insert also requires `storage_path like work_order_id || '/%'` |
 | `companies` | yes | S: `companies_select_member` | S only | n/a (helper) | `created_by` missing | F3: no `to` role, so anon evaluates the helper; F7 | `to authenticated`; `companies_created_by_idx` |
 | `company_roles` | yes | S: `company_roles_select_authed` (`auth.uid() is not null`) | S only | no | n/a | F1 | wrapped uid, `to authenticated` |
-| `company_members` | yes | S: `..._select_comember`; I/U/D: `..._admin_*` (rank >= 100) | U has both | S no | `role`, `invited_by` missing | F1; F3; F7 | recreated with wrapped uid + `to authenticated`; `company_members_role_idx`, `company_members_invited_by_idx` |
-| `digital_assets` | yes | S: `digital_assets_select_active` | S only | no | n/a | F1 | wrapped uid, `to authenticated` |
+| `company_members` | yes | S: `..._select_comember`; I/U/D: `..._admin_*` (rank >= 100) | U has both | S no | `role`, `invited_by` missing | F1; F3; F7; F10: an admin could rewrite `user_id`/`company_id` or insert any user as an active admin | column-level grants: UPDATE only `(role, status)`, INSERT only `(company_id, user_id, role, status, invited_by)`; insert policy also requires `status = 'invited'` and `invited_by = auth.uid()`; insert and update both cap the assigned role's rank at the caller's own; wrapped uid + `to authenticated`; `company_members_role_idx`, `company_members_invited_by_idx` |
+| `digital_assets` | yes | S: `digital_assets_select_active` | S only | no | n/a | F1; F11: every signed-in user could read `storage_path`, `stripe_product_id`, `price_cents` of every active asset | select now requires `active` AND an entitlement (own user grant or active company membership); wrapped uid, `to authenticated` |
 | `asset_entitlements` | yes | S: `asset_entitlements_select_entitled` | S only | no | `asset_id` missing | F1; F7 | wrapped uid; `asset_entitlements_asset_idx` |
 | `admin_audit_log` | yes | none (service role only), grants revoked | n/a | n/a | `actor_user_id` missing | F7 | re-assert RLS + revoke; `admin_audit_log_actor_idx` |
 | `typeform_budget_intakes` | yes | none (service role only), grants revoked | n/a | n/a | `reviewed_by` missing | F7 | re-assert RLS + revoke; `typeform_budget_intakes_reviewed_by_idx` |
@@ -54,15 +54,15 @@ All 16 tables in the requested list exist in migrations. `messages` is the only 
 | Function | Security | search_path before | EXECUTE before | Fix |
 | --- | --- | --- | --- | --- |
 | `set_updated_at()` | invoker (trigger) | **unset** (advisor `function_search_path_mutable`) | PUBLIC | `pg_catalog, public`; revoke from public/anon/authenticated |
-| `handle_new_user()` | **definer** (trigger) | `public` | PUBLIC | `pg_catalog, public, pg_temp`; revoke from public/anon/authenticated |
-| `is_company_member(uuid)` | **definer** | `public` | PUBLIC + anon | `pg_catalog, public, pg_temp`; revoke public/anon; **authenticated + service_role keep EXECUTE** |
+| `handle_new_user()` | **definer** (trigger) | `public` | PUBLIC | `pg_catalog, public`; revoke from public/anon/authenticated |
+| `is_company_member(uuid)` | **definer** | `public` | PUBLIC + anon | `pg_catalog, public`; revoke public/anon; **authenticated + service_role keep EXECUTE** |
 | `company_role_rank(uuid)` | **definer** | `public` | PUBLIC + anon | same as above |
-| `enforce_typeform_budget_intake_state()` | invoker (trigger) | `pg_catalog, public` | already revoked | re-pinned (no-op) |
-| `audit_typeform_budget_intake_review()` | **definer** (trigger) | `pg_catalog, public` | already revoked | `pg_catalog, public, pg_temp` |
+| `enforce_typeform_budget_intake_state()` | invoker (trigger) | `pg_catalog, public` | already revoked | re-pinned (no-op); EXECUTE re-revoked from public/anon/authenticated if the function exists |
+| `audit_typeform_budget_intake_review()` | **definer** (trigger) | `pg_catalog, public` | already revoked | `pg_catalog, public`; EXECUTE re-revoked as above |
 
 Rationale:
 
-- **`pg_temp` last.** When `pg_temp` is not listed, Postgres searches it *first* for relations. Putting it last explicitly closes temp-table shadowing in definer functions.
+- **`pg_temp` not listed.** Round 1 listed `pg_temp` last; round 2 drops it, following Postgres guidance for SECURITY DEFINER functions (listing it enables temporary function/operator lookup). The bodies only use schema-qualified `public.*` names and `auth.uid()`, so no temp object can shadow anything they call.
 - **Why not an empty path.** `search_path = ''` was considered and rejected. The live function bodies have not been diffed (S2), and a drifted `handle_new_user` with an unqualified table name would break every signup.
 - **Why `authenticated` keeps EXECUTE on the membership helpers.** RLS policies run their expressions as the querying role. Revoking it would turn every company-scoped read into `permission denied for function`. After this migration every policy that calls the helpers is `to authenticated`, so anon never evaluates them and can safely lose EXECUTE.
 
@@ -75,15 +75,21 @@ Rationale:
 - **F5:** an anon INSERT with `with check (true)`.
 - **F6:** a service-role-only table still grants API roles.
 - **F7:** an unindexed foreign key (advisor `unindexed_foreign_keys`).
+- **F8:** a row-level UPDATE policy cannot limit columns, so the client could set Stripe/Apollo ids on its own profile and make `getOrCreateStripeCustomer` (which trusts the cached id) invoice a foreign Stripe customer. Fixed with column-level privileges.
+- **F9:** a work order could pair a company the caller belongs to with a project owned by the caller but belonging to a different company, leaking that project id into the first company's view.
+- **F10:** `company_members` insert/update checks only tested the caller's rank, so `user_id`/`company_id` were rewritable. `inviteMember` inserts through the cookie-bound client, so the insert policy stays but is constrained; `changeMemberRole` / `deactivateMember` only write `role` / `status`.
+- **F11:** `digital_assets` select was not entitlement-scoped.
 
 ## UPDATE policies
 
-After this migration only two client UPDATE policies exist: `profiles_update_own` and `company_members_admin_update`. Both have USING and WITH CHECK. `work_orders` has no client UPDATE policy: it was intentionally removed in 20260717064702, and every transition runs through the service role.
+After this migration only two client UPDATE policies exist: `profiles_update_own` and `company_members_admin_update`. Both have USING and WITH CHECK, and both are further limited by column-level UPDATE grants (`profiles`: `full_name, company, phone, notify_email`; `company_members`: `role, status`). `service_role` keeps full table privileges. `work_orders` has no client UPDATE policy: it was intentionally removed in 20260717064702, and every transition runs through the service role.
 
 ## Deferred (not fixed here, needs a decision)
 
 - **D1, `digital-assets` storage read.** No bucket and no `storage.objects` policy exist in migrations, yet `getAssetDownloadUrl` signs with the user client. Either the bucket and policy were created out-of-band, or entitled downloads fail today. This needs the bucket owner (storage.buckets change) to add an entitled-read policy, or the action should sign with the service role after its RLS entitlement check.
 - **D2, company-member storage reads.** The table RLS lets company members read `project_files` and `work_order_attachments` rows, but the storage policies only allow the owner. So `/api/files/[id]/download` and portal ticket attachments return no signed URL for co-members. Widening storage access is a product decision, so it is left owner-only.
+- **R1, residual (company admin invite/activate).** A company admin can insert any existing user as an `invited` member and can set `status` (including `active`) on rows of their own company. That is the product feature (`inviteMember` resolves arbitrary registered emails), bounded to the admin's own company, and enforced by policy to roles whose rank is at most the caller's own (insert and update WITH CHECK compare `company_roles.rank` with `company_role_rank(company_id)`). Removing it would require an activation workflow (accept-invite flow or a trigger that blocks `invited` to `active` for non-service roles) and is a product decision.
+- **R2, entitled users see `storage_path`.** Entitled users can read their asset's `storage_path`. It is only useful with a storage read policy, and no `digital-assets` storage policy exists in migrations (see D1).
 - **D3, project-less company invoices.** `invoices_select_owner_or_company` widens to company members only through `project_id`. A work-order invoice with `project_id = null` stays visible only to `user_id`, matching prior behaviour.
 - **D4, redundant index.** `company_members_company_idx` duplicates the leading column of `unique (company_id, user_id)`. It was not dropped, because this migration only adds indexes.
 - **D5, live verification.** Run `supabase db advisors` (CLI >= 2.81.3) or MCP `get_advisors` against production after S2 and this migration land, and diff `pg_policies` against this document.

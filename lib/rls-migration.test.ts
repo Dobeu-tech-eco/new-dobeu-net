@@ -66,7 +66,7 @@ describe("20261022000100_rls_advisor_hardening.sql", () => {
     ]) {
       const escaped = fn.replace(/[()]/g, "\\$&");
       expect(sql).toMatch(
-        new RegExp(`alter function public\\.${escaped} set search_path = pg_catalog, public`)
+        new RegExp(`alter function public\\.${escaped} set search_path = pg_catalog, public;`)
       );
     }
   });
@@ -116,5 +116,66 @@ describe("20261022000100_rls_advisor_hardening.sql", () => {
   it("does not touch storage.buckets or drop tables", () => {
     expect(sql).not.toMatch(/storage\.buckets/);
     expect(sql).not.toMatch(/drop\s+table/);
+  });
+
+  it("does not list pg_temp in any search_path", () => {
+    expect(sql).not.toMatch(/search_path[^;]*pg_temp/);
+  });
+
+  it("re-revokes EXECUTE on the typeform trigger functions, guarded by existence", () => {
+    for (const fn of [
+      "enforce_typeform_budget_intake_state",
+      "audit_typeform_budget_intake_review"
+    ]) {
+      expect(sql).toContain(`to_regprocedure('public.${fn}()') is not null`);
+      expect(sql).toMatch(
+        new RegExp(
+          `revoke execute on function public\\.${fn}\\(\\) from public, anon, authenticated;`
+        )
+      );
+    }
+  });
+
+  it("locks profiles writes to column-level UPDATE on non-sensitive columns", () => {
+    expect(sql).toMatch(
+      /revoke insert, update, delete on table public\.profiles from anon, authenticated;/
+    );
+    expect(sql).toMatch(/'full_name', 'company', 'phone', 'notify_email'/);
+    expect(sql).toMatch(/grant update \(%s\) on table public\.profiles to authenticated/);
+    expect(sql).not.toMatch(/grant\s+update\s*\([^)]*(stripe_customer_id|apollo_contact_id)/);
+    expect(sql).not.toMatch(/grant\s+(all|update)\s+on\s+table\s+public\.profiles/);
+  });
+
+  it("locks company_members to column-level grants (no user_id/company_id rewrite)", () => {
+    expect(sql).toMatch(
+      /revoke insert, update on table public\.company_members from anon, authenticated;/
+    );
+    expect(sql).toMatch(/grant update \(role, status\)\s+on table public\.company_members to authenticated;/);
+    expect(sql).toMatch(
+      /grant insert \(company_id, user_id, role, status, invited_by\)\s+on table public\.company_members to authenticated;/
+    );
+    const ins = policies.find((p) => p.includes('"company_members_admin_insert"')) ?? "";
+    expect(ins).toMatch(/status = 'invited'/);
+    expect(ins).toMatch(/invited_by = \(select auth\.uid\(\)\)/);
+    for (const name of ["company_members_admin_insert", "company_members_admin_update"]) {
+      const pol = policies.find((p) => p.includes(`"${name}"`)) ?? "";
+      expect(pol, name).toMatch(
+        /company_roles r where r\.key = company_members\.role\), 0 \) <= public\.company_role_rank\(company_id\)/
+      );
+    }
+  });
+
+  it("wo_insert_own requires the project's company to match the work order's company", () => {
+    const wo = policies.find(
+      (p) => p.includes('"wo_insert_own"') && p.includes("is_company_member")
+    );
+    expect(wo).toBeTruthy();
+    expect(wo).toMatch(/p\.company_id = work_orders\.company_id/);
+  });
+
+  it("digital_assets select requires an entitlement, not just active", () => {
+    const da = policies.find((p) => p.includes('"digital_assets_select_active"')) ?? "";
+    expect(da).toMatch(/from public\.asset_entitlements e/);
+    expect(da).toMatch(/e\.asset_id = digital_assets\.id/);
   });
 });

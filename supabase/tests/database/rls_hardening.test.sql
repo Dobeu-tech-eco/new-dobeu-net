@@ -7,12 +7,14 @@
 --           + IA2 (on PA2), work order WA (company X) + WA2 (personal)
 --   user B  unrelated signed-in user (non-owner, non-member)
 --   user C  active employee of company X (no rows of their own)
+--   user D  active company_admin of company X
+--   company Y: user A is an active employee (cross-company project check)
 -- =============================================================================
 begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(25);
+select plan(29);
 
 -- -----------------------------------------------------------------------------
 -- Fixtures (as the migration owner, bypassing RLS)
@@ -20,13 +22,17 @@ select plan(25);
 insert into auth.users (id, email, aud, role) values
   ('11111111-1111-1111-1111-111111111111', 'rls-a@example.test', 'authenticated', 'authenticated'),
   ('22222222-2222-2222-2222-222222222222', 'rls-b@example.test', 'authenticated', 'authenticated'),
-  ('33333333-3333-3333-3333-333333333333', 'rls-c@example.test', 'authenticated', 'authenticated');
+  ('33333333-3333-3333-3333-333333333333', 'rls-c@example.test', 'authenticated', 'authenticated'),
+  ('44444444-4444-4444-4444-444444444444', 'rls-d@example.test', 'authenticated', 'authenticated');
 
 insert into public.companies (id, name) values
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'RLS Test Co');
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'RLS Test Co'),
+  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'RLS Test Co Y');
 
 insert into public.company_members (company_id, user_id, role, status) values
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '33333333-3333-3333-3333-333333333333', 'employee', 'active');
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '33333333-3333-3333-3333-333333333333', 'employee', 'active'),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '44444444-4444-4444-4444-444444444444', 'company_admin', 'active'),
+  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '11111111-1111-1111-1111-111111111111', 'employee', 'active');
 
 insert into public.projects (id, owner_user_id, title, company_id) values
   ('b0000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Project A', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
@@ -177,6 +183,19 @@ select is_empty(
   'company member cannot update a company project (read-only widening)');
 
 -- -----------------------------------------------------------------------------
+-- As user D (company_admin of company X)
+-- -----------------------------------------------------------------------------
+select set_config('request.jwt.claims',
+  '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}', true);
+
+select throws_ok(
+  $$ update public.company_members
+        set user_id = '22222222-2222-2222-2222-222222222222'
+      where user_id = '33333333-3333-3333-3333-333333333333' $$,
+  '42501', null,
+  'company admin cannot rewrite a member''s user_id');
+
+-- -----------------------------------------------------------------------------
 -- As user A (owner)
 -- -----------------------------------------------------------------------------
 select set_config('request.jwt.claims',
@@ -190,6 +209,25 @@ select lives_ok(
   $$ insert into public.work_orders (created_by, service_type, title, status)
      values ('11111111-1111-1111-1111-111111111111', 'logo', 'new request', 'open') $$,
   'owner can still submit an open work order (submitWorkOrder path)');
+
+select throws_ok(
+  $$ update public.profiles set stripe_customer_id = 'cus_foreign'
+      where id = '11111111-1111-1111-1111-111111111111' $$,
+  '42501', null,
+  'user cannot change their own stripe_customer_id');
+
+select lives_ok(
+  $$ update public.profiles set full_name = 'Renamed'
+      where id = '11111111-1111-1111-1111-111111111111' $$,
+  'user can still update their own full_name (updateProfile path)');
+
+select throws_ok(
+  $$ insert into public.work_orders (created_by, service_type, title, status, company_id, project_id)
+     values ('11111111-1111-1111-1111-111111111111', 'logo', 'cross-company', 'open',
+             'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+             'b0000000-0000-0000-0000-000000000001') $$,
+  '42501', null,
+  'work order cannot pair company Y with a project that belongs to company X');
 
 -- -----------------------------------------------------------------------------
 -- Back to the owner role: confirm no write leaked through.
