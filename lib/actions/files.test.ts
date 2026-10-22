@@ -368,6 +368,14 @@ describe("recordDeliverable", () => {
     expect(h.state.capturedInsert).toMatchObject({ mime: "application/pdf" });
   });
 
+  it("falls back to metadata.size / metadata.mimetype when top-level fields are absent", async () => {
+    h.state.info = { data: { metadata: { size: 2048, mimetype: "application/pdf" } }, error: null };
+    const { recordDeliverable } = await import("@/lib/actions/files");
+    const result = await recordDeliverable(base);
+    expect(result.ok).toBe(true);
+    expect(h.state.capturedInsert).toMatchObject({ mime: "application/pdf", size_bytes: 2048 });
+  });
+
   it("never deletes an object an existing row already references", async () => {
     h.state.refs = { data: [{ id: "existing" }], error: null };
     h.state.info = { data: { size: 10, contentType: "image/png" }, error: null };

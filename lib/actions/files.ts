@@ -184,8 +184,13 @@ export async function recordDeliverable(
   if (infoError || !info) {
     return { ok: false, error: "uploaded object not found" };
   }
-  const realSize = info.size;
-  const realMime = (info.contentType ?? "").split(";")[0].trim().toLowerCase();
+  // storage-js camelizes the response (content_type -> contentType), but the
+  // top-level size/content_type are optional; some Storage server versions
+  // only report them under `metadata` (size, mimetype). Accept either.
+  const meta = (info.metadata ?? {}) as { size?: unknown; mimetype?: unknown };
+  const realSize = info.size ?? meta.size;
+  const rawMime = info.contentType ?? (typeof meta.mimetype === "string" ? meta.mimetype : "");
+  const realMime = rawMime.split(";")[0].trim().toLowerCase();
   const reject = async (message: string): Promise<ActionResult<{ id: string }>> => {
     // Remove only when no row references the key (fail closed on lookup error).
     if ((await isReferenced()) === false) await bucket.remove([storage_path]);
