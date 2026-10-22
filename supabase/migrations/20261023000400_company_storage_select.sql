@@ -16,9 +16,12 @@
 -- SELECT only. wo_attachments_storage_insert_own / _delete_own are untouched,
 -- and no INSERT / UPDATE / DELETE policy is added or widened.
 --
--- Drift guard (same as 20261022000100 sections 6 and 10): when
--- is_company_member(uuid) or the company_id column is missing, the policy is
--- created owner-only instead of failing.
+-- Guards: a missing table (storage.objects, the file/attachment table or its
+-- parent) RAISES so a misapplied migration fails loudly. When only the company
+-- layer (is_company_member(uuid) or the company_id column) is missing, the
+-- policy is created owner-only (fail closed), same as 20261022000100
+-- sections 6 and 10.
+-- work_order_attachments.storage_path is made unique in 20261023000500.
 -- =============================================================================
 
 -- project-files bucket ---------------------------------------------------------
@@ -71,7 +74,7 @@ begin
         );
     end if;
   else
-    raise notice 'project_files_storage_select_owner_or_company skipped: storage.objects, project_files or projects missing';
+    raise exception 'project_files_storage_select_owner_or_company: storage.objects, public.project_files or public.projects is missing';
   end if;
 end $$;
 
@@ -125,6 +128,6 @@ begin
         );
     end if;
   else
-    raise notice 'wo_attachments_storage_select_owner_or_company skipped: storage.objects, work_order_attachments or work_orders missing';
+    raise exception 'wo_attachments_storage_select_owner_or_company: storage.objects, public.work_order_attachments or public.work_orders is missing';
   end if;
 end $$;

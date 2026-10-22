@@ -35,7 +35,7 @@ const h = vi.hoisted(() => {
       currency: string | null;
       status: string;
     },
-    updateError: null as null | { message: string },
+    updateError: null as null | { message: string; code?: string },
     throwOnUpdate: false,
     insertError: null as null | { message: string; code?: string }
   };
@@ -482,7 +482,7 @@ describe("POST /api/webhooks/stripe", () => {
       expect(dump).not.toContain("No signatures found");
     });
 
-    it("logs a handler error with event ids only and keeps the 500", async () => {
+    it("logs a thrown handler error with event ids only and keeps the 500", async () => {
       h.verifyMock.mockReturnValue({
         id: "evt_log_err",
         type: "invoice.paid",
@@ -492,21 +492,44 @@ describe("POST /api/webhooks/stripe", () => {
       const { POST } = await importRouteFresh();
       const res = await POST(makeRequest(RAW_BODY, SIG));
       expect(res.status).toBe(500);
-      expect(h.logErrorMock).toHaveBeenCalledTimes(1);
-      expect(h.logErrorMock.mock.calls[0][1]).toEqual({
-        msg: "stripe_webhook_handler_error",
+      expect(h.logMock).toHaveBeenCalledWith("error", "stripe_webhook_handler_error", {
         route: "/api/webhooks/stripe",
         request_id: "req_test_123",
         event_id: "evt_log_err",
-        event_type: "invoice.paid"
+        event_type: "invoice.paid",
+        error: { kind: "Error" }
       });
+      expect(h.logErrorMock).not.toHaveBeenCalled();
       const dump = datadogDump();
       expect(dump).not.toContain("whsec_dummy");
       expect(dump).not.toContain(SIG);
       expect(dump).not.toContain("payer@example.com");
+      expect(dump).not.toContain("db down");
     });
 
-    it("logs an entitlement insert (DB) failure and keeps the 500", async () => {
+    it("logs only the code for an invoice update (DB) error whose message has an email", async () => {
+      h.verifyMock.mockReturnValue({
+        id: "evt_log_upd",
+        type: "invoice.voided",
+        data: { object: { id: "in_upd" } }
+      });
+      h.adminBehavior.updateError = {
+        message: "permission denied for payer@example.com",
+        code: "42501"
+      };
+      const { POST } = await importRouteFresh();
+      expect((await POST(makeRequest(RAW_BODY, SIG))).status).toBe(500);
+      expect(h.logMock).toHaveBeenCalledWith(
+        "error",
+        "stripe_webhook_handler_error",
+        expect.objectContaining({ error: { kind: "Error", code: "42501" } })
+      );
+      const dump = datadogDump();
+      expect(dump).not.toContain("payer@example.com");
+      expect(dump).not.toContain("permission denied");
+    });
+
+    it("logs code/constraint/table for an entitlement insert (DB) failure and keeps the 500", async () => {
       h.verifyMock.mockReturnValue({
         id: "evt_log_insert",
         type: "checkout.session.completed",
@@ -518,14 +541,31 @@ describe("POST /api/webhooks/stripe", () => {
           }
         }
       });
-      h.adminBehavior.insertError = { message: "fk violation", code: "23503" };
+      h.adminBehavior.insertError = {
+        message:
+          'insert or update on table "asset_entitlements" violates foreign key constraint "asset_entitlements_user_id_fkey" (buyer leak@example.com)',
+        code: "23503"
+      };
       const { POST } = await importRouteFresh();
       const res = await POST(makeRequest(RAW_BODY, SIG));
       expect(res.status).toBe(500);
-      expect(h.logErrorMock).toHaveBeenCalledTimes(1);
-      const [err, ctx] = h.logErrorMock.mock.calls[0] as [Error, Record<string, unknown>];
-      expect(err.message).toContain("asset entitlement insert failed");
-      expect(ctx).toMatchObject({ event_id: "evt_log_insert", event_type: "checkout.session.completed" });
+      expect(h.logMock).toHaveBeenCalledWith(
+        "error",
+        "stripe_webhook_handler_error",
+        expect.objectContaining({
+          event_id: "evt_log_insert",
+          event_type: "checkout.session.completed",
+          error: {
+            kind: "Error",
+            code: "23503",
+            constraint: "asset_entitlements_user_id_fkey",
+            table: "asset_entitlements"
+          }
+        })
+      );
+      const dump = datadogDump();
+      expect(dump).not.toContain("leak@example.com");
+      expect(dump).not.toContain("violates");
     });
 
     it("stays non-fatal when the logger itself throws", async () => {

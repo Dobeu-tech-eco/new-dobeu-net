@@ -456,6 +456,23 @@ describe("recordDeliverable", () => {
     expect(h.state.removeSpy as unknown).not.toHaveBeenCalled();
   });
 
+  it("does not map a unique violation on some other constraint", async () => {
+    h.state.insertResult = {
+      data: null,
+      error: {
+        message: 'duplicate key value violates unique constraint "project_files_pkey"',
+        code: "23505"
+      }
+    };
+    const { recordDeliverable } = await import("@/lib/actions/files");
+    const result = await recordDeliverable(base);
+    expect(result).toEqual({
+      ok: false,
+      error: 'duplicate key value violates unique constraint "project_files_pkey"'
+    });
+    expect(h.state.removeSpy as unknown).not.toHaveBeenCalled();
+  });
+
   it("surfaces a Supabase insert error", async () => {
     h.state.insertResult = { data: null, error: { message: "fk violation" } };
     const { recordDeliverable } = await import("@/lib/actions/files");

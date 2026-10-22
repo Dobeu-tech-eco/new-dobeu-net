@@ -4,6 +4,7 @@
 --   20261023000200_drop_company_members_company_idx.sql (T2)
 --   20261023000300_project_files_storage_path_unique.sql (T3)
 --   20261023000400_company_storage_select.sql        (T11)
+--   20261023000500_storage_path_unique_indexes.sql   (fix round 1, M2/M3)
 -- Run: pnpm supabase test db   (local), or inside a forced-rollback batch on
 -- prod. Self-contained: every fixture is created here and rolled back; no
 -- existing row is read or relied on. Every authenticated read is scoped to
@@ -16,13 +17,16 @@
 --   OUTSIDER signed-in user with no membership and no grants
 --   OTHERCO  active employee of company Y only
 --   INVITED  'invited' (not active) member of company X
+--   DISABLED 'disabled' member of company X
 --   ORPHAN   object in digital-assets with no digital_assets row
+--   DECOYS   direct.zip.bak (suffix), Direct.zip (case), and direct.zip in the
+--            project-files bucket (same name, other bucket): all denied
 -- =============================================================================
 begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(30);
+select plan(42);
 
 -- -----------------------------------------------------------------------------
 -- Fixtures (as the migration owner, bypassing RLS)
@@ -32,7 +36,8 @@ insert into auth.users (id, email, aud, role) values
   ('5e2a0001-0000-4000-8000-000000000002', 'run2-storage-member@example.test',   'authenticated', 'authenticated'),
   ('5e2a0001-0000-4000-8000-000000000003', 'run2-storage-outsider@example.test', 'authenticated', 'authenticated'),
   ('5e2a0001-0000-4000-8000-000000000004', 'run2-storage-otherco@example.test',  'authenticated', 'authenticated'),
-  ('5e2a0001-0000-4000-8000-000000000005', 'run2-storage-invited@example.test',  'authenticated', 'authenticated');
+  ('5e2a0001-0000-4000-8000-000000000005', 'run2-storage-invited@example.test',  'authenticated', 'authenticated'),
+  ('5e2a0001-0000-4000-8000-000000000006', 'run2-storage-disabled@example.test', 'authenticated', 'authenticated');
 
 insert into public.companies (id, name) values
   ('5e2a0002-0000-4000-8000-00000000000a', 'Run2 Storage Co X'),
@@ -41,7 +46,8 @@ insert into public.companies (id, name) values
 insert into public.company_members (company_id, user_id, role, status) values
   ('5e2a0002-0000-4000-8000-00000000000a', '5e2a0001-0000-4000-8000-000000000002', 'employee', 'active'),
   ('5e2a0002-0000-4000-8000-00000000000b', '5e2a0001-0000-4000-8000-000000000004', 'employee', 'active'),
-  ('5e2a0002-0000-4000-8000-00000000000a', '5e2a0001-0000-4000-8000-000000000005', 'employee', 'invited');
+  ('5e2a0002-0000-4000-8000-00000000000a', '5e2a0001-0000-4000-8000-000000000005', 'employee', 'invited'),
+  ('5e2a0002-0000-4000-8000-00000000000a', '5e2a0001-0000-4000-8000-000000000006', 'employee', 'disabled');
 
 insert into public.projects (id, owner_user_id, title, company_id) values
   ('5e2a0003-0000-4000-8000-000000000001', '5e2a0001-0000-4000-8000-000000000001',
@@ -78,6 +84,9 @@ insert into storage.objects (bucket_id, name) values
   ('digital-assets',         'run2-5e2a/company.zip'),
   ('digital-assets',         'run2-5e2a/inactive.zip'),
   ('digital-assets',         'run2-5e2a/orphan.zip'),
+  ('digital-assets',         'run2-5e2a/direct.zip.bak'),
+  ('digital-assets',         'run2-5e2a/Direct.zip'),
+  ('project-files',          'run2-5e2a/direct.zip'),
   ('project-files',          '5e2a0003-0000-4000-8000-000000000001/run2-deliverable.pdf'),
   ('work-order-attachments', '5e2a0005-0000-4000-8000-000000000001/run2-attachment.pdf');
 
@@ -88,6 +97,19 @@ select is(
   (select public from storage.buckets where id = 'digital-assets'),
   false,
   'T1: digital-assets bucket exists and is private'
+);
+
+-- M1: a pre-existing PUBLIC bucket must be forced private. Flip it public,
+-- then re-run the exact bucket statement from 20261023000100.
+update storage.buckets set public = true where id = 'digital-assets';
+insert into storage.buckets (id, name, public)
+  values ('digital-assets', 'digital-assets', false)
+  on conflict (id) do update set public = false;
+
+select is(
+  (select public from storage.buckets where id = 'digital-assets'),
+  false,
+  'T1: re-running the bucket upsert forces an existing public digital-assets bucket private'
 );
 
 select ok(
@@ -165,6 +187,35 @@ select is(
   'T3: project_files_storage_path_key is a unique index'
 );
 
+select is(
+  (select indisunique from pg_index
+    where indexrelid = to_regclass('public.digital_assets_storage_path_key')),
+  true,
+  'digital_assets_storage_path_key is a unique index'
+);
+
+select is(
+  (select indisunique from pg_index
+    where indexrelid = to_regclass('public.work_order_attachments_storage_path_key')),
+  true,
+  'work_order_attachments_storage_path_key is a unique index'
+);
+
+select throws_ok(
+  $$ insert into public.digital_assets (title, storage_path, active)
+     values ('Run2 duplicate path', 'run2-5e2a/direct.zip', true) $$,
+  '23505', null,
+  'a second digital_assets row for the same storage_path is rejected (no audience union)'
+);
+
+select throws_ok(
+  $$ insert into public.work_order_attachments (work_order_id, storage_path, filename)
+     values ('5e2a0005-0000-4000-8000-000000000001',
+             '5e2a0005-0000-4000-8000-000000000001/run2-attachment.pdf', 'dup.pdf') $$,
+  '23505', null,
+  'a second work_order_attachments row for the same storage_path is rejected'
+);
+
 select throws_ok(
   $$ insert into public.project_files (project_id, storage_path, filename, uploaded_by)
      values ('5e2a0003-0000-4000-8000-000000000001',
@@ -185,7 +236,22 @@ select results_eq(
   $$ select name from storage.objects
      where bucket_id = 'digital-assets' and name like 'run2-5e2a/%' order by name $$,
   $$ values ('run2-5e2a/direct.zip'::text) $$,
-  'T1: direct grant reads only its active asset (inactive + orphan hidden)');
+  'T1: direct grant reads only its active asset (inactive, orphan and decoys hidden)');
+
+select is_empty(
+  $$ select name from storage.objects
+     where bucket_id = 'digital-assets' and name = 'run2-5e2a/direct.zip.bak' $$,
+  'T1: decoy with an extra suffix (direct.zip.bak) is denied');
+
+select is_empty(
+  $$ select name from storage.objects
+     where bucket_id = 'digital-assets' and name = 'run2-5e2a/Direct.zip' $$,
+  'T1: decoy differing only in case (Direct.zip) is denied');
+
+select is_empty(
+  $$ select name from storage.objects
+     where bucket_id = 'project-files' and name = 'run2-5e2a/direct.zip' $$,
+  'T1: the entitled name in a different bucket (project-files) is denied');
 
 select results_eq(
   $$ select name from storage.objects
@@ -309,6 +375,35 @@ select is_empty(
      where bucket_id = 'project-files' and name like '5e2a0003-%' $$,
   'T11: invited (inactive) member cannot read the deliverable');
 
+select is_empty(
+  $$ select name from storage.objects
+     where bucket_id = 'work-order-attachments' and name like '5e2a0005-%' $$,
+  'T11: invited (inactive) member cannot read the attachment');
+
+reset role;
+
+-- -----------------------------------------------------------------------------
+-- As DISABLED (membership row exists but is disabled)
+-- -----------------------------------------------------------------------------
+select set_config('request.jwt.claims',
+  '{"sub":"5e2a0001-0000-4000-8000-000000000006","role":"authenticated"}', true);
+set local role authenticated;
+
+select is_empty(
+  $$ select name from storage.objects
+     where bucket_id = 'digital-assets' and name like 'run2-5e2a/%' $$,
+  'T1: disabled member gets no company-granted assets');
+
+select is_empty(
+  $$ select name from storage.objects
+     where bucket_id = 'project-files' and name like '5e2a0003-%' $$,
+  'T11: disabled member cannot read the deliverable');
+
+select is_empty(
+  $$ select name from storage.objects
+     where bucket_id = 'work-order-attachments' and name like '5e2a0005-%' $$,
+  'T11: disabled member cannot read the attachment');
+
 -- -----------------------------------------------------------------------------
 -- Back to the owner role: confirm no write leaked through.
 -- -----------------------------------------------------------------------------
@@ -319,8 +414,8 @@ select is(
     where (bucket_id = 'digital-assets' and name like 'run2-5e2a/%')
        or (bucket_id = 'project-files' and name like '5e2a0003-%')
        or (bucket_id = 'work-order-attachments' and name like '5e2a0005-%')),
-  6,
-  'blocked writes left exactly the six fixture objects'
+  8,
+  'blocked writes left exactly the eight scoped fixture objects'
 );
 
 select is(

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Json } from "@/lib/database.types";
-import { logServerError, logToDatadog } from "@/lib/datadog-server";
+import { logToDatadog } from "@/lib/datadog-server";
 import {
   isTypeformWebhookConfigured,
   verifyTypeformSignature,
@@ -32,6 +32,39 @@ async function safely(log: () => Promise<void>): Promise<void> {
   } catch {
     // Non-fatal by design.
   }
+}
+
+/**
+ * The only error fields that reach Datadog: the error class, the SQLSTATE /
+ * PostgREST code, and constraint / table identifiers. The raw message,
+ * details, hint and stack are never forwarded because Postgres embeds row
+ * values (emails, tokens) in them. Identifiers are pulled out of the message
+ * with an identifier-only pattern, so no free text survives.
+ */
+function safeErrorFields(error: unknown): Record<string, string> {
+  const fields: Record<string, string> = {
+    kind: error instanceof Error ? error.name : "UnknownError",
+  };
+  const sources = [error, error instanceof Error ? error.cause : undefined];
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+    const o = source as { code?: unknown; constraint?: unknown; table?: unknown; message?: unknown };
+    const text = typeof o.message === "string" ? o.message : "";
+    if (!fields.code && typeof o.code === "string" && /^[A-Za-z0-9_]{1,16}$/.test(o.code)) {
+      fields.code = o.code;
+    }
+    const constraint =
+      typeof o.constraint === "string" ? o.constraint : /constraint "([A-Za-z0-9_]{1,63})"/.exec(text)?.[1];
+    if (!fields.constraint && constraint && /^[A-Za-z0-9_]{1,63}$/.test(constraint)) {
+      fields.constraint = constraint;
+    }
+    const table =
+      typeof o.table === "string" ? o.table : /(?:relation|table) "([A-Za-z0-9_.]{1,63})"/.exec(text)?.[1];
+    if (!fields.table && table && /^[A-Za-z0-9_.]{1,63}$/.test(table)) {
+      fields.table = table;
+    }
+  }
+  return fields;
 }
 
 function invalidFormResponse(detail: string) {
@@ -213,11 +246,11 @@ export async function POST(request: Request) {
       }),
     );
     await safely(() =>
-      logServerError(error, {
-        msg: "typeform_budget_intake_storage_failed",
+      logToDatadog("error", "typeform_budget_intake_storage_failed", {
         route: ROUTE,
         request_id: requestId,
         form_id: formId,
+        error: safeErrorFields(error),
       }),
     );
     return NextResponse.json(

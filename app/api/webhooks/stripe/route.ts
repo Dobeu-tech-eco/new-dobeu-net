@@ -28,7 +28,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { verifyWebhookSignature } from "@/lib/stripe";
 import { forgetStripeEvent, rememberStripeEvent } from "@/lib/stripe-event-dedupe";
 import { sendEmail } from "@/lib/resend";
-import { logServerError, logToDatadog } from "@/lib/datadog-server";
+import { logToDatadog } from "@/lib/datadog-server";
 import {
   invoicePaidToClient,
   invoicePaymentFailedToAdmin
@@ -50,6 +50,39 @@ async function safely(log: () => Promise<void>): Promise<void> {
   } catch {
     // Non-fatal by design.
   }
+}
+
+/**
+ * The only error fields that reach Datadog: the error class, the SQLSTATE /
+ * PostgREST code, and constraint / table identifiers. The raw message,
+ * details, hint and stack are never forwarded because Postgres embeds row
+ * values (emails, tokens) in them. Identifiers are pulled out of the message
+ * with an identifier-only pattern, so no free text survives.
+ */
+function safeErrorFields(error: unknown): Record<string, string> {
+  const fields: Record<string, string> = {
+    kind: error instanceof Error ? error.name : "UnknownError"
+  };
+  const sources = [error, error instanceof Error ? error.cause : undefined];
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+    const o = source as { code?: unknown; constraint?: unknown; table?: unknown; message?: unknown };
+    const text = typeof o.message === "string" ? o.message : "";
+    if (!fields.code && typeof o.code === "string" && /^[A-Za-z0-9_]{1,16}$/.test(o.code)) {
+      fields.code = o.code;
+    }
+    const constraint =
+      typeof o.constraint === "string" ? o.constraint : /constraint "([A-Za-z0-9_]{1,63})"/.exec(text)?.[1];
+    if (!fields.constraint && constraint && /^[A-Za-z0-9_]{1,63}$/.test(constraint)) {
+      fields.constraint = constraint;
+    }
+    const table =
+      typeof o.table === "string" ? o.table : /(?:relation|table) "([A-Za-z0-9_.]{1,63})"/.exec(text)?.[1];
+    if (!fields.table && table && /^[A-Za-z0-9_.]{1,63}$/.test(table)) {
+      fields.table = table;
+    }
+  }
+  return fields;
 }
 
 const ADMIN_NOTIFY_TO = (): string =>
@@ -140,7 +173,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             .neq("status", "paid")
             .select("id,project_id,amount_cents,currency,status")
             .maybeSingle();
-          if (error) throw new Error(`invoice paid update failed: ${error.message}`);
+          if (error) throw new Error(`invoice paid update failed: ${error.message}`, { cause: error });
 
           await notifyInvoicePaid(admin, inv, row as InvoiceRow | null);
         }
@@ -163,7 +196,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             .neq("status", "overdue")
             .select("id,project_id,amount_cents,currency,status")
             .maybeSingle();
-          if (error) throw new Error(`invoice failed update failed: ${error.message}`);
+          if (error) throw new Error(`invoice failed update failed: ${error.message}`, { cause: error });
 
           await notifyInvoiceFailed(inv, row as InvoiceRow | null);
         }
@@ -177,7 +210,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             .from("invoices")
             .update({ hosted_invoice_url: inv.hosted_invoice_url })
             .eq("stripe_invoice_id", inv.id);
-          if (error) throw new Error(`invoice finalized update failed: ${error.message}`);
+          if (error) throw new Error(`invoice finalized update failed: ${error.message}`, { cause: error });
         }
         break;
       }
@@ -189,7 +222,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             .from("invoices")
             .update({ status: "void" })
             .eq("stripe_invoice_id", inv.id);
-          if (error) throw new Error(`invoice voided update failed: ${error.message}`);
+          if (error) throw new Error(`invoice voided update failed: ${error.message}`, { cause: error });
         }
         break;
       }
@@ -228,13 +261,15 @@ export async function POST(request: Request): Promise<NextResponse> {
         error: e instanceof Error ? e.message : String(e)
       })
     );
+    // DB failures are thrown with the PostgREST error as `cause`, so the
+    // code / constraint survive while the message (row values) does not.
     await safely(() =>
-      logServerError(e, {
-        msg: "stripe_webhook_handler_error",
+      logToDatadog("error", "stripe_webhook_handler_error", {
         route: ROUTE,
         request_id: requestId,
         event_id: event.id,
-        event_type: event.type
+        event_type: event.type,
+        error: safeErrorFields(e)
       })
     );
     // Removing the event from the dedupe set lets Stripe retry. Errors are
@@ -360,6 +395,6 @@ async function grantAssetEntitlement(
   });
 
   if (error && !isUniqueViolation(error)) {
-    throw new Error(`asset entitlement insert failed: ${error.message}`);
+    throw new Error(`asset entitlement insert failed: ${error.message}`, { cause: error });
   }
 }

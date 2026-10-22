@@ -42,6 +42,23 @@ const BUCKET = "project-files";
 
 /** Postgres unique_violation. */
 const UNIQUE_VIOLATION = "23505";
+/** The unique index from 20261023000300; the only 23505 this action maps. */
+const STORAGE_PATH_KEY = "project_files_storage_path_key";
+
+/**
+ * True only for a unique violation on project_files.storage_path. PostgREST
+ * names the constraint in `message` ("... unique constraint
+ * \"project_files_storage_path_key\""); `details`/`constraint` are checked too
+ * in case a client version moves it. Any other 23505 takes the generic path.
+ */
+function isStoragePathConflict(
+  error: { code?: string; message?: string; details?: string | null; constraint?: string } | null
+): boolean {
+  if (!error || error.code !== UNIQUE_VIOLATION) return false;
+  return [error.constraint, error.message, error.details].some(
+    (field) => typeof field === "string" && field.includes(STORAGE_PATH_KEY)
+  );
+}
 
 const uuid = z.string().uuid("invalid id");
 
@@ -221,7 +238,7 @@ export async function recordDeliverable(
   // project_files_storage_path_key (20261023000300) closes the race the
   // isReferenced() pre-check leaves open. A concurrent record of the same key
   // means a row now points at these bytes, so never remove the object here.
-  if (error?.code === UNIQUE_VIOLATION) {
+  if (isStoragePathConflict(error)) {
     return { ok: false, error: "storage_path already recorded" };
   }
   if (error || !data) return { ok: false, error: error?.message ?? "insert failed" };

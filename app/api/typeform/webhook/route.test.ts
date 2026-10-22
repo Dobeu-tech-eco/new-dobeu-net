@@ -437,23 +437,34 @@ describe("POST /api/typeform/webhook", () => {
       expect(dump).not.toContain("response_log_1");
     });
 
-    it("logs a storage (DB) failure and keeps the 503", async () => {
+    it("logs a storage (DB) failure without the DB message and keeps the 503", async () => {
+      // persistTypeformBudgetIntake rethrows the raw PostgREST message.
       mockedPersistBudgetIntake.mockRejectedValue(
-        new Error("database unavailable"),
+        new Error(
+          'duplicate key value violates unique constraint "typeform_budget_intakes_email_key" for budget@example.com',
+        ),
       );
       const res = await POST(makeRequest(body, sign(body), "evt_tf_db"));
       expect(res.status).toBe(503);
-      expect(mockedLogError).toHaveBeenCalledTimes(1);
-      expect(mockedLogError.mock.calls[0][1]).toEqual({
-        msg: "typeform_budget_intake_storage_failed",
-        route: "/api/typeform/webhook",
-        request_id: "evt_tf_db",
-        form_id: BUDGET_FORM_ID,
-      });
+      expect(mockedLog).toHaveBeenCalledWith(
+        "error",
+        "typeform_budget_intake_storage_failed",
+        {
+          route: "/api/typeform/webhook",
+          request_id: "evt_tf_db",
+          form_id: BUDGET_FORM_ID,
+          error: {
+            kind: "Error",
+            constraint: "typeform_budget_intakes_email_key",
+          },
+        },
+      );
+      expect(mockedLogError).not.toHaveBeenCalled();
       const dump = datadogDump();
       expect(dump).not.toContain(SECRET);
       expect(dump).not.toContain("budget@example.com");
       expect(dump).not.toContain("response_log_1");
+      expect(dump).not.toContain("duplicate key");
     });
 
     it("stays non-fatal when the logger itself throws", async () => {

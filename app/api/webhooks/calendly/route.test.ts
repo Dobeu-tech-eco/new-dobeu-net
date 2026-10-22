@@ -164,44 +164,55 @@ describe("POST /api/webhooks/calendly", () => {
       expect(dump).not.toContain(KEY);
       expect(dump).not.toContain(badSig);
       expect(dump).not.toContain("booker@example.com");
-      expect(dump).not.toContain(JSON.stringify(bookingBody));
     });
 
-    it("logs and rethrows when lead processing fails (status unchanged)", async () => {
+    it("logs and rethrows when lead processing fails, without the error message", async () => {
       process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
-      mockedProcessLead.mockRejectedValueOnce(new Error("fan-out exploded"));
+      mockedProcessLead.mockRejectedValueOnce(new Error("lead insert failed for booker@example.com"));
       await expect(POST(makeRequest(bookingBody, sign(bookingBody)))).rejects.toThrow(
-        "fan-out exploded"
+        "lead insert failed"
       );
-      expect(mockedLogError).toHaveBeenCalledTimes(1);
-      expect(mockedLogError.mock.calls[0][1]).toMatchObject({
-        msg: "calendly_webhook_processing_failed",
-        event_type: "invitee.created"
+      expect(mockedLog).toHaveBeenCalledWith("error", "calendly_webhook_processing_failed", {
+        route: "/api/webhooks/calendly",
+        request_id: expect.any(String),
+        event_type: "invitee.created",
+        error: { kind: "Error" }
       });
+      expect(mockedLogError).not.toHaveBeenCalled();
       const dump = datadogDump();
       expect(dump).not.toContain(KEY);
       expect(dump).not.toContain("booker@example.com");
+      expect(dump).not.toContain("lead insert failed");
     });
 
-    it("logs a booking insert failure but still returns 200", async () => {
+    it("logs only code/constraint for a booking insert failure and still returns 200", async () => {
       process.env.CALENDLY_WEBHOOK_SIGNING_KEY = KEY;
       vi.mocked(createAdminClient).mockReturnValueOnce({
         from: vi.fn(() => ({
           insert: vi.fn().mockResolvedValue({
             data: null,
-            error: { code: "23503", message: "insert or update on table violates foreign key constraint" }
+            error: {
+              code: "23505",
+              message:
+                'duplicate key value violates unique constraint "bookings_email_key" for booker@example.com',
+              details: "Key (email)=(booker@example.com) already exists.",
+              hint: null
+            }
           })
         }))
       } as unknown as ReturnType<typeof createAdminClient>);
       const res = await POST(makeRequest(bookingBody, sign(bookingBody)));
       expect(res.status).toBe(200);
       expect(await res.json()).toMatchObject({ ok: true, lead_id: "lead_1" });
-      expect(mockedLog).toHaveBeenCalledWith(
-        "error",
-        "calendly_booking_insert_failed",
-        expect.objectContaining({ lead_id: "lead_1", error: expect.objectContaining({ code: "23503" }) })
-      );
-      expect(datadogDump()).not.toContain("booker@example.com");
+      expect(mockedLog).toHaveBeenCalledWith("error", "calendly_booking_insert_failed", {
+        route: "/api/webhooks/calendly",
+        request_id: expect.any(String),
+        lead_id: "lead_1",
+        error: { kind: "UnknownError", code: "23505", constraint: "bookings_email_key" }
+      });
+      const dump = datadogDump();
+      expect(dump).not.toContain("booker@example.com");
+      expect(dump).not.toContain("duplicate key");
     });
 
     it("stays non-fatal when the logger itself throws", async () => {

@@ -22,15 +22,18 @@ const T1 = sql("20261023000100_digital_assets_storage.sql");
 const T2 = sql("20261023000200_drop_company_members_company_idx.sql");
 const T3 = sql("20261023000300_project_files_storage_path_unique.sql");
 const T11 = sql("20261023000400_company_storage_select.sql");
-const ALL = [T1, T2, T3, T11];
+const T5 = sql("20261023000500_storage_path_unique_indexes.sql");
+const ALL = [T1, T2, T3, T11, T5];
 
 const WRITE_POLICY = /create policy[^;]*\bfor (insert|update|delete|all)\b/;
 
 describe("20261023000100_digital_assets_storage", () => {
-  it("creates the digital-assets bucket as private, idempotently", () => {
+  it("creates the digital-assets bucket private and forces an existing one private", () => {
+    // pgTAP also re-runs this statement over a public bucket (run2_storage.test.sql).
     expect(T1).toContain(
-      "insert into storage.buckets (id, name, public) values ('digital-assets', 'digital-assets', false) on conflict (id) do nothing"
+      "insert into storage.buckets (id, name, public) values ('digital-assets', 'digital-assets', false) on conflict (id) do update set public = false;"
     );
+    expect(T1).not.toContain("do nothing");
     expect(T1).not.toMatch(/'digital-assets',\s*true/);
   });
 
@@ -46,7 +49,9 @@ describe("20261023000100_digital_assets_storage", () => {
     expect(T1).toContain("e.company_id is not null and public.is_company_member(e.company_id)");
   });
 
-  it("guards the policy on its dependencies", () => {
+  it("guards the policy on its dependencies and fails loudly when one is missing", () => {
+    expect(T1).toMatch(/else raise exception 'digital_assets_storage_select_entitled:/);
+    expect(T1).not.toMatch(/raise notice/);
     expect(T1).toContain("to_regclass('storage.objects') is not null");
     expect(T1).toContain("to_regclass('public.digital_assets') is not null");
     expect(T1).toContain("to_regclass('public.asset_entitlements') is not null");
@@ -103,10 +108,35 @@ describe("20261023000400_company_storage_select", () => {
     expect(T11).toContain("w.created_by = (select auth.uid())");
   });
 
+  it("fails loudly (never skips) when a table dependency is missing", () => {
+    expect(T11).toMatch(/raise exception 'project_files_storage_select_owner_or_company:/);
+    expect(T11).toMatch(/raise exception 'wo_attachments_storage_select_owner_or_company:/);
+    expect(T11).not.toMatch(/raise notice/);
+  });
+
   it("does not touch or widen any write policy", () => {
     expect(T11).not.toMatch(WRITE_POLICY);
     expect(T11).not.toContain("wo_attachments_storage_insert_own");
     expect(T11).not.toContain("wo_attachments_storage_delete_own");
+  });
+});
+
+describe("20261023000500_storage_path_unique_indexes", () => {
+  it("raises (never skips) on a missing table or duplicate storage_path values", () => {
+    expect(T5).toContain("values ('digital_assets'), ('work_order_attachments')");
+    expect(T5).toMatch(/if to_regclass\('public\.' \|\| r\.table_name\) is null then raise exception/);
+    expect(T5).toMatch(/group by storage_path having count\(\*\) > 1/);
+    expect(T5).toMatch(/if v_dup_paths > 0 then raise exception '%\.storage_path has % duplicated value/);
+    expect(T5).not.toMatch(/raise notice/);
+  });
+
+  it("creates both unique indexes", () => {
+    expect(T5).toContain(
+      "create unique index if not exists digital_assets_storage_path_key on public.digital_assets (storage_path);"
+    );
+    expect(T5).toContain(
+      "create unique index if not exists work_order_attachments_storage_path_key on public.work_order_attachments (storage_path);"
+    );
   });
 });
 

@@ -8,7 +8,9 @@
 -- storage.objects policy covered it, so every entitled download failed.
 --
 -- What this migration does:
---   1. Creates the bucket as PRIVATE if it is missing (no-op if present).
+--   1. Creates the bucket as PRIVATE, and forces an existing bucket private
+--      (a dashboard-created public bucket would serve
+--      /object/public/digital-assets/<name> with no RLS at all).
 --   2. Adds ONE SELECT policy for `authenticated`: an object is readable only
 --      when it is the storage_path of an ACTIVE digital_assets row that the
 --      caller is entitled to via asset_entitlements, either directly
@@ -20,13 +22,16 @@
 -- Deliberately NOT added: any INSERT / UPDATE / DELETE policy on this bucket.
 -- Asset uploads and removals stay service-role only.
 --
--- Idempotent: bucket insert is `on conflict do nothing`; the policy is
--- `drop policy if exists` + `create policy`, guarded on every dependency.
+-- Idempotent: the bucket upsert always lands on public = false; the policy is
+-- `drop policy if exists` + `create policy`. A missing dependency RAISES so a
+-- misapplied migration fails loudly instead of being recorded as applied.
+-- digital_assets.storage_path is made unique in 20261023000500 so two asset
+-- rows can never union their audiences over the same object.
 -- =============================================================================
 
 insert into storage.buckets (id, name, public)
   values ('digital-assets', 'digital-assets', false)
-  on conflict (id) do nothing;
+  on conflict (id) do update set public = false;
 
 do $$
 begin
@@ -53,6 +58,6 @@ begin
         )
       );
   else
-    raise notice 'digital_assets_storage_select_entitled skipped: storage.objects, digital_assets, asset_entitlements or is_company_member(uuid) missing';
+    raise exception 'digital_assets_storage_select_entitled: storage.objects, public.digital_assets, public.asset_entitlements or public.is_company_member(uuid) is missing';
   end if;
 end $$;
