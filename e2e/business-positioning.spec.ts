@@ -4,6 +4,8 @@ import { gotoLanding, seedCookieConsent } from "./helpers";
 const retiredPositioning =
   /\b(?:AI|agents?|consulting|consultancy|consultants?)\b|artificial intelligence/gi;
 const publicRoutes = [
+  "/contact",
+  "/faq",
   "/",
   "/about",
   "/services",

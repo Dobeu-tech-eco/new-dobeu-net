@@ -10,6 +10,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const SITE_URL = getSiteUrl();
 
   const staticRoutes: MetadataRoute.Sitemap = [
+    { url: `${SITE_URL}/contact`, lastModified: stamp(CONTENT_DATES.contact), changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE_URL}/faq`, lastModified: stamp(CONTENT_DATES.faq), changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/`, lastModified: stamp(CONTENT_DATES.home), changeFrequency: "weekly", priority: 1.0 },
     { url: `${SITE_URL}/services`, lastModified: stamp(CONTENT_DATES.services), changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/pricing`, lastModified: stamp(CONTENT_DATES.pricing), changeFrequency: "monthly", priority: 0.8 },
