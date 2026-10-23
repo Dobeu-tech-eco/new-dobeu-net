@@ -6,6 +6,8 @@ describe("sitemap", () => {
   it("lists commercial routes and case-study slugs with content dates", () => {
     const entries = sitemap();
     const urls = entries.map((e) => e.url);
+    expect(urls.some((u) => u.endsWith("/contact"))).toBe(true);
+    expect(urls.some((u) => u.endsWith("/faq"))).toBe(true);
     expect(urls.some((u) => u.endsWith("/pricing"))).toBe(true);
     expect(urls.some((u) => u.endsWith("/services"))).toBe(true);
     expect(urls.some((u) => u.endsWith("/case-studies/routeready"))).toBe(true);
