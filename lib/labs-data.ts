@@ -1,4 +1,4 @@
-export type LabDemoId = "agent-loop" | "shader" | "lead-pipeline";
+export type LabDemoId = "work-order" | "shader" | "lead-pipeline";
 
 export interface LabDemoEntry {
   id: LabDemoId;
@@ -16,10 +16,10 @@ export interface LabExperimentEntry {
 
 export const LAB_DEMOS: LabDemoEntry[] = [
   {
-    id: "agent-loop",
-    title: "Agent loop",
-    summary: "Watch a mocked plan → act → verify cycle with tool calls and status transitions.",
-    tag: "AI",
+    id: "work-order",
+    title: "Work order tracker",
+    summary: "Follow a request from intake to quote, build, and delivery in a sample client workflow.",
+    tag: "Operations",
   },
   {
     id: "shader",

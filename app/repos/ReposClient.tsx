@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, FormEvent, KeyboardEvent } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import {
   Star,
@@ -12,13 +12,10 @@ import {
   Lock,
   Archive,
   X,
-  Plus,
   Clock,
   Github,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -101,7 +98,13 @@ function formatCount(n: number) {
 
 // ─── RepoCard ─────────────────────────────────────────────────────────────────
 
-function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) {
+function RepoCard({
+  repo,
+  onRemove,
+}: {
+  repo: RepoData;
+  onRemove: () => void;
+}) {
   const totalBytes = Object.values(repo.languages).reduce((a, b) => a + b, 0);
   const topLangs = Object.entries(repo.languages)
     .sort(([, a], [, b]) => b - a)
@@ -121,7 +124,13 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
 
       {/* Header */}
       <div className="flex items-start gap-3 pr-7">
-        <a href={repo.owner.html_url} target="_blank" rel="noreferrer" tabIndex={-1} className="flex-shrink-0">
+        <a
+          href={repo.owner.html_url}
+          target="_blank"
+          rel="noreferrer"
+          tabIndex={-1}
+          className="flex-shrink-0"
+        >
           <Image
             src={repo.owner.avatar_url}
             alt={repo.owner.login}
@@ -138,7 +147,10 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
             className="font-display font-bold text-base leading-tight hover:text-primary transition-colors flex items-center gap-1.5 flex-wrap"
           >
             {repo.full_name}
-            <ExternalLink className="h-3 w-3 opacity-40 flex-shrink-0" aria-hidden="true" />
+            <ExternalLink
+              className="h-3 w-3 opacity-40 flex-shrink-0"
+              aria-hidden="true"
+            />
           </a>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {repo.archived && (
@@ -153,9 +165,13 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
                 Private
               </span>
             ) : (
-              <span className="text-xs text-muted-foreground/60 capitalize">{repo.visibility}</span>
+              <span className="text-xs text-muted-foreground/60 capitalize">
+                {repo.visibility}
+              </span>
             )}
-            {repo.fork && <span className="text-xs text-muted-foreground/60">Fork</span>}
+            {repo.fork && (
+              <span className="text-xs text-muted-foreground/60">Fork</span>
+            )}
             {repo.license && (
               <span className="text-xs px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-mono">
                 {repo.license.spdx_id}
@@ -212,14 +228,19 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
             {topLangs.slice(0, 5).map(([lang, bytes]) => (
-              <span key={lang} className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span
+                key={lang}
+                className="flex items-center gap-1 text-xs text-muted-foreground"
+              >
                 <span
                   className="inline-block h-2 w-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: langColor(lang) }}
                   aria-hidden="true"
                 />
                 {lang}
-                <span className="opacity-50">{Math.round((bytes / totalBytes) * 100)}%</span>
+                <span className="opacity-50">
+                  {Math.round((bytes / totalBytes) * 100)}%
+                </span>
               </span>
             ))}
           </div>
@@ -271,52 +292,29 @@ function RepoCard({ repo, onRemove }: { repo: RepoData; onRemove: () => void }) 
 // ─── Main client component ────────────────────────────────────────────────────
 
 export function ReposClient() {
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [repos, setRepos] = useState<RepoData[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [repo, setRepo] = useState<RepoData | null>(null);
 
-  async function handleSubmit(e?: FormEvent) {
-    e?.preventDefault();
-    const q = input.trim();
-    if (!q) return;
-
-    const normalised = q.replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, "");
-    const already = repos.some(
-      (r) => r.full_name.toLowerCase() === normalised.toLowerCase()
-    );
-    if (already) {
-      setError("That repo is already in your list.");
-      return;
-    }
-
+  async function loadFeaturedRepo() {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/github-repo?q=${encodeURIComponent(q)}`);
+      const res = await fetch(
+        "/api/github-repo?q=Dobeu-tech-eco%2Fnew-dobeu-net",
+      );
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Something went wrong.");
       } else {
-        setRepos((prev) => [data, ...prev]);
-        setInput("");
-        inputRef.current?.focus();
+        setRepo(data);
       }
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
-  }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSubmit();
-  }
-
-  function removeRepo(id: number) {
-    setRepos((prev) => prev.filter((r) => r.id !== id));
   }
 
   return (
@@ -327,37 +325,19 @@ export function ReposClient() {
           Tools
         </p>
         <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-balance mb-3">
-          GitHub Repo Viewer
+          Featured repository
         </h1>
         <p className="text-base text-muted-foreground leading-relaxed">
-          Paste a full GitHub URL or{" "}
-          <code className="font-mono text-sm bg-muted px-1.5 py-0.5 rounded-md">
-            owner/repo
-          </code>{" "}
-          shorthand. Instantly see stats, language breakdown, topics, and more.
+          Explore the public code for this website, including its recent
+          activity and language breakdown.
         </p>
       </div>
 
-      {/* Input form */}
-      <form onSubmit={handleSubmit} className="flex gap-2 max-w-2xl mb-2">
-        <Input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            setError(null);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="github.com/owner/repo  or  owner/repo"
-          aria-label="GitHub repository URL or owner/repo"
-          className="font-mono text-sm flex-1 rounded-xl"
-          disabled={loading}
-          autoComplete="off"
-          spellCheck={false}
-        />
+      <div className="mb-2">
         <Button
-          type="submit"
-          disabled={loading || !input.trim()}
+          type="button"
+          onClick={loadFeaturedRepo}
+          disabled={loading || repo !== null}
           className="rounded-xl gap-1.5"
         >
           {loading ? (
@@ -370,51 +350,46 @@ export function ReposClient() {
             </>
           ) : (
             <>
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Add repo
+              <Github className="h-4 w-4" aria-hidden="true" />
+              {repo ? "Repository loaded" : "Load featured repository"}
             </>
           )}
         </Button>
-      </form>
+      </div>
 
       {/* Error */}
       {error && (
-        <p role="alert" className="flex items-center gap-2 text-sm text-destructive mb-6 mt-2">
+        <p
+          role="alert"
+          className="flex items-center gap-2 text-sm text-destructive mb-6 mt-2"
+        >
           <AlertCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           {error}
         </p>
       )}
 
       {/* Empty state */}
-      {repos.length === 0 && !loading && (
+      {!repo && !loading && (
         <div className="mt-20 flex flex-col items-center gap-3 text-center">
           <div className="h-16 w-16 rounded-2xl border border-border bg-muted/30 flex items-center justify-center">
-            <Github className="h-8 w-8 text-muted-foreground/50" aria-hidden="true" />
+            <Github
+              className="h-8 w-8 text-muted-foreground/50"
+              aria-hidden="true"
+            />
           </div>
-          <p className="font-semibold text-sm">No repos added yet</p>
+          <p className="font-semibold text-sm">Dobeu Tech Solutions website</p>
           <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-            Add a GitHub repo above to see its stats, language breakdown, topics, and last push time.
+            Load the featured repository to see its stats, language breakdown,
+            and last push time.
           </p>
         </div>
       )}
 
       {/* Grid */}
-      {repos.length > 0 && (
-        <>
-          <p className="text-xs text-muted-foreground mb-4 mt-1 tabular-nums">
-            {repos.length} repo{repos.length !== 1 ? "s" : ""} linked
-          </p>
-          <div
-            className={cn(
-              "grid gap-4",
-              repos.length === 1 ? "grid-cols-1 max-w-xl" : "md:grid-cols-2"
-            )}
-          >
-            {repos.map((repo) => (
-              <RepoCard key={repo.id} repo={repo} onRemove={() => removeRepo(repo.id)} />
-            ))}
-          </div>
-        </>
+      {repo && (
+        <div className="grid grid-cols-1 max-w-xl">
+          <RepoCard repo={repo} onRemove={() => setRepo(null)} />
+        </div>
       )}
     </section>
   );

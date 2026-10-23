@@ -7,22 +7,24 @@ test.describe("Landing page smoke tests", () => {
     await expect(page).toHaveTitle(/Operations Software|Small Business|Dobeu/i);
     await expect(page.locator("main")).toBeVisible();
     await expect(page.locator("#hero-heading")).toContainText(
-      /Your business isn.t generic/i,
+      /We build usable business technology\./i,
     );
     await expect(page.locator("#hero-heading")).not.toContainText(
-      /AI|automation/i,
+      /\bAI\b|\bagents?\b|consulting/i,
     );
     await expect(
       page.locator("#routeready").getByText("RouteReady", { exact: true }),
     ).toBeVisible();
   });
 
-  test("hero has a problem-first CTA and product showcase link", async ({
+  test("hero has a collaboration CTA and product showcase link", async ({
     page,
   }) => {
     await gotoLanding(page);
     const hero = page.locator("#top");
-    await expect(hero.getByTestId("hero-estimate-cta")).toBeVisible();
+    await expect(
+      hero.getByRole("button", { name: "Explore a collaboration" }),
+    ).toBeVisible();
     await expect(
       hero.getByRole("link", { name: /see what that looks like/i }),
     ).toHaveAttribute("href", "#routeready");
@@ -33,14 +35,14 @@ test.describe("Landing page smoke tests", () => {
     await page.goto("/");
     await page
       .locator("#contact")
-      .getByRole("button", { name: /prefer to talk it through/i })
+      .getByRole("button", { name: /prefer to meet/i })
       .click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(/Book a call/i);
+    await expect(dialog).toContainText(/Meet Jeremy/i);
   });
 
-  test("primary intake opens review-first Typeform, not the lead pipeline", async ({
+  test("primary collaboration CTA opens an idea form without submitting", async ({
     page,
   }) => {
     await seedCookieConsent(page);
@@ -54,18 +56,18 @@ test.describe("Landing page smoke tests", () => {
     await expect(dialog).toBeVisible();
     await expect(
       dialog.getByRole("heading", {
-        name: "Tell us about your operation",
+        name: "Explore a collaboration",
         exact: true,
       }),
     ).toBeVisible();
-    await expect(dialog).toContainText("admin review");
-    await expect(dialog.getByTestId("typeform-widget")).toHaveAttribute(
-      "data-tf-form",
-      "wKVKIBe7",
-    );
+    await expect(dialog.getByLabel("Email", { exact: true })).toBeVisible();
     await expect(
-      dialog.getByRole("link", { name: /open the intake in a new tab/i }),
-    ).toHaveAttribute("href", "https://dobeutech.typeform.com/to/wKVKIBe7");
+      dialog.getByLabel("What are you exploring?", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Send your idea", exact: true }),
+    ).toBeVisible();
+    await expect(dialog.getByTestId("typeform-widget")).toHaveCount(0);
     expect(leadRequests).toEqual([]);
   });
 
@@ -115,7 +117,7 @@ test.describe("Landing page smoke tests", () => {
 });
 
 test.describe("Commercial routes", () => {
-  test("primary nav has no Labs item", async ({ page }) => {
+  test("primary nav highlights projects and Jeremy", async ({ page }) => {
     await seedCookieConsent(page);
     await page.goto("/");
     const isMobile = (page.viewportSize()?.width ?? 1280) < 1280;
@@ -128,11 +130,18 @@ test.describe("Commercial routes", () => {
     if (!isMobile) {
       await expect(nav.getByRole("link", { name: /^labs$/i })).toHaveCount(0);
     }
-    await expect(nav.getByRole("link", { name: /services/i })).toBeVisible();
-    await expect(nav.getByRole("link", { name: /pricing/i })).toBeVisible();
+    await expect(
+      nav.getByRole("link", { name: "Projects", exact: true }),
+    ).toHaveAttribute("href", "/#products");
+    await expect(
+      nav.getByRole("link", { name: "About Jeremy", exact: true }),
+    ).toBeVisible();
+    await expect(
+      nav.getByRole("link", { name: "Building together", exact: true }),
+    ).toBeVisible();
   });
 
-  test("/pricing estimate opens the job inquiry form", async ({ page }) => {
+  test("/pricing CTA opens the collaboration form", async ({ page }) => {
     await seedCookieConsent(page);
     await page.goto("/pricing");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -140,10 +149,13 @@ test.describe("Commercial routes", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await expect(
-      dialog.getByRole("heading", { name: "Send the job", exact: true }),
+      dialog.getByRole("heading", {
+        name: "Explore a collaboration",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
-      dialog.getByRole("button", { name: "Send the job", exact: true }),
+      dialog.getByRole("button", { name: "Send your idea", exact: true }),
     ).toBeVisible();
     await expect(dialog.getByRole("textbox").first()).toBeVisible();
   });
@@ -163,16 +175,16 @@ test.describe("Commercial routes", () => {
     });
   }
 
-  test("/case-studies/lastplate is attributable and metric-less", async ({
+  test("/case-studies/routeready is attributable and metric-less", async ({
     page,
   }) => {
     await seedCookieConsent(page);
-    await page.goto("/case-studies/lastplate");
+    await page.goto("/case-studies/routeready");
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      /LastPlate/i,
+      /RouteReady/i,
     );
     await expect(
-      page.getByRole("link", { name: /lastplateprod/i }),
+      page.getByRole("link", { name: /routereadyhq\.com/i }),
     ).toBeVisible();
     await expect(page.locator("body")).not.toContainText(/90%/);
     await expect(page.locator("body")).not.toContainText(/Jane D/);
@@ -308,7 +320,7 @@ test.describe("SEO & metadata", () => {
       "/about",
       "/process",
       "/case-studies",
-      "/case-studies/lastplate",
+      "/case-studies/routeready",
     ]) {
       expect(text).toContain(path);
     }

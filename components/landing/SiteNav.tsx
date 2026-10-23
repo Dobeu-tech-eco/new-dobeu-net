@@ -30,13 +30,13 @@ import { cn } from "@/lib/utils";
 
 const HOME_LINKS = [
   { label: "RouteReady", href: "/#routeready" },
-  { label: "Your operation", href: "/#work" },
-  { label: "Our approach", href: "/#how-it-works" },
-  { label: "Services", href: "/services" },
-  { label: "Pricing", href: "/pricing" },
+  { label: "Projects", href: "/#products" },
+  { label: "Building together", href: "/#how-it-works" },
+  { label: "About Jeremy", href: "/about" },
 ];
 const MORE_LINKS = [
-  { label: "About", href: "/about" },
+  { label: "Services", href: "/services" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Process", href: "/process" },
   { label: "Case studies", href: "/case-studies" },
   { label: "Questions", href: "/#faq" },
@@ -48,7 +48,7 @@ export function SiteNav() {
   const { open } = useLightbox();
   const { stopped, reduced, toggleMotion } = useExperience();
   const pathname = usePathname();
-  const links = pathname === "/" ? HOME_LINKS : PRIMARY_NAV_LINKS;
+  const links = pathname === "/" ? HOME_LINKS : PRIMARY_NAV_LINKS.filter((link) => link.href !== "/pricing");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef<HTMLButtonElement>(null);
@@ -56,7 +56,7 @@ export function SiteNav() {
   // The mobile menu is a full-width overlay. Any other fixed-position CTA
   // (notably StickyMobileCTA, which is a sibling under the server-rendered
   // MarketingShell and so shares no client state with this component) must
-  // step aside while it is open, or the user sees two stacked "Book a call"
+  // step aside while it is open, or the user sees two stacked action
   // buttons. A body class is the least-coupled channel between them.
   useEffect(() => {
     document.body.classList.toggle("mobile-nav-open", mobileOpen);
@@ -130,7 +130,7 @@ export function SiteNav() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuGroup>
-                    {MORE_LINKS.map((link) => (
+                    {MORE_LINKS.filter((link) => !links.some((primary) => primary.href === link.href)).map((link) => (
                       <DropdownMenuItem key={link.href} asChild>
                         <Link href={link.href}>{link.label}</Link>
                       </DropdownMenuItem>
@@ -139,7 +139,7 @@ export function SiteNav() {
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem onSelect={() => open("intake")}>
-                      Project intake · Typeform
+                      Paid project intake
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/portal">Client portal</Link>
@@ -201,9 +201,9 @@ export function SiteNav() {
               variant="outline"
               size="sm"
               className="hidden rounded-pill sm:inline-flex"
-              onClick={() => open("book")}
+              onClick={() => open("form")}
             >
-              Let&apos;s talk{" "}
+              Explore a collaboration{" "}
               <ArrowUpRight className="ml-2 size-4" aria-hidden="true" />
             </Button>
             {/* Mobile toggle */}
@@ -262,26 +262,37 @@ export function SiteNav() {
                 ))}
               </div>
               <Button
-                type="button"
-                variant="outline"
-                className="min-h-11 self-start rounded-pill"
+                className="rounded-pill"
                 onClick={() => {
                   setMobileOpen(false);
-                  open("intake");
+                  open("form");
                 }}
               >
-                Project intake · Typeform
-                <ArrowUpRight aria-hidden="true" />
+                Explore a collaboration{" "}
+                <ArrowUpRight className="ml-2 size-4" aria-hidden="true" />
               </Button>
               <Button
+                variant="outline"
                 className="rounded-pill"
                 onClick={() => {
                   setMobileOpen(false);
                   open("book");
                 }}
               >
-                Book a call{" "}
+                Meet Jeremy{" "}
                 <ArrowUpRight className="ml-2 size-4" aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11 self-start rounded-pill"
+                onClick={() => {
+                  setMobileOpen(false);
+                  open("intake");
+                }}
+              >
+                Paid project intake
+                <ArrowUpRight aria-hidden="true" />
               </Button>
             </div>
           </nav>

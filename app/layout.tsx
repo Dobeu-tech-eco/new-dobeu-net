@@ -39,11 +39,11 @@ const SITE_URL = getSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Dobeu Tech Solutions — Software shaped around your operation",
+    default: "Dobeu Tech Solutions — We build usable business technology",
     template: "%s · Dobeu Tech Solutions",
   },
   description:
-    "Custom operational software, integrations, and automation shaped around how your business works. Work directly with Jeremy Williams, from discovery to handover.",
+    "Jeremy Williams builds passion projects and usable business technology. Explore RouteReady, Chima Comics, and opportunities to collaborate.",
   authors: [{ name: "Jeremy Williams", url: SITE_URL }],
   creator: "Dobeu Tech Solutions",
   openGraph: {
@@ -51,15 +51,15 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Dobeu Tech Solutions",
-    title: "Dobeu Tech Solutions — Software shaped around your operation",
+    title: "Dobeu Tech Solutions — We build usable business technology",
     description:
-      "Custom operational software, integrations, and automation. Work directly with the person building your system.",
+      "Meet Jeremy Williams and explore RouteReady, Chima Comics, Dobeu.space, and ideas we could build together.",
     images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Dobeu Tech Solutions",
-    description: "Custom software shaped around your operation.",
+    description: "Jeremy Williams's passion projects and opportunities to collaborate.",
   },
   robots: {
     index: true,
@@ -120,7 +120,7 @@ export default function RootLayout({
                   url: SITE_URL,
                   name: "Dobeu Tech Solutions",
                   description:
-                    "Custom operational software, integrations, and automation shaped around how your business works.",
+                    "Jeremy Williams's passion projects, usable business technology, and opportunities to collaborate.",
                   publisher: { "@id": `${SITE_URL}/#organization` },
                   inLanguage: "en-US",
                 },
@@ -130,6 +130,7 @@ export default function RootLayout({
                   name: FOUNDER.name,
                   url: SITE_URL,
                   jobTitle: FOUNDER.title,
+                  description: FOUNDER.bio,
                   worksFor: { "@id": `${SITE_URL}/#organization` },
                   sameAs: [...PERSON_SAME_AS],
                 },

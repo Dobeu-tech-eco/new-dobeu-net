@@ -63,7 +63,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
         <div className="rounded-lg border border-border bg-muted/40 p-4 flex gap-3">
           <CalendarClock className="h-5 w-5 text-primary mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <p className="font-semibold text-sm">I&apos;ll send time options within a few hours.</p>
+            <p className="font-semibold text-sm">Let&apos;s find a time to talk.</p>
             <p className="text-xs text-muted-foreground">
               Leave your name and a way to reach you.
             </p>
@@ -100,7 +100,7 @@ export function BookingTab({ onClose }: { onClose: () => void }) {
         )}
       </div>
       <p className="text-xs text-muted-foreground text-center">
-        Powered by Calendly · 30-minute discovery call ·{" "}
+        Powered by Calendly · 30-minute conversation ·{" "}
         <a
           href={calendlyUrl}
           target="_blank"

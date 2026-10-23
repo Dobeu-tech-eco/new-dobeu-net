@@ -23,7 +23,7 @@ const SERVICE_TYPES = [
   { value: "logo", label: "Logo / brand mark" },
   { value: "website_update", label: "Website update" },
   { value: "data_export", label: "Data export" },
-  { value: "consulting", label: "Consulting" },
+  { value: "consulting", label: "Business systems" },
   { value: "other", label: "Other" }
 ] as const;
 

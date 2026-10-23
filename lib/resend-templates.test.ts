@@ -106,6 +106,9 @@ describe("lead templates (hoisted)", () => {
     expect(out.html).toContain("Hey Bob");
     expect(out.text).toContain("Hey Bob");
     expect(out.html).toContain("form");
+    expect(out.text).toContain("I read every note personally");
+    expect(out.text).toContain("Jeremy Williams");
+    expect(out.text).not.toMatch(/24 hours|price band|quote/i);
   });
 
   it("leadConfirmationToClient falls back to 'there' for unknown name", () => {

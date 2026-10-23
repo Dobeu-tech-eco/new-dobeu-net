@@ -28,16 +28,16 @@ const COPY: Record<LightboxTab, { title: string; description: string }> = {
       "This project intake goes to admin review. It does not generate an automatic quote or customer email.",
   },
   book: {
-    title: "Book a call",
-    description: "Thirty minutes. I come back with a price band.",
+    title: "Meet Jeremy",
+    description: "Let's talk about what you're building and where our interests meet.",
   },
   form: {
-    title: "Send the job",
+    title: "Explore a collaboration",
     description: HERO_COPY.estimateHint,
   },
   email: {
     title: "Send a note",
-    description: "Email is enough. I reply with a price band if the job is a fit.",
+    description: "Tell me what's on your mind. I read every note myself.",
   },
 };
 

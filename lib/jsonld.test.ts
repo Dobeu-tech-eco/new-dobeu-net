@@ -19,23 +19,25 @@ describe("marketing JSON-LD builders", () => {
   });
 
   it("emits Service + Offer with 5000-30000 priceRange", () => {
-    const pillar = getServicePillar("ai-agents");
-    const json = serviceOfferJsonLd(pillar, "/services/ai-agents");
+    const pillar = getServicePillar("business-systems");
+    const json = serviceOfferJsonLd(pillar, "/services/business-systems");
     expect(json["@type"]).toBe("Service");
     expect(json.offers["@type"]).toBe("Offer");
     expect(json.offers.priceRange).toContain("5000");
     expect(json.offers.priceRange).toContain("30000");
-    expect(safeJsonLdStringify(json)).not.toContain("\"@type\":\"Person\"");
+    expect(safeJsonLdStringify(json)).not.toContain('"@type":"Person"');
   });
 
   it("emits BreadcrumbList for nested commercial routes", () => {
     const json = breadcrumbListJsonLd([
       { name: "Home", path: "/" },
       { name: "Services", path: "/services" },
-      { name: "AI agents", path: "/services/ai-agents" },
+      { name: "Business systems", path: "/services/business-systems" },
     ]);
     expect(json["@type"]).toBe("BreadcrumbList");
     expect(json.itemListElement).toHaveLength(3);
-    expect(json.itemListElement[2]?.item).toMatch(/\/services\/ai-agents$/);
+    expect(json.itemListElement[2]?.item).toMatch(
+      /\/services\/business-systems$/,
+    );
   });
 });

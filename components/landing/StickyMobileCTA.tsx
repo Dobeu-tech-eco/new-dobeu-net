@@ -9,7 +9,7 @@ import { HERO_COPY } from "@/lib/jeremy-data";
 
 /**
  * Sticky CTA bar that appears on mobile after the user scrolls past the hero.
- * Hidden on desktop (nav already shows "Book a call").
+ * Hidden on desktop (nav already offers the same contact paths).
  * Pads above the cookie banner via --cookie-banner-offset — never hidden
  * while consent is undecided.
  */
@@ -105,7 +105,7 @@ export function StickyMobileCTA() {
           <Button
             onClick={() => {
               track("cta_click", {
-                cta_label: "Book a call — sticky",
+                cta_label: `${HERO_COPY.bookCta} — sticky`,
                 cta_location: "sticky_mobile",
                 target: "book",
               });
@@ -125,7 +125,7 @@ export function StickyMobileCTA() {
           <Button
             onClick={() => {
               track("cta_click", {
-                cta_label: "Send the job — sticky",
+                cta_label: `${HERO_COPY.estimateCta} — sticky`,
                 cta_location: "sticky_mobile",
                 target: "form",
               });

@@ -6,7 +6,7 @@ function makeRequest(q: string, ip = "1.2.3.4"): NextRequest {
   const url = new URL("http://localhost/api/github-repo");
   if (q !== undefined) url.searchParams.set("q", q);
   return new NextRequest(url, {
-    headers: { "x-real-ip": ip }
+    headers: { "x-real-ip": ip },
   });
 }
 
@@ -14,20 +14,27 @@ function mockGitHubFetch() {
   return vi.fn(async (input: string | URL | Request) => {
     const url = typeof input === "string" ? input : input.toString();
     if (url.endsWith("/languages")) {
-      return new Response(JSON.stringify({ JavaScript: 1234, TypeScript: 5678 }), {
-        status: 200
-      });
+      return new Response(
+        JSON.stringify({ JavaScript: 1234, TypeScript: 5678 }),
+        {
+          status: 200,
+        },
+      );
     }
     return new Response(
       JSON.stringify({
         id: 1,
-        full_name: "vercel/next.js",
-        name: "next.js",
-        owner: { login: "vercel", avatar_url: "https://x/y.png", html_url: "https://github.com/vercel" },
-        description: "The React Framework",
-        html_url: "https://github.com/vercel/next.js",
-        homepage: "https://nextjs.org",
-        topics: ["react", "framework"],
+        full_name: "Dobeu-tech-eco/new-dobeu-net",
+        name: "new-dobeu-net",
+        owner: {
+          login: "Dobeu-tech-eco",
+          avatar_url: "https://x/y.png",
+          html_url: "https://github.com/Dobeu-tech-eco",
+        },
+        description: "AI agents for consulting",
+        html_url: "https://github.com/Dobeu-tech-eco/new-dobeu-net",
+        homepage: "https://example.com/ai-agents",
+        topics: ["ai-agents", "consulting"],
         language: "JavaScript",
         stargazers_count: 100000,
         forks_count: 20000,
@@ -42,9 +49,9 @@ function mockGitHubFetch() {
         pushed_at: "2024-01-01T00:00:00Z",
         created_at: "2013-01-01T00:00:00Z",
         updated_at: "2024-01-01T00:00:00Z",
-        license: { spdx_id: "MIT", name: "MIT License" }
+        license: { spdx_id: "MIT", name: "MIT License" },
       }),
-      { status: 200 }
+      { status: 200 },
     );
   });
 }
@@ -62,27 +69,52 @@ afterEach(() => {
 describe("GET /api/github-repo", () => {
   it("returns 200 with expected shape for a valid shorthand", async () => {
     vi.stubGlobal("fetch", mockGitHubFetch());
-    const res = await GET(makeRequest("vercel/next.js", "10.0.1.1"));
+    const res = await GET(
+      makeRequest("Dobeu-tech-eco/new-dobeu-net", "10.0.1.1"),
+    );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toMatchObject({
-      full_name: "vercel/next.js",
-      name: "next.js",
-      owner: { login: "vercel" },
-      languages: { JavaScript: 1234, TypeScript: 5678 }
+      full_name: "Dobeu-tech-eco/new-dobeu-net",
+      name: "new-dobeu-net",
+      owner: { login: "Dobeu-tech-eco" },
+      description:
+        "The website for Dobeu Tech Solutions and its business technology projects.",
+      homepage: "https://dobeu.net",
+      topics: ["business-technology"],
+      languages: { JavaScript: 1234, TypeScript: 5678 },
     });
+    expect(JSON.stringify(body)).not.toMatch(/AI agents|consulting/i);
     expect(res.headers.get("Cache-Control")).toBe(
-      "public, s-maxage=300, stale-while-revalidate=600"
+      "public, s-maxage=300, stale-while-revalidate=600",
     );
   });
 
   it("returns 200 for a valid full URL", async () => {
     vi.stubGlobal("fetch", mockGitHubFetch());
-    const res = await GET(makeRequest("https://github.com/vercel/next.js", "10.0.1.2"));
+    const res = await GET(
+      makeRequest(
+        "https://github.com/Dobeu-tech-eco/new-dobeu-net",
+        "10.0.1.2",
+      ),
+    );
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.full_name).toBe("vercel/next.js");
+    expect(body.full_name).toBe("Dobeu-tech-eco/new-dobeu-net");
   });
+
+  it.each(["Dobeu-tech-eco/monty-ai-fullstackdev-coder", "vercel/next.js"])(
+    "does not expose non-featured repository %s",
+    async (query) => {
+      const fetchMock = mockGitHubFetch();
+      vi.stubGlobal("fetch", fetchMock);
+      const res = await GET(
+        makeRequest(query, `10.0.4.${query.startsWith("vercel") ? 2 : 1}`),
+      );
+      expect(res.status).toBe(404);
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
 
   describe("SSRF / path traversal rejected with 422", () => {
     const cases: Array<[string, string]> = [
@@ -91,7 +123,7 @@ describe("GET /api/github-repo", () => {
       ["..", "10.0.2.3"],
       [".", "10.0.2.4"],
       ["a/b/c", "10.0.2.5"],
-      ["./x", "10.0.2.6"]
+      ["./x", "10.0.2.6"],
     ];
 
     for (const [input, ip] of cases) {
@@ -116,10 +148,10 @@ describe("GET /api/github-repo", () => {
     vi.stubGlobal("fetch", mockGitHubFetch());
     const ip = "203.0.113.42"; // dedicated IP, unused elsewhere, so the in-memory bucket is clean
     for (let i = 0; i < 30; i++) {
-      const res = await GET(makeRequest("vercel/next.js", ip));
+      const res = await GET(makeRequest("Dobeu-tech-eco/new-dobeu-net", ip));
       expect(res.status).toBe(200);
     }
-    const over = await GET(makeRequest("vercel/next.js", ip));
+    const over = await GET(makeRequest("Dobeu-tech-eco/new-dobeu-net", ip));
     expect(over.status).toBe(429);
     expect(await over.json()).toEqual({ error: "Too many requests" });
   });

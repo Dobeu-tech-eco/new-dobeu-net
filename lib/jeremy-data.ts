@@ -1,8 +1,7 @@
 /**
  * lib/jeremy-data.ts
  *
- * Static manifest of Jeremy Williams' real work, sub-brands, and GTM positioning.
- * Sourced from GitHub (Dobeu-tech-eco), dobeu.net, and Composio connectors.
+ * Static manifest of Jeremy Williams' public work and site positioning.
  * Update this file when new projects ship — it drives the hero, commercial
  * pages, case-study chassis, and structured data.
  */
@@ -12,7 +11,7 @@
 // ---------------------------------------------------------------------------
 export const AVAILABILITY = {
   status: "open" as "open" | "limited" | "closed",
-  label: "Taking projects",
+  label: "Open to collaboration",
   color: "green" as const,
 } as const;
 
@@ -22,12 +21,12 @@ export const AVAILABILITY = {
 export const FOUNDER = {
   name: "Jeremy Williams",
   handle: "@dobeutech",
-  title: "Founder & Principal Engineer",
-  tagline: "One operator. AI that keeps trucks, kitchens, and sites running.",
+  title: "Founder and builder",
+  tagline: "We build usable business technology.",
+  bio: "I’m Jeremy. I like exploring ideas, making useful things, and seeing where curiosity leads. Dobeu is the home for my passion projects and collaborations with like-minded people.",
   location: "New York City",
-  since: "2019",
   avatar: "/images/jeremy-williams.jpg",
-  linkedin: "https://www.linkedin.com/in/jeremy-williams",
+  linkedin: "https://www.linkedin.com/in/jswilliamstu",
   github: "https://github.com/Dobeu-tech-eco",
   twitter: "https://x.com/dobeutech",
 } as const;
@@ -67,7 +66,11 @@ export function hasPublishablePhone(
 }
 
 /** Hosts that must never appear in public chrome or JSON-LD sameAs. */
-export const DEAD_HOSTS = ["dobeu.cloud", "dobeutech.com", "dobeu.dev"] as const;
+export const DEAD_HOSTS = [
+  "dobeu.cloud",
+  "dobeutech.com",
+  "dobeu.dev",
+] as const;
 
 export const PERSON_SAME_AS = [FOUNDER.linkedin, FOUNDER.github] as const;
 
@@ -92,19 +95,19 @@ export function resolveTypeformFormId(
 }
 
 // ---------------------------------------------------------------------------
-// Hero copy — operations-first positioning
+// Hero copy
 // ---------------------------------------------------------------------------
 export const HERO_COPY = {
   greeting: "Hi. I'm Jeremy.",
-  outcome: "Your operation deserves a solution built for it.",
+  outcome: "We build usable business technology.",
   diagnostic:
-    "Where does work slow down, disappear, or become harder than it should be?",
-  estimateCta: "Show us the problem",
-  estimateHint: "We'll review it and tell you plainly whether we can help.",
-  bookCta: "Talk through your operation",
+    "Have an idea worth building together, or see a connection with something here?",
+  estimateCta: "Explore a collaboration",
+  estimateHint: "Tell me what you're working on and where our interests meet.",
+  bookCta: "Meet Jeremy",
   promise:
-    "We design and build tailored systems that make day-to-day work safer, clearer, and easier to run—from the field to the back office.",
-  proof: "Built for the operation you have, not the trend of the moment.",
+    "Dobeu is where I build products I care about and connect with people who want to make useful technology together.",
+  proof: "Explore what I'm building, then get in touch if our interests overlap.",
 } as const;
 
 /** Exported for tests. The hero shows HERO_COPY.promise and no longer rotates these. */
@@ -116,7 +119,7 @@ export const TYPEWRITER_PHRASES = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// Real shipped work — sourced from GitHub repos (Dobeu-tech-eco)
+// Public products named by the owner. Add details only when verified.
 // Metric headlines render only when approved === true.
 // ---------------------------------------------------------------------------
 export type ShippedMetric = {
@@ -127,75 +130,42 @@ export type ShippedMetric = {
 
 export const SHIPPED_WORK = [
   {
-    slug: "monty-ai",
-    name: "Monty AI",
-    category: "AI Agent",
-    vertical: "Software delivery",
+    slug: "routeready",
+    name: "RouteReady",
+    category: "Business software",
+    vertical: "Driver training",
     description:
-      "Autonomous full-stack developer agent built on Claude SDK — writes, tests, and ships code end-to-end.",
-    stack: ["TypeScript", "Anthropic Claude", "Node.js"],
-    github: "https://github.com/Dobeu-tech-eco/monty-ai-fullstackdev-coder",
-    year: 2025,
+      "A beta driver-training platform for trucking companies, trainers, and trainees.",
+    href: "https://routereadyhq.com",
     metrics: [] as readonly ShippedMetric[],
   },
   {
-    slug: "unified-ai",
-    name: "Unified AI v1",
-    category: "AI Gateway",
-    vertical: "AI infrastructure",
+    slug: "chima-comics",
+    name: "Chima Comics",
+    category: "Online store",
+    vertical: "Comics",
     description:
-      "Multi-model AI gateway with Composio tool integrations, Postgres persistence, and streaming responses.",
-    stack: ["Next.js", "Postgres", "Composio"],
-    github: "https://github.com/Dobeu-tech-eco/unified-ai-v1",
-    year: 2025,
+      "Read free chapters, play a browser puzzle, and explore Chima Comics merchandise.",
+    href: "https://chimacomics.shop",
     metrics: [] as readonly ShippedMetric[],
   },
   {
-    slug: "statminer",
-    name: "StatMiner",
-    category: "AI Data",
-    vertical: "Analytics",
-    description:
-      "Unbiased AI data analysis engine — extracts clean signals from noisy data sets.",
-    stack: ["Python", "AI SDK", "TypeScript"],
-    github: "https://github.com/Dobeu-tech-eco/statminer",
-    year: 2025,
+    slug: "dobeu-space",
+    name: "Dobeu.space",
+    category: "Publication",
+    vertical: "Supply chain technology",
+    description: "A journal about supply chain technology.",
+    href: "https://dobeu.space",
     metrics: [] as readonly ShippedMetric[],
   },
   {
-    slug: "dts-contract",
-    name: "DTS Contract Engine",
-    category: "SaaS",
-    vertical: "Service businesses",
+    slug: "ikram-and-co",
+    name: "Ikram & Co.",
+    category: "Art storefront",
+    vertical: "Art and commerce",
     description:
-      "End-to-end quote, proposal, and contract generation engine for service businesses.",
-    stack: ["Next.js", "Supabase", "Stripe"],
-    github: "https://github.com/Dobeu-tech-eco/dts-contract-engine",
-    year: 2024,
-    metrics: [] as readonly ShippedMetric[],
-  },
-  {
-    slug: "sales-funnel",
-    name: "IT Consult Funnel",
-    category: "Growth Engineering",
-    vertical: "Lead generation",
-    description:
-      "Automated customer-sourcing and sales funnel for IT consulting — zero-touch lead generation.",
-    stack: ["Next.js", "Resend", "Analytics"],
-    github: "https://github.com/Dobeu-tech-eco/dobeutech-sales-funnel-itconsult",
-    year: 2024,
-    metrics: [] as readonly ShippedMetric[],
-  },
-  {
-    slug: "lastplate",
-    name: "LastPlate",
-    category: "Hospitality SaaS",
-    vertical: "Food service",
-    description:
-      "Restaurant management platform with reservations, POS integration, and AI-assisted menu management.",
-    stack: ["Next.js", "Supabase", "Stripe"],
-    github: "https://github.com/Dobeu-tech-eco/lastplateprod",
-    year: 2024,
+      "An online store for original art, limited editions, and stickers from Arab artists.",
+    href: "https://www.dobeu.store/en",
     metrics: [] as readonly ShippedMetric[],
   },
 ] as const;
@@ -227,16 +197,16 @@ export const SUB_BRANDS = [
   {
     name: "dobeu.net",
     label: "dobeu.net",
-    description: "Principal engineering & AI studio",
+    description: "Usable business technology",
     href: "https://dobeu.net",
     category: "Studio",
   },
   {
     name: "dobeu.space",
     label: "dobeu.space",
-    description: "Experiments, prototypes & demos",
+    description: "Supply chain technology journal",
     href: "https://dobeu.space",
-    category: "Labs",
+    category: "Publication",
   },
   {
     name: "dobeutech",
@@ -271,16 +241,17 @@ export const FOOTER_SITE_LINKS = [
 // ---------------------------------------------------------------------------
 export const GTM_PILLARS = [
   {
-    id: "ai-agents",
-    slug: "ai-agents",
-    buyerTitle: "Dispatch that runs",
-    headline: "AI agents for the dispatch loop",
-    pain: "Routes, tickets, and follow-ups still live in inboxes. Dispatch first — the same loop shows up in a kitchen, on a site, or at a desk.",
+    id: "business-systems",
+    slug: "business-systems",
+    buyerTitle: "Work that flows",
+    headline: "Business systems people can use",
+    pain: "Routes, tickets, and follow-ups still live in inboxes. The same problem shows up in a truck, a store, or an office.",
     description:
-      "I take one repeating loop off the inbox and make it run without a person chasing it. The stack stays on this page, under the job.",
-    detail: "Claude, Composio, and MCP when the loop needs tools.",
-    cta: "Automate it",
-    icon: "Bot" as const,
+      "We build the system around the work: clear steps, useful screens, and reliable handoffs.",
+    detail:
+      "Forms, approvals, notifications, and records in one usable system.",
+    cta: "Build the system",
+    icon: "Code2" as const,
     tag: undefined as string | undefined,
   },
   {
@@ -291,7 +262,8 @@ export const GTM_PILLARS = [
     pain: "The job runs in a spreadsheet because the tool you need does not exist, and a template will not cut it.",
     description:
       "Internal tools, portals, and the one app your people will open on a shift. Built to stay in your repo.",
-    detail: "Next.js, Supabase, and Vercel. Auth, billing, and a path to production.",
+    detail:
+      "Next.js, Supabase, and Vercel. Auth, billing, and a path to production.",
     cta: "Ship it",
     icon: "Code2" as const,
     tag: undefined as string | undefined,
@@ -304,7 +276,8 @@ export const GTM_PILLARS = [
     pain: "The site looks rented. Operators and their customers can tell.",
     description:
       "The public site and the documents match the work, whether that work is trucks, kitchens, or a desk.",
-    detail: "Design tokens, type, and a component library. Figma when you want the source.",
+    detail:
+      "Design tokens, type, and a component library. Figma when you want the source.",
     cta: "Build the brand",
     icon: "Palette" as const,
     tag: "Design",
@@ -327,7 +300,9 @@ export const GTM_PILLARS = [
 export type GtmPillar = (typeof GTM_PILLARS)[number];
 
 export function getServicePillar(slug: string): GtmPillar | undefined {
-  return GTM_PILLARS.find((pillar) => pillar.slug === slug || pillar.id === slug);
+  return GTM_PILLARS.find(
+    (pillar) => pillar.slug === slug || pillar.id === slug,
+  );
 }
 
 /** Hero capability cards — buyer titles and pains, not stripped headlines. */
@@ -352,83 +327,57 @@ export const PROCESS_STEPS = [
   {
     num: "01",
     icon: "CalendarCheck" as const,
-    label: "30-min discovery",
-    body: "We talk through what you're trying to ship, what's in the way, and whether I'm the right person. No pitch, no slide deck — just an honest conversation.",
+    label: "Share your idea",
+    body: "Tell me what you're working on, what interests you about it, and where you see a connection with my projects.",
   },
   {
     num: "02",
     icon: "FileText" as const,
-    label: "Scoped proposal",
-    body: "Within 48 hours you get a one-pager: scope, milestones, price, timeline, what I need from you. Approve, decline, or refine — no obligation to that point.",
+    label: "Find common ground",
+    body: "We'll talk through the idea and see whether our goals and ways of working fit. A good collaboration starts with shared interest.",
   },
   {
     num: "03",
     icon: "Rocket" as const,
-    label: "Ship in 2–6 weeks",
-    body: "Daily Loom updates, your private portal for files and invoices, async-first communication. Most projects ship in a single sprint with zero theater.",
+    label: "Make something useful",
+    body: "If we decide to work together, we'll agree on what to build, who does what, and how we'll know it helps the people using it.",
   },
 ] as const;
 
 export const MARKETING_FAQS = [
   {
-    q: "What's the typical engagement size?",
-    a: "Most projects land between $5k and $30k. Smaller scoped sprints exist for tight problems; multi-month builds get quoted separately. You get a fixed-scope, fixed-price proposal after the discovery call so you know the number before committing.",
+    q: "What is Dobeu?",
+    a: "Dobeu is the home for Jeremy Williams's passion projects and the people he builds them with. The projects span practical business software, comics, art, and publishing.",
   },
   {
-    q: "Does the Ops Teardown fee count toward the build?",
-    a: "Yes. Hire me for a custom build within 60 days of delivery and the full $1,500 comes straight off your first invoice: a $15k build invoices at $13.5k. If you take the fixed-price website package instead, $500 comes off it — that package is already scoped and priced tight, so a full credit would eat it. After 60 days the credit expires, because by then the scope I mapped has moved. And if you don't hire me at all, you keep the document and owe nothing else.",
+    q: "What kinds of collaboration are you open to?",
+    a: "I'm interested in people with a shared problem to solve, a useful product idea, or a connection to something I'm already building. Tell me what you care about and what you hope to make together.",
   },
   {
-    q: "What's the difference between Book a call and Send the job?",
-    a: "Book a call is a 30-minute conversation. Send the job opens a short form so I can review the work and reply with a price band. It does not quote you instantly and it does not start a checkout.",
+    q: "Can I explore a new idea with you?",
+    a: "Yes. Send a short note about the idea, who it could help, and why it matters to you. We'll see whether there's a fit before discussing any formal arrangement.",
   },
   {
-    q: "How fast can you start?",
-    a: "Usually within a week of the discovery call. If I'm fully booked I'll say so on the call and recommend someone good — never string you along.",
+    q: "Where can I see what you're building?",
+    a: "Start with RouteReady, Chima Comics, Dobeu.space, and Ikram & Co. The links on this site take you to the projects themselves.",
   },
   {
-    q: "Do you do retainers?",
-    a: "Occasionally — for ongoing automation work, agent maintenance, or growth engineering. The discovery call is the right place to scope this.",
-  },
-  {
-    q: "Where will the code live?",
-    a: "Your GitHub org by default. I work in feature branches with PR review, and you get full admin access on day one. No code held hostage.",
-  },
-  {
-    q: "Do you sign NDAs?",
-    a: "Yes — mutual NDA before the proposal step if you need it. Send yours or use mine.",
-  },
-  {
-    q: "Do you take equity?",
-    a: "Rarely, and only with a meaningful cash component alongside. Most engagements are cash.",
-  },
-  {
-    q: "Will I be able to maintain what you build?",
-    a: "That's the goal. Every deliverable comes with documentation, a Loom walkthrough, and a 2-week support window after handoff. Modern stack means your future hires already know it.",
+    q: "How do we get started?",
+    a: "Use the collaboration form or book time to meet Jeremy. Share a little about your interests and what you would like to make. We'll decide together whether it makes sense to continue.",
   },
   {
     q: 'Why "dobeu"?',
-    a: 'Two readings at once. Say it out loud — it\'s my last initial W, spelled phonetically ("dub-el-u"). It\'s also "Do Be You": we handle the technical backend so you get to focus on running your business.',
+    a: 'Two readings at once. Say it out loud — it\'s my last initial W, spelled phonetically ("dub-el-u"). It\'s also "Do Be You": a name for following ideas that feel personal and making them real.',
   },
 ] as const;
 
 export const PRICING_TIERS = [
   {
-    id: "diagnostic",
-    name: "Ops Teardown",
-    price: "$1,500 flat",
-    duration: "5 business days",
-    summary: "One week, one fixed fee, a written teardown of the loop that is actually costing you.",
-    detail:
-      "I sit with the people doing the work, map the loop end to end, and hand back a document: where the hours go, what to automate first, the hours and price band to build it, and what to leave alone.",
-    excludes:
-      "Not a build — no code ships that week. Not a retainer, and not an obligation to hire me. If you do hire me for a custom build, the full fee comes off it.",
-  },
-  {
     id: "workflow",
     name: "Single workflow",
     price: "Band before the call",
-    summary: "One painful loop — dispatch, invoicing, intake — automated end to end.",
+    summary:
+      "One painful loop — dispatch, invoicing, intake — automated end to end.",
     detail:
       "One loop, fixed price once the scope is real. Send the job and I reply with a band before we talk numbers.",
   },
@@ -436,8 +385,9 @@ export const PRICING_TIERS = [
     id: "full-build",
     name: "Full build",
     price: PRICE_RANGE.display,
-    summary: "The ops app, portal, or agent stack you will keep running.",
-    detail: "Most engagements land here. Fixed-scope, fixed-price after the call.",
+    summary: "The app or portal your business will keep using.",
+    detail:
+      "Most engagements land here. Fixed-scope, fixed-price after the call.",
     featured: true,
   },
   {
@@ -470,7 +420,8 @@ export const CARE_PLAN_TIERS = [
     id: "watch",
     name: "Watch",
     price: "$149/mo",
-    summary: "Keep the lights on. Updates, monitoring, and someone who picks up when it breaks.",
+    summary:
+      "Keep the lights on. Updates, monitoring, and someone who picks up when it breaks.",
     includes: [
       "Dependency and security updates",
       "Uptime and error monitoring on what I built",
@@ -482,7 +433,8 @@ export const CARE_PLAN_TIERS = [
     id: "tune",
     name: "Tune",
     price: "$219/mo",
-    summary: "Watch, plus two hours a month for the small changes that keep piling up.",
+    summary:
+      "Watch, plus two hours a month for the small changes that keep piling up.",
     includes: [
       "Everything in Watch",
       "2 hours/month of changes — copy, fields, reports, integrations",
@@ -494,7 +446,8 @@ export const CARE_PLAN_TIERS = [
     id: "extend",
     name: "Extend",
     price: "$299/mo",
-    summary: "Enough hours to keep shipping improvements instead of just holding the line.",
+    summary:
+      "Enough hours to keep shipping improvements instead of just holding the line.",
     includes: [
       "Everything in Tune",
       "4 hours/month of changes",
@@ -511,28 +464,28 @@ export type CarePlanTier = (typeof CARE_PLAN_TIERS)[number];
  * can check without taking my word for it — which is the whole point.
  */
 export const TRUST_POSITION = {
-  heading: "No testimonials. Check the work instead.",
-  body: "There are no client logos or five-star quotes on this site, because I won't publish proof I can't back. What I can point at is checkable: the code is public on GitHub, the price bands are published on the pricing page instead of quoted case by case, and every invoice runs through Stripe. Verify any of it before you send me a dollar.",
+  heading: "Meet the projects.",
+  body: "RouteReady, Chima Comics, Dobeu.space, and Ikram & Co. show the range of ideas I care about. Visit them to see what is taking shape and where we might find common ground.",
 } as const;
 
 export const FOUNDER_STATS = [
-  { value: "2019", label: "Building since" },
+  { value: "RouteReady", label: "Driver training" },
+  { value: "Chima Comics", label: "Comics and creative commerce" },
   { value: "NYC", label: SITE_IDENTITY.areaServed },
-  { value: "Stripe", label: "Invoices" },
 ] as const;
 
 export const FOUNDER_REASONS = [
   {
-    headline: "You talk to the person doing the work.",
-    body: "No account managers between you and the build.",
+    headline: "A person behind every project.",
+    body: "I'm Jeremy. The ideas and the conversations here are personal to me.",
   },
   {
-    headline: "Decisions get made in hours, not weeks.",
-    body: "No agency layers, no rebrand committees.",
+    headline: "Different interests, shared purpose.",
+    body: "Business software, stories, and creative commerce all start with people and a useful idea.",
   },
   {
-    headline: "Modern stack from day one.",
-    body: "Nothing you'll have to rewrite in 18 months.",
+    headline: "Room to build together.",
+    body: "If one of these projects speaks to you, or you're working on something related, let's talk.",
   },
 ] as const;
 
@@ -541,17 +494,17 @@ export const FOUNDER_REASONS = [
  * at build time — so legal and money pages do not share a build stamp.
  */
 export const CONTENT_DATES = {
-  home: "2026-08-30",
-  services: "2026-08-30",
-  pricing: "2026-08-30",
-  about: "2026-08-30",
+  home: "2026-10-22",
+  services: "2026-10-22",
+  pricing: "2026-10-22",
+  about: "2026-10-22",
   process: "2026-08-30",
-  caseStudies: "2026-08-30",
-  labs: "2026-08-29",
-  repos: "2026-08-01",
+  caseStudies: "2026-10-22",
+  labs: "2026-10-22",
+  repos: "2026-10-22",
   login: "2026-05-21",
   privacy: "2026-06-20",
-  terms: "2026-06-20",
+  terms: "2026-10-22",
   cookies: "2026-06-20",
   optinSms: "2026-05-21",
   marketingOptOut: "2026-05-21",

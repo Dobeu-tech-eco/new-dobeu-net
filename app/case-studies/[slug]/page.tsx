@@ -3,8 +3,15 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { EstimateCtas } from "@/components/landing/EstimateCtas";
 import { JsonLd } from "@/components/landing/JsonLd";
-import { MarketingPageHeader, MarketingShell } from "@/components/landing/MarketingShell";
-import { approvedMetrics, getShippedWork, SHIPPED_WORK } from "@/lib/jeremy-data";
+import {
+  MarketingPageHeader,
+  MarketingShell,
+} from "@/components/landing/MarketingShell";
+import {
+  approvedMetrics,
+  getShippedWork,
+  SHIPPED_WORK,
+} from "@/lib/jeremy-data";
 import { breadcrumbListJsonLd } from "@/lib/marketing-schema";
 
 export function generateStaticParams() {
@@ -55,9 +62,16 @@ export default async function CaseStudyPage({
         {metrics.length > 0 && (
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {metrics.map((metric) => (
-              <li key={metric.label} className="rounded-2xl border border-border/40 p-6">
-                <p className="font-display text-4xl font-extrabold tracking-tight">{metric.value}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{metric.label}</p>
+              <li
+                key={metric.label}
+                className="rounded-2xl border border-border/40 p-6"
+              >
+                <p className="font-display text-4xl font-extrabold tracking-tight">
+                  {metric.value}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {metric.label}
+                </p>
               </li>
             ))}
           </ul>
@@ -69,23 +83,15 @@ export default async function CaseStudyPage({
             <dd className="font-medium text-foreground">{item.vertical}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Year</dt>
-            <dd className="font-medium text-foreground">{item.year}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Stack</dt>
-            <dd className="font-medium text-foreground">{item.stack.join(", ")}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Public repo</dt>
+            <dt className="text-muted-foreground">Live website</dt>
             <dd>
               <a
-                href={item.github}
+                href={item.href}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium text-primary underline underline-offset-4"
               >
-                {item.github.replace("https://github.com/", "")}
+                {item.href.replace("https://", "")}
               </a>
             </dd>
           </div>
@@ -93,7 +99,10 @@ export default async function CaseStudyPage({
 
         <EstimateCtas location={`case-studies/${item.slug}`} />
         <p className="text-sm text-muted-foreground">
-          <Link href="/case-studies" className="underline underline-offset-4 hover:text-foreground">
+          <Link
+            href="/case-studies"
+            className="underline underline-offset-4 hover:text-foreground"
+          >
             All case studies
           </Link>
         </p>

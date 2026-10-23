@@ -1,0 +1,1 @@
+{"stamp":"20261022-172443","rounds":1,"failures":{"builder_no_output":1,"provider_quota":1,"companion_missing":1},"duration_s":51622,"agents":["claude","gemini","muse","grok","copilot"],"verdict":"VERIFIED"}

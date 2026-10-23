@@ -5,8 +5,9 @@ import { LightboxProvider } from "@/components/landing/LightboxProvider";
 import { ReposClient } from "./ReposClient";
 
 export const metadata: Metadata = {
-  title: "GitHub Repo Viewer — Dobeu Tools",
-  description: "Paste a GitHub URL or owner/repo shorthand and instantly see stats, language breakdown, topics, and last push time.",
+  title: "Featured repository — Dobeu Tech Solutions",
+  description:
+    "Explore the public repository for this website: stats, language breakdown, and recent activity.",
   alternates: { canonical: "/repos" },
   robots: { index: true, follow: true },
 };

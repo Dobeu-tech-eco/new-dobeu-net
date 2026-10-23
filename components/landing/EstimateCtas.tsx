@@ -6,8 +6,8 @@ import { useLightbox } from "@/components/landing/LightboxProvider";
 import { track } from "@/lib/analytics";
 import { HERO_COPY } from "@/lib/jeremy-data";
 
-export const BOOK_MICROCOPY = "30 min, no pitch.";
-export const SEND_MICROCOPY = "I reply with a price band.";
+export const BOOK_MICROCOPY = "A conversation with Jeremy.";
+export const SEND_MICROCOPY = "Share an idea or opportunity.";
 
 export function EstimateCtas({
   location,
@@ -33,7 +33,7 @@ export function EstimateCtas({
         <div className="flex flex-1 flex-col gap-1">
           <Button
             size="lg"
-            onClick={() => trackAndOpen("book", `Book a call — ${location}`)}
+            onClick={() => trackAndOpen("book", `${HERO_COPY.bookCta} — ${location}`)}
             className="group rounded-full font-semibold"
             aria-describedby={`book-microcopy-${location}`}
             data-testid={bookTestId}

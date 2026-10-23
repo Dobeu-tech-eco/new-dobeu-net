@@ -8,56 +8,52 @@ web
 
 ## Users
 
-The primary buyer is a small-business owner or operations lead whose day-to-day work is harder to run because existing tools leave gaps. They need clearer responsibilities, dependable records, and better coordination between the field and back office. Small fleets are the flagship example, not the limit of the business. Confirmed by the owner: tailored operational software for small businesses, rather than dispatch-first agent services.
+The public site is for people exploring Jeremy Williams's projects and possible collaboration around shared interests. Specific industries and buyer roles are not validated target segments. Each featured product has its own audience.
 
-Signed-in clients and the admin desk also exist in this app. Whether design work should treat them as the same product as the public site was asked and not answered. Inferred from the repo: they ship here, behind login.
+Signed-in client, company and admin surfaces remain part of this one application. This rebrand preserves their existing behavior; it does not commission an authenticated-area redesign.
 
 ## Product Purpose
 
-Dobeu Tech Solutions LLC, run by Jeremy Williams in New York, designs and builds tailored systems around how a business actually operates. The goal is to help people work safely, keep responsibilities clear, and spend less time chasing information. These are intended benefits, not measured outcome claims. Success on the public site is a qualified conversation about a real operational problem that can become a scoped engagement. The existing published typical engagement band is $5k–$30k; inquiries receive a considered response, not an instant quote.
+Dobeu is Jeremy Williams's home for passion projects, useful experiments and ideas worth exploring with like-minded people. The approved headline is “We build usable business technology.” Success means visitors understand the projects and can start a relevant collaboration conversation. Optional paid work requires an agreed scope, price and responsibilities.
 
 ## Positioning
 
-Dobeu is a custom operational software partner, not a general IT reseller, template shop, or instant AI-tool generator. Understand the operation and its constraints first; select technology to fit the problem. Work includes understanding real workflows, exceptions, integrations, and ownership—not simply generating a small tool. Technology is a means, not the product promise.
+A personal project business with concrete products and a collaboration invitation. Keep the bio deliberately broad: curiosity, useful things and passion projects. Do not introduce career details, personal location, invented staffing or unsupported claims.
 
-RouteReady (https://routereadyhq.com) is the flagship example: a concrete solution for small-fleet driver training and readiness. It demonstrates the kind of tailored operational work Dobeu can provide without restricting the business to fleets. Do not imply verified safety improvements, adoption, or customer results without supporting evidence.
+Feature RouteReady (https://routereadyhq.com), Chima Comics (https://chimacomics.shop), Dobeu.space (https://dobeu.space) and Ikram & Co. (https://www.dobeu.store/en). Project descriptions should remain factual; no adoption or outcome claims without evidence.
 
 ## Operating Context
 
-The buyer evaluates Dobeu on dobeu.net and describes what is difficult today, who is affected, and what better would look like, or books a conversation. The established inquiry and booking flows remain in place. Work is scoped as an engagement, invoiced through Stripe, and delivered into the client's repository. The approach is to understand the operation, design around its constraints, then build and support the system. Earlier dispatch/agent-led offer labels are legacy messaging, not the current positioning.
+Visitors explore projects, share an idea through the collaboration form, book a conversation or email Jeremy. These are distinct paths. Preserve existing durable lead intake and authenticated client/admin workflows. Optional scoped paid builds remain secondary; the current /website-package offer requires a positioning and claim review before rebrand launch.
 
 ## Capabilities and Constraints
 
-The public site, client portal, and admin desk are one Next.js app. Portal and admin require a signed-in Supabase user. Admin access is an email allowlist.
+One Next.js web application includes the public site, company/client portal and admin desk. Preserve authentication, ownership, billing, consent, webhook and data contracts.
 
-Published constraints, from the site the owner directed:
-
-- Prices stay published. Do not invent a quote machine. "Send the job" means a reply with a price band.
-- Case-study numbers stay unpublished until `approved` is set on a real metric in `lib/jeremy-data.ts`. Do not invent client names, outcome figures, a street address, or a phone number.
-- Dead hosts that must not appear in public chrome: dobeu.cloud, dobeutech.com, dobeu.dev.
-
-Open: whether future design passes include the portal and admin, or only the public marketing pages.
+- Preserve existing truthful published prices unless a separately approved change modifies the offer; no instant quote machine.
+- Publish case-study metrics only when supported and approved in lib/jeremy-data.ts. Do not fabricate clients, testimonials, benchmarks, addresses or phone numbers.
+- Exclude dobeu.cloud, dobeutech.com and dobeu.dev from public chrome.
+- Keep private project details private. Public promotion does not include AI/agent/consulting offers; internal technical identifiers remain compatible.
 
 ## Brand Commitments
 
 The live logo on https://dobeu.net stays. It is the inlined mark in `components/brand/DobeuMark.tsx` with the lowercase "dobeu.net" wordmark. Do not redraw or replace it. Confirmed by the owner.
 
-The established voice is Jeremy, operator to operator: direct, plainspoken, and grounded in the buyer's work. Lead with what the business gains, not AI, automation, or IT-service buzzwords. RouteReady is the concrete example; broader messaging must remain applicable to other small businesses. Preserve the factual single-operator identity rather than inventing a team.
+The voice is Jeremy: personal, plainspoken, curious and understated. Retain the exact approved headline and broad founder bio. Use all four projects as concrete examples. Preserve the factual single-person identity.
 
 ## Evidence on Hand
 
-- Offer, price band, and proof line: `lib/jeremy-data.ts` (`HERO_COPY`, `PRICE_RANGE`, `GTM_PILLARS`).
-- Identity: `SITE_IDENTITY` and `FOUNDER` in the same file. Legal name Dobeu Tech Solutions LLC. Email jeremyw@dobeu.net. Area served NYC and NJ metro. No street address is published.
-- Shipped project names and repo links live in `SHIPPED_WORK`. Their metric lists are empty. No approved case-study numbers are on hand.
-- Do not fabricate testimonials, customer logos, or benchmarks.
+Current identity, founder text, portfolio and optional pricing data: lib/jeremy-data.ts. Public headline and personal invitation: components/landing/Hero.tsx. Confirmed marketing context: .agents/product-marketing-context.md. Rebrand audit: .harness/gtm/20261022-1704/readiness.md.
+
+Project metric lists are empty. A source implementation is not evidence of live deployment, customer outcomes or working external delivery.
 
 ## Product Principles
 
-- Start with the operational problem and the buyer's benefit, not a technology category.
-- Build around real workflows and constraints; do not promise instant tool generation or an instant quote.
-- Use RouteReady as concrete evidence of the approach, not a fleet-only boundary or unsupported results claim.
-- Keep proof checkable, pricing truthful, and ownership clear. Do not invent metrics, customers, testimonials, or a team.
-- Preserve the established logo and single-operator identity.
+- Lead with useful projects and a clear personal invitation.
+- Keep the biography broad and the product descriptions concrete.
+- Preserve one-person identity, established logo and checkable proof.
+- Distinguish discussion, agreed paid scope and delivery; do not invent commitments.
+- Use current evidence and keep unknowns visible.
 
 ## Accessibility & Inclusion
 

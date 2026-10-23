@@ -37,7 +37,7 @@ const SERVICE_LABELS: Record<string, string> = {
   logo: "Logo",
   website_update: "Website update",
   data_export: "Data export",
-  consulting: "Consulting",
+  consulting: "Business systems",
   other: "Other"
 };
 
@@ -61,7 +61,7 @@ export default async function TicketsPage() {
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">Tickets</h1>
           <p className="text-muted-foreground mt-1">
-            Open a ticket for any new design, build, or consulting work.
+            Open a ticket for a new design, build, or business system.
           </p>
         </div>
         <NewWorkOrderDialog />

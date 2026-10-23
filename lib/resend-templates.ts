@@ -279,22 +279,22 @@ export function leadConfirmationToClient(args: {
   source: string;
 }): EmailContent {
   const greeting = args.name?.trim() || "there";
-  const subject = "Got it — I'll be in touch shortly";
+  const subject = "Thanks for reaching out to Dobeu";
   const text = [
     `Hey ${greeting} —`,
     ``,
-    `Got your note. I personally read every inquiry and reply within 24 hours (usually faster).`,
-    `If you booked a call, expect a calendar invite shortly. Otherwise, I'll be in touch with next steps.`,
+    `Thanks for sharing what you're exploring. I read every note personally.`,
+    `If you booked a conversation, expect a calendar invite. Otherwise, I'll be in touch.`,
     ``,
-    `— Jeremy, Dobeu Tech Solutions`
+    `— Jeremy Williams`
   ].join("\n");
   const html = shell(
     `
 <h1 style="margin:0 0 12px;font-size:22px;font-weight:800;color:${DOBEU_INDIGO};">Hey ${escapeHtml(greeting)} —</h1>
-<p style="margin:0 0 12px;">Got your note. I personally read every inquiry and reply within 24 hours (usually faster).</p>
-<p style="margin:0 0 8px;">If you booked a call, expect a calendar invite shortly. Otherwise, I'll be in touch with next steps.</p>
+<p style="margin:0 0 12px;">Thanks for sharing what you&apos;re exploring. I read every note personally.</p>
+<p style="margin:0 0 8px;">If you booked a conversation, expect a calendar invite. Otherwise, I&apos;ll be in touch.</p>
 <p style="margin:12px 0 0;color:${DOBEU_MUTED};font-size:12px;">Triggered by your <strong>${escapeHtml(args.source)}</strong> submission on dobeu.net.</p>`,
-    { previewText: "Got your note — replying within 24h" }
+    { previewText: "Thanks for reaching out — Jeremy" }
   );
   return { subject, text, html };
 }

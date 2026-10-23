@@ -6,6 +6,8 @@ export const runtime = "nodejs";
 
 const RATE_LIMIT_WINDOW_SEC = 60;
 const RATE_LIMIT_MAX = 30;
+const FEATURED_REPO = "Dobeu-tech-eco/new-dobeu-net";
+const FEATURED_REPO_URL = `https://github.com/${FEATURED_REPO}`;
 
 // GitHub username/org rules: alphanumeric, single internal hyphens, no
 // leading/trailing hyphen, max 39 chars. No dots allowed.
@@ -26,7 +28,9 @@ function isValidRepo(repo: string): boolean {
 }
 
 /** Parse owner/repo from a GitHub URL or "owner/repo" shorthand. */
-function parseGitHubRepo(input: string): { owner: string; repo: string } | null {
+function parseGitHubRepo(
+  input: string,
+): { owner: string; repo: string } | null {
   const trimmed = input.trim().replace(/\/$/, "");
 
   // Shorthand: owner/repo
@@ -38,7 +42,9 @@ function parseGitHubRepo(input: string): { owner: string; repo: string } | null 
 
   // Full URL: https://github.com/owner/repo
   try {
-    const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+    const url = new URL(
+      trimmed.startsWith("http") ? trimmed : `https://${trimmed}`,
+    );
     if (url.hostname !== "github.com") return null;
     const parts = url.pathname.replace(/^\//, "").split("/");
     if (parts.length < 2 || !parts[0] || !parts[1]) return null;
@@ -61,7 +67,7 @@ export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
   const { limited } = await checkRateLimit(`github-repo:${ip}`, {
     windowSec: RATE_LIMIT_WINDOW_SEC,
-    max: RATE_LIMIT_MAX
+    max: RATE_LIMIT_MAX,
   });
   if (limited) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -76,11 +82,17 @@ export async function GET(req: NextRequest) {
   if (!parsed) {
     return NextResponse.json(
       { error: "Could not parse a GitHub owner/repo from that input." },
-      { status: 422 }
+      { status: 422 },
     );
   }
 
   const { owner, repo } = parsed;
+  if (`${owner}/${repo}`.toLowerCase() !== FEATURED_REPO.toLowerCase()) {
+    return NextResponse.json(
+      { error: "Repository not featured." },
+      { status: 404 },
+    );
+  }
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -90,16 +102,21 @@ export async function GET(req: NextRequest) {
 
   const [repoRes, languagesRes] = await Promise.all([
     fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers }),
-    fetch(`https://api.github.com/repos/${owner}/${repo}/languages`, { headers }),
+    fetch(`https://api.github.com/repos/${owner}/${repo}/languages`, {
+      headers,
+    }),
   ]);
 
   if (repoRes.status === 404) {
-    return NextResponse.json({ error: "Repository not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Repository not found." },
+      { status: 404 },
+    );
   }
   if (!repoRes.ok) {
     return NextResponse.json(
       { error: `GitHub API error: ${repoRes.status}` },
-      { status: 502 }
+      { status: 502 },
     );
   }
 
@@ -110,17 +127,18 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(
     {
       id: data.id,
-      full_name: data.full_name,
-      name: data.name,
+      full_name: FEATURED_REPO,
+      name: "new-dobeu-net",
       owner: {
-        login: data.owner.login,
+        login: "Dobeu-tech-eco",
         avatar_url: data.owner.avatar_url,
-        html_url: data.owner.html_url,
+        html_url: "https://github.com/Dobeu-tech-eco",
       },
-      description: data.description,
-      html_url: data.html_url,
-      homepage: data.homepage,
-      topics: data.topics ?? [],
+      description:
+        "The website for Dobeu Tech Solutions and its business technology projects.",
+      html_url: FEATURED_REPO_URL,
+      homepage: "https://dobeu.net",
+      topics: ["business-technology"],
       language: data.language,
       languages,
       stargazers_count: data.stargazers_count,
@@ -144,6 +162,6 @@ export async function GET(req: NextRequest) {
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
-    }
+    },
   );
 }

@@ -22,8 +22,8 @@ export default function TermsPage() {
 
       <h2>1. Services</h2>
       <p>
-        Dobeu provides custom software development, design systems, AI agent engineering, and
-        growth-engineering services. The specific scope, deliverables, timeline, fees, and intellectual
+        Dobeu provides custom software development, design systems, integrations, and
+        workflow services. The specific scope, deliverables, timeline, fees, and intellectual
         property assignment for each client engagement are set out in a separate signed Statement of Work
         (&ldquo;SOW&rdquo;) or proposal that is provided prior to commencement. In the event of a conflict
         between these Terms and an executed SOW, the SOW controls.
@@ -81,7 +81,7 @@ export default function TermsPage() {
       </p>
       <p>
         You grant Dobeu a limited, non-exclusive licence to use your name, logo, and general project
-        description (e.g., &ldquo;built a custom AI agent for [Client]&rdquo;) in our portfolio and
+        description (e.g., &ldquo;built a custom business system for [Client]&rdquo;) in our portfolio and
         marketing materials unless you request confidentiality in writing before project commencement.
       </p>
 
@@ -104,7 +104,7 @@ export default function TermsPage() {
       <h2>9. Limitation of liability</h2>
       <p>
         TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, DOBEU TECH SOLUTIONS LLC AND ITS MEMBERS,
-        OFFICERS, EMPLOYEES, AND AGENTS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+        OFFICERS, EMPLOYEES, AND REPRESENTATIVES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
         CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, DATA, OR GOODWILL, ARISING OUT
         OF OR IN CONNECTION WITH THESE TERMS OR THE SERVICES, EVEN IF ADVISED OF THE POSSIBILITY OF
         SUCH DAMAGES. IN NO EVENT SHALL DOBEU&apos;S TOTAL LIABILITY EXCEED THE FEES PAID BY YOU IN THE
