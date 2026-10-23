@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CONTENT_DATES } from "@/lib/jeremy-data";
 import { LegalLayout } from "@/components/landing/LegalLayout";
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalLayout title="Terms of Service" lastUpdated="2026-06-20">
+    <LegalLayout title="Terms of Service" lastUpdated={CONTENT_DATES.terms}>
       <p>
         These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of dobeu.net, the
         Dobeu client portal, and any related services (collectively, the &ldquo;Services&rdquo;) operated by
