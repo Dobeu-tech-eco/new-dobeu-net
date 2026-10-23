@@ -1,7 +1,7 @@
 project:
   name: new-dobeu-net
-  stack: next.js-15-app-router
-  description: "dobeu.net v3 — Next.js 15 marketing landing + client portal + admin. TypeScript, Tailwind, shadcn/ui, Supabase, Vercel."
+  stack: next.js-16-app-router
+  description: "dobeu.net v3 — Next.js 16 business technology showcase + client portal + admin. TypeScript, Tailwind, shadcn/ui, Supabase, Vercel."
   package_manager: pnpm
 
 commands:
@@ -58,3 +58,24 @@ do_not_touch:
   - secrets/**
   - "**/credentials*"
   - pnpm-lock.yaml
+
+# Subscription inclusion retained from the approved setup interview.
+roster:
+  - name: claude
+    auth: subscription
+    included: true
+  - name: codex
+    auth: subscription
+    included: true
+  - name: copilot
+    auth: subscription
+    included: true
+  - name: gemini
+    auth: subscription
+    included: true
+  - name: grok
+    auth: subscription
+    included: true
+  - name: muse
+    auth: subscription
+    included: true

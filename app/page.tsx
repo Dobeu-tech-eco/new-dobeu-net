@@ -1,33 +1,40 @@
 import type { Metadata } from "next";
 import { Hero } from "@/components/landing/Hero";
-import { JsonLd } from "@/components/landing/JsonLd";
 import { MarketingShell } from "@/components/landing/MarketingShell";
-import { RouteReadyShowcase, OperationalOutcomes, OperationalApproach, OperationsQuestions, OperationsContact } from "@/components/landing/OperationsHome";
-import { NAP } from "@/lib/jeremy-data";
-import { professionalServiceJsonLd } from "@/lib/marketing-schema";
+import {
+  RouteReadyShowcase,
+  ProductShowcase,
+  OperationalOutcomes,
+  OperationalApproach,
+  OperationsQuestions,
+  OperationsContact,
+} from "@/components/landing/OperationsHome";
+import { Founder } from "@/components/landing/Founder";
 
 export const metadata: Metadata = {
-  title: "Custom Operations Software for Your Business | Dobeu",
-  description: `Custom operational software built around your people and processes. Serving ${NAP.areaServed}. See RouteReady, our driver-training product, and discuss a tailored solution for your business.`,
+  title: "We build usable business technology. | Dobeu",
+  description:
+    "Jeremy Williams’s home for passion projects and collaboration. Explore RouteReady, Chima Comics, Dobeu.space, and usable business technology.",
   alternates: { canonical: "/" },
 };
 
 export default function HomePage() {
   return (
     <MarketingShell>
-      <JsonLd data={professionalServiceJsonLd()} />
       <Hero />
       <RouteReadyShowcase />
+      <ProductShowcase />
+      <Founder />
       <OperationalOutcomes />
       <OperationalApproach />
       <OperationsQuestions />
       <OperationsContact
         heading={
           <h2 id="contact-heading" className="section-heading max-w-4xl">
-            You know what&apos;s not working.
+            Have an idea we both care about?
             <br />
             <span className="text-primary">
-              Let&apos;s work out what would.
+              Let&apos;s build something together.
             </span>
           </h2>
         }

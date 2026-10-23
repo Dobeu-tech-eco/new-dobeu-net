@@ -8,43 +8,43 @@ import { cn } from "@/lib/utils";
 
 const steps = [
   {
-    title: "Understand the work.",
+    title: "Start with a shared interest.",
     description:
-      "We walk through the day-to-day with you: who does what, where things break down, and which exceptions matter. No solution before we understand the problem.",
-    label: "01 / understand",
-    output: "A clear operational need",
+      "Tell me what you care about, what you are exploring, and who it could help. Let’s find the overlap in our interests and experience.",
+    label: "01 / connect",
+    output: "A reason to build together",
     items: [
-      "Walk through the working day",
-      "Identify constraints and exceptions",
-      "Understand responsibilities and handoffs",
+      "Share the idea and its purpose",
+      "Bring complementary experience",
+      "Find a problem we both care about",
     ],
-    note: "Understand first. Build second.",
+    note: "A conversation is a good place to start.",
   },
   {
-    title: "Design the right fit.",
+    title: "Try something small.",
     description:
-      "Together we define what better looks like, what the system needs to connect to, and a clear scope. Sometimes the right answer is improving what you already have.",
-    label: "02 / design",
-    output: "A scope that fits your operation",
+      "Choose a useful first experiment together. We’ll agree on our contributions, time, ownership, and any costs before making commitments.",
+    label: "02 / explore",
+    output: "A manageable first step",
     items: [
-      "Define what better looks like",
-      "Review existing tools and connections",
-      "Agree on scope, responsibilities, and cost",
+      "Choose what to learn first",
+      "Agree on roles and commitments",
+      "Make room for honest feedback",
     ],
-    note: "The operation sets the direction. Not the latest trend.",
+    note: "Start with enough to learn something useful.",
   },
   {
-    title: "Build it. Use it. Refine it.",
+    title: "Build, learn, keep going.",
     description:
-      "We develop the solution, work through real scenarios with your team, and support the handover. The goal is something people can actually rely on—not just a successful demo.",
-    label: "03 / build + handover",
-    output: "Ready for your working day",
+      "Put the idea in people’s hands, listen to what works, and decide together what comes next. A promising experiment can grow into a lasting product.",
+    label: "03 / build + learn",
+    output: "Something people can use",
     items: [
-      "Work through real scenarios",
-      "Document the important details",
-      "Support your team through handover",
+      "Try it in real situations",
+      "Learn from the people using it",
+      "Decide the next step together",
     ],
-    note: "Built to be used. Built to be understood.",
+    note: "Shared curiosity, useful progress.",
   },
 ];
 
@@ -141,7 +141,7 @@ export function ProcessJourney() {
             href="/process"
             className="inline-flex min-h-11 items-center gap-2 self-start rounded-md text-sm font-semibold text-primary underline-offset-4 hover:underline"
           >
-            Explore our process{" "}
+            Explore how we could collaborate{" "}
             <ArrowUpRight className="size-4" aria-hidden="true" />
           </Link>
         </motion.div>

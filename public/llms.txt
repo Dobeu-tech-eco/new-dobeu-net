@@ -1,31 +1,29 @@
 # Dobeu Tech Solutions — llms.txt
 
-> One-person digital services practice. AI agent development, full-stack web apps, brand & design systems, and growth engineering for founders.
+> We build usable business technology.
 
 ## About
 - Founder: Jeremy Williams (jeremyw@dobeu.net)
-- Based in NYC, building since 2019
+- Dobeu is the home for Jeremy's passion projects and like-minded collaboration
 - Website: https://dobeu.net
-- LinkedIn: https://www.linkedin.com/in/jeremy-williams
+- LinkedIn: https://www.linkedin.com/in/jswilliamstu
 
-## Services
-- **AI agents & automation** — Claude, Composio, MCP integrations, agentic workflows
-- **Full-stack web apps** — Next.js, Supabase, Vercel, modern TypeScript stack
-- **Brand & design systems** — Figma + Code Connect + multi-target design tokens
-- **Marketing & growth engineering** — programmatic SEO, GA4/PostHog/Mixpanel, lifecycle automation
+## Products and projects
+- RouteReady: https://routereadyhq.com — beta tools for driver training
+- Chima Comics: https://chimacomics.shop — free chapters, merchandise, and a browser puzzle game
+- Dobeu.space: https://dobeu.space — supply-chain journal
+- Ikram & Co.: https://www.dobeu.store/en — art storefront
 
-## Engagement model
-- 30-minute discovery call (free, no pitch)
-- Fixed-scope, fixed-price proposal within 48 hours
-- Ship in 2–6 weeks with daily updates and a private client portal
-- Typical engagement size: $5k–$30k
+## Shared interests
+- Business software and practical workflows
+- Web experiences and storefronts
+- Clear interfaces and design systems
+- Product ideas that make people's work or creative lives easier
+
+## Collaboration
+- Explore a collaboration: https://dobeu.net
+- Scoped paid builds are available when an idea calls for one
 
 ## Contact
-- Book a call: https://dobeu.net/#book
+- Website: https://dobeu.net
 - Email: jeremyw@dobeu.net
-- Portal (existing clients): https://dobeu.net/portal
-
-## Why hire one person
-- You talk to the person doing the work
-- Decisions in hours not weeks
-- Modern stack from day one

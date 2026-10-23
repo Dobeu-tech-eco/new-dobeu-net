@@ -7,7 +7,7 @@ import { Reveal } from "./ExperienceProvider";
 import { RouteReadyJourney } from "./RouteReadyJourney";
 import { ProcessJourney } from "./ProcessJourney";
 import { OutcomeVisual } from "./OutcomeVisual";
-import { PRICE_RANGE } from "@/lib/jeremy-data";
+import { SHIPPED_WORK } from "@/lib/jeremy-data";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 
@@ -102,6 +102,54 @@ export function RouteReadyShowcase() {
   );
 }
 
+export function ProductShowcase() {
+  return (
+    <section
+      id="products"
+      aria-labelledby="products-heading"
+      className="scroll-mt-24 border-b border-border py-24 md:py-32"
+    >
+      <div className="container flex flex-col gap-12">
+        <Reveal className="flex flex-col gap-6">
+          <p className="eyebrow">Projects I care about</p>
+          <h2 id="products-heading" className="section-heading">
+            Useful technology, out in the world.
+          </h2>
+          <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
+            Training tools, storefronts, and digital products. See the work for
+            yourself.
+          </p>
+        </Reveal>
+        <div className="grid gap-6 md:grid-cols-2">
+          {SHIPPED_WORK.map((product, index) => (
+            <Reveal key={product.slug} delay={index * 0.08}>
+              <article className="flex h-full flex-col items-start gap-5 rounded-lg border border-border bg-card p-6 md:p-8">
+                <p className="font-mono text-xs text-muted-foreground">
+                  {product.category}
+                </p>
+                <h3 className="subsection-heading">{product.name}</h3>
+                <p className="flex-1 leading-relaxed text-muted-foreground">
+                  {product.description}
+                </p>
+                <a
+                  href={product.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-md font-semibold text-primary underline-offset-4 hover:underline"
+                >
+                  Explore {product.name}
+                  <ArrowUpRight className="size-4" aria-hidden="true" />
+                  <span className="sr-only"> (opens in new tab)</span>
+                </a>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function OperationalOutcomes() {
   return (
     <section
@@ -111,7 +159,7 @@ export function OperationalOutcomes() {
     >
       <div className="container flex flex-col gap-12">
         <Reveal className="flex flex-col items-start gap-6">
-          <p className="eyebrow">Built around your operation</p>
+          <p className="eyebrow">What I care about building</p>
           <h2 id="outcomes-heading" className="section-heading max-w-4xl">
             Less working around the system.
             <br />
@@ -144,7 +192,7 @@ export function OperationalOutcomes() {
           href="/services"
           className="inline-flex min-h-11 items-center gap-2 self-start rounded-md text-sm font-semibold text-primary underline-offset-4 hover:underline"
         >
-          Explore our services{" "}
+          Explore what I build{" "}
           <ArrowUpRight className="size-4" aria-hidden="true" />
         </Link>
       </div>
@@ -161,15 +209,16 @@ export function OperationalApproach() {
     >
       <div className="container flex flex-col gap-12">
         <Reveal className="flex flex-col gap-6">
-          <p className="eyebrow">Our approach</p>
+          <p className="eyebrow">Building together</p>
           <h2 id="approach-heading" className="section-heading">
-            First, your operation.
+            First, a shared interest.
             <br />
-            <span className="text-fg-heading/85">Then, the technology.</span>
+            <span className="text-fg-heading/85">Then, something useful.</span>
           </h2>
           <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
-            Not a template with your logo on it. Not a quick tool built around
-            the latest trend. A considered solution to a problem worth solving.
+            Good collaborations start with curiosity and a problem we both care
+            about. We can explore an idea, try a small experiment, and see where
+            it takes us.
           </p>
         </Reveal>
         <ProcessJourney />
@@ -192,20 +241,20 @@ export function OperationsQuestions() {
         <div className="flex flex-1 flex-col divide-y divide-border">
           {[
             [
-              "Is this only for fleet businesses?",
-              "No. RouteReady is one example of an operational solution. We also work with businesses whose teams need better coordination, clearer records, or systems that fit the way they work.",
+              "What kinds of collaboration interest you?",
+              "Useful business tools, creative digital products, and ideas that connect with the projects here. I’m open to meeting people with complementary skills and a shared reason to build.",
             ],
             [
-              "Do I need to know what software I want?",
-              "No. Start with the problem, not a feature list. Tell us what happens today and what you wish were different. We can work out the right approach together.",
+              "Does my idea need to be fully formed?",
+              "No. Share what interests you, who it could help, and what you have tried so far. A good conversation can be the first step.",
             ],
             [
-              "Will you replace all our existing systems?",
-              "Not by default. We look at what you already use and where it falls short. The right solution may connect existing tools, improve a single workflow, or require something custom.",
+              "Is Dobeu a personal project?",
+              "Yes. I’m Jeremy Williams, and Dobeu is the business home for my passion projects. It gives me a place to develop products and explore collaborations with like-minded people.",
             ],
             [
-              "What happens after the first conversation?",
-              "We clarify the operational need and whether we are a good fit. Before development, we agree on scope, responsibilities, and cost. There is no instant, one-size-fits-all quote.",
+              "What happens after we connect?",
+              "We explore whether our interests and availability line up. Any collaboration starts with a clear agreement on responsibilities, ownership, time, and costs where applicable.",
             ],
           ].map(([question, answer]) => (
             <details key={question} className="group py-5 first:pt-0">
@@ -236,16 +285,17 @@ export function OperationsContact({ heading }: { heading: ReactNode }) {
           <div className="flex flex-col items-start gap-8 px-7 py-12 md:p-16">
             {heading}
             <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
-              Tell us where the work gets stuck, who it affects, and what a
-              better day would look like. You don&apos;t need a technical brief.
+              I’m interested in meeting people who care about useful products,
+              creative experiments, and building together. Tell me what you’re
+              working on and where our interests might overlap.
             </p>
             <div className="flex max-w-full flex-col items-start gap-4">
               <Button
                 size="lg"
                 className="h-auto min-h-14 max-w-full whitespace-normal rounded-pill px-6 py-4"
-                onClick={() => open("intake")}
+                onClick={() => open("form")}
               >
-                Tell us about your operation{" "}
+                Explore a collaboration{" "}
                 <ArrowUpRight
                   className="ml-2 size-4 shrink-0"
                   aria-hidden="true"
@@ -256,7 +306,7 @@ export function OperationsContact({ heading }: { heading: ReactNode }) {
                 onClick={() => open("book")}
                 className="min-h-11 rounded-md text-left text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
               >
-                Prefer to talk it through? Book a conversation.
+                Prefer to meet? Let’s have a conversation.
               </button>
               <button
                 type="button"
@@ -267,9 +317,9 @@ export function OperationsContact({ heading }: { heading: ReactNode }) {
               </button>
             </div>
             <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
-              {PRICE_RANGE.display} typical engagement. We review the
-              operational need first, then agree on scope, responsibilities, and
-              cost. Not an instant quote.
+              An introduction is a place to start. If we decide to build
+              together, we’ll agree on responsibilities, ownership, time, and
+              any costs before making commitments.
             </p>
           </div>
         </Reveal>

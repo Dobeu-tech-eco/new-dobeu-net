@@ -19,7 +19,7 @@ const SERVICE_LABELS: Record<string, string> = {
   logo: "Logo",
   website_update: "Website update",
   data_export: "Data export",
-  consulting: "Consulting",
+  consulting: "Business systems",
   other: "Other"
 };
 

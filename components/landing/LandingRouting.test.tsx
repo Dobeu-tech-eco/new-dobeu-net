@@ -11,7 +11,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Hero } from "./Hero";
-import { OperationsContact } from "./OperationsHome";
+import { OperationsContact, ProductShowcase } from "./OperationsHome";
 import { SiteNav } from "./SiteNav";
 import { SiteFooter } from "./SiteFooter";
 
@@ -52,17 +52,41 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("adopted landing routing", () => {
-  it("routes the primary hero action to review-first intake", () => {
+  it("leads with usable business technology and links to the real products", () => {
+    render(
+      <>
+        <Hero />
+        <ProductShowcase />
+      </>,
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "We build usable business technology.",
+    );
+    for (const [name, href] of [
+      ["RouteReady", "https://routereadyhq.com"],
+      ["Chima Comics", "https://chimacomics.shop"],
+      ["Dobeu.space", "https://dobeu.space"],
+      ["Ikram & Co.", "https://www.dobeu.store/en"],
+    ]) {
+      expect(
+        screen.getByRole("link", {
+          name: `Explore ${name} (opens in new tab)`,
+        }),
+      ).toHaveAttribute("href", href);
+    }
+  });
+
+  it("routes the primary hero action to a personal collaboration form", () => {
     render(<Hero />);
     fireEvent.click(screen.getByTestId("hero-estimate-cta"));
-    expect(state.open).toHaveBeenCalledWith("intake");
-    expect(state.open).not.toHaveBeenCalledWith("form");
+    expect(state.open).toHaveBeenCalledWith("form");
+    expect(state.open).not.toHaveBeenCalledWith("intake");
     expect(
       screen.getByRole("link", { name: /see what that looks like/i }),
     ).toHaveAttribute("href", "#routeready");
   });
 
-  it("keeps intake, booking, and direct email as distinct contact paths", () => {
+  it("keeps collaboration, booking, and direct email as distinct contact paths", () => {
     render(
       <OperationsContact
         heading={<h2 id="contact-heading">Let&apos;s work out what would.</h2>}
@@ -72,27 +96,27 @@ describe("adopted landing routing", () => {
       "Let's work out what would.",
     );
     fireEvent.click(
-      screen.getByRole("button", { name: /tell us about your operation/i }),
+      screen.getByRole("button", { name: /explore a collaboration/i }),
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: /prefer to talk it through/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /prefer to meet/i }));
     fireEvent.click(screen.getByRole("button", { name: /or send a note/i }));
     expect(state.open.mock.calls.map(([tab]) => tab)).toEqual([
-      "intake",
+      "form",
       "book",
       "email",
     ]);
   });
 
-  it("hydrates the server-provided contact headline and keeps intake interactive", async () => {
+  it("hydrates the server-provided contact headline and keeps collaboration interactive", async () => {
     const app = (
       <OperationsContact
         heading={
           <h2 id="contact-heading" className="section-heading max-w-4xl">
             You know what&apos;s not working.
             <br />
-            <span className="text-primary">Let&apos;s work out what would.</span>
+            <span className="text-primary">
+              Let&apos;s work out what would.
+            </span>
           </h2>
         }
       />
@@ -102,7 +126,9 @@ describe("adopted landing routing", () => {
     document.body.append(container);
     const serverHeading = container.querySelector("#contact-heading");
     const onRecoverableError = vi.fn();
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     let root: ReturnType<typeof hydrateRoot> | undefined;
     try {
       await act(async () => {
@@ -115,9 +141,11 @@ describe("adopted landing routing", () => {
       expect(onRecoverableError).not.toHaveBeenCalled();
       expect(consoleError).not.toHaveBeenCalled();
       fireEvent.click(
-        within(container).getByRole("button", { name: /tell us about your operation/i }),
+        within(container).getByRole("button", {
+          name: /explore a collaboration/i,
+        }),
       );
-      expect(state.open).toHaveBeenCalledWith("intake");
+      expect(state.open).toHaveBeenCalledWith("form");
     } finally {
       act(() => root?.unmount());
       container.remove();
@@ -141,12 +169,13 @@ describe("adopted landing routing", () => {
     expect(
       within(nav).getByRole("link", { name: "RouteReady" }),
     ).toHaveAttribute("href", "/#routeready");
-    expect(
-      within(nav).getByRole("link", { name: "Your operation" }),
-    ).toHaveAttribute("href", "/#work");
-    expect(within(nav).getByRole("link", { name: "Services" })).toHaveAttribute(
+    expect(within(nav).getByRole("link", { name: "Projects" })).toHaveAttribute(
       "href",
-      "/services",
+      "/#products",
+    );
+    expect(within(nav).getByRole("link", { name: "About Jeremy" })).toHaveAttribute(
+      "href",
+      "/about",
     );
   });
 

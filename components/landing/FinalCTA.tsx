@@ -3,7 +3,6 @@
 import { motion } from "motion/react";
 import { EstimateCtas } from "@/components/landing/EstimateCtas";
 import { useMotionProps, FADE_UP } from "@/hooks/use-motion-props";
-import { PRICE_RANGE } from "@/lib/jeremy-data";
 
 export function FinalCTA() {
   const mp = useMotionProps(FADE_UP);
@@ -33,22 +32,20 @@ export function FinalCTA() {
           <div className="relative px-8 py-14 md:px-16 md:py-20">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-5">
-                Dispatch first.
+                Build together.
               </p>
 
               <h2
                 id="cta-heading"
                 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.04] text-balance mb-5"
               >
-                Tell me about the loop that&apos;s stuck.
+                Have an idea we could bring to life?
               </h2>
 
-              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-4 max-w-md">
-                Send the job — I&apos;ll reply with a price band. Or book 30
-                minutes and we&apos;ll scope it together.
-              </p>
-              <p className="text-sm font-medium text-foreground mb-10">
-                {PRICE_RANGE.line}
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10 max-w-md">
+                I&apos;m Jeremy. If you&apos;re building something useful and our
+                interests overlap, I&apos;d like to hear about it. Start with a
+                note or make time for a conversation.
               </p>
 
               <EstimateCtas location="final_cta" />

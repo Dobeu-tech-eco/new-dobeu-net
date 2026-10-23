@@ -144,7 +144,19 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [{ source: "/home", destination: "/", permanent: true }];
+    return [
+      { source: "/home", destination: "/", permanent: true },
+      {
+        source: "/services/ai-agents",
+        destination: "/services/business-systems",
+        permanent: true
+      },
+      ...["monty-ai", "unified-ai", "statminer", "dts-contract", "sales-funnel", "lastplate"].map((slug) => ({
+        source: `/case-studies/${slug}`,
+        destination: "/case-studies",
+        permanent: true
+      }))
+    ];
   },
   async rewrites() {
     // Serve the Terms of Service at the canonical /tos URL (dobeu.net/tos)

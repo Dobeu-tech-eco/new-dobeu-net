@@ -8,10 +8,10 @@ function ghEvent(overrides: Record<string, unknown> = {}) {
   return {
     id: "1",
     type: "PushEvent",
-    repo: { name: "Dobeu-tech-eco/some-repo" },
+    repo: { name: "Dobeu-tech-eco/new-dobeu-net" },
     payload: { commits: [{ message: "feat: something" }] },
     created_at: "2026-07-25T12:00:00Z",
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -32,34 +32,34 @@ afterEach(() => {
 });
 
 describe("GET /api/github-activity", () => {
-  it("returns fallback events when GitHub responds non-OK", async () => {
+  it("returns a distinct error when GitHub responds non-OK", async () => {
     fetchMock.mockResolvedValue({ ok: false, json: async () => ({}) });
 
     const res = await GET();
-    const events = (await res.json()) as GitHubEvent[];
-
-    expect(events).toHaveLength(3);
-    expect(events.every((e) => e.id.startsWith("fallback-"))).toBe(true);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "GitHub activity unavailable." });
   });
 
-  it("returns fallback events when fetch throws", async () => {
+  it("returns a distinct error when fetch throws", async () => {
     fetchMock.mockRejectedValue(new Error("network down"));
 
     const res = await GET();
-    const events = (await res.json()) as GitHubEvent[];
-
-    expect(events.every((e) => e.id.startsWith("fallback-"))).toBe(true);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "GitHub activity unavailable." });
   });
 
-  it("returns fallback events when nothing parseable comes back", async () => {
+  it("returns no events when nothing parseable comes back", async () => {
     fetchMock.mockResolvedValue(
-      okResponse([ghEvent({ type: "WatchEvent", payload: {} }), ghEvent({ type: "ForkEvent", payload: {} })])
+      okResponse([
+        ghEvent({ type: "WatchEvent", payload: {} }),
+        ghEvent({ type: "ForkEvent", payload: {} }),
+      ]),
     );
 
     const res = await GET();
     const events = (await res.json()) as GitHubEvent[];
 
-    expect(events.every((e) => e.id.startsWith("fallback-"))).toBe(true);
+    expect(events).toEqual([]);
   });
 
   it("parses push, PR, and release events and strips the org prefix", async () => {
@@ -69,31 +69,78 @@ describe("GET /api/github-activity", () => {
         ghEvent({
           id: "11",
           type: "PullRequestEvent",
-          payload: { pull_request: { title: "Add feature", html_url: "https://github.com/pr/1" } }
+          payload: {
+            pull_request: {
+              title: "Add feature",
+              html_url: "https://github.com/pr/1",
+            },
+          },
         }),
         ghEvent({
           id: "12",
           type: "ReleaseEvent",
-          payload: { release: { name: "v1.0.0", html_url: "https://github.com/rel/1" } }
-        })
-      ])
+          payload: {
+            release: { name: "v1.0.0", html_url: "https://github.com/rel/1" },
+          },
+        }),
+      ]),
     );
 
     const res = await GET();
     const events = (await res.json()) as GitHubEvent[];
 
     expect(events).toEqual([
-      expect.objectContaining({ id: "10", type: "push", repo: "some-repo", message: "feat: something" }),
-      expect.objectContaining({ id: "11", type: "pr", message: "Add feature", url: "https://github.com/pr/1" }),
-      expect.objectContaining({ id: "12", type: "release", message: "Released v1.0.0" })
+      expect.objectContaining({
+        id: "10",
+        type: "push",
+        repo: "new-dobeu-net",
+        message: "feat: something",
+      }),
+      expect.objectContaining({
+        id: "11",
+        type: "pr",
+        message: "Add feature",
+        url: "https://github.com/Dobeu-tech-eco/new-dobeu-net",
+      }),
+      expect.objectContaining({
+        id: "12",
+        type: "release",
+        message: "Released v1.0.0",
+      }),
     ]);
     expect(res.headers.get("cache-control")).toContain("s-maxage=300");
+  });
+
+  it("excludes unrelated repos and AI, agent, or consulting commit messages", async () => {
+    fetchMock.mockResolvedValue(
+      okResponse([
+        ghEvent({
+          id: "1",
+          repo: { name: "Dobeu-tech-eco/monty-ai-fullstackdev-coder" },
+        }),
+        ghEvent({
+          id: "2",
+          payload: { commits: [{ message: "feat: add AI agents" }] },
+        }),
+        ghEvent({
+          id: "3",
+          payload: { commits: [{ message: "feat: usable checkout" }] },
+        }),
+      ]),
+    );
+
+    const res = await GET();
+    const events = (await res.json()) as GitHubEvent[];
+    expect(events.map((event) => event.id)).toEqual(["3"]);
   });
 
   it("keeps only the first commit line, truncates to 72 chars, and caps at 6 events", async () => {
     const longMessage = "x".repeat(100) + "\nsecond line ignored";
     const items = Array.from({ length: 10 }, (_, i) =>
-      ghEvent({ id: String(i), payload: { commits: [{ message: longMessage }] } })
+      ghEvent({
+        id: String(i),
+        payload: { commits: [{ message: longMessage }] },
+      }),
     );
     fetchMock.mockResolvedValue(okResponse(items));
 
@@ -107,7 +154,10 @@ describe("GET /api/github-activity", () => {
 
   it("skips push events with no commits instead of failing", async () => {
     fetchMock.mockResolvedValue(
-      okResponse([ghEvent({ id: "20", payload: { commits: [] } }), ghEvent({ id: "21" })])
+      okResponse([
+        ghEvent({ id: "20", payload: { commits: [] } }),
+        ghEvent({ id: "21" }),
+      ]),
     );
 
     const res = await GET();

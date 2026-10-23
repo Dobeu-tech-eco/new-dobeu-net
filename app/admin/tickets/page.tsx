@@ -33,6 +33,10 @@ const SERVICE_TYPES: ("all" | WorkOrderServiceType)[] = [
   "other"
 ];
 
+function serviceLabel(value: string): string {
+  return value === "consulting" ? "Business systems" : value.replace(/_/g, " ");
+}
+
 function statusTone(status: string): "indigo" | "amber" | "neutral" {
   switch (status) {
     case "open":
@@ -130,7 +134,7 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
                       {t.title}
                     </Link>
                   </td>
-                  <td className="p-3 text-muted-foreground">{t.service_type}</td>
+                  <td className="p-3 text-muted-foreground">{serviceLabel(t.service_type)}</td>
                   <td className="p-3 font-mono text-xs text-muted-foreground">
                     {t.created_by.slice(0, 8)}…
                   </td>
@@ -193,7 +197,7 @@ function FilterRow<T extends string>({
                 : "border-border text-muted-foreground hover:bg-muted"
             )}
           >
-            {o}
+            {param === "service_type" ? serviceLabel(o) : o}
           </Link>
         );
       })}

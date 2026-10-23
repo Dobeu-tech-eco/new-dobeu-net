@@ -13,11 +13,11 @@ type Source = "book" | "form" | "email";
 function submitLabel(source: Source): string {
   switch (source) {
     case "form":
-      return "Send the job";
+      return "Send your idea";
     case "book":
-      return "Request times";
+      return "Find a time to talk";
     case "email":
-      return "Send the note";
+      return "Send your note";
     default: {
       const unreachable: never = source;
       return unreachable;
@@ -29,21 +29,21 @@ function confirmation(source: Source): { toast: string; title: string; body: str
   switch (source) {
     case "book":
       return {
-        toast: "Got it — I'll send time options within a few hours.",
+        toast: "Thanks — I'll be in touch about a time to talk.",
         title: "Request received.",
-        body: "I'll send a few times that work. This is not a price quote.",
+        body: "I'll follow up personally to find a time that works.",
       };
     case "form":
       return {
-        toast: "Got it — I'll reply with a price band within 24 hours.",
-        title: "Job received.",
-        body: "I personally read every job and reply with a price band within 24 hours. Not an instant quote.",
+        toast: "Thanks for sharing your idea.",
+        title: "Idea received.",
+        body: "I'll read it personally and get back to you about where we might connect.",
       };
     case "email":
       return {
         toast: "Got it — I'll reply by email.",
         title: "Note received.",
-        body: "I personally read every note and reply if the job is a fit.",
+        body: "I'll read your note personally and be in touch.",
       };
     default: {
       const unreachable: never = source;
@@ -80,7 +80,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       return;
     }
     if (source === "form" && !payload.message) {
-      toast.error("Tell me about the job so I can reply with a price band.");
+      toast.error("Tell me a little about your idea or opportunity.");
       return;
     }
 
@@ -138,7 +138,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
           type="email"
           required
           autoComplete="email"
-          placeholder="you@company.com"
+          placeholder="you@example.com"
         />
       </div>
 
@@ -155,7 +155,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor={`company-${source}`}>Company</Label>
+              <Label htmlFor={`company-${source}`}>Company (optional)</Label>
               <Input
                 id={`company-${source}`}
                 name="company"
@@ -167,7 +167,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
 
           <div className="grid gap-2">
             <Label htmlFor={`message-${source}`}>
-              {source === "form" ? "What should I price?" : "What's on your mind?"}
+              {source === "form" ? "What are you exploring?" : "What's on your mind?"}
             </Label>
             <Textarea
               id={`message-${source}`}
@@ -176,8 +176,8 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
               required={source === "form"}
               placeholder={
                 source === "form"
-                  ? "The loop, who does it today, and what done looks like."
-                  : "Briefly describe the project, deadline, or what you want to explore."
+                  ? "Share the idea, your background, and what you hope we could make together."
+                  : "Tell me what you're working on or what you'd like to explore."
               }
             />
           </div>

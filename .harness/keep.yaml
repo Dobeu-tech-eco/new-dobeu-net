@@ -1,0 +1,36 @@
+# Append-only project keep list. Subscription choices retain prior approval.
+plugins:
+  - marketing-skills@marketingskills
+  - dts2-harness@dts2
+skills:
+  - name: loop-me
+    source: npx skills add https://github.com/mattpocock/skills --skill loop-me --agent claude-code --yes
+    serves: harness
+  - name: grill-me
+    source: npx skills add https://github.com/mattpocock/skills --skill grill-me --agent claude-code --yes
+    serves: harness
+  - name: grilling
+    source: npx skills add https://github.com/mattpocock/skills --skill grilling --agent claude-code --yes
+    serves: harness
+  - name: improve-codebase-architecture
+    source: npx skills add https://github.com/mattpocock/skills --skill improve-codebase-architecture --agent claude-code --yes
+    serves: harness
+  - name: codebase-design
+    source: npx skills add https://github.com/mattpocock/skills --skill codebase-design --agent claude-code --yes
+    serves: harness
+  - name: writing-for-agents
+    source: npx skills add https://github.com/mattpocock/skills --skill writing-for-agents --agent claude-code --yes
+    serves: harness
+  - name: pr
+    source: npx skills add https://github.com/mattpocock/skills --skill pr
+    serves: harness
+  - name: setup-pre-commit
+    source: npx skills add https://github.com/mattpocock/skills --skill setup-pre-commit
+    serves: harness
+agents:
+  - claude
+  - codex
+  - copilot
+  - gemini
+  - grok
+  - muse

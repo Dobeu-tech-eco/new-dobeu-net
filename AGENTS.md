@@ -142,3 +142,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+<!-- dts2-harness:start -->
+# Project memory: name: new-dobeu-net
+
+- Project: name: new-dobeu-net
+- Approved end state: .harness/end-state.md
+- Harness state for any agent: .harness/handoff/latest.md (resume with /dts2-harness:run resume).
+- Conventions and constraints: .harness/discipline.md and .harness/review-checklist.md.
+- Every agent in this repo shares this context, whichever rules file it reads.
+<!-- dts2-harness:end -->

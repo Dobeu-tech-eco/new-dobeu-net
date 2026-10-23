@@ -29,7 +29,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
             transition={{ duration: 0.4 }}
             className="text-xs font-semibold uppercase tracking-widest text-primary mb-10 md:mb-12"
           >
-            The operator
+            The person behind Dobeu
           </motion.p>
         )}
 
@@ -62,7 +62,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
                 {FOUNDER.name}
               </p>
             )}
-            <p className="mt-3 text-base text-muted-foreground">{FOUNDER.title} &mdash; {NAP.areaServed}</p>
+            <p className="mt-3 text-base text-muted-foreground">{FOUNDER.title}</p>
 
             <div className="mt-5 flex items-center gap-2.5">
               <a
@@ -104,15 +104,16 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <h3 className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-[1.1] text-balance mb-6">
-              Why one person,
+              Built from curiosity,
               <br />
-              <span className="text-muted-foreground">not an agency?</span>
+              <span className="text-muted-foreground">open to collaboration.</span>
             </h3>
 
             <p className="text-base text-muted-foreground leading-relaxed mb-6">
-              I&apos;ve been shipping software since {FOUNDER.since} — for logistics operators,
-              hospitality teams, and founders building things that didn&apos;t exist yet. Public
-              shipped work includes{" "}
+              {FOUNDER.bio}
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Explore{" "}
               {SHIPPED_WORK.map((item, index) => {
                 const separator =
                   index === 0 ? "" : index === SHIPPED_WORK.length - 1 ? ", and " : ", ";
@@ -120,7 +121,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
                   <span key={item.slug}>
                     {separator}
                     <a
-                      href={item.github}
+                      href={item.href}
                       target="_blank"
                       rel="noreferrer"
                       className="font-medium text-foreground underline decoration-border underline-offset-2 hover:text-primary transition-colors"
@@ -130,12 +131,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
                   </span>
                 );
               })}
-              .
-            </p>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Every client I take on gets my full attention. That means I turn down more
-              than I accept. If I&apos;m the right person for your project, you&apos;ll know it
-              by end of the discovery call.
+              . If one connects with what you care about, I&apos;d like to hear from you.
             </p>
 
             <motion.div
@@ -151,7 +147,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">dobeu.net</p>
-                <p className="text-xs text-muted-foreground">Principal engineering & AI studio</p>
+                <p className="text-xs text-muted-foreground">Usable business technology</p>
               </div>
             </motion.div>
           </motion.div>
@@ -187,7 +183,7 @@ export function Founder({ variant = "home" }: { variant?: "home" | "standalone" 
               onClick={() => open("book")}
               className="group mt-6 inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-primary hover:underline underline-offset-4 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Book a 30-min call
+              Meet Jeremy
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
             </motion.button>
           </motion.div>

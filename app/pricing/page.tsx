@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { EstimateCtas } from "@/components/landing/EstimateCtas";
 import { JsonLd } from "@/components/landing/JsonLd";
 import { MarketingPageHeader, MarketingShell } from "@/components/landing/MarketingShell";
-import { HERO_COPY, NAP, PRICE_RANGE, PRICING_TIERS } from "@/lib/jeremy-data";
+import { NAP, PRICE_RANGE, PRICING_TIERS } from "@/lib/jeremy-data";
 import { serviceOfferJsonLd } from "@/lib/marketing-schema";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Typical engagement ${PRICE_RANGE.display} for operators in ${NAP.areaServed}. ${HERO_COPY.estimateCta} and I reply with a band — not an instant checkout.`,
+  description: `Optional scoped paid builds from ${NAP.brandName}. See typical prices and contact Jeremy to discuss whether a project fits.`,
   alternates: { canonical: "/pricing" },
 };
 
@@ -17,9 +17,9 @@ export default function PricingPage() {
     <MarketingShell>
       <JsonLd data={serviceOfferJsonLd(undefined, "/pricing")} />
       <MarketingPageHeader
-        eyebrow="Pricing"
-        title="Clear bands. No procurement theater."
-        description={`${PRICE_RANGE.line}. ${HERO_COPY.estimateCta} and I reply with a band before we talk numbers.`}
+        eyebrow="Optional paid builds"
+        title="When an idea needs a scoped build."
+        description={`Some collaborations become paid projects. A typical full build is ${PRICE_RANGE.display}; scope, price, and responsibilities are agreed together before work begins.`}
       />
 
       <section className="container max-w-6xl pb-[calc(5rem+var(--cookie-banner-offset,0px))]">
@@ -48,7 +48,7 @@ export default function PricingPage() {
 
         <div className="mt-10 max-w-xl">
           <p className="mb-4 text-sm text-muted-foreground">
-            This form does not price the job or start a checkout. I read it and reply with a band.
+            Share the idea and what you hope to make. We can discuss a paid scope if that is the right fit.
           </p>
           <EstimateCtas location="pricing" estimateTestId="pricing-estimate-cta" />
         </div>

@@ -2,26 +2,35 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Bot, Code2, Palette, LineChart, ArrowRight, MessageSquare } from "lucide-react";
+import {
+  Code2,
+  Palette,
+  LineChart,
+  ArrowRight,
+  MessageSquare,
+} from "lucide-react";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 import { useMotionProps, FADE_UP_LG } from "@/hooks/use-motion-props";
 import { HERO_COPY, MARKETING_SERVICES, PRICE_RANGE } from "@/lib/jeremy-data";
 
 const ICONS = {
-  Bot,
   Code2,
   Palette,
   LineChart,
 } as const;
 
 const HOME_OUTCOMES: Record<string, string> = {
-  "ai-agents": `One loop off the inbox, running without a chase — usually in the ${PRICE_RANGE.display} band.`,
+  "business-systems": `Clear handoffs and useful screens for daily work — usually in the ${PRICE_RANGE.display} band.`,
   fullstack: `The app the crew opens on shift, kept in your repo — usually in the ${PRICE_RANGE.display} band.`,
   brand: `A front door that matches the work — usually in the ${PRICE_RANGE.display} band.`,
   growth: `Invoices go out on time and margins stay visible, through Stripe — usually in the ${PRICE_RANGE.display} band.`,
 } as const;
 
-export function Services({ variant = "home" }: { variant?: "home" | "standalone" }) {
+export function Services({
+  variant = "home",
+}: {
+  variant?: "home" | "standalone";
+}) {
   const { open } = useLightbox();
   const mp = useMotionProps(FADE_UP_LG, "-80px");
   const isHome = variant === "home";
@@ -51,11 +60,15 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
               >
                 Start with the constraint.
                 <br />
-                <span className="text-muted-foreground">Build only what solves it.</span>
+                <span className="text-muted-foreground">
+                  Build only what solves it.
+                </span>
               </h2>
             </div>
             <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
-              Every engagement starts with how your people work today. The result may be a field app, an operations portal, or a better handoff—but never technology for its own sake.
+              Every engagement starts with how your people work today. The
+              result may be a field app, an operations portal, or a better
+              handoff—but never technology for its own sake.
             </p>
           </motion.div>
         )}
@@ -99,7 +112,10 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                     </p>
 
                     <p className="inline-flex items-center gap-1.5 text-xs font-medium text-primary tracking-wide mb-4">
-                      <span className="h-1 w-1 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
+                      <span
+                        className="h-1 w-1 rounded-full bg-primary flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       {HOME_OUTCOMES[s.id] ?? s.description}
                     </p>
 
@@ -114,7 +130,10 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                 ) : (
                   <>
                     <h3 className="font-display text-lg md:text-xl font-bold mb-3 tracking-tight text-foreground">
-                      <Link href={`/services/${s.id}`} className="hover:text-primary transition-colors">
+                      <Link
+                        href={`/services/${s.id}`}
+                        className="hover:text-primary transition-colors"
+                      >
                         {s.title}
                       </Link>
                     </h3>
@@ -123,13 +142,19 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                     </p>
 
                     <p className="inline-flex items-center gap-1.5 text-xs font-medium text-primary tracking-wide">
-                      <span className="h-1 w-1 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
+                      <span
+                        className="h-1 w-1 rounded-full bg-primary flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       {s.detail}
                     </p>
                   </>
                 )}
 
-                <div className="absolute bottom-8 right-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200" aria-hidden="true">
+                <div
+                  className="absolute bottom-8 right-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
+                  aria-hidden="true"
+                >
                   <ArrowRight className="h-4 w-4 text-primary" />
                 </div>
               </motion.article>
@@ -155,15 +180,21 @@ export function Services({ variant = "home" }: { variant?: "home" | "standalone"
                 <MessageSquare className="h-4 w-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="font-semibold text-sm text-foreground">Something else?</p>
+                <p className="font-semibold text-sm text-foreground">
+                  Something else?
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Doesn&apos;t fit a category? {HERO_COPY.estimateCta} and I&apos;ll reply with a price band.
+                  Doesn&apos;t fit a category? {HERO_COPY.estimateCta} and
+                  I&apos;ll reply with a price band.
                 </p>
               </div>
             </div>
             <span className="flex items-center gap-1.5 text-xs font-semibold text-accent-text shrink-0 ml-6 group-hover:underline underline-offset-4">
               {HERO_COPY.estimateCta}
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+              <ArrowRight
+                className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
             </span>
           </button>
         </motion.div>

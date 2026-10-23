@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLightbox } from "@/components/landing/LightboxProvider";
 
-export function ConversionBridge({ label = "Want this for your product?" }: { label?: string }) {
+export function ConversionBridge({ label = "Have an idea we could explore together?" }: { label?: string }) {
   const { open } = useLightbox();
 
   return (
@@ -12,19 +12,19 @@ export function ConversionBridge({ label = "Want this for your product?" }: { la
       <p className="text-sm font-medium text-foreground">{label}</p>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" className="rounded-full" onClick={() => open("book")}>
-          Book a call
+          Meet Jeremy
         </Button>
         <Button size="sm" variant="outline" className="rounded-full" onClick={() => open("form")}>
-          Tell me about your project
+          Share your idea
         </Button>
       </div>
     </div>
   );
 }
 
-export function AgentLoopDemo() {
+export function WorkOrderDemo() {
   const [step, setStep] = useState(0);
-  const steps = ["Plan unit scope", "Dispatch tools", "Verify diff", "Commit"];
+  const steps = ["Request received", "Quote prepared", "Build in progress", "Delivered"];
 
   return (
     <div className="space-y-4">
@@ -44,7 +44,7 @@ export function AgentLoopDemo() {
         className="rounded-full"
         onClick={() => setStep((n) => (n + 1) % steps.length)}
       >
-        Advance loop
+        Advance work order
       </Button>
       <ConversionBridge />
     </div>

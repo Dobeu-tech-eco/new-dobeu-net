@@ -12,7 +12,8 @@ import {
 const FOOTER_LINKS = {
   Site: [
     { label: "RouteReady", href: "/#routeready" },
-    { label: "Your operation", href: "/#work" },
+    { label: "Projects", href: "/#products" },
+    { label: "Building together", href: "/#how-it-works" },
     ...FOOTER_SITE_LINKS,
   ],
   Account: [
@@ -53,8 +54,8 @@ export function SiteFooter() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Custom operational software. Built around your people and
-              processes. Serving {NAP.areaServed}.
+              Jeremy Williams builds passion projects and usable business
+              technology with people who share his curiosity.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
               {SITE_IDENTITY.legalName} · {NAP.locality}, {NAP.region} ·{" "}

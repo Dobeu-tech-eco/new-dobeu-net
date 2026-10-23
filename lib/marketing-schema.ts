@@ -32,17 +32,17 @@ export function professionalServiceJsonLd(opts?: {
     },
     description:
       opts?.description ??
-      `AI automation and custom software for small businesses in ${NAP.areaServed}. Typical engagement ${PRICE_RANGE.display}.`,
+      `Jeremy Williams builds usable business technology and passion projects through ${NAP.brandName}. Scoped paid builds are available when a project calls for one.`,
     priceRange: PRICE_RANGE.display,
   };
 }
 
 export function serviceOfferJsonLd(pillar?: GtmPillar, pagePath?: string) {
   const SITE_URL = getSiteUrl();
-  const name = pillar?.headline ?? "Custom software and AI automation";
+  const name = pillar?.headline ?? "Usable business technology";
   const description =
     pillar?.description ??
-    `Fixed-scope engagements from ${PRICE_RANGE.display} for operators in ${NAP.areaServed}.`;
+    `Optional scoped paid builds from ${PRICE_RANGE.display}, with scope and terms agreed before work begins.`;
   return {
     "@context": "https://schema.org",
     "@type": "Service",

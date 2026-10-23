@@ -14,7 +14,7 @@ export function LabsPage() {
           Interactive proof from shipped work
         </h1>
         <p className="mt-4 max-w-2xl text-muted-foreground leading-relaxed">
-          Curated demos from real Dobeu projects — agent loops, visual craft, and growth pipelines. Complements{" "}
+          Explore a client work order, tune a visual effect, and step through a lead pipeline. Complements{" "}
           <Link href="/repos" className="text-primary underline underline-offset-4 hover:text-primary/80">
             /repos
           </Link>{" "}

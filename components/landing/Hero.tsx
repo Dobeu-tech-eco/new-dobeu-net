@@ -32,17 +32,14 @@ export function Hero() {
               className="size-2 shrink-0 rounded-pill bg-dobeu-indigo-500"
               aria-hidden="true"
             />
-            Real operations. Purpose-built solutions.
+            Jeremy Williams · Passion projects & collaboration.
           </p>
           <h1
             id="hero-heading"
             className={`${styles.headline} max-w-5xl text-balance font-display text-5xl font-bold leading-[1.2] tracking-normal text-fg-heading md:text-7xl lg:text-8xl`}
           >
-            Your business isn&apos;t generic.
-            <br />
-            <span className="text-primary">
-              Your software shouldn&apos;t be either.
-            </span>
+            We build usable <br />
+            <span className="text-primary">business technology.</span>
           </h1>
           <div
             className={`${styles.details} flex w-full flex-col gap-8 lg:flex-row lg:items-end lg:justify-between`}
@@ -51,9 +48,8 @@ export function Hero() {
               data-testid="hero-promise"
               className="max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground md:text-xl"
             >
-              Safer field work. Clearer handoffs. Less chasing information. We
-              build tailored operational systems around your people, your
-              constraints, and the work that needs to get done.
+              I’m Jeremy. Dobeu is the home for my passion projects, useful
+              experiments, and ideas worth exploring with like-minded people.
             </p>
             <div className="flex max-w-full flex-col items-start gap-3 lg:max-w-sm">
               <Button
@@ -63,20 +59,20 @@ export function Hero() {
                 onClick={() => {
                   track("cta_click", {
                     cta_location: "hero",
-                    cta_label: "Tell us what is getting in the way",
-                    target: "intake",
+                    cta_label: "Explore a collaboration",
+                    target: "form",
                   });
-                  open("intake");
+                  open("form");
                 }}
               >
-                Tell us what&apos;s getting in the way{" "}
+                Explore a collaboration{" "}
                 <ArrowUpRight
                   className="ml-2 size-4 shrink-0"
                   aria-hidden="true"
                 />
               </Button>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Start with the problem. Not a technical brief.
+                Have a shared interest or an idea? Let’s connect.
               </p>
             </div>
           </div>
@@ -88,10 +84,10 @@ export function Hero() {
               className="flex flex-wrap gap-x-8 gap-y-3 font-mono text-xs text-muted-foreground"
             >
               {[
-                "Tailored operational systems",
-                "Clearer handoffs",
-                "Dependable records",
-                "Field to back office",
+                "Passion projects",
+                "Shared curiosity",
+                "Useful products",
+                "Built together",
               ].map((service) => (
                 <li key={service}>{service}</li>
               ))}

@@ -4,10 +4,10 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LabDemoEntry } from "@/lib/labs-data";
-import { AgentLoopDemo, LeadPipelineDemo, ShaderDemo } from "@/components/labs/demos";
+import { LeadPipelineDemo, ShaderDemo, WorkOrderDemo } from "@/components/labs/demos";
 
 const DEMO_COMPONENTS = {
-  "agent-loop": AgentLoopDemo,
+  "work-order": WorkOrderDemo,
   shader: ShaderDemo,
   "lead-pipeline": LeadPipelineDemo,
 } as const;
