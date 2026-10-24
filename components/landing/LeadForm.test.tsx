@@ -27,6 +27,18 @@ afterEach(() => {
 });
 
 describe("LeadForm", () => {
+  it("keeps fields and labels distinct when two forms share a source", () => {
+    const { container } = render(<><LeadForm source="form" /><LeadForm source="form" /></>);
+    const fields = Array.from(container.querySelectorAll("input, textarea"));
+    const ids = fields.map((field) => field.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const form of container.querySelectorAll("form")) {
+      for (const label of form.querySelectorAll("label")) {
+        expect(form.contains(label.control)).toBe(true);
+      }
+    }
+  });
+
   it("sends a collaboration idea through the durable lead endpoint", async () => {
     fetchMock.mockResolvedValue({ ok: true });
     const onSuccess = vi.fn();

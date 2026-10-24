@@ -59,6 +59,7 @@ interface Props {
 }
 
 export function LeadForm({ source, onSuccess, compact = false }: Props) {
+  const formId = React.useId();
   const [submitting, setSubmitting] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
 
@@ -131,9 +132,9 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-2">
-        <Label htmlFor={`email-${source}`}>Email</Label>
+        <Label htmlFor={`email-${formId}`}>Email</Label>
         <Input
-          id={`email-${source}`}
+          id={`email-${formId}`}
           name="email"
           type="email"
           required
@@ -146,18 +147,18 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
         <>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor={`name-${source}`}>Name</Label>
+              <Label htmlFor={`name-${formId}`}>Name</Label>
               <Input
-                id={`name-${source}`}
+                id={`name-${formId}`}
                 name="name"
                 autoComplete="name"
                 placeholder="Your name"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor={`company-${source}`}>Company (optional)</Label>
+              <Label htmlFor={`company-${formId}`}>Company (optional)</Label>
               <Input
-                id={`company-${source}`}
+                id={`company-${formId}`}
                 name="company"
                 autoComplete="organization"
                 placeholder="Optional"
@@ -166,11 +167,11 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor={`message-${source}`}>
+            <Label htmlFor={`message-${formId}`}>
               {source === "form" ? "What are you exploring?" : "What's on your mind?"}
             </Label>
             <Textarea
-              id={`message-${source}`}
+              id={`message-${formId}`}
               name="message"
               rows={4}
               required={source === "form"}

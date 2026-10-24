@@ -222,7 +222,7 @@ export const PRIMARY_NAV_LINKS = [
   { href: "/process", label: "Process" },
   { href: "/about", label: "About" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/#faq", label: "FAQ" },
+  { href: "/faq", label: "FAQ" },
 ] as const;
 
 export const FOOTER_SITE_LINKS = [
@@ -231,7 +231,8 @@ export const FOOTER_SITE_LINKS = [
   { label: "About", href: "/about" },
   { label: "Pricing", href: "/pricing" },
   { label: "Case studies", href: "/case-studies" },
-  { label: "FAQ", href: "/#faq" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Contact", href: "/contact" },
   { label: "Labs", href: "/labs" },
   { label: "Repos", href: "/repos" },
 ] as const;
@@ -494,6 +495,8 @@ export const FOUNDER_REASONS = [
  * at build time — so legal and money pages do not share a build stamp.
  */
 export const CONTENT_DATES = {
+  contact: "2026-10-23",
+  faq: "2026-10-23",
   home: "2026-10-22",
   services: "2026-10-22",
   pricing: "2026-10-22",

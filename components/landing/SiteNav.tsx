@@ -39,7 +39,7 @@ const MORE_LINKS = [
   { label: "Pricing", href: "/pricing" },
   { label: "Process", href: "/process" },
   { label: "Case studies", href: "/case-studies" },
-  { label: "Questions", href: "/#faq" },
+  { label: "Questions", href: "/faq" },
   { label: "Labs", href: "/labs" },
   { label: "Repos", href: "/repos" },
 ];

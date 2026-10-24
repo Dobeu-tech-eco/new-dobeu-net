@@ -188,7 +188,7 @@ describe("adopted landing routing", () => {
     );
     expect(screen.getByRole("link", { name: "FAQ" })).toHaveAttribute(
       "href",
-      "/#faq",
+      "/faq",
     );
   });
 

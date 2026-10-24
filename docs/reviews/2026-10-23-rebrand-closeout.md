@@ -68,3 +68,15 @@ d006cc06d0441bb7feaf4b7fd10d0adfecc166dd. Preserve preexisting dirty edits; reve
 PR #296 review identified three valid issues: retired case-study URLs, the renamed service URL, and a stale visible terms revision date. Permanent redirects now retain all six retired case-study URLs via the case-study index and map `/services/ai-agents` to `/services/business-systems`. Terms reads `CONTENT_DATES.terms`. The duplicate service-redirect finding is addressed by the same fix.
 
 Validation: fresh `pnpm verify` passed (696 tests, type-check, lint with seven existing warnings, strict build). `e2e/rebrand-redirects.spec.ts` passed 16/16 across Chromium and mobile Chrome, checking 308 responses, query preservation, destination availability, and terms date metadata. Credentials were stripped using the existing safe-environment wrapper. GitHub checks on the new commit must pass before merge.
+
+## Contact and FAQ route repair
+
+User-reported Contact and FAQ errors were reproduced as HTTP 404 at `/contact` and `/faq`; neither App Router page existed. FAQ navigation also targeted an absent homepage anchor. Added pages using the existing marketing shell, collaboration form and FAQ accordion, connected navigation and sitemap entries, and retained the existing submission/consent behavior. No live form submission was made.
+
+Validation: `pnpm verify` passed (696 tests; seven preexisting lint warnings; strict build), and the positioning plus Contact/FAQ browser suites passed 58/58 on desktop and mobile Chrome. Both new routes return successful page responses, footer links navigate, the form is available, and FAQ answers expand/collapse.
+
+## Contact form review and visual baselines
+
+Cursor identified duplicate field IDs when the Contact page and collaboration dialog mount forms with the same source. A two-instance regression failed before the fix and passes with React.useId-based field IDs; labels resolve inside their own form, while field names and payload source stay unchanged.
+
+CI run 40036551555 passed 129 functional checks and failed four Linux full-page screenshots after the Contact footer entry increased each page height by 36 pixels. Inspected desktop/mobile footer captures for landing and labs and updated those four baselines from the run's actual PNG artifacts. Hero baselines and screenshot thresholds remain unchanged. Fresh Linux CI must validate the replacements.
