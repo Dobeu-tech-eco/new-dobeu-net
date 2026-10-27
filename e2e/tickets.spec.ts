@@ -1,5 +1,6 @@
 import { config as loadEnv } from "dotenv";
 import path from "node:path";
+import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { test, expect, type Page } from "@playwright/test";
 
@@ -22,7 +23,7 @@ function resolveSupabaseEnv() {
 /**
  * Ticket-flow E2E needs a Supabase-backed portal session. The app is magic-link
  * only, so we seed/ensure a test user via the service role and sign in through
- * `auth.admin.generateLink` → `/auth/callback`.
+ * `auth.admin.generateLink` → `verifyOtp` → session cookies.
  *
  * Set `E2E_PORTAL_EMAIL` to override the default test address.
  */
@@ -49,8 +50,8 @@ async function ensurePortalTestUser(email: string, url: string, serviceKey: stri
 }
 
 async function loginPortalUser(page: Page) {
-  const { url, serviceKey } = resolveSupabaseEnv();
-  if (!url || !serviceKey) {
+  const { url, anonKey, serviceKey } = resolveSupabaseEnv();
+  if (!url || !anonKey || !serviceKey) {
     throw new Error("Supabase env missing for E2E auth");
   }
 
@@ -60,20 +61,57 @@ async function loginPortalUser(page: Page) {
     auth: { autoRefreshToken: false, persistSession: false }
   });
 
-  const redirectTo = `http://localhost:3000/auth/callback?next=${encodeURIComponent("/portal/tickets")}`;
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
-    email: E2E_PORTAL_EMAIL,
-    options: { redirectTo }
+    email: E2E_PORTAL_EMAIL
   });
 
-  const actionLink = data.properties?.action_link;
-  if (error || !actionLink) {
-    throw new Error(`E2E generateLink failed: ${error?.message ?? "no action_link"}`);
+  const tokenHash = data?.properties?.hashed_token;
+  if (error || !tokenHash) {
+    throw new Error(`E2E generateLink failed: ${error?.message ?? "no hashed_token"}`);
   }
 
-  await page.goto(actionLink);
+  // Admin links use the implicit flow (tokens in the URL fragment), which
+  // /auth/callback does not handle. Verify the OTP server-side instead and
+  // hand the resulting session cookies to the browser.
+  const cookies = await verifyOtpCookies(url, anonKey, tokenHash);
+  await page.context().addCookies(cookies);
+
+  await page.goto("/portal/tickets");
   await page.waitForURL(/\/portal\/tickets/, { timeout: 30_000 });
+}
+
+/** Exchanges a magic-link token hash for Supabase session cookies. */
+async function verifyOtpCookies(url: string, anonKey: string, tokenHash: string) {
+  const jar = new Map<string, { value: string; maxAge?: number }>();
+  const client = createServerClient(url, anonKey, {
+    cookies: {
+      getAll: () => [...jar].map(([name, { value }]) => ({ name, value })),
+      setAll: (toSet) => {
+        for (const { name, value, options } of toSet) {
+          jar.set(name, { value, maxAge: options?.maxAge });
+        }
+      }
+    }
+  });
+
+  let { error } = await client.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash });
+  if (error) {
+    ({ error } = await client.auth.verifyOtp({ type: "email", token_hash: tokenHash }));
+  }
+  if (error) throw new Error(`E2E verifyOtp failed: ${error.message}`);
+  if (jar.size === 0) throw new Error("E2E verifyOtp set no session cookies");
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return [...jar].map(([name, { value, maxAge }]) => ({
+    name,
+    value,
+    domain: "localhost",
+    path: "/",
+    sameSite: "Lax" as const,
+    httpOnly: false,
+    ...(maxAge ? { expires: nowSeconds + maxAge } : {})
+  }));
 }
 
 test.describe("client ticket flow", () => {

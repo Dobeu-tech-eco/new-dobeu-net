@@ -6,7 +6,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 
 | name | unlocks | consumed in | how to add | status | owner | added |
 |---|---|---|---|---|---|---|
-| NEXT_PUBLIC_VERCEL_SUPABASE_URL, NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY, VERCEL_SUPABASE_SERVICE_ROLE_KEY (CI E2E) | e2e/tickets.spec.ts authenticated flow (end-state row 63) | .github/workflows/ci.yml E2E job env | gh secret set <NAME> (test project, not production) | open |  | 2026-10-27 |
+| NEXT_PUBLIC_VERCEL_SUPABASE_URL, NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY, VERCEL_SUPABASE_SERVICE_ROLE_KEY (CI E2E) | e2e/tickets.spec.ts authenticated flow (end-state row 63) | .github/workflows/ci.yml E2E job env | not needed: CI E2E runs a local Supabase stack (run 20261027-151152, Jeremy's choice) | done | Jeremy | 2026-10-27 |
 
 ## Decisions
 
@@ -20,7 +20,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | Approve revised closeout plan | runs/20261022-172443/plan-draft-r2.md; one writer, six owned files, local verification; no commit or deploy | done | Jeremy | 2026-10-22 |
 | Reconcile /privacy Customer.io opt-in wording | processLead runs Customer.io identify + lead_captured on every lead; privacy lines 88/113 say opt-in only. Gate on opt-in or revise text | done | Jeremy | 2026-10-27 |
 | Retired diagnose companion | mattpocock/skills has no `diagnose` (only diagnosing-bugs); upstream renamed it to diagnosing-bugs; fixed in dts2-marketplace#3 (59a624d, 3.6.2) | done | harness maintainer | 2026-10-27 |
-| Live two-user RLS check | end-state rows 37-44 blocked: portal pages scope data only via RLS; verify with two test users on a non-production Supabase branch | open |  | 2026-10-27 |
+| Live two-user RLS check | rows 37, 38, 42, 43 closed by pgTAP 32/32 on a local stack, which now also runs in CI (run 20261027-151152). Still open, rows 39, 40, 44: add two-user pgTAP for project_files and work_order_attachments | open |  | 2026-10-27 |
 | Agent-writing pass | P6 box open: run or record the setup agent-writing pass (writing-for-agents) and its approval | open |  | 2026-10-27 |
 | pgTAP + types-drift CI job | end-state row 1: add CI job (supabase start, supabase test db, gen types diff); deferred by Jeremy 2026-10-27 | open |  | 2026-10-27 |
 

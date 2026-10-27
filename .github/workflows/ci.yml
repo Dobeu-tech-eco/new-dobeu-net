@@ -68,7 +68,7 @@ jobs:
   e2e:
     name: E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     needs: validate
 
     steps:
@@ -91,6 +91,45 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
+      # Local Supabase stack so e2e/tickets.spec.ts runs instead of skipping.
+      # No GitHub secrets: the stack uses Supabase's fixed local demo keys
+      # (printed by `supabase start`), masked below for later steps.
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+
+      - name: Start local Supabase
+        run: supabase start -x studio,imgproxy,logflare,vector,supavisor,edge-runtime,realtime
+
+      - name: Export Supabase env for tests
+        run: |
+          set -euo pipefail
+          status="$(supabase status -o env)"
+          get() {
+            printf '%s\n' "$status" | sed -n "s/^$1=//p" | head -n1 | tr -d '"\r'
+          }
+          api_url="$(get API_URL)"
+          anon_key="$(get ANON_KEY)"
+          service_key="$(get SERVICE_ROLE_KEY)"
+          echo "::add-mask::$anon_key"
+          echo "::add-mask::$service_key"
+          for v in "$api_url" "$anon_key" "$service_key"; do
+            if [ -z "$v" ]; then
+              echo "Missing value in supabase status output" >&2
+              exit 1
+            fi
+          done
+          {
+            echo "NEXT_PUBLIC_VERCEL_SUPABASE_URL=$api_url"
+            echo "VERCEL_SUPABASE_URL=$api_url"
+            echo "NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY=$anon_key"
+            echo "VERCEL_SUPABASE_SERVICE_ROLE_KEY=$service_key"
+          } >> "$GITHUB_ENV"
+
+      - name: Database RLS tests (pgTAP)
+        run: supabase test db
+
       - name: Run E2E tests
         run: pnpm test:e2e
 
@@ -104,6 +143,10 @@ jobs:
             playwright-report/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
 
       - name: notify vercel
         if: always()

@@ -121,13 +121,13 @@ The 66-row map is approved.
 | 34 | Login | P3 | `app/login/page.tsx` | 3 | normal | done |
 | 35 | Company overview | P3 | `app/company/page.tsx` | 3,4,15 | normal | done |
 | 36 | Company members | P3 | `app/company/members/page.tsx` | 35 | normal | done |
-| 37 | Portal dashboard | P3 | `app/portal/page.tsx` | 3,4,15 | normal | blocked |
-| 38 | Portal projects | P3 | `app/portal/projects/page.tsx` | 37 | normal | blocked |
+| 37 | Portal dashboard | P3 | `app/portal/page.tsx` | 3,4,15 | normal | done |
+| 38 | Portal projects | P3 | `app/portal/projects/page.tsx` | 37 | normal | done |
 | 39 | Portal project detail | P3 | `app/portal/projects/[id]/page.tsx` | 38 | normal | blocked |
 | 40 | Portal files | P3 | `app/portal/files/page.tsx` | 8,37 | normal | blocked |
 | 41 | Portal assets | P3 | `app/portal/assets/page.tsx` | 8,37 | normal | done |
-| 42 | Portal invoices | P3/P5 | `app/portal/invoices/page.tsx` | 7,37 | normal | blocked |
-| 43 | Portal work orders | P3 | `app/portal/tickets/page.tsx` | 4,37 | normal | blocked |
+| 42 | Portal invoices | P3/P5 | `app/portal/invoices/page.tsx` | 7,37 | normal | done |
+| 43 | Portal work orders | P3 | `app/portal/tickets/page.tsx` | 4,37 | normal | done |
 | 44 | Portal work-order detail | P3 | `app/portal/tickets/[id]/page.tsx` | 43 | normal | blocked |
 | 45 | Portal settings | P3 | `app/portal/settings/page.tsx` | 3,4,37 | normal | done |
 | 46 | MFA settings | P3 | `app/portal/settings/mfa/page.tsx` | 3,45 | normal | blocked |
@@ -147,7 +147,7 @@ The 66-row map is approved.
 | 60 | Admin users | P4 | `app/admin/users/page.tsx` | 4,47 | normal | done |
 | 61 | Admin user detail | P4 | `app/admin/users/[id]/page.tsx` | 60 | normal | done |
 | 62 | Unit, integration and type checks | P6 | `colocated tests; vitest.config.ts; tsconfig.json` | 1-61,66 | normal | done |
-| 63 | Browser and visual verification | P6 | `e2e/; playwright.config.ts` | 18-61,66 | normal | blocked |
+| 63 | Browser and visual verification | P6 | `e2e/; playwright.config.ts` | 18-61,66 | normal | done |
 | 64 | Accessibility and performance | P6 | `lighthouserc*; browser checks` | 18-61,66 | normal | done |
 | 65 | Documentation and harness completion | P6 | `docs/; .harness/; .claude/dts2-harness.local.md` | 1-64,66 | normal | done |
 | 66 | Public metadata and discoverability | P1 | `app/layout.tsx; app/opengraph-image.tsx; app/sitemap.ts; app/robots.ts; public/llms.txt` | 13,18-33 | normal | done |
@@ -281,3 +281,9 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
   - P3 types.
   - P6 agent-writing pass (D10).
   - The `.env.example` `CRON_SECRET` line, which is a protected path.
+
+## Accepted evidence — run 20261027-151152
+
+- Row 63: `e2e/tickets.spec.ts` signs in through `verifyOtp` with session cookies, not the implicit-flow admin link. It passes against a local Supabase stack on chromium and on mobile-chrome. Mutations fail it: an invalid service-role key and a wrong assertion. CI's E2E job now starts a local stack and exports its demo keys, masked. No GitHub secrets are needed (S1 is closed).
+- Rows 37, 38, 42, 43: `supabase test db` passes 32/32 (`rls_hardening.test.sql`, two-user plus company scoping on projects, invoices and work_orders). The test now runs in CI.
+- Rows 39, 40, 44 stay blocked: `project_files` and `work_order_attachments` have no two-user pgTAP yet (D9 remainder).
