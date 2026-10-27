@@ -36,7 +36,11 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   // Fire pageview on navigation (analytics only).
   React.useEffect(() => {
     if (!consent.analytics) return;
-    const search = typeof window !== "undefined" ? window.location.search : "";
+    // Confirmation links carry a secret token in the query string; never send it.
+    const search =
+      typeof window !== "undefined" && !pathname.startsWith("/lead/confirm")
+        ? window.location.search
+        : "";
     pageView(pathname + search);
   }, [pathname, consent.analytics]);
 

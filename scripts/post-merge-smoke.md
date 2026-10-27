@@ -112,6 +112,13 @@ pnpm test:e2e -- e2e/tickets.spec.ts
 
 Covers client ticket submit only; full pay path remains manual above.
 
+## E. Contact form double opt-in (manual)
+
+1. In a real browser, submit the live contact form with your own email.
+2. Receive "Confirm your message to Dobeu", click the link, and press Confirm.
+3. See the success state; the admin "New lead" email arrives.
+4. Press Confirm again (or reload and retry): no duplicate lead is created.
+
 ## Rollback notes
 
 - If webhook signature mismatches, payments succeed in Stripe but app invoice rows stay unpaid — fix secret first, then replay events from Stripe Dashboard.  

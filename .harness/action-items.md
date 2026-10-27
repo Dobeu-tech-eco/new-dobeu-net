@@ -23,6 +23,8 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | Live two-user RLS check | rows 37, 38, 42, 43 closed by pgTAP 32/32 on a local stack, which now also runs in CI (run 20261027-151152). Still open, rows 39, 40, 44: add two-user pgTAP for project_files and work_order_attachments | open |  | 2026-10-27 |
 | Agent-writing pass | P6 box open: run or record the setup agent-writing pass (writing-for-agents) and its approval | open |  | 2026-10-27 |
 | pgTAP + types-drift CI job | end-state row 1: add CI job (supabase start, supabase test db, gen types diff); deferred by Jeremy 2026-10-27 | open |  | 2026-10-27 |
+| Add LEAD_VERIFY_SECRET= line with comment to .env.example (protected path; human edit) — run 20261027-172221 |  | open |  | 2026-10-27 |
+| Unique index on leads (raw_payload->>'verify_nonce') to close the cross-instance double-confirm race fully (needs migration) — run 20261027-172221 |  | open |  | 2026-10-27 |
 
 ## Handoff
 

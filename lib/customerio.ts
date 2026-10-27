@@ -1,6 +1,6 @@
 /**
  * Customer.io server-side track API wrapper.
- * Used by /api/lead to identify the contact and fire a "lead_captured" event,
+ * Used by the lead fan-out (called from /api/lead/confirm) to identify the contact and fire a "lead_captured" event,
  * which kicks off the welcome / nurture sequence in Customer.io.
  *
  * Docs: https://docs.customer.io/api/track/

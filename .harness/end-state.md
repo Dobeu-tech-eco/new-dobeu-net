@@ -287,3 +287,14 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
 - Row 63: `e2e/tickets.spec.ts` signs in through `verifyOtp` with session cookies, not the implicit-flow admin link. It passes against a local Supabase stack on chromium and on mobile-chrome. Mutations fail it: an invalid service-role key and a wrong assertion. CI's E2E job now starts a local stack and exports its demo keys, masked. No GitHub secrets are needed (S1 is closed).
 - Rows 37, 38, 42, 43: `supabase test db` passes 32/32 (`rls_hardening.test.sql`, two-user plus company scoping on projects, invoices and work_orders). The test now runs in CI.
 - Rows 39, 40, 44 stay blocked: `project_files` and `work_order_attachments` have no two-user pgTAP yet (D9 remainder).
+
+## Accepted evidence — run 20261027-172221 (contact-form spam)
+
+- `/api/lead` is now verify-first. Silent spam filters (hp_ref honeypot, elapsed_ms >= 1500 required, Origin allowlist, gibberish rule) drop bots with a 200 and send nothing. Clean submissions get an AES-GCM opaque 24h token, emailed as a /lead/confirm link. `processLead` runs only on a POST to /api/lead/confirm, with a per-nonce lock and nonce dedupe.
+- Verifier VERIFIED:
+  - unit tests 792/792 and `pnpm verify` green;
+  - the live bot payload was dropped with no email and no lead row;
+  - confirm, replay, tamper and expiry all behave correctly;
+  - the browser walkthrough showed no POST on load, the token stripped from the URL, and no-referrer set;
+  - mutations (gibberish rule, nonce dedupe, no-GET export, analytics exclusion) each fail their test.
+- Final review (opus): APPROVE_WITH_CHANGES, with all changes applied.

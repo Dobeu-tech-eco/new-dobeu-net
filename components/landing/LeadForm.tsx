@@ -25,25 +25,28 @@ function submitLabel(source: Source): string {
   }
 }
 
+const CONFIRM_BODY =
+  "Check your inbox and click the link to confirm. Nothing is sent until you do.";
+
 function confirmation(source: Source): { toast: string; title: string; body: string } {
   switch (source) {
     case "book":
       return {
-        toast: "Thanks — I'll be in touch about a time to talk.",
-        title: "Request received.",
-        body: "I'll follow up personally to find a time that works.",
+        toast: "Check your inbox to confirm your request.",
+        title: "One more step.",
+        body: `${CONFIRM_BODY} Then I'll follow up personally to find a time that works.`,
       };
     case "form":
       return {
-        toast: "Thanks for sharing your idea.",
-        title: "Idea received.",
-        body: "I'll read it personally and get back to you about where we might connect.",
+        toast: "Check your inbox to confirm your idea.",
+        title: "One more step.",
+        body: `${CONFIRM_BODY} Then I'll read it personally and get back to you.`,
       };
     case "email":
       return {
-        toast: "Got it — I'll reply by email.",
-        title: "Note received.",
-        body: "I'll read your note personally and be in touch.",
+        toast: "Check your inbox to confirm your note.",
+        title: "One more step.",
+        body: `${CONFIRM_BODY} Then I'll read it personally and be in touch.`,
       };
     default: {
       const unreachable: never = source;
@@ -62,6 +65,10 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
   const formId = React.useId();
   const [submitting, setSubmitting] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
+  const mountedAt = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    mountedAt.current = performance.now();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,6 +81,11 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
       source,
       utm: collectUtmFromUrl(),
       referrer: typeof document !== "undefined" ? document.referrer : "",
+      hp_ref: String(fd.get("hp_ref") ?? ""),
+      elapsed_ms:
+        mountedAt.current === null
+          ? 0
+          : Math.max(0, Math.round(performance.now() - mountedAt.current)),
     };
 
     if (!payload.email || !payload.email.includes("@")) {
@@ -96,11 +108,11 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? `Request failed (${res.status})`);
       }
-      // Keep `lead_captured` for backwards-compat with PostHog/Mixpanel funnels.
-      track("lead_captured", { source, has_message: !!payload.message });
+      // `lead_captured` fires from the confirm page once the email is verified.
       track("lead_submitted", {
         source,
-        has_message: !!payload.message
+        has_message: !!payload.message,
+        pending: true,
       });
       setSubmitted(true);
       toast.success(confirmation(source).toast);
@@ -131,6 +143,20 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div
+        aria-hidden="true"
+        className="absolute -left-[10000px] h-px w-px overflow-hidden"
+      >
+        <label htmlFor={`hp-${formId}`}>Leave this field empty</label>
+        <input
+          id={`hp-${formId}`}
+          name="hp_ref"
+          type="text"
+          tabIndex={-1}
+          autoComplete="new-password"
+          defaultValue=""
+        />
+      </div>
       <div className="grid gap-2">
         <Label htmlFor={`email-${formId}`}>Email</Label>
         <Input

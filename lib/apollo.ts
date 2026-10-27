@@ -1,6 +1,6 @@
 /**
  * Apollo.io API wrapper — server-only.
- * Used by /api/lead to upsert contacts.
+ * Used by the lead fan-out (called from /api/lead/confirm) to upsert contacts.
  *
  * Apollo docs: https://docs.apollo.io/reference
  */
