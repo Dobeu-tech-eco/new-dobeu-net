@@ -107,6 +107,16 @@ describe("POST /api/lead/confirm", () => {
     expect(mockedProcess).toHaveBeenCalledTimes(1);
   });
 
+  it("repeat confirm after completion returns 200 even inside the lock window", async () => {
+    const token = signLeadToken(input, SECRET, Date.now());
+    expect((await POST(req({ token }))).status).toBe(200);
+    mockedFind.mockResolvedValueOnce("lead_1");
+    const again = await POST(req({ token }));
+    expect(again.status).toBe(200);
+    expect(await again.json()).toEqual({ ok: true, source: "form", has_message: true });
+    expect(mockedProcess).toHaveBeenCalledTimes(1);
+  });
+
   it("503 when the secret is under 32 chars", async () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     process.env.LEAD_VERIFY_SECRET = "short";

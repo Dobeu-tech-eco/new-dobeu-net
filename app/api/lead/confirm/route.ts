@@ -41,17 +41,19 @@ export async function POST(request: Request) {
   if (!result.ok) return NextResponse.json({ ok: false, error: result.reason }, { status: 400 });
   const { payload } = result;
 
-  // Per-nonce lock: parallel confirms of one token would otherwise all miss the
-  // dedupe lookup and each create a lead. Upstash makes this hold across
-  // instances; residual risk is cross-instance races only when Upstash is unset.
-  // Note: the /lead/confirm page sends no-referrer, so these POSTs can carry
-  // Origin: null — do not add an Origin check here.
-  const lock = await checkRateLimit(`lead-confirm-nonce:${payload.nonce}`, { windowSec: 30, max: 1 });
-  if (lock.limited) return NextResponse.json({ ok: false, error: "in_progress" }, { status: 409 });
-
   const summary = { source: payload.source, has_message: Boolean(payload.message?.trim()) };
   try {
+    // Already confirmed → idempotent success, checked before the lock so a
+    // repeat click after a completed confirm never sees "in_progress".
     if (await findLeadByVerifyNonce(payload.nonce)) return NextResponse.json({ ok: true, ...summary });
+
+    // Per-nonce lock: parallel first confirms of one token would otherwise all
+    // miss the dedupe lookup and each create a lead. Upstash makes this hold
+    // across instances; residual risk is cross-instance races only when Upstash
+    // is unset. Note: the /lead/confirm page sends no-referrer, so these POSTs
+    // can carry Origin: null — do not add an Origin check here.
+    const lock = await checkRateLimit(`lead-confirm-nonce:${payload.nonce}`, { windowSec: 30, max: 1 });
+    if (lock.limited) return NextResponse.json({ ok: false, error: "in_progress" }, { status: 409 });
 
     const { leadId } = await processLead({
       email: payload.email,
