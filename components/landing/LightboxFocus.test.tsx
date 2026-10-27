@@ -143,4 +143,72 @@ describe("Lightbox focus restoration", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
+
+  function TwoTriggers() {
+    const { open } = useLightbox();
+    return (
+      <>
+        <button type="button" onClick={() => open("email")}>
+          Open A
+        </button>
+        <button type="button" onClick={() => open("email")}>
+          Open B
+        </button>
+      </>
+    );
+  }
+
+  async function escapeAndExpectFocus(target: HTMLElement) {
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(target));
+  }
+
+  it("prefers the pressed control over a previously focused one (Safari mouse click)", async () => {
+    render(
+      <LightboxProvider>
+        <TwoTriggers />
+      </LightboxProvider>,
+    );
+    const a = screen.getByRole("button", { name: "Open A" });
+    const b = screen.getByRole("button", { name: "Open B" });
+    a.focus();
+    fireEvent.pointerDown(b); // Safari: B is pressed but A keeps focus
+    expect(document.activeElement).toBe(a);
+    fireEvent.click(b);
+
+    await escapeAndExpectFocus(b);
+  });
+
+  it("uses the focused control for keyboard activation after an earlier stale press", async () => {
+    render(
+      <LightboxProvider>
+        <TwoTriggers />
+      </LightboxProvider>,
+    );
+    const a = screen.getByRole("button", { name: "Open A" });
+    const b = screen.getByRole("button", { name: "Open B" });
+    fireEvent.pointerDown(b);
+    a.focus();
+    fireEvent.keyDown(a, { key: "Enter" });
+    fireEvent.click(a);
+
+    await escapeAndExpectFocus(a);
+  });
+
+  it("uses the focused control when a click arrives with no pointerdown (screen reader)", async () => {
+    render(
+      <LightboxProvider>
+        <TwoTriggers />
+      </LightboxProvider>,
+    );
+    const a = screen.getByRole("button", { name: "Open A" });
+    const b = screen.getByRole("button", { name: "Open B" });
+    fireEvent.pointerDown(a); // earlier press that never opened anything
+    b.focus();
+    fireEvent.click(b); // virtual-cursor activation: no pointerdown, no keydown
+
+    await escapeAndExpectFocus(b);
+  });
 });

@@ -42,8 +42,11 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
   // cannot know what to refocus on close. Remember the opener ourselves.
   const openerRef = React.useRef<HTMLElement | null>(null);
   const isOpenRef = React.useRef(false);
-  // Safari does not focus buttons on mouse click, so activeElement is body at
-  // open() time. Remember the last pressed control as a fallback opener.
+  // Safari does not focus buttons on mouse click, so activeElement is body (or a
+  // previously focused control) at open() time. Remember the last pressed control
+  // and prefer it over activeElement, but only if the click lands on that same
+  // control. A click with no matching pointerdown (keyboard, screen reader,
+  // drag-off) drops the stale press so activeElement is used instead.
   const pointerTargetRef = React.useRef<Element | null>(null);
   React.useEffect(() => {
     isOpenRef.current = isOpen;
@@ -56,8 +59,19 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
           ? event.target.closest('button, a, [role="button"], [role="menuitem"]')
           : null;
     };
+    const onClick = (event: MouseEvent) => {
+      const control =
+        event.target instanceof Element
+          ? event.target.closest('button, a, [role="button"], [role="menuitem"]')
+          : null;
+      if (control !== pointerTargetRef.current) pointerTargetRef.current = null;
+    };
     document.addEventListener("pointerdown", onPointerDown, { capture: true, passive: true });
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("click", onClick, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("click", onClick, true);
+    };
   }, []);
 
   // Warm the chunk on the first sign of intent (pointer/touch/focus/key) so the
@@ -94,7 +108,7 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
       const pressed = pointerTargetRef.current;
       pointerTargetRef.current = null;
       openerRef.current =
-        returnFocusTo ?? fallback ?? (pressed instanceof HTMLElement && pressed.isConnected ? pressed : null);
+        returnFocusTo ?? (pressed instanceof HTMLElement && pressed.isConnected ? pressed : null) ?? fallback;
     }
     setTab(next);
     pendingRef.current = true;
