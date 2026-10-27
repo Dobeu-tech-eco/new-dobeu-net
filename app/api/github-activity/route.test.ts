@@ -134,6 +134,68 @@ describe("GET /api/github-activity", () => {
     expect(events.map((event) => event.id)).toEqual(["3"]);
   });
 
+  it("excludes PR titles with retired terms and keeps clean ones", async () => {
+    fetchMock.mockResolvedValue(
+      okResponse([
+        ghEvent({
+          id: "30",
+          type: "PullRequestEvent",
+          payload: { pull_request: { title: "Add AI agents to checkout" } },
+        }),
+        ghEvent({
+          id: "31",
+          type: "PullRequestEvent",
+          payload: { pull_request: { title: "Consulting page copy" } },
+        }),
+        ghEvent({
+          id: "32",
+          type: "PullRequestEvent",
+          payload: { pull_request: { title: "Improve checkout flow" } },
+        }),
+      ]),
+    );
+
+    const res = await GET();
+    const events = (await res.json()) as GitHubEvent[];
+
+    expect(events.map((e) => e.id)).toEqual(["32"]);
+    expect(events[0]).toMatchObject({
+      type: "pr",
+      message: "Improve checkout flow",
+    });
+  });
+
+  it("excludes release names with retired terms and keeps clean ones", async () => {
+    fetchMock.mockResolvedValue(
+      okResponse([
+        ghEvent({
+          id: "40",
+          type: "ReleaseEvent",
+          payload: { release: { name: "v2 AI assistant" } },
+        }),
+        ghEvent({
+          id: "41",
+          type: "ReleaseEvent",
+          payload: { release: { name: "v2 consultancy tools" } },
+        }),
+        ghEvent({
+          id: "42",
+          type: "ReleaseEvent",
+          payload: { release: { name: "v2.0.0" } },
+        }),
+      ]),
+    );
+
+    const res = await GET();
+    const events = (await res.json()) as GitHubEvent[];
+
+    expect(events.map((e) => e.id)).toEqual(["42"]);
+    expect(events[0]).toMatchObject({
+      type: "release",
+      message: "Released v2.0.0",
+    });
+  });
+
   it("keeps only the first commit line, truncates to 72 chars, and caps at 6 events", async () => {
     const longMessage = "x".repeat(100) + "\nsecond line ignored";
     const items = Array.from({ length: 10 }, (_, i) =>

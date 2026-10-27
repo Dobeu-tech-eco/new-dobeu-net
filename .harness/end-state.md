@@ -149,7 +149,7 @@ The 66-row map is approved.
 | 62 | Unit, integration and type checks | P6 | `colocated tests; vitest.config.ts; tsconfig.json` | 1-61,66 | normal | done |
 | 63 | Browser and visual verification | P6 | `e2e/; playwright.config.ts` | 18-61,66 | normal | blocked |
 | 64 | Accessibility and performance | P6 | `lighthouserc*; browser checks` | 18-61,66 | normal | done |
-| 65 | Documentation and harness completion | P6 | `docs/; .harness/; .claude/dts2-harness.local.md` | 1-64,66 | normal | todo |
+| 65 | Documentation and harness completion | P6 | `docs/; .harness/; .claude/dts2-harness.local.md` | 1-64,66 | normal | done |
 | 66 | Public metadata and discoverability | P1 | `app/layout.tsx; app/opengraph-image.tsx; app/sitemap.ts; app/robots.ts; public/llms.txt` | 13,18-33 | normal | done |
 
 ## Goal
@@ -182,7 +182,7 @@ Finish the repository harness and plan the closeout of the existing application.
 
 ### P1 Public site and projects
 - [x] Exact business-technology heading and links to RouteReady, Chima Comics, Dobeu.space and Ikram & Co. retained; browser checks pass on desktop/mobile.
-- [ ] Public visible text, metadata and accessible labels pass the existing forbidden-positioning audit, including dynamic GitHub event response/display text; route tests verify filtering and rejection contracts.
+- [x] Public visible text, metadata and accessible labels pass the existing forbidden-positioning audit, including dynamic GitHub event response/display text; route tests verify filtering and rejection contracts.
 - [x] Founder remains intentionally vague; primary invitation is collaboration, with no unsupported bio claims.
 
 ### P2 Collaboration intake
@@ -196,7 +196,7 @@ Finish the repository harness and plan the closeout of the existing application.
 - [ ] Generated database types and persisted identifiers are preserved.
 
 ### P4 Admin operations
-- [ ] Admin screens/actions retain existing authorization and MFA requirements, backed by relevant tests/source review.
+- [x] Admin screens/actions retain existing authorization and MFA requirements, backed by relevant tests/source review.
 - [x] Detailed intake remains review-only; no automatic pricing or unapproved external action is introduced.
 
 ### P5 Billing and integrations
@@ -261,3 +261,23 @@ Open acceptance gaps
 - Section 11: `CRON_SECRET` is undocumented.
 - P6 architecture/agent-writing: agent-writing pass not recorded.
 - Portal list pages 37/38/40/42/43 blocked with row 1 (RLS-only scoping).
+
+## Accepted evidence — run 20261027-134130
+
+Follow-up run for the buildable reconciliation gaps (tests and docs only, no product source). Fresh `pnpm verify`: 74 files, 750/750 tests (+40 on 710), 0 type errors, 0 lint errors (7 known warnings), strict build. An opus review approved; its MEDIUM and LOW items were fixed. The opus verifier returned VERIFIED, and its independent mutation checks failed the matching tests. Receipt: `runs/20261027-134130/receipt.md`.
+
+- Row 65 → done: `CLAUDE.md:7` now says Next.js 16 and `:22` says `eslint`.
+- Row 11 gap closed: `CRON_SECRET` is documented in `CLAUDE.md` and `docs/DEPLOYMENT.md` (Bearer, timing-safe, 401 when unset).
+- P4 admin authz checked:
+  - `lib/supabase/middleware.test.ts` covers the `/admin` and `/portal` gate: unauthenticated, non-admin, MFA enrolment, AAL1 step-up, AAL2 pass, a null or throwing assurance lookup failing closed, Supabase not configured, and no MFA-page loop.
+  - `app/admin/layout.test.tsx` covers the layout redirects and a throwing lookup failing closed.
+- P1 positioning checked:
+  - PR-title and release-name filters are tested in `app/api/github-activity/route.test.ts`.
+  - `lib/public-positioning.test.ts` scans `public/llms.txt` and the full `app/opengraph-image.tsx` source.
+- Row 46 local gap closed: `MfaEnroll`, `MfaStepUp` and `MfaStatus` component tests (15). The row stays blocked on live TOTP (Supabase auth).
+- Still open:
+  - Rows 1 and 37–44 (live RLS: D9; CI pgTAP and types job: D11).
+  - Row 63 (CI Supabase E2E secrets: S1).
+  - P3 types.
+  - P6 agent-writing pass (D10).
+  - The `.env.example` `CRON_SECRET` line, which is a protected path.

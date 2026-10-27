@@ -153,6 +153,7 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
 1. Go to https://vercel.com/new → Import `dobeutech/new-dobeu-net`.
 2. Framework preset: **Next.js** (auto-detected).
 3. Add environment variables from `.env.example` — copy values from Supabase, Apollo, Stripe, etc.
+   - `CRON_SECRET` — shared secret for `/api/cron/*` (cleanup, invoice-aging). Verified timing-safe in `lib/cron/auth.ts`; Vercel Cron sends it as `Authorization: Bearer <secret>`. Unset → cron calls are rejected (401).
 4. Click **Deploy**.
 5. Vercel assigns a `*.vercel.app` URL. Test all flows there before swapping DNS.
 
