@@ -181,7 +181,7 @@ describe("Lightbox focus restoration", () => {
     await escapeAndExpectFocus(b);
   });
 
-  it("uses the focused control for keyboard activation after an earlier stale press", async () => {
+  it("discards a stale press when the click lands on a different control (keyboard activation)", async () => {
     render(
       <LightboxProvider>
         <TwoTriggers />
@@ -191,6 +191,8 @@ describe("Lightbox focus restoration", () => {
     const b = screen.getByRole("button", { name: "Open B" });
     fireEvent.pointerDown(b);
     a.focus();
+    // Realism only: the click-target check (click on A, press was B) discards
+    // the stale press; the keydown itself plays no part.
     fireEvent.keyDown(a, { key: "Enter" });
     fireEvent.click(a);
 
@@ -210,5 +212,28 @@ describe("Lightbox focus restoration", () => {
     fireEvent.click(b); // virtual-cursor activation: no pointerdown, no keydown
 
     await escapeAndExpectFocus(b);
+  });
+
+  it("keeps the press when pointerdown and click land on a child inside the control", async () => {
+    function IconTrigger() {
+      const { open } = useLightbox();
+      return (
+        <button type="button" onClick={() => open("email")}>
+          <span data-testid="icon">→</span> Open with icon
+        </button>
+      );
+    }
+    render(
+      <LightboxProvider>
+        <IconTrigger />
+      </LightboxProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: /open with icon/i });
+    const icon = screen.getByTestId("icon");
+    fireEvent.pointerDown(icon); // Safari: the button is pressed but never focused
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.click(icon);
+
+    await escapeAndExpectFocus(trigger);
   });
 });
