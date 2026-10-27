@@ -33,6 +33,8 @@ Append entries as `- <date> <text>`.
 - 2026-10-27 SHIP accepted by Jeremy: Safari opener fallback, focus test hardening, SiteNav return-focus tests; D7 privacy/LeadForm copy, where Customer.io is opt-out rather than opt-in only. Receipt .harness/runs/20261027-084922/receipt.md. Rebased onto origin/main (after #297 merged), pushed, PR opened.
 - 2026-10-27 PR #299 merged (squash 448039f) by Jeremy's instruction; production confirmed: /website-package 308 → /, privacy opt-out copy live, real WebKit 27.2 focus walkthrough PASS 4/4 (closes the Safari-simulation-only risk). Codex P2 (pressed opener vs retained focus) fixed in 5811089 before merge.
 - 2026-10-27 Merged new-dobeu-net #300 (f236a0f): test tidy + #299 ship record. Merged dts2-marketplace#3 (59a624d) → dts2-harness 3.6.2: request-refactor-plan (retired upstream) replaced by improve-codebase-architecture scoped to the builder file set with manual fallback; diagnose (renamed upstream) replaced by a fresh diagnosing-bugs pass at the hard cap. D5, D8 done. Installed plugin is still 3.6.1 until the user updates.
+- 2026-10-27 dts2-harness 3.6.2 installed and verified (upgrade-check advanced 3.6.1 -> 3.6.2). Closed the stale 2026-10-22 planning open item (run accepted).
+- 2026-10-27 SHIP accepted by Jeremy: end-state reconciliation, 55 done / 10 blocked / 1 todo; receipt .harness/runs/20261027-112109/receipt.md.
 
 ## Failures and escalations
 
@@ -40,7 +42,7 @@ Append entries as `- <date> <text>`.
 
 ## Open items
 
-- 2026-10-22 Lead planning result recovered in full to runs/20261022-172443/plan-draft-r1.md. It is a draft, not approved. Revision round 2 completed; verbatim result saved to runs/20261022-172443/plan-draft-r2.md. Run completed and accepted; see shipped receipt. Batch count clarification: 11 selected sections (6 verification-only and 5 changes); S24 is an additional deferred section, not included in the 11. No builders started. Preserve all existing rebrand approvals and dirty baseline.
+- None.
 
 ### Commit and PR authorization — 2026-10-23
 
