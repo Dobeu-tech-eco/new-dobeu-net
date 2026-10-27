@@ -108,7 +108,7 @@ The 66-row map is approved.
 | 21 | Service details | P1 | `app/services/[pillar]/page.tsx` | 20 | normal | todo |
 | 22 | Process | P1 | `app/process/page.tsx` | 13,14 | normal | todo |
 | 23 | Optional paid-build pricing | P1 | `app/pricing/page.tsx` | 13,14 | normal | todo |
-| 24 | Website package | P1 | `app/website-package/page.tsx` | 13,14 | normal | todo |
+| 24 | Website package | P1 | `app/website-package/page.tsx` (retired → redirect to /) | 13,14 | normal | done |
 | 25 | Project examples | P1 | `app/case-studies/page.tsx` | 13,14 | normal | todo |
 | 26 | Project detail | P1 | `app/case-studies/[slug]/page.tsx` | 25 | normal | todo |
 | 27 | Labs | P1 | `app/labs/page.tsx; components/labs/` | 14 | normal | todo |

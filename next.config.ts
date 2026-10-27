@@ -146,6 +146,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/home", destination: "/", permanent: true },
+      { source: "/website-package", destination: "/", permanent: true },
       {
         source: "/services/ai-agents",
         destination: "/services/business-systems",

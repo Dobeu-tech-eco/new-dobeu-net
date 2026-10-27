@@ -20,7 +20,7 @@ function loadDialog() {
 }
 
 interface LightboxCtx {
-  open: (tab?: Tab) => void;
+  open: (tab?: Tab, returnFocusTo?: HTMLElement | null) => void;
   close: () => void;
 }
 
@@ -38,6 +38,13 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
   const [pending, setPending] = React.useState(false);
   const [tab, setTab] = React.useState<Tab>("book");
   const pendingRef = React.useRef(false);
+  // The dialog has no DialogTrigger and mounts after an async import, so Radix
+  // cannot know what to refocus on close. Remember the opener ourselves.
+  const openerRef = React.useRef<HTMLElement | null>(null);
+  const isOpenRef = React.useRef(false);
+  React.useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
   // Warm the chunk on the first sign of intent (pointer/touch/focus/key) so the
   // click that opens the dialog rarely waits. Nothing is fetched during load.
@@ -63,7 +70,15 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pending]);
 
-  const open = React.useCallback((next: Tab = "book") => {
+  const open = React.useCallback((next: Tab = "book", returnFocusTo?: HTMLElement | null) => {
+    if (!isOpenRef.current) {
+      const active = document.activeElement;
+      const fallback =
+        active instanceof HTMLElement && active !== document.body && active !== document.documentElement
+          ? active
+          : null;
+      openerRef.current = returnFocusTo ?? fallback;
+    }
     setTab(next);
     pendingRef.current = true;
     setPending(true);
@@ -84,6 +99,16 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback(() => setIsOpen(false), []);
 
+  const restoreFocus = React.useCallback((event: Event) => {
+    const opener = openerRef.current;
+    openerRef.current = null;
+    if (!opener?.isConnected) return;
+    opener.focus();
+    // Only suppress Radix's default when our focus actually took (Safari, hidden
+    // or disabled openers can refuse it).
+    if (document.activeElement === opener) event.preventDefault();
+  }, []);
+
   // ⚡ Bolt: Memoize context value to prevent unnecessary re-renders of consuming components
   // when internal state (like isOpen or tab) changes.
   const value = React.useMemo(() => ({ open, close }), [open, close]);
@@ -97,7 +122,7 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
           Opening dialog. Press Escape to cancel.
         </div>
       ) : null}
-      {Dialog ? <Dialog open={isOpen} onOpenChange={setIsOpen} tab={tab} onClose={close} /> : null}
+      {Dialog ? <Dialog open={isOpen} onOpenChange={setIsOpen} tab={tab} onClose={close} onCloseAutoFocus={restoreFocus} /> : null}
     </Ctx.Provider>
   );
 }

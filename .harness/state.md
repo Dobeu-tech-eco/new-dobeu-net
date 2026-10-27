@@ -3,6 +3,7 @@
 Append entries as `- <date> <text>`.
 
 ## Decisions
+- 2026-10-27 SHIP accepted by Jeremy: D4 lightbox focus restore, D2 /website-package retired (308 → /), D3 LeadForm CRM disclosure. Receipt .harness/runs/20261027-075439/receipt.md. Verifier VERIFIED round 1; final review APPROVE. Follow-ups (Safari mouse openers, weak test, SiteNav unit test) next run; /privacy Customer.io decision open.
 
 - 2026-10-22 Scope: this repository only. .omc/ and .impeccable/ coexist read-only; .agent/ imported read-only; preserve .omx/.codex/.cursor.
 - 2026-10-22 End-state map, architecture amendments, revised content and form-only wording approved by Jeremy. Status approved; plan-style applied.

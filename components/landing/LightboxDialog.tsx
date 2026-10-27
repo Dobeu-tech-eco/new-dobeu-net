@@ -69,16 +69,18 @@ export function LightboxDialog({
   onOpenChange,
   tab,
   onClose,
+  onCloseAutoFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tab: LightboxTab;
   onClose: () => void;
+  onCloseAutoFocus?: (event: Event) => void;
 }) {
   const copy = COPY[tab];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[92dvh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[92dvh] overflow-y-auto" onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle>{copy.title}</DialogTitle>
           <DialogDescription>{copy.description}</DialogDescription>

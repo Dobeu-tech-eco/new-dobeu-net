@@ -52,6 +52,7 @@ export function SiteNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef<HTMLButtonElement>(null);
+  const moreTriggerRef = useRef<HTMLButtonElement>(null);
 
   // The mobile menu is a full-width overlay. Any other fixed-position CTA
   // (notably StickyMobileCTA, which is a sibling under the server-rendered
@@ -123,7 +124,7 @@ export function SiteNav() {
             <li>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button ref={moreTriggerRef} variant="ghost" size="sm">
                     More{" "}
                     <ChevronDown className="ml-1 size-3" aria-hidden="true" />
                   </Button>
@@ -138,7 +139,7 @@ export function SiteNav() {
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
-                    <DropdownMenuItem onSelect={() => open("intake")}>
+                    <DropdownMenuItem onSelect={() => open("intake", moreTriggerRef.current)}>
                       Paid project intake
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -265,7 +266,7 @@ export function SiteNav() {
                 className="rounded-pill"
                 onClick={() => {
                   setMobileOpen(false);
-                  open("form");
+                  open("form", menuRef.current);
                 }}
               >
                 Explore a collaboration{" "}
@@ -276,7 +277,7 @@ export function SiteNav() {
                 className="rounded-pill"
                 onClick={() => {
                   setMobileOpen(false);
-                  open("book");
+                  open("book", menuRef.current);
                 }}
               >
                 Meet Jeremy{" "}
@@ -288,7 +289,7 @@ export function SiteNav() {
                 className="min-h-11 self-start rounded-pill"
                 onClick={() => {
                   setMobileOpen(false);
-                  open("intake");
+                  open("intake", menuRef.current);
                 }}
               >
                 Paid project intake

@@ -1,0 +1,124 @@
+import * as React from "react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+// Heavy tab bodies are stubbed; the real LightboxDialog (Radix Dialog) is used.
+vi.mock("@/components/landing/LeadForm", () => ({
+  LeadForm: ({ onSuccess }: { onSuccess?: () => void }) => (
+    <button type="button" onClick={onSuccess}>
+      Submit lead
+    </button>
+  ),
+}));
+vi.mock("@/components/landing/BookingTab", () => ({ BookingTab: () => <div>Booking</div> }));
+vi.mock("@/components/landing/TypeformTab", () => ({ TypeformTab: () => <div>Intake</div> }));
+
+import { LightboxProvider, useLightbox } from "./LightboxProvider";
+
+function Trigger() {
+  const { open } = useLightbox();
+  return (
+    <button type="button" onClick={() => open("email")}>
+      Open note
+    </button>
+  );
+}
+
+function RemovedOpener() {
+  const { open } = useLightbox();
+  const [shown, setShown] = React.useState(true);
+  const stable = React.useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <button type="button" ref={stable}>
+        Stable
+      </button>
+      {shown ? (
+        <button
+          type="button"
+          onClick={() => {
+            open("email", stable.current);
+            setShown(false);
+          }}
+        >
+          Menu item
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+describe("Lightbox focus restoration", () => {
+  afterEach(cleanup);
+
+  it("returns focus to the opening control when Escape closes the dialog", async () => {
+    render(
+      <LightboxProvider>
+        <Trigger />
+      </LightboxProvider>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Open note" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it("returns focus to the opener when the form closes the dialog via onSuccess", async () => {
+    render(
+      <LightboxProvider>
+        <Trigger />
+      </LightboxProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: "Open note" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Submit lead" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it("honours returnFocusTo when the original active element was removed", async () => {
+    render(
+      <LightboxProvider>
+        <RemovedOpener />
+      </LightboxProvider>,
+    );
+    const item = screen.getByRole("button", { name: "Menu item" });
+    item.focus();
+    fireEvent.click(item);
+
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    const stable = screen.getByRole("button", { name: "Stable" });
+    await waitFor(() => expect(document.activeElement).toBe(stable));
+  });
+
+  it("does not trap focus on body when opened with nothing focused", async () => {
+    render(
+      <LightboxProvider>
+        <Trigger />
+      </LightboxProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: "Open note" });
+    (document.activeElement as HTMLElement | null)?.blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.click(trigger); // fireEvent.click does not focus the button
+
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    // No stored opener: Radix's default runs rather than preventDefault + body.focus().
+    expect(document.activeElement).not.toBe(dialog);
+  });
+});
