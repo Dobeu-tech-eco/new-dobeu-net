@@ -35,6 +35,7 @@ Append entries as `- <date> <text>`.
 - 2026-10-27 Merged new-dobeu-net #300 (f236a0f): test tidy + #299 ship record. Merged dts2-marketplace#3 (59a624d) → dts2-harness 3.6.2: request-refactor-plan (retired upstream) replaced by improve-codebase-architecture scoped to the builder file set with manual fallback; diagnose (renamed upstream) replaced by a fresh diagnosing-bugs pass at the hard cap. D5, D8 done. Installed plugin is still 3.6.1 until the user updates.
 - 2026-10-27 dts2-harness 3.6.2 installed and verified (upgrade-check advanced 3.6.1 -> 3.6.2). Closed the stale 2026-10-22 planning open item (run accepted).
 - 2026-10-27 SHIP accepted by Jeremy: end-state reconciliation, 55 done / 10 blocked / 1 todo; receipt .harness/runs/20261027-112109/receipt.md.
+- 2026-10-27 SHIP accepted by Jeremy (pre-authorized: PR + merge on CI pass): reconciliation follow-ups 1–4 (admin gate, MFA, positioning tests; CLAUDE.md/CRON_SECRET docs). Row 65 done; P1 positioning and P4 admin authz checked. Receipt .harness/runs/20261027-134130/receipt.md. Logged S1, D9, D10, D11.
 
 ## Failures and escalations
 

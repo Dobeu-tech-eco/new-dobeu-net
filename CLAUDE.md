@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`dobeu.net` v3 — Next.js 15 (App Router) marketing landing + minimal client portal for Dobeu Tech Solutions. TypeScript, Tailwind, shadcn/ui, Supabase backend, deployed to Vercel.
+`dobeu.net` v3 — Next.js 16 (App Router) marketing landing + minimal client portal for Dobeu Tech Solutions. TypeScript, Tailwind, shadcn/ui, Supabase backend, deployed to Vercel.
 
 `BRAINSTORM.md` and `PLAN.md` are the source of truth for scope, decisions, and verification gates; `STATUS.md` tracks phase progress (Phases 1–5 have shipped on `main`: admin CRUD server actions, Stripe-hosted invoicing + webhook, Resend email templates, `is_admin` column dropped). `AUDIT.md` is a landing-page accessibility/SEO audit from a v0 session. Public pages beyond the landing: `/privacy`, `/terms` (rewritten from `/tos`), `/cookies`, `/marketing-opt-out`, `/optin`, `/repos` (GitHub showcase), `/login`.
 
@@ -19,7 +19,7 @@ pnpm dev                       # dev server -> http://localhost:3000
 pnpm build                     # production build (what Vercel runs)
 pnpm build:strict              # scripts/strict-build.mjs — build that FAILS on select Next.js warnings
 pnpm type-check                # tsc --noEmit
-pnpm lint                      # next lint  (pnpm lint:fix to autofix)
+pnpm lint                      # eslint  (pnpm lint:fix to autofix)
 pnpm test                      # vitest (watch)
 pnpm test:ci                   # vitest run (one-shot)
 pnpm test:e2e                  # playwright   (pnpm test:e2e:ui for UI mode)
@@ -143,6 +143,7 @@ Datadog is the single pane: RUM + Session Replay + browser Logs client-side (`li
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_REPLY_TO` | Transactional email via `lib/resend.ts`. |
 | `COMPOSIO_API_KEY`, `ANTHROPIC_API_KEY`, `AGENT_USER_ID` | Embedded agent (`lib/agent/`, `scripts/agent.ts`). Unset → agent surface degrades to `not_configured`. |
 | `GITHUB_TOKEN` | `/api/github-activity` + `/api/github-repo` (the `/repos` showcase page). |
+| `CRON_SECRET` | Shared secret for `/api/cron/*` (cleanup, invoice-aging); verified timing-safe in `lib/cron/auth.ts`. Vercel Cron sends it as a bearer token (`Authorization: Bearer <secret>`). Unset → cron calls are rejected (401). |
 | `NEXT_PUBLIC_SITE_URL` | Canonical origin for metadata/emails. |
 | `NEXT_PUBLIC_AMPLITUDE_API_KEY` | Amplitude browser key (public). Absent → Amplitude skipped. `NEXT_PUBLIC_AMPLITUDE_REPLAY_SAMPLE_RATE` (0–1, default 1) throttles Session Replay. |
 | `NEXT_PUBLIC_*` (PostHog, Mixpanel, Datadog) | Per-provider client-side analytics — feature-flagged by presence. GA4/GTM load via `<Script>` in `app/layout.tsx`. |
