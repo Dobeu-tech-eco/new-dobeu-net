@@ -27,7 +27,6 @@ const publicRoutes = [
   "/cookies",
   "/optin/sms",
   "/marketing-opt-out",
-  "/website-package",
   "/login",
 ];
 

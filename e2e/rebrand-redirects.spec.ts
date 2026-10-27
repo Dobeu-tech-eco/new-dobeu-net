@@ -4,6 +4,7 @@ const retiredCaseStudies = [
   "monty-ai", "unified-ai", "statminer", "dts-contract", "sales-funnel", "lastplate",
 ];
 const redirects = [
+  ["/website-package", "/"],
   ["/services/ai-agents", "/services/business-systems"],
   ...retiredCaseStudies.map((slug) => [`/case-studies/${slug}`, "/case-studies"]),
 ];

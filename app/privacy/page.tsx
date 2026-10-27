@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalLayout title="Privacy Policy" lastUpdated="2026-10-20">
+    <LegalLayout title="Privacy Policy" lastUpdated="2026-10-27">
       <p>
         Dobeu Tech Solutions LLC (&ldquo;Dobeu&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, or
         &ldquo;our&rdquo;) operates dobeu.net, the Dobeu client portal, and related services. This
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
         <li>Create and manage your client portal account.</li>
         <li>Issue invoices and process payments via Stripe.</li>
         <li>Send transactional emails (booking confirmations, invoice receipts, project status updates) via Resend.</li>
-        <li>Send marketing emails and follow-up sequences via Customer.io, <em>only if you have opted in</em>.</li>
+        <li>Send follow-up and marketing emails about your inquiry via Customer.io. You can opt out at any time using the unsubscribe link in any email or our <a href="/marketing-opt-out">marketing opt-out page</a>.</li>
         <li>Send SMS messages for project updates or appointment reminders, <em>only if you have opted in</em> per our <a href="/optin/sms">SMS Opt-In Policy</a>.</li>
         <li>Analyse site usage to improve performance and user experience, <em>only with analytics consent</em>.</li>
         <li>Detect, prevent, and respond to fraud, abuse, or security incidents.</li>
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
           <tr><td>Supabase</td><td>Database and authentication</td><td>US-East (AWS)</td></tr>
           <tr><td>Stripe</td><td>Payment processing</td><td>US / EU</td></tr>
           <tr><td>Resend</td><td>Transactional email</td><td>US</td></tr>
-          <tr><td>Customer.io</td><td>Marketing email sequences (opt-in only)</td><td>US</td></tr>
+          <tr><td>Customer.io</td><td>Lead follow-up and marketing email (opt out anytime)</td><td>US</td></tr>
           <tr><td>PostHog</td><td>Product analytics (opt-in only)</td><td>US</td></tr>
           <tr><td>Mixpanel</td><td>Event analytics (opt-in only)</td><td>US</td></tr>
           <tr><td>Amplitude</td><td>Product analytics and session replay (opt-in only)</td><td>US</td></tr>

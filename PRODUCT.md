@@ -24,7 +24,7 @@ Feature RouteReady (https://routereadyhq.com), Chima Comics (https://chimacomics
 
 ## Operating Context
 
-Visitors explore projects, share an idea through the collaboration form, book a conversation or email Jeremy. These are distinct paths. Preserve existing durable lead intake and authenticated client/admin workflows. Optional scoped paid builds remain secondary; the current /website-package offer requires a positioning and claim review before rebrand launch.
+Visitors explore projects, share an idea through the collaboration form, book a conversation or email Jeremy. These are distinct paths. Preserve existing durable lead intake and authenticated client/admin workflows. Optional scoped paid builds remain secondary; the flat-price /website-package offer was retired on 2026-10-27 and redirects to /.
 
 ## Capabilities and Constraints
 
