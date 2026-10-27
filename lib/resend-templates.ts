@@ -299,6 +299,31 @@ export function leadConfirmationToClient(args: {
   return { subject, text, html };
 }
 
+/** Fixed copy only: nothing submitter-controlled may appear in this email. */
+export function leadVerifyEmail(args: { confirmUrl: string }): EmailContent {
+  const subject = "Confirm your message to Dobeu";
+  const text = [
+    `Hey there —`,
+    ``,
+    `Someone submitted the contact form on dobeu.net with this email address. To confirm and send your message, open this link:`,
+    ``,
+    args.confirmUrl,
+    ``,
+    `If it wasn't you, ignore this email and nothing will be sent.`,
+    ``,
+    `— Jeremy Williams`
+  ].join("\n");
+  const html = shell(
+    `
+<h1 style="margin:0 0 12px;font-size:22px;font-weight:800;color:${DOBEU_INDIGO};">Hey there —</h1>
+<p style="margin:0 0 12px;">Someone submitted the contact form on dobeu.net with this email address. Click to confirm and send your message.</p>
+${button(args.confirmUrl, "Confirm and send")}
+<p style="margin:12px 0 0;color:${DOBEU_MUTED};font-size:12px;">If it wasn&apos;t you, ignore this email and nothing will be sent.</p>`,
+    { previewText: "Confirm your message to Dobeu" }
+  );
+  return { subject, text, html };
+}
+
 export function leadAdminNotification(args: {
   email: string;
   name?: string | null;

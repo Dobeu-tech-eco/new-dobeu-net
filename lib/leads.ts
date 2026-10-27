@@ -27,6 +27,8 @@ export interface ProcessLeadInput {
   referrer?: string | null;
   /** Pre-hashed IP for the audit payload (raw IP never stored). Optional. */
   ipHash?: string | null;
+  /** Nonce from the verified confirm token; makes confirmation idempotent. */
+  verifyNonce?: string;
 }
 
 export interface ProcessLeadResult {
@@ -60,7 +62,12 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
         utm_term: utm.utm_term ?? null,
         utm_content: utm.utm_content ?? null,
         referrer,
-        raw_payload: { message, ip_hash: input.ipHash ?? null, ...utm }
+        raw_payload: {
+          message,
+          ip_hash: input.ipHash ?? null,
+          ...(input.verifyNonce ? { verify_nonce: input.verifyNonce } : {}),
+          ...utm
+        }
       })
       .select("id")
       .single();
@@ -161,6 +168,18 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
   }
 
   return { leadId, apolloContactId };
+}
+
+/** Returns the id of an already-saved lead for this confirm nonce, else null. */
+export async function findLeadByVerifyNonce(nonce: string): Promise<string | null> {
+  const supa = createAdminClient();
+  const { data, error } = await supa
+    .from("leads")
+    .select("id")
+    .eq("raw_payload->>verify_nonce", nonce)
+    .limit(1);
+  if (error) throw new Error(error.message ?? "lead_lookup_failed");
+  return data?.[0]?.id ?? null;
 }
 
 /** Retained as a public utility; some legacy callers used to import this. */

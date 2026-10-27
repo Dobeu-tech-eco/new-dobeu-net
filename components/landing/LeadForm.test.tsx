@@ -65,8 +65,17 @@ describe("LeadForm", () => {
     expect(track).toHaveBeenCalledWith("lead_submitted", {
       source: "form",
       has_message: true,
+      pending: true,
     });
-    expect(screen.getByText("Idea received.")).toBeInTheDocument();
+    expect(screen.getByText("One more step.")).toBeInTheDocument();
+    expect(screen.getByText(/Nothing is sent until you do/)).toBeInTheDocument();
+    expect(toastSuccess).toHaveBeenCalledWith("Check your inbox to confirm your idea.");
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent.hp_ref).toBe("");
+    expect(Number.isInteger(sent.elapsed_ms)).toBe(true);
+    expect(sent.elapsed_ms).toBeGreaterThanOrEqual(0);
+    expect(sent).not.toHaveProperty("website");
+    expect(track).not.toHaveBeenCalledWith("lead_captured", expect.anything());
   });
 
   it("keeps the form open when the lead endpoint rejects a submission", async () => {
@@ -91,5 +100,15 @@ describe("LeadForm", () => {
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Please try again"));
     expect(onSuccess).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Send your idea" })).toBeEnabled();
+  });
+
+  it("renders a honeypot that is hidden from assistive tech and the tab order", () => {
+    const { container } = render(<LeadForm source="form" />);
+    const honeypot = container.querySelector<HTMLInputElement>('input[name="hp_ref"]');
+    expect(honeypot).not.toBeNull();
+    expect(honeypot).toHaveAttribute("tabindex", "-1");
+    expect(honeypot).toHaveAttribute("autocomplete", "new-password");
+    expect(honeypot?.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Leave this field empty" })).toBeNull();
   });
 });

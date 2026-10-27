@@ -3,7 +3,10 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { processLead } from "@/lib/leads";
+import { assessLead, buildAllowedOrigins } from "@/lib/lead-spam";
+import { isLeadSecretUsable, signLeadToken } from "@/lib/lead-verification";
+import { sendEmail } from "@/lib/resend";
+import { leadVerifyEmail } from "@/lib/resend-templates";
 
 // Whitelisted keys only (matches app/api/typeform/webhook/route.ts) so a
 // caller can't stuff an arbitrarily large object into leads.raw_payload.
@@ -21,6 +24,9 @@ const LeadSchema = z
       .partial()
       .default({}),
     referrer: z.string().max(2048).optional().nullable(),
+    // Bot signals: hidden honeypot and client-measured fill time (ms).
+    hp_ref: z.string().max(200).optional(),
+    elapsed_ms: z.number().int().min(0).max(86_400_000).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.source !== "form") return;
@@ -34,6 +40,9 @@ const LeadSchema = z
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const FRIENDLY_503 =
+  "We couldn’t send your confirmation email. Please try again or email jeremyw@dobeu.net.";
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
@@ -53,34 +62,70 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { email, name, company, message, source, utm, referrer } = parsed.data;
-  try {
-    const { leadId, apolloContactId } = await processLead({
-      email,
-      name,
-      company,
-      message,
-      source,
-      // Zod's optional UTM values type as `string | undefined`; processLead wants
-      // a clean Record<string, string>, so drop the undefined entries here.
-      utm: utm
-        ? (Object.fromEntries(Object.entries(utm).filter(([, v]) => v !== undefined)) as Record<
-            string,
-            string
-          >)
-        : undefined,
-      referrer,
-      ipHash: hashIp(ip)
-    });
+  const { email, name, company, message, source, utm, referrer, hp_ref, elapsed_ms } = parsed.data;
+  const now = Date.now();
 
-    if (!leadId) throw new Error("lead_persistence_failed");
-    return NextResponse.json({ ok: true, lead_id: leadId, apollo_contact_id: apolloContactId });
-  } catch {
-    return NextResponse.json(
-      { ok: false, error: "We couldn’t save your message. Please try again or email jeremyw@dobeu.net." },
-      { status: 503, headers: { "Retry-After": "60" } }
-    );
+  // Silently drop bots: same 200 as a real submission so they get no signal.
+  const verdict = assessLead({
+    honeypot: hp_ref,
+    elapsedMs: elapsed_ms,
+    origin: request.headers.get("origin"),
+    allowedOrigins: buildAllowedOrigins(),
+    message
+  });
+  if (verdict.spam) {
+    console.info(`[api/lead] dropped spam submission: ${verdict.reason}`);
+    return NextResponse.json({ ok: true, pending: true });
   }
+
+  const secret = process.env.LEAD_VERIFY_SECRET;
+  if (!isLeadSecretUsable(secret)) {
+    console.error("[api/lead] LEAD_VERIFY_SECRET not configured (need >= 32 chars)");
+    return unavailable();
+  }
+
+  if (await isEmailRateLimited(hashEmail(email))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
+  const token = signLeadToken(
+    {
+      email,
+      name: name ?? null,
+      company: company ?? null,
+      message: message ?? null,
+      source,
+      // Zod's optional UTM values type as `string | undefined`; drop the undefined entries.
+      utm: Object.fromEntries(Object.entries(utm ?? {}).filter(([, v]) => v !== undefined)) as Record<
+        string,
+        string
+      >,
+      referrer: referrer ?? null,
+      ipHash: hashIp(ip)
+    },
+    secret,
+    now
+  );
+  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://dobeu.net";
+  const confirmUrl = `${siteOrigin}/lead/confirm?token=${encodeURIComponent(token)}`;
+  const tpl = leadVerifyEmail({ confirmUrl });
+
+  try {
+    const sent = await sendEmail({ to: email, subject: tpl.subject, text: tpl.text, html: tpl.html });
+    if (!sent.ok) throw new Error(sent.error ?? "send_failed");
+  } catch (e) {
+    console.error("[api/lead] verification email failed", e instanceof Error ? e.message : e);
+    return unavailable();
+  }
+
+  return NextResponse.json({ ok: true, pending: true });
+}
+
+function unavailable() {
+  return NextResponse.json(
+    { ok: false, error: FRIENDLY_503 },
+    { status: 503, headers: { "Retry-After": "60" } }
+  );
 }
 
 // ---- helpers ----
@@ -112,6 +157,46 @@ async function isRateLimited(ip: string): Promise<boolean> {
   if (b.count >= RATE_LIMIT_MAX) return true;
   b.count += 1;
   return false;
+}
+
+const EMAIL_LIMITS = [
+  { max: 3, windowMs: 60 * 60_000, label: "1 h", prefix: "api:lead:email" },
+  { max: 3, windowMs: 24 * 60 * 60_000, label: "24 h", prefix: "api:lead:email-day" }
+] as const;
+const emailHits = new Map<string, number[]>();
+const upstashEmailLimits = upstashReady
+  ? EMAIL_LIMITS.map(
+      (l) =>
+        new Ratelimit({
+          redis: Redis.fromEnv(),
+          limiter: Ratelimit.slidingWindow(l.max, l.label),
+          prefix: l.prefix
+        })
+    )
+  : null;
+
+/** `emailKey` is a hash; raw addresses never reach limiter storage. */
+async function isEmailRateLimited(emailKey: string): Promise<boolean> {
+  if (upstashEmailLimits) {
+    for (const rl of upstashEmailLimits) {
+      const { success } = await rl.limit(emailKey);
+      if (!success) return true;
+    }
+    return false;
+  }
+  const now = Date.now();
+  const longest = EMAIL_LIMITS[1].windowMs;
+  for (const [key, hits] of emailHits) {
+    if (hits.every((t) => now - t >= longest)) emailHits.delete(key);
+  }
+  const recent = (emailHits.get(emailKey) ?? []).filter((t) => now - t < longest);
+  if (EMAIL_LIMITS.some((l) => recent.filter((t) => now - t < l.windowMs).length >= l.max)) return true;
+  emailHits.set(emailKey, [...recent, now]);
+  return false;
+}
+
+function hashEmail(email: string): string {
+  return createHash("sha256").update(email.trim().toLowerCase()).digest("hex").slice(0, 32);
 }
 
 function hashIp(ip: string): string {

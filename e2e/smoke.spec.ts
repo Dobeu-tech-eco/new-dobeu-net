@@ -250,7 +250,7 @@ test.describe("API routes", () => {
     );
   });
 
-  test("POST /api/lead reports durable persistence availability", async ({
+  test("POST /api/lead without an Origin header is treated as spam and acked pending", async ({
     request,
   }) => {
     const res = await request.post("/api/lead", {
@@ -262,22 +262,10 @@ test.describe("API routes", () => {
         message: "Dispatch still lives in the inbox.",
       },
     });
-    const persistenceConfigured = Boolean(
-      (process.env.VERCEL_SUPABASE_URL ??
-        process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL) &&
-      process.env.VERCEL_SUPABASE_SERVICE_ROLE_KEY,
-    );
+    expect(res.status()).toBe(200);
     const body = await res.json();
-    if (persistenceConfigured) {
-      expect(res.status()).toBe(200);
-      expect(body.ok).toBe(true);
-      expect(body.lead_id).toEqual(expect.any(String));
-    } else {
-      expect(res.status()).toBe(503);
-      expect(res.headers()["retry-after"]).toBe("60");
-      expect(body.ok).toBe(false);
-      expect(body.error).toContain("couldn’t save your message");
-    }
+    expect(body).toMatchObject({ ok: true, pending: true });
+    expect(body.lead_id).toBeUndefined();
   });
 
   test("POST /api/lead rejects invalid email", async ({ request }) => {
@@ -294,6 +282,33 @@ test.describe("API routes", () => {
       data: {},
     });
     expect(res.status()).toBe(400);
+  });
+});
+
+test.describe("Lead confirmation page", () => {
+  test("renders a missing-token message without calling the API", async ({ page }) => {
+    const posts: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("/api/lead/confirm")) posts.push(r.url());
+    });
+    await page.goto("/lead/confirm");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Confirm your message" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Confirm and send" })).toHaveCount(0);
+    expect(posts).toHaveLength(0);
+  });
+
+  test("shows the confirm button and does not auto-confirm on load", async ({ page }) => {
+    const posts: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("/api/lead/confirm")) posts.push(r.url());
+    });
+    await page.goto("/lead/confirm?token=bad");
+    await expect(page.getByRole("button", { name: "Confirm and send" })).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(posts).toHaveLength(0);
+    expect(page.url()).not.toContain("token=");
   });
 });
 

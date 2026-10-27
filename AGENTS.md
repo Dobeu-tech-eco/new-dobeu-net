@@ -31,7 +31,7 @@ Requirements: Node 24 (`.nvmrc`; `package.json` requires `>=24`) and pnpm 10.34.
 | Start the production build                          | `pnpm start`                     |
 | Build and fail on selected Next.js warnings         | `pnpm build:strict`              |
 
-The public site and lead-form demo run without `.env.local`. `/portal` and `/admin` require Supabase configuration and otherwise redirect to `/login?error=supabase_not_configured`.
+The public site and lead-form demo run without `.env.local`; sending real confirmation emails from the lead form needs `LEAD_VERIFY_SECRET` (>=32 chars) and Resend (spam acks work without). `/portal` and `/admin` require Supabase configuration and otherwise redirect to `/login?error=supabase_not_configured`.
 
 ## Tests
 

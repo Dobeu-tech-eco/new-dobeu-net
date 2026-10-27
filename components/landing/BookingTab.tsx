@@ -12,8 +12,9 @@ import { track } from "@/lib/analytics";
  *
  * Uses the existing Calendly free-tier account at jeremyw@dobeu.net
  * (https://calendly.com/jeremyw-dobeu-r_el). Fires PostHog/Mixpanel/GA4
- * events at each stage of the booking funnel and POSTs the final
- * confirmation to /api/lead so the contact lands in Supabase + Apollo too.
+ * events at each stage of the booking funnel. It does not POST to /api/lead:
+ * leads from bookings arrive via the Calendly webhook
+ * (/api/webhooks/calendly).
  *
  * Falls back to a LeadForm if NEXT_PUBLIC_CALENDLY_URL is not set.
  */
