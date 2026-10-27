@@ -74,7 +74,7 @@ describe("checkRateLimit (Upstash backend)", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await releaseRateLimit("lead-confirm-nonce:abc", "upstash");
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://example.upstash.io/pipeline");
     expect(init.method).toBe("POST");
     expect(JSON.parse(String(init.body))).toEqual([["DEL", "lead-confirm-nonce:abc"]]);
