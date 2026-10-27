@@ -107,6 +107,19 @@ describe("POST /api/lead/confirm", () => {
     expect(mockedProcess).toHaveBeenCalledTimes(1);
   });
 
+  it("retry after persistence failure is not stuck on the nonce lock", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const token = signLeadToken(input, SECRET, Date.now());
+    mockedProcess.mockRejectedValueOnce(new Error("db"));
+    expect((await POST(req({ token }))).status).toBe(503);
+    mockedProcess.mockResolvedValueOnce({ leadId: "lead_1" });
+    const retry = await POST(req({ token }));
+    expect(retry.status).toBe(200);
+    expect(await retry.json()).toEqual({ ok: true, source: "form", has_message: true });
+    expect(mockedProcess).toHaveBeenCalledTimes(2);
+    err.mockRestore();
+  });
+
   it("repeat confirm after completion returns 200 even inside the lock window", async () => {
     const token = signLeadToken(input, SECRET, Date.now());
     expect((await POST(req({ token }))).status).toBe(200);

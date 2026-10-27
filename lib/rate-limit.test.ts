@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { checkRateLimit, hashIp } from "./rate-limit";
+import { checkRateLimit, hashIp, releaseRateLimit } from "./rate-limit";
 
 describe("hashIp", () => {
   it("produces a deterministic ip_ prefixed token", () => {
@@ -29,6 +29,18 @@ describe("checkRateLimit (memory backend)", () => {
     expect(blocked.limited).toBe(true);
     expect(blocked.backend).toBe("memory");
   });
+
+  it("releaseRateLimit lets the next call start a fresh window", async () => {
+    const key = `mem-release:${Math.random()}`;
+    const first = await checkRateLimit(key, { windowSec: 60, max: 1 });
+    expect(first.limited).toBe(false);
+    const blocked = await checkRateLimit(key, { windowSec: 60, max: 1 });
+    expect(blocked.limited).toBe(true);
+    await releaseRateLimit(key, "memory");
+    const again = await checkRateLimit(key, { windowSec: 60, max: 1 });
+    expect(again.limited).toBe(false);
+    expect(again.count).toBe(1);
+  });
 });
 
 describe("checkRateLimit (Upstash backend)", () => {
@@ -54,6 +66,20 @@ describe("checkRateLimit (Upstash backend)", () => {
     expect(r.backend).toBe("upstash");
     expect(r.limited).toBe(false);
     expect(r.count).toBe(2);
+  });
+
+  it("releaseRateLimit deletes the Upstash key", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ result: 1 }]), { status: 200 }));
+    global.fetch = fetchMock as typeof fetch;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await releaseRateLimit("lead-confirm-nonce:abc", "upstash");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://example.upstash.io/pipeline");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(String(init.body))).toEqual([["DEL", "lead-confirm-nonce:abc"]]);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("falls back to memory on Upstash HTTP error", async () => {

@@ -82,6 +82,46 @@ function checkMemory(key: string, opts: CheckOptions): CheckResult {
   return { limited: b.count > opts.max, count: b.count, backend: "memory" };
 }
 
+/**
+ * Drop a key this process just incremented, so a failed attempt can retry
+ * inside the original window. Pass the backend from that `checkRateLimit` call.
+ */
+export async function releaseRateLimit(key: string, backend: CheckResult["backend"]): Promise<void> {
+  switch (backend) {
+    case "memory":
+      ipBuckets.delete(key);
+      return;
+    case "upstash":
+      try {
+        await deleteUpstashKey(key);
+      } catch (e) {
+        console.warn("[rate-limit] Upstash delete failed:", e);
+      }
+      return;
+    default: {
+      const unexpected: never = backend;
+      throw new Error(`unknown rate-limit backend: ${String(unexpected)}`);
+    }
+  }
+}
+
+async function deleteUpstashKey(key: string): Promise<void> {
+  const url = process.env.UPSTASH_REDIS_REST_URL!.replace(/\/$/, "");
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN!;
+  const res = await fetch(`${url}/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([["DEL", key]]),
+    cache: "no-store"
+  });
+  if (!res.ok) throw new Error(`Upstash HTTP ${res.status}`);
+  const data = (await res.json()) as Array<{ error?: string }>;
+  if (data[0]?.error) throw new Error(data[0].error);
+}
+
 /** Lightweight non-crypto hash to avoid storing raw IPs in lead payloads. */
 export function hashIp(ip: string): string {
   let h = 0;

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { findLeadByVerifyNonce, processLead } from "@/lib/leads";
 import { isLeadSecretUsable, verifyLeadToken } from "@/lib/lead-verification";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, releaseRateLimit } from "@/lib/rate-limit";
 
 // POST only: corporate link scanners issue GETs and must never confirm a lead.
 export const runtime = "nodejs";
@@ -42,6 +42,8 @@ export async function POST(request: Request) {
   const { payload } = result;
 
   const summary = { source: payload.source, has_message: Boolean(payload.message?.trim()) };
+  const nonceKey = `lead-confirm-nonce:${payload.nonce}`;
+  let heldLock: "upstash" | "memory" | null = null;
   try {
     // Already confirmed → idempotent success, checked before the lock so a
     // repeat click after a completed confirm never sees "in_progress".
@@ -52,8 +54,9 @@ export async function POST(request: Request) {
     // across instances; residual risk is cross-instance races only when Upstash
     // is unset. Note: the /lead/confirm page sends no-referrer, so these POSTs
     // can carry Origin: null — do not add an Origin check here.
-    const lock = await checkRateLimit(`lead-confirm-nonce:${payload.nonce}`, { windowSec: 30, max: 1 });
+    const lock = await checkRateLimit(nonceKey, { windowSec: 30, max: 1 });
     if (lock.limited) return NextResponse.json({ ok: false, error: "in_progress" }, { status: 409 });
+    heldLock = lock.backend;
 
     const { leadId } = await processLead({
       email: payload.email,
@@ -67,8 +70,12 @@ export async function POST(request: Request) {
       verifyNonce: payload.nonce
     });
     if (!leadId) throw new Error("lead_persistence_failed");
+    // Keep the lock after a successful write so a parallel confirm stays 409
+    // until the nonce row is visible to the dedupe lookup above.
+    heldLock = null;
     return NextResponse.json({ ok: true, ...summary });
   } catch (e) {
+    if (heldLock) await releaseRateLimit(nonceKey, heldLock);
     console.error("[api/lead/confirm] persistence failed", e instanceof Error ? e.message : e);
     return unavailable();
   }
