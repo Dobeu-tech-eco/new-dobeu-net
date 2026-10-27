@@ -60,7 +60,7 @@
     "stripe": "^17.7.0",
     "tailwind-merge": "^2.6.1",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.25.76"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@datadog/datadog-ci": "^5.25.0",
