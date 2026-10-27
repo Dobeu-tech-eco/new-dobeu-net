@@ -42,9 +42,23 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
   // cannot know what to refocus on close. Remember the opener ourselves.
   const openerRef = React.useRef<HTMLElement | null>(null);
   const isOpenRef = React.useRef(false);
+  // Safari does not focus buttons on mouse click, so activeElement is body at
+  // open() time. Remember the last pressed control as a fallback opener.
+  const pointerTargetRef = React.useRef<Element | null>(null);
   React.useEffect(() => {
     isOpenRef.current = isOpen;
   }, [isOpen]);
+
+  React.useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      pointerTargetRef.current =
+        event.target instanceof Element
+          ? event.target.closest('button, a, [role="button"], [role="menuitem"]')
+          : null;
+    };
+    document.addEventListener("pointerdown", onPointerDown, { capture: true, passive: true });
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, []);
 
   // Warm the chunk on the first sign of intent (pointer/touch/focus/key) so the
   // click that opens the dialog rarely waits. Nothing is fetched during load.
@@ -77,7 +91,10 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
         active instanceof HTMLElement && active !== document.body && active !== document.documentElement
           ? active
           : null;
-      openerRef.current = returnFocusTo ?? fallback;
+      const pressed = pointerTargetRef.current;
+      pointerTargetRef.current = null;
+      openerRef.current =
+        returnFocusTo ?? fallback ?? (pressed instanceof HTMLElement && pressed.isConnected ? pressed : null);
     }
     setTab(next);
     pendingRef.current = true;

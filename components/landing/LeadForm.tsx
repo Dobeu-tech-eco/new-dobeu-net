@@ -196,7 +196,7 @@ export function LeadForm({ source, onSuccess, compact = false }: Props) {
         )}
       </Button>
       <p className="text-xs text-muted-foreground text-center">
-        We&rsquo;ll use your email to reply and keep your details in our CRM. No newsletter unless you opt in.
+        We&rsquo;ll use your email to reply, keep your details in our CRM, and may send follow-up emails. Opt out anytime.
       </p>
     </form>
   );

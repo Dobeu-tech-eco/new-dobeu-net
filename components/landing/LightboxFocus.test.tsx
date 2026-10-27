@@ -112,13 +112,35 @@ describe("Lightbox focus restoration", () => {
     const trigger = screen.getByRole("button", { name: "Open note" });
     (document.activeElement as HTMLElement | null)?.blur();
     expect(document.activeElement).toBe(document.body);
+    const bodyFocus = vi.spyOn(document.body, "focus");
     fireEvent.click(trigger); // fireEvent.click does not focus the button
 
     const dialog = await screen.findByRole("dialog");
     fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    // No stored opener: Radix's default runs rather than preventDefault + body.focus().
+    // No stored opener: our restoreFocus must not run its own body.focus() path.
+    expect(bodyFocus).not.toHaveBeenCalled();
     expect(document.activeElement).not.toBe(dialog);
+    bodyFocus.mockRestore();
+  });
+
+  it("returns focus to the pressed control when the browser never focuses it (Safari mouse click)", async () => {
+    render(
+      <LightboxProvider>
+        <Trigger />
+      </LightboxProvider>,
+    );
+    const trigger = screen.getByRole("button", { name: "Open note" });
+    fireEvent.pointerDown(trigger);
+    trigger.blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.click(trigger);
+
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 });
