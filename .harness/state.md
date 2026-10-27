@@ -3,9 +3,6 @@
 Append entries as `- <date> <text>`.
 
 ## Decisions
-- 2026-10-27 PR #299 merged (squash 448039f) by Jeremy's instruction; production confirmed: /website-package 308 → /, privacy opt-out copy live, real WebKit 27.2 focus walkthrough PASS 4/4 (closes the Safari-simulation-only risk). Codex P2 (pressed opener vs retained focus) fixed in 5811089 before merge.
-- 2026-10-27 SHIP accepted by Jeremy: Safari opener fallback, focus test hardening, SiteNav return-focus tests; D7 privacy/LeadForm copy, where Customer.io is opt-out rather than opt-in only. Receipt .harness/runs/20261027-084922/receipt.md. Rebased onto origin/main (after #297 merged), pushed, PR opened.
-- 2026-10-27 SHIP accepted by Jeremy: D4 lightbox focus restore, D2 /website-package retired (308 → /), D3 LeadForm CRM disclosure. Receipt .harness/runs/20261027-075439/receipt.md. Verifier VERIFIED round 1; final review APPROVE. Follow-ups (Safari mouse openers, weak test, SiteNav unit test) next run; /privacy Customer.io decision open.
 
 - 2026-10-22 Scope: this repository only. .omc/ and .impeccable/ coexist read-only; .agent/ imported read-only; preserve .omx/.codex/.cursor.
 - 2026-10-22 End-state map, architecture amendments, revised content and form-only wording approved by Jeremy. Status approved; plan-style applied.
@@ -32,6 +29,10 @@ Append entries as `- <date> <text>`.
 - 2026-10-22 Build/review/finish/verification complete. Final VERIFIED local/mock after fresh hash and full app/source manifest checks; tests reused on unchanged bytes. Receipt runs/20261022-172443/receipt.md subsequently accepted by Jeremy. No commit, push or deploy. End-state statuses and learn deferred until ship decision.
 
 - 2026-10-23 SHIP accepted by Jeremy: six-file local rebrand closeout, receipt runs/20261022-172443/receipt.md. Review and verification complete, polish/simplify no-op. Learned four repo rules and one harness candidate; no promotions (first occurrence). No commit, push or deploy.
+- 2026-10-27 SHIP accepted by Jeremy: D4 lightbox focus restore, D2 /website-package retired (308 → /), D3 LeadForm CRM disclosure. Receipt .harness/runs/20261027-075439/receipt.md. Verifier VERIFIED round 1; final review APPROVE. Follow-ups (Safari mouse openers, weak test, SiteNav unit test) next run; /privacy Customer.io decision open.
+- 2026-10-27 SHIP accepted by Jeremy: Safari opener fallback, focus test hardening, SiteNav return-focus tests; D7 privacy/LeadForm copy, where Customer.io is opt-out rather than opt-in only. Receipt .harness/runs/20261027-084922/receipt.md. Rebased onto origin/main (after #297 merged), pushed, PR opened.
+- 2026-10-27 PR #299 merged (squash 448039f) by Jeremy's instruction; production confirmed: /website-package 308 → /, privacy opt-out copy live, real WebKit 27.2 focus walkthrough PASS 4/4 (closes the Safari-simulation-only risk). Codex P2 (pressed opener vs retained focus) fixed in 5811089 before merge.
+- 2026-10-27 Merged new-dobeu-net #300 (f236a0f): test tidy + #299 ship record. Merged dts2-marketplace#3 (59a624d) → dts2-harness 3.6.2: request-refactor-plan (retired upstream) replaced by improve-codebase-architecture scoped to the builder file set with manual fallback; diagnose (renamed upstream) replaced by a fresh diagnosing-bugs pass at the hard cap. D5, D8 done. Installed plugin is still 3.6.1 until the user updates.
 
 ## Failures and escalations
 
