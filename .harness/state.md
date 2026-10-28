@@ -36,6 +36,11 @@ Append entries as `- <date> <text>`.
 - 2026-10-27 dts2-harness 3.6.2 installed and verified (upgrade-check advanced 3.6.1 -> 3.6.2). Closed the stale 2026-10-22 planning open item (run accepted).
 - 2026-10-27 SHIP accepted by Jeremy: end-state reconciliation, 55 done / 10 blocked / 1 todo; receipt .harness/runs/20261027-112109/receipt.md.
 - 2026-10-27 SHIP accepted by Jeremy (pre-authorized: PR + merge on CI pass): reconciliation follow-ups 1–4 (admin gate, MFA, positioning tests; CLAUDE.md/CRON_SECRET docs). Row 65 done; P1 positioning and P4 admin authz checked. Receipt .harness/runs/20261027-134130/receipt.md. Logged S1, D9, D10, D11.
+- 2026-10-28 D9 closed: two-user + company pgTAP for project_files, work_order_attachments and both storage buckets (83/83 local, picked up by CI); rows 39/40/44 done; GAP 1 and GAP 2 logged as Decisions. Receipt: .harness/runs/20261028-064556/receipt.md
+- Ruling: builder claude/sonnet/medium over cheaper gemini — lane needed shell + local Docker stack — cost if wrong: ~1 tokenBurn step.
+- Ruling: pgTAP pins current RLS behaviour; gaps become Decisions, no migrations this run — cost if wrong: gaps stay live until decided.
+- Ruling: builder file committed on run branch dts2/20261028-064556 (copied from worktree, sha256 matched) because the shared pre-commit hook cannot resolve its gitignored script in worktrees — cost if wrong: none (hash-checked).
+- Fallback: reviewer:security copilot -> grok (copilot monthly quota exhausted).
 
 ## Failures and escalations
 
