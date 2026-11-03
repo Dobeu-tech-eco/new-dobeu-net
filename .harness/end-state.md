@@ -308,3 +308,10 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
   - GAP 2: an owner can delete an attachment's storage object but not its row.
 - Evidence is from the local stack plus CI, not production. The P3 access-boundary box stays unchecked: row 1 is blocked on D11 (types drift) and row 46 on live TOTP.
 - Receipt: `runs/20261028-064556/receipt.md`.
+
+## Accepted evidence — run 20261103-gaps (GAP 1 + GAP 2 closed)
+
+- GAP 1 fixed by `20261103000100`: storage SELECT on both buckets = owner or active company member, matching the table policies. GAP 2 fixed by `20261103000200`: `wo_attachments_storage_delete_own` dropped.
+- `rls_files_attachments.test.sql` now 56 assertions (adds disabled member F and a cross-bucket decoy); `supabase test db` 88/88 locally, 15/15 migrations applied. Mutations: restoring owner-only SELECT fails cases 3, 4, 23, 24; recreating the delete policy fails cases 4, 50, 54; a cross-bucket policy fails 3, 23, 38.
+- The run 20261028-064556 mutation note above ("extra storage SELECT policy fails 14 and 23") predates this fix.
+- Production: not applied until `supabase db push` (Deploy action item).

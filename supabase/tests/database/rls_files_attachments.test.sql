@@ -1,6 +1,6 @@
 -- =============================================================================
 -- pgTAP: RLS for project_files, work_order_attachments and their storage buckets
--- (20261022000100_rls_advisor_hardening.sql). Pins CURRENT behaviour.
+-- (20261022000100_rls_advisor_hardening.sql, 20261103000100, 20261103000200).
 -- Run: pnpm supabase test db   (requires the local Docker stack)
 --
 -- Fixtures (all rolled back; buckets come from migrations):
@@ -9,18 +9,18 @@
 --   user B  unrelated signed-in user; owns work order WB (personal)
 --   user C  active employee of company X
 --   user E  invited (not active) employee of company X
+--   user F  disabled employee of company X
+--   decoy   project-files object named like AT1's path (cross-bucket check)
 --
--- Known gaps pinned here (current behaviour, not endorsed):
---   GAP 1  company members see file rows but the storage SELECT policies are
---          owner-only, so members cannot sign download URLs.
---   GAP 2  an owner can delete a work-order attachment storage object while the
---          work_order_attachments row has no DELETE policy.
+-- Former gaps, now closed:
+--   GAP 1  storage SELECT widened to active company members (20261103000100).
+--   GAP 2  owner storage DELETE on work-order-attachments dropped (20261103000200).
 -- =============================================================================
 begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(51);
+select plan(56);
 
 -- -----------------------------------------------------------------------------
 -- Fixtures (as the migration owner, bypassing RLS)
@@ -29,14 +29,16 @@ insert into auth.users (id, email, aud, role) values
   ('11111111-1111-1111-1111-111111111111', 'rls-a@example.test', 'authenticated', 'authenticated'),
   ('22222222-2222-2222-2222-222222222222', 'rls-b@example.test', 'authenticated', 'authenticated'),
   ('33333333-3333-3333-3333-333333333333', 'rls-c@example.test', 'authenticated', 'authenticated'),
-  ('55555555-5555-5555-5555-555555555555', 'rls-e@example.test', 'authenticated', 'authenticated');
+  ('55555555-5555-5555-5555-555555555555', 'rls-e@example.test', 'authenticated', 'authenticated'),
+  ('66666666-6666-6666-6666-666666666666', 'rls-f@example.test', 'authenticated', 'authenticated');
 
 insert into public.companies (id, name) values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'RLS Test Co');
 
 insert into public.company_members (company_id, user_id, role, status) values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '33333333-3333-3333-3333-333333333333', 'employee', 'active'),
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '55555555-5555-5555-5555-555555555555', 'employee', 'invited');
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '55555555-5555-5555-5555-555555555555', 'employee', 'invited'),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '66666666-6666-6666-6666-666666666666', 'employee', 'disabled');
 
 insert into public.projects (id, owner_user_id, title, company_id) values
   ('b1000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Project A', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
@@ -67,6 +69,11 @@ insert into storage.objects (bucket_id, name) values
   ('work-order-attachments', 'd1000000-0000-0000-0000-000000000001/at1.pdf'),
   ('work-order-attachments', 'd1000000-0000-0000-0000-000000000002/at2.pdf');
 
+-- Decoy: a project-files object whose name equals AT1's attachment path. The
+-- project-files policy must not match it via work_order_attachments.
+insert into storage.objects (bucket_id, name) values
+  ('project-files', 'd1000000-0000-0000-0000-000000000001/at1.pdf');
+
 -- -----------------------------------------------------------------------------
 -- Catalog checks
 -- -----------------------------------------------------------------------------
@@ -88,18 +95,17 @@ select results_eq(
       where schemaname = 'storage' and tablename = 'objects'
         and coalesce(qual, '') || ' ' || coalesce(with_check, '') like '%project-files%'
       order by policyname $$,
-  $$ values ('project_files_storage_select_own'::text, 'SELECT'::text) $$,
-  'project-files bucket has exactly one storage policy: owner SELECT');
+  $$ values ('project_files_storage_select_owner_or_company'::text, 'SELECT'::text) $$,
+  'project-files bucket has exactly one storage policy: owner-or-company SELECT');
 
 select results_eq(
   $$ select policyname::text collate "default", cmd::text collate "default" from pg_policies
       where schemaname = 'storage' and tablename = 'objects'
         and coalesce(qual, '') || ' ' || coalesce(with_check, '') like '%work-order-attachments%'
       order by policyname $$,
-  $$ values ('wo_attachments_storage_delete_own'::text, 'DELETE'::text),
-            ('wo_attachments_storage_insert_own'::text, 'INSERT'::text),
-            ('wo_attachments_storage_select_own'::text, 'SELECT'::text) $$,
-  'work-order-attachments bucket has exactly delete/insert/select own policies');
+  $$ values ('wo_attachments_storage_insert_own'::text, 'INSERT'::text),
+            ('wo_attachments_storage_select_owner_or_company'::text, 'SELECT'::text) $$,
+  'work-order-attachments bucket has exactly insert-own and owner-or-company select policies (no delete)');
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'storage.objects'::regclass),
@@ -214,19 +220,25 @@ select results_eq(
   $$ values ('a1000000-0000-0000-0000-000000000001'::uuid) $$,
   'company member reads only company-scoped work_order_attachments');
 
--- GAP 1 current behaviour: member sees the row but cannot sign a download URL.
-select is_empty(
+-- Fixed by migration 20261103000100 (was GAP 1).
+select results_eq(
   $$ select name from storage.objects
-     where bucket_id = 'project-files'
-       and name = 'b1000000-0000-0000-0000-000000000001/pf1.pdf' $$,
-  'GAP 1: company member cannot select the project-files object');
+     where bucket_id = 'project-files' order by name $$,
+  $$ values ('b1000000-0000-0000-0000-000000000001/pf1.pdf'::text) $$,
+  'company member can select only the company project-files object (not PF2)');
 
--- GAP 1 current behaviour: member sees the row but cannot sign a download URL.
+-- Fixed by migration 20261103000100 (was GAP 1).
+select results_eq(
+  $$ select name from storage.objects
+     where bucket_id = 'work-order-attachments' order by name $$,
+  $$ values ('d1000000-0000-0000-0000-000000000001/at1.pdf'::text) $$,
+  'company member can select only the company work-order-attachments object (not AT2)');
+
 select is_empty(
   $$ select name from storage.objects
-     where bucket_id = 'work-order-attachments'
-       and name = 'd1000000-0000-0000-0000-000000000001/at1.pdf' $$,
-  'GAP 1: company member cannot select the work-order-attachments object');
+     where name in ('b1000000-0000-0000-0000-000000000002/pf2.pdf',
+                    'd1000000-0000-0000-0000-000000000002/at2.pdf') $$,
+  'company member cannot select PF2/AT2 objects (no-company rows do not leak)');
 
 select is_empty(
   $$ update public.project_files set filename = 'pwned.pdf'
@@ -264,6 +276,32 @@ select is_empty($$ select id from public.project_files $$,
 
 select is_empty($$ select id from public.work_order_attachments $$,
   'invited member cannot select work_order_attachments');
+
+select is_empty(
+  $$ select name from storage.objects where bucket_id = 'project-files' $$,
+  'invited member cannot select project-files objects');
+
+select is_empty(
+  $$ select name from storage.objects where bucket_id = 'work-order-attachments' $$,
+  'invited member cannot select work-order-attachments objects');
+
+-- -----------------------------------------------------------------------------
+-- As user F (disabled employee of company X)
+-- -----------------------------------------------------------------------------
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"66666666-6666-6666-6666-666666666666","role":"authenticated"}', true);
+
+select is_empty(
+  $$ select id from public.project_files
+     union all select id from public.work_order_attachments $$,
+  'disabled member cannot select project_files or work_order_attachments');
+
+select is_empty(
+  $$ select name from storage.objects
+     where bucket_id in ('project-files', 'work-order-attachments') $$,
+  'disabled member cannot select any file objects');
 
 -- -----------------------------------------------------------------------------
 -- As user A (owner)
@@ -357,11 +395,10 @@ select is_empty(
      where id = 'a1000000-0000-0000-0000-000000000001' returning id $$,
   'owner cannot update work_order_attachments');
 
--- GAP 2 current behaviour: the object is deletable (see the GAP 2 object-delete case below) but the row is not.
 select is_empty(
   $$ delete from public.work_order_attachments
      where id = 'a1000000-0000-0000-0000-000000000001' returning id $$,
-  'GAP 2: owner cannot delete work_order_attachments rows');
+  'owner cannot delete work_order_attachments rows');
 
 select lives_ok(
   $$ insert into storage.objects (bucket_id, name)
@@ -374,18 +411,17 @@ select throws_ok(
   '42501', null,
   'owner cannot upload into another user''s work-order folder');
 
--- GAP 2 current behaviour: the object is deletable while the row is not.
+-- Fixed by migration 20261103000200 (was GAP 2): the object is no longer deletable either.
 -- storage.protect_delete() is a statement-level trigger that raises 42501 for any direct
 -- DELETE unless this flag is set. set_config(..., true) is transaction-local and stays on
 -- for the rest of the transaction; set it so RLS (not the trigger) is what is tested.
 select set_config('storage.allow_delete_query', 'true', true);
 
-select results_eq(
+select is_empty(
   $$ delete from storage.objects
      where bucket_id = 'work-order-attachments'
        and name = 'd1000000-0000-0000-0000-000000000002/at2.pdf' returning name $$,
-  $$ values ('d1000000-0000-0000-0000-000000000002/at2.pdf'::text) $$,
-  'GAP 2: owner can delete a work-order attachment object');
+  'owner cannot delete a work-order attachment object');
 
 select is_empty(
   $$ update storage.objects set metadata = '{"x":1}'::jsonb
@@ -417,8 +453,10 @@ select results_eq(
   $$ values ('b1000000-0000-0000-0000-000000000001/pf1.pdf'::text),
             ('b1000000-0000-0000-0000-000000000002/pf2.pdf'::text),
             ('d1000000-0000-0000-0000-000000000001/at1.pdf'::text),
-            ('d1000000-0000-0000-0000-000000000001/new.pdf'::text) $$,
-  'storage holds PF1, PF2, AT1 and the new object; AT2 object is gone');
+            ('d1000000-0000-0000-0000-000000000001/at1.pdf'::text),
+            ('d1000000-0000-0000-0000-000000000001/new.pdf'::text),
+            ('d1000000-0000-0000-0000-000000000002/at2.pdf'::text) $$,
+  'storage holds PF1, PF2, AT1 (plus its project-files decoy), AT2 and the new object');
 
 select * from finish();
 rollback;

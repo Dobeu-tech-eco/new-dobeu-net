@@ -49,6 +49,8 @@ All 16 tables in the requested list exist in migrations. `messages` is the only 
 
 `storage.buckets` is not touched. Bucket rows and limits belong to a separate change.
 
+Superseded 2026-11-03: `20261103000100` replaces both `*_storage_select_own` policies with `*_storage_select_owner_or_company` (owner or active company member), and `20261103000200` drops `wo_attachments_storage_delete_own` (the table has no DELETE policy, so it orphaned rows).
+
 ## Functions
 
 | Function | Security | search_path before | EXECUTE before | Fix |
@@ -88,7 +90,7 @@ After this migration only two client UPDATE policies exist: `profiles_update_own
 ## Deferred (not fixed here, needs a decision)
 
 - **D1, `digital-assets` storage read.** No bucket and no `storage.objects` policy exist in migrations, yet `getAssetDownloadUrl` signs with the user client. Either the bucket and policy were created out-of-band, or entitled downloads fail today. This needs the bucket owner (storage.buckets change) to add an entitled-read policy, or the action should sign with the service role after its RLS entitlement check.
-- **D2, company-member storage reads.** The table RLS lets company members read `project_files` and `work_order_attachments` rows, but the storage policies only allow the owner. So `/api/files/[id]/download` and portal ticket attachments return no signed URL for co-members. Widening storage access is a product decision, so it is left owner-only.
+- **D2, company-member storage reads.** The table RLS lets company members read `project_files` and `work_order_attachments` rows, but the storage policies only allow the owner. So `/api/files/[id]/download` and portal ticket attachments return no signed URL for co-members. **Closed 2026-11-03** by `20261103000100`: storage SELECT now matches the table policies (owner or active company member).
 - **R1, company admin invite/activate (CLOSED).** A company admin can still insert any registered user as an `invited` member (that is the `inviteMember` feature, bounded to their own company and to roles at or below their own rank), but can no longer activate anyone: `enforce_company_member_activation` rejects, for `anon`/`authenticated`, any INSERT with `status='active'` and any UPDATE moving a row from a non-active status to `active`. Role edits on already-active rows and `active` to `disabled` are unaffected. Checked callers: `inviteMember` inserts `invited`, `changeMemberRole` writes `role`, `deactivateMember` writes `disabled`, and `provisionCompanyAdmin` (the only writer of `active`) uses the service role. No cookie-bound path sets `active`, and no accept-invite flow exists, so there is no invitee self-accept path to preserve. If one is added later, it needs a narrow service-role action (or a trigger exception for `user_id = auth.uid()`, `invited` to `active`, role unchanged).
 - **R2, entitled users see `storage_path`.** Entitled users can read their asset's `storage_path`. It is only useful with a storage read policy, and no `digital-assets` storage policy exists in migrations (see D1).
 - **D3, project-less company invoices.** `invoices_select_owner_or_company` widens to company members only through `project_id`. A work-order invoice with `project_id = null` stays visible only to `user_id`, matching prior behaviour.
