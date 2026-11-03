@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { QueryError } from "../QueryError";
 
 export default async function FilesPage() {
   const supabase = await createClient();
-  const { data: files } = await supabase
+  const { data: files, error } = await supabase
     .from("project_files")
     .select(
       "id,filename,mime,size_bytes,uploaded_at,retention_until,project_id,storage_path",
@@ -20,7 +21,9 @@ export default async function FilesPage() {
         </p>
       </header>
 
-      {!files || files.length === 0 ? (
+      {error ? (
+        <QueryError what="files" />
+      ) : !files || files.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <p className="font-semibold">No files yet</p>
         </div>

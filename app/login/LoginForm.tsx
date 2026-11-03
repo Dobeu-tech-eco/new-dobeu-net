@@ -64,6 +64,8 @@ export function LoginForm() {
       toast.error("You don't have access to that page.");
     } else if (errorParam === "supabase_not_configured") {
       toast.error("Auth isn't wired up yet — provision Supabase first.");
+    } else if (errorParam === "auth_callback_failed") {
+      toast.error("That sign-in link expired or was already used. Request a new one.");
     }
   }, [errorParam]);
 

@@ -11,7 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { createProject } from "@/lib/actions/projects";
 
@@ -20,7 +20,13 @@ interface OwnerOption {
   label: string;
 }
 
-export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
+export function NewProjectDialog({
+  owners,
+  companies,
+}: {
+  owners: OwnerOption[];
+  companies: { id: string; name: string }[];
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -29,14 +35,12 @@ export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
     setError(null);
     const payload = {
       owner_user_id: String(formData.get("owner_user_id") ?? ""),
+      company_id: String(formData.get("company_id") ?? "") || null,
       title: String(formData.get("title") ?? ""),
       description: String(formData.get("description") ?? "") || null,
       status: String(formData.get("status") ?? "proposed") as
-        | "proposed"
-        | "active"
-        | "delivered"
-        | "closed",
-      total_cents: Number(formData.get("total_cents") ?? 0)
+        "proposed" | "active" | "delivered" | "closed",
+      total_cents: Number(formData.get("total_cents") ?? 0),
     };
     startTransition(async () => {
       const result = await createProject(payload);
@@ -59,7 +63,8 @@ export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
         <DialogHeader>
           <DialogTitle>New project</DialogTitle>
           <DialogDescription>
-            Create a project for an existing user. The user sees it in their portal immediately.
+            Create a project for an existing user. The user sees it in their
+            portal immediately.
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
@@ -83,12 +88,39 @@ export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
             </select>
           </div>
           <div className="space-y-1.5">
+            <Label htmlFor="new_project_company_id">Company</Label>
+            <select
+              id="new_project_company_id"
+              name="company_id"
+              defaultValue=""
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="">No company</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" required minLength={2} maxLength={160} />
+            <Input
+              id="title"
+              name="title"
+              required
+              minLength={2}
+              maxLength={160}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" maxLength={8000} rows={3} />
+            <Textarea
+              id="description"
+              name="description"
+              maxLength={8000}
+              rows={3}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -122,7 +154,11 @@ export function NewProjectDialog({ owners }: { owners: OwnerOption[] }) {
             </p>
           )}
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={pending}>

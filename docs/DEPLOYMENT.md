@@ -99,11 +99,49 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
 7. **Authentication → URL Configuration** (project `ipmjokuezeuukhrilduq`):
    - **Site URL:** `https://dobeu.net`
    - **Redirect URLs** (add each line):
-     - `https://dobeu.net/**`
      - `https://dobeu.net/auth/callback`
-     - `https://*.vercel.app/**`
-     - `http://localhost:3000/**`
+     - `https://www.dobeu.net/auth/callback`
+     - `https://dobeu.dev/auth/callback`
+     - `https://www.dobeu.dev/auth/callback`
      - `http://localhost:3000/auth/callback`
+
+   **Warning:** never allowlist a shared `https://*.vercel.app/**` wildcard. Any Vercel user could
+   then request a magic link whose `redirect_to` is their own app and receive the auth code. For
+   previews, add only this team's exact preview hostnames (one entry per host).
+
+   **Previews cannot complete email sign-in end to end.** `resolveAuthOrigin()` (`lib/utils.ts`)
+   only trusts the exact `AUTH_ORIGIN_HOSTS` list (`dobeu.net`, `www.dobeu.net`, `dobeu.dev`,
+   `www.dobeu.dev`, `localhost`, `127.0.0.1`). A `*.vercel.app` preview host is not on it, so the
+   magic-link `emailRedirectTo` falls back to the site URL and the link lands on production, not
+   the preview. Walk email sign-in on production or localhost; use password login on previews.
+
+   > **WARNING: do not switch to the `token_hash` templates below yet.** Production currently uses
+   > Supabase's default `{{ .ConfirmationURL }}` templates (verified 2026-11-03). Do NOT switch
+   > until both of these are done first:
+   >
+   > 1. A Datadog/Vercel log-drain scrubbing rule for `token_hash`. A `token_hash` in the
+   >    dobeu.net request line is a standalone credential in platform request logs.
+   > 2. Redirect allowlist entries with `**` wildcards (for example
+   >    `https://dobeu.net/auth/callback**`), because `{{ .RedirectTo }}&token_hash=...` carries
+   >    extra query parameters that exact-match entries reject.
+   >
+   > Also note: if Supabase falls back to the Site URL, `{{ .RedirectTo }}` is just
+   > `https://dobeu.net`, producing a malformed `https://dobeu.net&token_hash=...` link that the
+   > middleware rescue cannot fix.
+
+   **Email templates (required for admin invites, only after the warning above is satisfied):** server-side `inviteUserByEmail` cannot use
+   PKCE, so the default `{{ .ConfirmationURL }}` link returns the session in the URL *fragment*,
+   which `/auth/callback` (a server route) never sees. In Supabase → Authentication → Email
+   Templates, set the **Invite user** and **Magic Link** links to the token-hash form:
+
+   - Invite: `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=invite`
+   - Magic Link: `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=magiclink`
+
+   `{{ .RedirectTo }}` already carries `/auth/callback?next=...`. The callback parks the token in a
+   short-lived Lax, path-scoped cookie and sends the user to `/auth/confirm`, which signs in only
+   after an explicit "Continue signing in" POST (Origin-checked). Test with a fresh invite after
+   saving.
+
    If Site URL is still `http://localhost:3000`, magic links fall back to localhost even when
    requested from production. After saving, request a **new** magic link (old emails keep the
    stale `redirect_to`).
@@ -155,13 +193,13 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
 3. Add environment variables from `.env.example` — copy values from Supabase, Apollo, Stripe, etc.
    - `CRON_SECRET` — shared secret for `/api/cron/*` (cleanup, invoice-aging). Verified timing-safe in `lib/cron/auth.ts`; Vercel Cron sends it as `Authorization: Bearer <secret>`. Unset → cron calls are rejected (401).
 4. Click **Deploy**.
-5. Vercel assigns a `*.vercel.app` URL. Test all flows there before swapping DNS.
+5. Vercel assigns a `*.vercel.app` URL. Test flows there before swapping DNS, except email sign-in (magic link / invite): `resolveAuthOrigin()` falls back to the site URL on preview hosts, so that flow cannot be walked end to end on a preview.
 
 ---
 
 ## Phase 4 — Verify on the preview URL
 
-Before touching DNS, walk every flow on the `*.vercel.app` preview:
+Before touching DNS, walk every flow on the `*.vercel.app` preview (email sign-in excepted: magic links resolve to the site URL, not the preview host):
 
 - [ ] Hero loads with both CTAs visible
 - [ ] Lightbox opens with all three tabs

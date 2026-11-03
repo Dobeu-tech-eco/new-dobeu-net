@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
+import { safeStripeInvoiceUrl } from "@/lib/stripe-url";
 import { Button } from "@/components/ui/button";
+import { QueryError } from "../QueryError";
 
 export default async function InvoicesPage() {
   const supabase = await createClient();
-  const { data: invoices } = await supabase
+  const { data: invoices, error } = await supabase
     .from("invoices")
     .select(
       "id,project_id,amount_cents,currency,status,due_date,paid_at,stripe_invoice_id,hosted_invoice_url",
@@ -22,7 +24,9 @@ export default async function InvoicesPage() {
         </p>
       </header>
 
-      {!invoices || invoices.length === 0 ? (
+      {error ? (
+        <QueryError what="invoices" />
+      ) : !invoices || invoices.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <p className="font-semibold">No invoices yet</p>
         </div>
@@ -67,10 +71,10 @@ export default async function InvoicesPage() {
                   </td>
                   <td className="p-3 text-right">
                     {(inv.status === "open" || inv.status === "overdue") &&
-                    inv.hosted_invoice_url ? (
+                    safeStripeInvoiceUrl(inv.hosted_invoice_url) ? (
                       <Button asChild size="sm">
                         <a
-                          href={inv.hosted_invoice_url}
+                          href={safeStripeInvoiceUrl(inv.hosted_invoice_url) ?? undefined}
                           target="_blank"
                           rel="noreferrer"
                         >

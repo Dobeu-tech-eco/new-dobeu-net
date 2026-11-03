@@ -99,7 +99,7 @@ describe("AdminIntakesPage pagination", () => {
 
     render(
       await AdminIntakesPage({
-        searchParams: Promise.resolve({}),
+        searchParams: Promise.resolve({ error: "load_failed" }),
       }),
     );
 
