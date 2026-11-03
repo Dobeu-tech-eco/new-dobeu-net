@@ -101,7 +101,8 @@ export async function POST(request: Request) {
     signingSecret,
   );
   if (!valid) {
-    await safely(() =>
+    // Fire-and-forget: the Datadog call can take up to 2 s, and forged floods must return immediately.
+    void safely(() =>
       logToDatadog("warn", "typeform_webhook_invalid_signature", {
         route: ROUTE,
         request_id: requestId,

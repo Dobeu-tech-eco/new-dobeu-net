@@ -94,7 +94,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
     // The Stripe verification error carries the raw payload and signature
     // header as properties, so it is deliberately NOT forwarded to Datadog.
-    await safely(() =>
+    // Fire-and-forget: the Datadog call can take up to 2 s, and forged floods must return immediately.
+    void safely(() =>
       logToDatadog("warn", "stripe_webhook_invalid_signature", {
         route: ROUTE,
         request_id: requestId

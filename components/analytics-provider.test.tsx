@@ -36,6 +36,13 @@ describe("AnalyticsProvider pageView", () => {
     expect(pageView).toHaveBeenCalledWith("/lead/confirm");
   });
 
+  it("never includes the query string for /auth/ paths", () => {
+    pathnameMock.mockReturnValue("/auth/confirm");
+    window.history.replaceState(null, "", "/auth/confirm?next=x");
+    render(<AnalyticsProvider>x</AnalyticsProvider>);
+    expect(pageView).toHaveBeenCalledWith("/auth/confirm");
+  });
+
   it("keeps the query string for other pages", () => {
     pathnameMock.mockReturnValue("/");
     window.history.replaceState(null, "", "/?utm_source=x");

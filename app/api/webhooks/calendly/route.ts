@@ -66,7 +66,8 @@ export async function POST(request: Request) {
   const signingKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY!;
   const valid = verifyCalendlySignature(rawBody, request.headers.get("Calendly-Webhook-Signature"), signingKey);
   if (!valid) {
-    await safely(() =>
+    // Fire-and-forget: the Datadog call can take up to 2 s, and forged floods must return immediately.
+    void safely(() =>
       logToDatadog("warn", "calendly_webhook_invalid_signature", {
         route: ROUTE,
         request_id: requestId
