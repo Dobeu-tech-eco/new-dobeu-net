@@ -21,7 +21,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | Reconcile /privacy Customer.io opt-in wording | processLead runs Customer.io identify + lead_captured on every lead; privacy lines 88/113 say opt-in only. Gate on opt-in or revise text | done | Jeremy | 2026-10-27 |
 | Retired diagnose companion | mattpocock/skills has no `diagnose` (only diagnosing-bugs); upstream renamed it to diagnosing-bugs; fixed in dts2-marketplace#3 (59a624d, 3.6.2) | done | harness maintainer | 2026-10-27 |
 | Live two-user RLS check | rows 37, 38, 42, 43 closed by pgTAP 32/32 (run 20261027-151152); rows 39, 40, 44 closed by rls_files_attachments.test.sql 83/83 (run 20261028-064556) | done | harness lead | 2026-10-27 |
-| Agent-writing pass | P6 box open: run or record the setup agent-writing pass (writing-for-agents) and its approval | open |  | 2026-10-27 |
+| Agent-writing pass | done 2026-11-03: /writing-for-agents re-run on end-state.md and plan-style.md; per-run evidence moved verbatim to .harness/evidence-log.md; P6 box checked (original pass approved 2026-10-22, state.md) | done |  | 2026-10-27 |
 | pgTAP + types-drift CI job | end-state row 1: add CI job (supabase start, supabase test db, gen types diff); deferred by Jeremy 2026-10-27 | open |  | 2026-10-27 |
 | Add LEAD_VERIFY_SECRET= line with comment to .env.example (protected path; human edit) — run 20261027-172221 |  | open |  | 2026-10-27 |
 | Unique index on leads (raw_payload->>'verify_nonce') to close the cross-instance double-confirm race fully (needs migration) — run 20261027-172221 |  | open |  | 2026-10-27 |
@@ -29,6 +29,15 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | Orphan attachment rows on object delete (GAP 2) | owner can delete a work-order-attachments storage object (wo_attachments_storage_delete_own) but no DELETE policy exists on work_order_attachments, leaving an orphan row and a broken link. Decide: add table DELETE policy or drop storage DELETE policy (migration; update pgTAP cases 2/4 and 44/47) — run 20261028-064556. Fixed: dropped storage DELETE policy (20261103000200), branch fix/storage-gap1-gap2 | done |  | 2026-10-28 |
 | Optional pgTAP allow-list of all storage.objects policy names | final review LOW, run 20261028-064556: cases 3/4 find policies by bucket-name text, so a new policy naming neither bucket escapes them | open |  | 2026-10-28 |
 | Fix shared pre-commit hook for worktrees | .git/hooks/pre-commit calls .harness/runs/20261022-172443/v0/safe-env.sh by a relative, gitignored path; commits from harness worktrees fail. Resolve via repo root or move the script to a tracked path — run 20261028-064556 | open |  | 2026-10-28 |
+| Index storage_path on project_files + work_order_attachments | prod has unique indexes from 20261023000300/500; now in the repo too (reconcile 2026-11-03) | done |  | 2026-11-03 |
+| Note in 20261022000100 that section 12 is superseded | security review LOW, run 20261103-gaps: hand re-applying it would recreate wo_attachments_storage_delete_own (GAP 2); CI catalog case 4 would catch it | open |  | 2026-11-03 |
+| Reconcile prod migration history with repo | done 2026-11-03: the 5 prod-only 20261023* migrations added to the repo byte-identical from c5cc3d6 (branch dts2/20261022-084201) with their tests; prod 20260829202624 (= repo 20260829010000, same SQL) relabelled; 10 repo migrations verified in prod schema and marked applied. `migration list --linked` 20/20, `db push --dry-run` up to date | done |  | 2026-11-03 |
+| Unmerged branch dts2/20261022-084201 (19 commits ahead of main) | shipped 2026-11-03 via #311 (62cf3e4, Vercel production deploy succeeded; /auth/confirm live); old branches dts2/20261022-084201 and -b1 deleted | done |  | 2026-11-03 |
+| Admin dashboard: leads tile count | review of port PR, 2026-11-03: app/admin/page.tsx "New leads (30d)" = length of a .limit(10) undated query (invoices/users/projects aux-failure and header issues fixed in the port PR) | open |  | 2026-11-03 |
+| Lead pipeline logs raw DB error text | lib/leads.ts, app/api/lead/route.ts, app/api/lead/confirm/route.ts log error.message / error objects to stderr (drained to Datadog); switch to safeErrorFields() from lib/log-safe.ts | open |  | 2026-11-03 |
+| zod major upgrade for high advisory | pnpm audit: zod ^3.25.76 memory-exhaustion advisory fixed only in 4.6.6 (major bump); separate PR | open |  | 2026-11-03 |
+| Webhook invalid-signature log uses void, not after() | port PR: fire-and-forget Datadog log on forged webhooks may be dropped when the function freezes; switch to next/server after() if those logs matter | open |  | 2026-11-03 |
+| Auth confirm: don't silently replace an existing session | security review LOW: login CSRF via attacker's own magic link (accepted risk in SECURITY.md); optional mitigation shows "already signed in as X" on /auth/confirm | open |  | 2026-11-03 |
 
 ## Handoff
 
@@ -41,19 +50,10 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 
 | item | context | status | owner | added |
 |---|---|---|---|---|
+| Apply 20261103000100 + 20261103000200 to production | applied 2026-11-03 to supabase-dobe-net (ipmjokuezeuukhrilduq) via Composio SQL in one transaction and recorded in schema_migrations; prod policies verified (delete_own gone). Live co-member download not yet clicked through | done |  | 2026-11-03 |
 
 ## Promotions
 
 | item | context | status | owner | added |
 |---|---|---|---|---|
 | promote L-002 to review-checklist.md (verify owned-file sha256 before reusing test results from a worktree or after a polish pass) |  | open |  | 2026-10-28 |
-| Apply 20261103000100 + 20261103000200 to production | applied 2026-11-03 to supabase-dobe-net (ipmjokuezeuukhrilduq) via Composio SQL in one transaction and recorded in schema_migrations; prod policies verified (delete_own gone). Live co-member download not yet clicked through | done |  | 2026-11-03 |
-| Index storage_path on project_files + work_order_attachments | prod has unique indexes from 20261023000300/500; now in the repo too (reconcile 2026-11-03) | done |  | 2026-11-03 |
-| Note in 20261022000100 that section 12 is superseded | security review LOW, run 20261103-gaps: hand re-applying it would recreate wo_attachments_storage_delete_own (GAP 2); CI catalog case 4 would catch it | open |  | 2026-11-03 |
-| Reconcile prod migration history with repo | done 2026-11-03: the 5 prod-only 20261023* migrations added to the repo byte-identical from c5cc3d6 (branch dts2/20261022-084201) with their tests; prod 20260829202624 (= repo 20260829010000, same SQL) relabelled; 10 repo migrations verified in prod schema and marked applied. `migration list --linked` 20/20, `db push --dry-run` up to date | done |  | 2026-11-03 |
-| Unmerged branch dts2/20261022-084201 (19 commits ahead of main) | its 5 migrations were applied to prod and are now in the repo; its app changes are not (e.g. recordDeliverable mapping 23505 from the new unique storage_path index to 'already recorded', webhook failure DB logging). Ported onto main via branch fix/port-run-20261022 (merge + review fixes); close the old branch after merge | in-progress |  | 2026-11-03 |
-| Admin dashboard: leads tile count | review of port PR, 2026-11-03: app/admin/page.tsx "New leads (30d)" = length of a .limit(10) undated query (invoices/users/projects aux-failure and header issues fixed in the port PR) | open |  | 2026-11-03 |
-| Lead pipeline logs raw DB error text | lib/leads.ts, app/api/lead/route.ts, app/api/lead/confirm/route.ts log error.message / error objects to stderr (drained to Datadog); switch to safeErrorFields() from lib/log-safe.ts | open |  | 2026-11-03 |
-| zod major upgrade for high advisory | pnpm audit: zod ^3.25.76 memory-exhaustion advisory fixed only in 4.6.6 (major bump); separate PR | open |  | 2026-11-03 |
-| Webhook invalid-signature log uses void, not after() | port PR: fire-and-forget Datadog log on forged webhooks may be dropped when the function freezes; switch to next/server after() if those logs matter | open |  | 2026-11-03 |
-| Auth confirm: don't silently replace an existing session | security review LOW: login CSRF via attacker's own magic link (accepted risk in SECURITY.md); optional mitigation shows "already signed in as X" on /auth/confirm | open |  | 2026-11-03 |
