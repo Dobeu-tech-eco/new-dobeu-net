@@ -98,6 +98,7 @@ token cannot replace stored bytes.
   contents are not scanned. Deliverables are supplied by trusted admins; clients
   should treat them like any emailed attachment.
 - **Legacy objects.** Objects uploaded before SVG was removed from the allowlist
-  are not rewritten by the migration. Company members can read `project_files`
-  rows but storage SELECT is owner-only, so their download returns 500; this is a
-  known deferred product item (D2).
+  are not rewritten by the migration.
+- **Company-member downloads.** Storage SELECT on `project-files` and
+  `work-order-attachments` matches the table SELECT policies (owner or active
+  company member) since `20261103000100`, so co-members can download (D2 closed).

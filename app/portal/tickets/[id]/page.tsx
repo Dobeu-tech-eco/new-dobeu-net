@@ -1,7 +1,8 @@
 /**
  * Portal: single work-order ticket detail (Phase 3).
  *
- * RLS scopes reads to the row owner. "Accept quote" is an explicit form
+ * RLS scopes reads to the row owner or an active member of the work order's
+ * company. "Accept quote" is an explicit form
  * action that fires `acceptWorkOrderQuote`, which in turn triggers Stripe
  * invoice creation via the internal service-role helper.
  */

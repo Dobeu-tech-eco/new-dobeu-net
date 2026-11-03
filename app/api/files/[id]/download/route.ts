@@ -12,7 +12,7 @@ const SIGNED_URL_TTL_SECONDS = 60;
  *   1. Assert an authenticated user (requireUser) — anonymous callers get a clean
  *      401 instead of an RLS-masked 404.
  *   2. Look up the project_files row via the RLS-bound client (RLS scopes to
- *      owner/admin; a missing/unauthorized id 404s without leaking existence).
+ *      owner or active company member; a missing/unauthorized id 404s without leaking existence).
  *   3. Issue a 60s signed URL against the `project-files` bucket and 303-redirect.
  */
 async function issueSignedUrl(id: string) {

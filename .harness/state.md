@@ -40,6 +40,8 @@ Append entries as `- <date> <text>`.
 - Ruling: builder claude/sonnet/medium over cheaper gemini — lane needed shell + local Docker stack — cost if wrong: ~1 tokenBurn step.
 - Ruling: pgTAP pins current RLS behaviour; gaps become Decisions, no migrations this run — cost if wrong: gaps stay live until decided.
 - Ruling: builder file committed on run branch dts2/20261028-064556 (copied from worktree, sha256 matched) because the shared pre-commit hook cannot resolve its gitignored script in worktrees — cost if wrong: none (hash-checked).
+- 2026-11-03 #308 squash-merged (4143b91) after CI green (Vercel preview blocked by main-only gating; Entire Gates pending, not required). GAP 1 + GAP 2 fixed on fix/storage-gap1-gap2 (migrations 20261103000100/200, pgTAP 88/88). Receipt: .harness/runs/20261103-gaps/receipt.md
+- Ruling: GAP 1 widen storage SELECT (not narrow table SELECT); GAP 2 drop storage DELETE (not add table DELETE). One builder, not two parallel: single local DB + shared test file. Cost if wrong: one reversible migration each.
 - Fallback: reviewer:security copilot -> grok (copilot monthly quota exhausted).
 
 ## Failures and escalations
