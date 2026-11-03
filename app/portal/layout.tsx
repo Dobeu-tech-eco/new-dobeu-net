@@ -3,31 +3,12 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-import {
-  LayoutDashboard,
-  FolderKanban,
-  FileText,
-  Receipt,
-  Ticket,
-  Package,
-  Settings
-} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LogoutButton } from "@/components/portal/LogoutButton";
+import { PortalNav } from "@/components/portal/PortalNav";
 import { AnalyticsIdentify } from "@/components/portal/AnalyticsIdentify";
 import { isAdminEmail } from "@/lib/utils";
-
-const NAV = [
-  { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/portal/projects", label: "Projects", icon: FolderKanban },
-  { href: "/portal/tickets", label: "Tickets", icon: Ticket },
-  { href: "/portal/files", label: "Files", icon: FileText },
-  { href: "/portal/invoices", label: "Invoices", icon: Receipt },
-  { href: "/portal/assets", label: "Assets", icon: Package },
-  { href: "/portal/settings", label: "Settings", icon: Settings }
-];
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -65,40 +46,7 @@ export default async function PortalLayout({ children }: { children: React.React
           <ThemeToggle />
         </div>
 
-        {/* Nav */}
-        <nav
-          aria-label="Portal navigation"
-          className="flex-1 px-2 py-3 flex md:block gap-1 overflow-x-auto"
-        >
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={item.label}
-              aria-label={item.label}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
-            >
-              <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="hidden sm:inline">{item.label}</span>
-            </Link>
-          ))}
-
-          {isAdmin && (
-            <Link
-              href="/admin"
-              title="Admin panel"
-              aria-label="Admin panel"
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-accent hover:bg-accent/10 transition-colors whitespace-nowrap mt-1"
-            >
-              <Settings className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="hidden sm:inline">Admin</span>
-            </Link>
-          )}
-
-          <div className="hidden md:block mt-2">
-            <LogoutButton />
-          </div>
-        </nav>
+        <PortalNav isAdmin={isAdmin} />
 
         {/* User strip — desktop only */}
         <div className="hidden md:flex items-center gap-2.5 px-4 py-3 border-t border-border/60">

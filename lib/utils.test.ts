@@ -9,6 +9,8 @@ import {
   getPosthogHost,
   buildAuthCallbackUrl,
   resolveAuthOrigin,
+  sanitizeNextPath,
+  buildServerAuthCallbackUrl,
   requiresAal2Stepup,
   requiresMfaEnrollment
 } from "@/lib/utils";
@@ -128,14 +130,29 @@ describe("buildAuthCallbackUrl", () => {
     );
   });
 
-  it("uses browser origin on vercel preview", () => {
+  it("does not trust arbitrary vercel.app hosts", () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
     vi.stubGlobal("window", {
-      location: {
-        hostname: "dobeu-net-git-main-dobeu.vercel.app",
-        origin: "https://dobeu-net-git-main-dobeu.vercel.app",
-      },
+      location: { hostname: "evil.vercel.app", origin: "https://evil.vercel.app" },
     });
-    expect(resolveAuthOrigin()).toBe("https://dobeu-net-git-main-dobeu.vercel.app");
+    expect(resolveAuthOrigin()).toBe("https://dobeu.net");
+  });
+
+  it("sanitizeNextPath rejects control-char and backslash bypasses", () => {
+    for (const bad of ["/%09/evil.example", "/\t/evil", "/\\evil", "//evil", "/\u0000x", "/%5Cevil", "https://evil.example"]) {
+      expect(sanitizeNextPath(bad)).toBe("/portal");
+    }
+    expect(sanitizeNextPath("/portal/files?x=1")).toBe("/portal/files?x=1");
+  });
+
+  it("buildServerAuthCallbackUrl uses site url and sanitizes next", () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    expect(buildServerAuthCallbackUrl("/portal/files")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal%2Ffiles",
+    );
+    expect(buildServerAuthCallbackUrl("//evil.example")).toBe(
+      "https://dobeu.net/auth/callback?next=%2Fportal",
+    );
   });
 
   it("uses canonical site url on production custom domain", () => {

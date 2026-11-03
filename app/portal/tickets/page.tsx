@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { NewWorkOrderDialog } from "@/components/portal/NewWorkOrderDialog";
 import type { WorkOrderStatus } from "@/lib/database.types";
+import { QueryError } from "../QueryError";
 
 export const dynamic = "force-dynamic";
 
@@ -67,13 +68,9 @@ export default async function TicketsPage() {
         <NewWorkOrderDialog />
       </header>
 
-      {error && (
-        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          Couldn&apos;t load tickets: {error.message}
-        </p>
-      )}
-
-      {!tickets || tickets.length === 0 ? (
+      {error ? (
+        <QueryError what="tickets" />
+      ) : !tickets || tickets.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <p className="font-semibold">No tickets yet</p>
           <p className="text-muted-foreground mt-1 text-sm">

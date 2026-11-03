@@ -36,9 +36,12 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   // Fire pageview on navigation (analytics only).
   React.useEffect(() => {
     if (!consent.analytics) return;
-    // Confirmation links carry a secret token in the query string; never send it.
+    // Never forward the query string for confirmation links or /auth/* routes:
+    // they carry secret tokens (lead confirm token, auth codes, OTP tokens).
     const search =
-      typeof window !== "undefined" && !pathname.startsWith("/lead/confirm")
+      typeof window !== "undefined" &&
+      !pathname.startsWith("/lead/confirm") &&
+      !pathname.startsWith("/auth/")
         ? window.location.search
         : "";
     pageView(pathname + search);

@@ -99,11 +99,29 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
 7. **Authentication → URL Configuration** (project `ipmjokuezeuukhrilduq`):
    - **Site URL:** `https://dobeu.net`
    - **Redirect URLs** (add each line):
-     - `https://dobeu.net/**`
      - `https://dobeu.net/auth/callback`
-     - `https://*.vercel.app/**`
-     - `http://localhost:3000/**`
+     - `https://www.dobeu.net/auth/callback`
+     - `https://dobeu.dev/auth/callback`
+     - `https://www.dobeu.dev/auth/callback`
      - `http://localhost:3000/auth/callback`
+
+   **Warning:** never allowlist a shared `https://*.vercel.app/**` wildcard. Any Vercel user could
+   then request a magic link whose `redirect_to` is their own app and receive the auth code. For
+   previews, add only this team's exact preview hostnames (one entry per host).
+
+   **Email templates (required for admin invites):** server-side `inviteUserByEmail` cannot use
+   PKCE, so the default `{{ .ConfirmationURL }}` link returns the session in the URL *fragment*,
+   which `/auth/callback` (a server route) never sees. In Supabase → Authentication → Email
+   Templates, set the **Invite user** and **Magic Link** links to the token-hash form:
+
+   - Invite: `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=invite`
+   - Magic Link: `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=magiclink`
+
+   `{{ .RedirectTo }}` already carries `/auth/callback?next=...`. The callback parks the token in a
+   short-lived Lax, path-scoped cookie and sends the user to `/auth/confirm`, which signs in only
+   after an explicit "Continue signing in" POST (Origin-checked). Test with a fresh invite after
+   saving.
+
    If Site URL is still `http://localhost:3000`, magic links fall back to localhost even when
    requested from production. After saving, request a **new** magic link (old emails keep the
    stale `redirect_to`).

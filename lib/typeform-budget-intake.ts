@@ -320,6 +320,7 @@ export async function persistTypeformBudgetIntake(
   if (!isUniqueViolation(error)) {
     throw new TypeformBudgetIntakeStorageError(
       error?.message ?? "budget_intake_insert_failed",
+      { cause: error },
     );
   }
 
@@ -333,6 +334,7 @@ export async function persistTypeformBudgetIntake(
   if (lookupError || !existing) {
     throw new TypeformBudgetIntakeStorageError(
       lookupError?.message ?? "duplicate_budget_intake_lookup_failed",
+      { cause: lookupError },
     );
   }
 

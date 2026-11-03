@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { Json } from "@/lib/database.types";
+import { logToDatadog } from "@/lib/datadog-server";
+import { safeErrorFields } from "@/lib/log-safe";
 import {
   isTypeformWebhookConfigured,
   verifyTypeformSignature,
@@ -18,6 +20,21 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const ROUTE = "/api/typeform/webhook";
+
+/**
+ * Datadog logging is best-effort: it must never change the response. Only ids
+ * and error metadata go in; never the payload, headers, or the webhook secret.
+ */
+async function safely(log: () => Promise<void>): Promise<void> {
+  try {
+    await log();
+  } catch {
+    // Non-fatal by design.
+  }
+}
+
 
 function invalidFormResponse(detail: string) {
   return NextResponse.json(
@@ -84,6 +101,12 @@ export async function POST(request: Request) {
     signingSecret,
   );
   if (!valid) {
+    await safely(() =>
+      logToDatadog("warn", "typeform_webhook_invalid_signature", {
+        route: ROUTE,
+        request_id: requestId,
+      }),
+    );
     return NextResponse.json(
       { ok: false, error: "invalid_signature" },
       { status: 401 },
@@ -189,6 +212,15 @@ export async function POST(request: Request) {
         msg: "typeform_budget_intake_storage_failed",
         request_id: requestId,
         duration_ms: Date.now() - startedAt,
+        error: safeErrorFields(error),
+      }),
+    );
+    await safely(() =>
+      logToDatadog("error", "typeform_budget_intake_storage_failed", {
+        route: ROUTE,
+        request_id: requestId,
+        form_id: formId,
+        error: safeErrorFields(error),
       }),
     );
     return NextResponse.json(

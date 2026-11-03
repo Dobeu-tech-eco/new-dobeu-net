@@ -1,8 +1,19 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import {
+  AdminStatusBanner,
+  type AdminStatusParams,
+} from "@/components/admin/AdminStatusBanner";
 
-export default async function AdminLeadsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminLeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminStatusParams>;
+}) {
+  const params = await searchParams;
   const supabase = createAdminClient();
-  const { data: leads } = await supabase
+  const { data: leads, error } = await supabase
     .from("leads")
     .select(
       "id,email,name,company,source,utm_source,utm_campaign,referrer,first_seen,apollo_contact_id",
@@ -21,7 +32,12 @@ export default async function AdminLeadsPage() {
         </p>
       </header>
 
-      {!leads || leads.length === 0 ? (
+      <AdminStatusBanner
+        error={params.error}
+        loadError={error ? "Unable to load leads. Try again." : null}
+      />
+
+      {error ? null : !leads || leads.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No leads yet.
         </p>

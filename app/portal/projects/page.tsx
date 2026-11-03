@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { QueryError } from "../QueryError";
 
 export default async function ProjectsListPage() {
   const supabase = await createClient();
-  const { data: projects } = await supabase
+  const { data: projects, error } = await supabase
     .from("projects")
     .select("id,title,description,status,started_at,delivered_at")
     .order("created_at", { ascending: false });
@@ -19,7 +20,9 @@ export default async function ProjectsListPage() {
         </p>
       </header>
 
-      {!projects || projects.length === 0 ? (
+      {error ? (
+        <QueryError what="projects" />
+      ) : !projects || projects.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <p className="font-semibold">No projects yet</p>
           <p className="text-sm text-muted-foreground mt-1">
