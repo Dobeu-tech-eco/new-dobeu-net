@@ -47,12 +47,16 @@ export default async function AdminUsersPage({
 
       <AdminStatusBanner
         error={params.error}
-        loadError={
-          error || authError
-            ? "Unable to load users or admin roles. Try again."
-            : null
-        }
+        loadError={error ? "Unable to load users. Try again." : null}
       />
+      {authError && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          Admin badges could not be loaded. The user list is still shown.
+        </p>
+      )}
 
       <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="font-display text-xl font-semibold mb-1">
@@ -65,7 +69,7 @@ export default async function AdminUsersPage({
         <InviteUserForm />
       </section>
 
-      {error || authError ? null : !profiles || profiles.length === 0 ? (
+      {error ? null : !profiles || profiles.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No users yet. The first user is created on first magic-link login.
         </p>

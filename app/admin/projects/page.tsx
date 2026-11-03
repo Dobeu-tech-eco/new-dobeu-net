@@ -72,23 +72,22 @@ export default async function AdminProjectsPage({
         <NewProjectDialog owners={ownerOptions} companies={companies ?? []} />
       </header>
 
-      <AdminStatusBanner error={actionError} />
-      {(projectsError ||
-        ownersError ||
-        companiesError ||
-        assignedCompaniesError) && (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
-        >
-          Unable to load all project data. Try again.
-        </p>
-      )}
+      <AdminStatusBanner
+        error={actionError}
+        loadError={projectsError ? "Unable to load projects. Try again." : null}
+      />
+      {!projectsError &&
+        (ownersError || companiesError || assignedCompaniesError) && (
+          <p
+            role="status"
+            className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+          >
+            Some project options or company names could not be loaded. Projects
+            are still shown.
+          </p>
+        )}
 
-      {projectsError ||
-      ownersError ||
-      companiesError ||
-      assignedCompaniesError ? null : !projects || projects.length === 0 ? (
+      {projectsError ? null : !projects || projects.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No projects yet. Click{" "}
           <span className="font-semibold">New project</span> to create the first

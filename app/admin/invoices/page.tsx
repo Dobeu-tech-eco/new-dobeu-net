@@ -61,6 +61,8 @@ export default async function AdminInvoicesPage({
     ownerUserId: p.owner_user_id,
   }));
 
+  const pickerError = Boolean(profilesError || projectsError || authError);
+
   const open =
     invoices?.filter((i) => i.status === "open" || i.status === "overdue") ??
     [];
@@ -73,9 +75,12 @@ export default async function AdminInvoicesPage({
             Invoices
           </h1>
           <p className="text-muted-foreground mt-1">
-            Open: <strong>{open.length}</strong> · Open total:{" "}
+            Open: <strong>{invoicesError ? "—" : open.length}</strong> · Open
+            total:{" "}
             <strong>
-              {formatCurrency(open.reduce((s, i) => s + i.amount_cents, 0))}
+              {invoicesError
+                ? "—"
+                : formatCurrency(open.reduce((s, i) => s + i.amount_cents, 0))}
             </strong>
           </p>
         </div>
@@ -84,17 +89,19 @@ export default async function AdminInvoicesPage({
 
       <AdminStatusBanner
         error={params.error}
-        loadError={
-          invoicesError || profilesError || projectsError || authError
-            ? "Unable to load invoices or invoice options. Try again."
-            : null
-        }
+        loadError={invoicesError ? "Unable to load invoices. Try again." : null}
       />
+      {pickerError && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          The New Invoice picker could not be fully loaded. Existing invoices
+          are shown below.
+        </p>
+      )}
 
-      {invoicesError ||
-      profilesError ||
-      projectsError ||
-      authError ? null : !invoices || invoices.length === 0 ? (
+      {invoicesError ? null : !invoices || invoices.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No invoices yet.
         </p>

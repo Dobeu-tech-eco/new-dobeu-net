@@ -89,7 +89,8 @@ const lists = [
   {
     name: "users",
     Page: AdminUsersPage,
-    tables: ["profiles", "auth"],
+    tables: ["profiles"],
+    auxiliary: ["auth"],
     empty: /No users yet/,
   },
   {
@@ -101,33 +102,49 @@ const lists = [
   {
     name: "invoices",
     Page: AdminInvoicesPage,
-    tables: ["invoices", "profiles", "projects", "auth"],
+    tables: ["invoices"],
+    auxiliary: ["profiles", "projects", "auth"],
     empty: /No invoices yet/,
   },
   {
     name: "projects",
     Page: AdminProjectsPage,
-    tables: ["projects", "profiles", "companies"],
+    tables: ["projects"],
+    auxiliary: ["profiles", "companies"],
     empty: /No projects yet/,
   },
 ];
 
-describe.each(lists)("$name read states", ({ Page, tables, empty }) => {
-  it.each(tables)(
-    "shows an alert without empty copy on %s failure",
-    async (table) => {
-      stubReads(table);
+describe.each(lists)(
+  "$name read states",
+  ({ Page, tables, empty, ...rest }) => {
+    const auxiliary = (rest as { auxiliary?: string[] }).auxiliary ?? [];
+    it.each(tables)(
+      "shows an alert without empty copy on %s failure",
+      async (table) => {
+        stubReads(table);
+        render(await Page({ searchParams: Promise.resolve({}) }));
+        expect(screen.getByRole("alert")).toBeInTheDocument();
+        expect(screen.queryByText(empty)).not.toBeInTheDocument();
+      },
+    );
+    it.each(auxiliary)(
+      "keeps the primary view with a non-blocking notice on %s failure",
+      async (table) => {
+        stubReads(table);
+        render(await Page({ searchParams: Promise.resolve({}) }));
+        expect(screen.getByRole("status")).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(screen.getByText(empty)).toBeInTheDocument();
+      },
+    );
+    it("shows empty copy without an alert on a successful empty read", async () => {
       render(await Page({ searchParams: Promise.resolve({}) }));
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-      expect(screen.queryByText(empty)).not.toBeInTheDocument();
-    },
-  );
-  it("shows empty copy without an alert on a successful empty read", async () => {
-    render(await Page({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByText(empty)).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-});
+      expect(screen.getByText(empty)).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+  },
+);
 
 describe("overview read states", () => {
   it.each([
