@@ -123,12 +123,12 @@ The 66-row map is approved.
 | 36 | Company members | P3 | `app/company/members/page.tsx` | 35 | normal | done |
 | 37 | Portal dashboard | P3 | `app/portal/page.tsx` | 3,4,15 | normal | done |
 | 38 | Portal projects | P3 | `app/portal/projects/page.tsx` | 37 | normal | done |
-| 39 | Portal project detail | P3 | `app/portal/projects/[id]/page.tsx` | 38 | normal | blocked |
-| 40 | Portal files | P3 | `app/portal/files/page.tsx` | 8,37 | normal | blocked |
+| 39 | Portal project detail | P3 | `app/portal/projects/[id]/page.tsx` | 38 | normal | done |
+| 40 | Portal files | P3 | `app/portal/files/page.tsx` | 8,37 | normal | done |
 | 41 | Portal assets | P3 | `app/portal/assets/page.tsx` | 8,37 | normal | done |
 | 42 | Portal invoices | P3/P5 | `app/portal/invoices/page.tsx` | 7,37 | normal | done |
 | 43 | Portal work orders | P3 | `app/portal/tickets/page.tsx` | 4,37 | normal | done |
-| 44 | Portal work-order detail | P3 | `app/portal/tickets/[id]/page.tsx` | 43 | normal | blocked |
+| 44 | Portal work-order detail | P3 | `app/portal/tickets/[id]/page.tsx` | 43 | normal | done |
 | 45 | Portal settings | P3 | `app/portal/settings/page.tsx` | 3,4,37 | normal | done |
 | 46 | MFA settings | P3 | `app/portal/settings/mfa/page.tsx` | 3,45 | normal | blocked |
 | 47 | Admin dashboard | P4 | `app/admin/page.tsx` | 3,4,15 | normal | done |
@@ -298,3 +298,13 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
   - the browser walkthrough showed no POST on load, the token stripped from the URL, and no-referrer set;
   - mutations (gibberish rule, nonce dedupe, no-GET export, analytics exclusion) each fail their test.
 - Final review (opus): APPROVE_WITH_CHANGES, with all changes applied.
+
+## Accepted evidence — run 20261028-064556 (D9 remainder)
+
+- Rows 39, 40, 44 → done. `supabase/tests/database/rls_files_attachments.test.sql` (51 assertions) covers `project_files`, `work_order_attachments` and storage buckets `project-files` and `work-order-attachments`. It tests four users: A (owner), B (unrelated), C (active company member), E (invited, not active). `supabase test db` passes 83/83 (51 new + 32) on the local stack, and CI picks the file up.
+- Mutations: an extra storage SELECT policy fails cases 14 and 23. Dropping `wo_att_insert_own` fails case 40 (and case 50, which depends on it).
+- Pinned as current behaviour, not fixed (Decisions items):
+  - GAP 1: company members can read the table rows but not the storage objects, so signed URLs and downloads fail for them.
+  - GAP 2: an owner can delete an attachment's storage object but not its row.
+- Evidence is from the local stack plus CI, not production. The P3 access-boundary box stays unchecked: row 1 is blocked on D11 (types drift) and row 46 on live TOTP.
+- Receipt: `runs/20261028-064556/receipt.md`.
