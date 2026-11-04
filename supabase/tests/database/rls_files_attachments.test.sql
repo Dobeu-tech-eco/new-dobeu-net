@@ -20,7 +20,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(56);
+select plan(57);
 
 -- -----------------------------------------------------------------------------
 -- Fixtures (as the migration owner, bypassing RLS)
@@ -106,6 +106,19 @@ select results_eq(
   $$ values ('wo_attachments_storage_insert_own'::text, 'INSERT'::text),
             ('wo_attachments_storage_select_owner_or_company'::text, 'SELECT'::text) $$,
   'work-order-attachments bucket has exactly insert-own and owner-or-company select policies (no delete)');
+
+-- Allow-list: the COMPLETE set of policies on storage.objects. Cases 3 and 4 only
+-- find policies whose text names one of these two buckets, so a new policy naming
+-- neither would escape them. Adding, renaming or dropping ANY storage.objects
+-- policy must update this list.
+select results_eq(
+  $$ select policyname::text collate "default", cmd::text collate "default" from pg_policies
+      where schemaname = 'storage' and tablename = 'objects' order by policyname $$,
+  $$ values ('digital_assets_storage_select_entitled'::text, 'SELECT'::text),
+            ('project_files_storage_select_owner_or_company'::text, 'SELECT'::text),
+            ('wo_attachments_storage_insert_own'::text, 'INSERT'::text),
+            ('wo_attachments_storage_select_owner_or_company'::text, 'SELECT'::text) $$,
+  'storage.objects has exactly the allow-listed policies (update this list when adding one)');
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'storage.objects'::regclass),

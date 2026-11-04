@@ -14,12 +14,26 @@ export default async function AdminOverview({
   const params = await searchParams;
   const supabase = createAdminClient();
 
-  const [leadsRes, bookingsRes, openInvoicesRes, usersRes] = await Promise.all([
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const thirtyDaysAgo = since.toISOString();
+
+  const [
+    leadsRes,
+    leadsCountRes,
+    bookingsRes,
+    openInvoicesRes,
+    usersRes,
+  ] = await Promise.all([
     supabase
       .from("leads")
       .select("id,email,name,source,first_seen,utm_source")
       .order("first_seen", { ascending: false })
       .limit(10),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .gte("first_seen", thirtyDaysAgo),
     supabase
       .from("bookings")
       .select("id,email,name,scheduled_at,status")
@@ -56,6 +70,7 @@ export default async function AdminOverview({
         error={params.error}
         loadError={
           leadsRes.error ||
+          leadsCountRes.error ||
           bookingsRes.error ||
           openInvoicesRes.error ||
           usersRes.error
@@ -68,7 +83,11 @@ export default async function AdminOverview({
         <Tile
           icon={<Inbox />}
           label="New leads (30d)"
-          value={leadsRes.error ? "\u2014" : recentLeads.length.toString()}
+          value={
+            leadsCountRes.error
+              ? "\u2014"
+              : (leadsCountRes.count ?? 0).toString()
+          }
         />
         <Tile
           icon={<CalendarCheck />}

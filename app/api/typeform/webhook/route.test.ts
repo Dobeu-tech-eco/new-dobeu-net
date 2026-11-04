@@ -1,12 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "node:crypto";
 
+const afterCallbacks = vi.hoisted(() => [] as unknown[]);
+
 vi.mock("@/lib/leads", () => ({
   processLead: vi
     .fn()
     .mockResolvedValue({ leadId: "lead_tf_1", apolloContactId: "apollo_tf_1" }),
 }));
 
+vi.mock("next/server", async (orig) => ({
+  ...(await orig<typeof import("next/server")>()),
+  after: vi.fn((cb: unknown) => {
+    afterCallbacks.push(cb);
+  }),
+}));
 vi.mock("@/lib/datadog-server", () => ({
   logToDatadog: vi.fn(),
   logServerError: vi.fn(),
@@ -22,6 +30,7 @@ vi.mock("@/lib/typeform-budget-intake", () => {
   };
 });
 
+import { after } from "next/server";
 import { POST } from "@/app/api/typeform/webhook/route";
 import { processLead } from "@/lib/leads";
 import {
@@ -37,6 +46,11 @@ const mockedFormConfigurationConsistent = vi.mocked(
   isTypeformBudgetFormConfigurationConsistent,
 );
 const mockedLog = vi.mocked(logToDatadog);
+
+async function flushAfter() {
+  const cbs = afterCallbacks.splice(0);
+  for (const cb of cbs) await (typeof cb === "function" ? cb() : cb);
+}
 const mockedLogError = vi.mocked(logServerError);
 const SECRET = "typeform-secret";
 const BUDGET_FORM_ID = "wKVKIBe7";
@@ -63,6 +77,7 @@ function makeRequest(
 }
 
 beforeEach(() => {
+  afterCallbacks.length = 0;
   vi.clearAllMocks();
   mockedProcessLead.mockResolvedValue({
     leadId: "lead_tf_1",
@@ -449,6 +464,9 @@ describe("POST /api/typeform/webhook", () => {
       const badSig = sign(body, "wrong");
       const res = await POST(makeRequest(body, badSig, "evt_tf_bad"));
       expect(res.status).toBe(401);
+      expect(vi.mocked(after)).toHaveBeenCalledTimes(1);
+      expect(mockedLog).not.toHaveBeenCalled();
+      await flushAfter();
       expect(mockedLog).toHaveBeenCalledTimes(1);
       expect(mockedLog).toHaveBeenCalledWith(
         "warn",

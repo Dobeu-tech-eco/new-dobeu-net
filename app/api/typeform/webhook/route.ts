@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { Json } from "@/lib/database.types";
 import { logToDatadog } from "@/lib/datadog-server";
 import { safeErrorFields } from "@/lib/log-safe";
@@ -101,12 +101,14 @@ export async function POST(request: Request) {
     signingSecret,
   );
   if (!valid) {
-    // Fire-and-forget: the Datadog call can take up to 2 s, and forged floods must return immediately.
-    void safely(() =>
-      logToDatadog("warn", "typeform_webhook_invalid_signature", {
-        route: ROUTE,
-        request_id: requestId,
-      }),
+    // Deferred via after(): the Datadog call can take up to 2 s, so the response does not wait on it, but the platform keeps the function alive until it settles.
+    after(() =>
+      safely(() =>
+        logToDatadog("warn", "typeform_webhook_invalid_signature", {
+          route: ROUTE,
+          request_id: requestId,
+        }),
+      )
     );
     return NextResponse.json(
       { ok: false, error: "invalid_signature" },

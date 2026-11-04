@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { processLead } from "@/lib/leads";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logToDatadog } from "@/lib/datadog-server";
@@ -66,12 +66,14 @@ export async function POST(request: Request) {
   const signingKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY!;
   const valid = verifyCalendlySignature(rawBody, request.headers.get("Calendly-Webhook-Signature"), signingKey);
   if (!valid) {
-    // Fire-and-forget: the Datadog call can take up to 2 s, and forged floods must return immediately.
-    void safely(() =>
-      logToDatadog("warn", "calendly_webhook_invalid_signature", {
-        route: ROUTE,
-        request_id: requestId
-      })
+    // Deferred via after(): the Datadog call can take up to 2 s, so the response does not wait on it, but the platform keeps the function alive until it settles.
+    after(() =>
+      safely(() =>
+        logToDatadog("warn", "calendly_webhook_invalid_signature", {
+          route: ROUTE,
+          request_id: requestId
+        })
+      )
     );
     return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
   }

@@ -23,7 +23,7 @@
  *
  * Runtime constraint: nodejs (Stripe SDK does not run on edge).
  */
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { verifyWebhookSignature } from "@/lib/stripe";
 import { forgetStripeEvent, rememberStripeEvent } from "@/lib/stripe-event-dedupe";
@@ -94,12 +94,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
     // The Stripe verification error carries the raw payload and signature
     // header as properties, so it is deliberately NOT forwarded to Datadog.
-    // Fire-and-forget: the Datadog call can take up to 2 s, and forged floods must return immediately.
-    void safely(() =>
-      logToDatadog("warn", "stripe_webhook_invalid_signature", {
-        route: ROUTE,
-        request_id: requestId
-      })
+    // Deferred via after(): the Datadog call can take up to 2 s, so the response does not wait on it, but the platform keeps the function alive until it settles.
+    after(() =>
+      safely(() =>
+        logToDatadog("warn", "stripe_webhook_invalid_signature", {
+          route: ROUTE,
+          request_id: requestId
+        })
+      )
     );
     return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 400 });
   }
