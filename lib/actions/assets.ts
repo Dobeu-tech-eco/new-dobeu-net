@@ -38,7 +38,7 @@ export interface EntitledAsset {
   source: string;
 }
 
-const assetId = z.string().uuid("invalid asset id");
+const assetId = z.guid("invalid asset id");
 
 /**
  * List the assets the caller is entitled to (direct grant or via company

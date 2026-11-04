@@ -49,7 +49,7 @@ function mappingWarnings(value: Json): string[] {
 
 export default async function AdminIntakeDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const parsedId = z.string().uuid().safeParse(id);
+  const parsedId = z.guid().safeParse(id);
   if (!parsedId.success) notFound();
 
   const { admin } = await requireAdminAal2();

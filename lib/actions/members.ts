@@ -32,7 +32,7 @@ import { AuthError } from "@/lib/actions/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { DBClient } from "@/lib/actions/auth";
 
-const uuid = z.string().uuid("invalid id");
+const uuid = z.guid("invalid id");
 const roleKey = z
   .string()
   .trim()

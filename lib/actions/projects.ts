@@ -16,7 +16,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin, AuthError } from "@/lib/actions/auth";
 
-const uuid = z.string().uuid("invalid id");
+const uuid = z.guid("invalid id");
 
 const projectStatus = z.enum(["proposed", "active", "delivered", "closed"]);
 

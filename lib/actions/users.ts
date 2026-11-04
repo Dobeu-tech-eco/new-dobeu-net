@@ -20,7 +20,7 @@ import { buildServerAuthCallbackUrl } from "@/lib/utils";
 import { z } from "zod";
 import { requireAdmin, AuthError } from "@/lib/actions/auth";
 
-const uuid = z.string().uuid("invalid id");
+const uuid = z.guid("invalid id");
 
 const inviteInput = z.object({
   email: z.string().trim().email("invalid email").max(254),

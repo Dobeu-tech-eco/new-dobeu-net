@@ -25,7 +25,7 @@ import { z } from "zod";
 import { requireAdmin, AuthError, type DBClient } from "@/lib/actions/auth";
 import type { Json } from "@/lib/database.types";
 
-const uuid = z.string().uuid("invalid id");
+const uuid = z.guid("invalid id");
 
 const createInput = z.object({
   name: z.string().trim().min(2, "name too short").max(160, "name too long"),

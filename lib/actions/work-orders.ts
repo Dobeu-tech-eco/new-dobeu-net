@@ -77,7 +77,7 @@ const ALLOWED_MIME = new Set<string>([
   "text/csv"
 ]);
 
-const uuid = z.string().uuid("invalid id");
+const uuid = z.guid("invalid id");
 const positiveInt = z
   .number()
   .int("must be an integer")

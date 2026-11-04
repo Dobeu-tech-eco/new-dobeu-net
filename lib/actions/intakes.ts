@@ -10,7 +10,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { AuthError, requireAdminAal2 } from "@/lib/actions/auth";
 
-const id = z.string().uuid("invalid id");
+const id = z.guid("invalid id");
 const noteText = z.string().trim().max(4000, "notes too long").optional();
 const notes = noteText.transform((value) => (value === "" ? null : value));
 
