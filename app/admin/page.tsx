@@ -35,6 +35,21 @@ const OPEN_WORK_ORDER_STATUSES = [
   "delivered",
 ] as const satisfies readonly WorkOrderStatus[];
 
+const CURRENCY_CODE = /^[A-Z]{3}$/;
+
+/** Never throws: invoices.currency is unconstrained text. */
+function safeMoney(cents: number, currency: string | null | undefined): string {
+  const code = (currency || "USD").toUpperCase();
+  if (CURRENCY_CODE.test(code)) {
+    try {
+      return formatCurrency(cents, code);
+    } catch {
+      // Well-formed but unknown code; fall through to the raw form.
+    }
+  }
+  return `${cents / 100} ${code}`;
+}
+
 export default async function AdminOverview({
   searchParams,
 }: {
@@ -84,7 +99,7 @@ export default async function AdminOverview({
     // Sums are bounded by PostgREST max_rows; the head counts below detect truncation.
     supabase
       .from("invoices")
-      .select("amount_cents,status")
+      .select("amount_cents,currency,status")
       .in("status", OPEN_INVOICE_STATUSES)
       .order("id"),
     supabase
@@ -93,7 +108,7 @@ export default async function AdminOverview({
       .in("status", OPEN_INVOICE_STATUSES),
     supabase
       .from("invoices")
-      .select("amount_cents,status")
+      .select("amount_cents,currency,status")
       .eq("status", "paid")
       .gte("paid_at", thirtyDaysAgo)
       .order("id"),
@@ -120,7 +135,7 @@ export default async function AdminOverview({
     // can't fill the slice when sorting descending.
     supabase
       .from("invoices")
-      .select("id,amount_cents,paid_at")
+      .select("id,amount_cents,currency,paid_at")
       .gte("paid_at", PAID_AT_EPOCH)
       .order("paid_at", { ascending: false })
       .limit(FEED_SOURCE_LIMIT),
@@ -142,14 +157,21 @@ export default async function AdminOverview({
 
   const recentLeads = leadsRes.data ?? [];
   const upcomingBookings = bookingsRes.data ?? [];
+  const sumByCurrency = (
+    rows: readonly { amount_cents: number; currency: string }[],
+  ): [string, number][] => {
+    const totals = new Map<string, number>();
+    for (const r of rows) {
+      const code = (r.currency || "USD").toUpperCase();
+      totals.set(code, (totals.get(code) ?? 0) + r.amount_cents);
+    }
+    return [...totals.entries()].sort(([a], [b]) => a.localeCompare(b));
+  };
   const sumByStatus = (status: string) =>
-    (openInvoicesRes.data ?? [])
-      .filter((i) => i.status === status)
-      .reduce((sum, i) => sum + i.amount_cents, 0);
-  const paidTotal = (paidInvoicesRes.data ?? []).reduce(
-    (sum, i) => sum + i.amount_cents,
-    0,
-  );
+    sumByCurrency(
+      (openInvoicesRes.data ?? []).filter((i) => i.status === status),
+    );
+  const paidTotal = () => sumByCurrency(paidInvoicesRes.data ?? []);
   // A sum is only trustworthy when it covers every matching row.
   const openReadFailed = Boolean(
     openInvoicesRes.error || openInvoicesCountRes.error,
@@ -166,8 +188,12 @@ export default async function AdminOverview({
   const sumValue = (
     failed: boolean,
     truncated: boolean,
-    cents: () => number,
-  ) => (failed || truncated ? DASH : formatCurrency(cents()));
+    totals: () => [string, number][],
+  ) => {
+    if (failed || truncated) return DASH;
+    const parts = totals().map(([code, cents]) => safeMoney(cents, code));
+    return parts.length === 0 ? formatCurrency(0) : parts.join(" \u00b7 ");
+  };
 
   const feedSources = [
     feedOrdersRes,
@@ -186,13 +212,13 @@ export default async function AdminOverview({
     (feedInvoicesRes.data ?? []).map((i) => ({
       key: `inv-created-${i.id}`,
       at: i.created_at,
-      label: `Invoice created: ${formatCurrency(i.amount_cents)}`,
+      label: `Invoice created: ${safeMoney(i.amount_cents, i.currency)}`,
       href: "/admin/invoices",
     })),
     (feedPaidInvoicesRes.data ?? []).map((i) => ({
       key: `inv-paid-${i.id}`,
       at: i.paid_at as string,
-      label: `Invoice paid: ${formatCurrency(i.amount_cents)}`,
+      label: `Invoice paid: ${safeMoney(i.amount_cents, i.currency)}`,
       href: "/admin/invoices",
     })),
     (feedProjectsRes.data ?? []).map((p) => ({
@@ -286,7 +312,7 @@ export default async function AdminOverview({
         <Tile
           icon={<Wallet />}
           label="Paid (30d)"
-          value={sumValue(paidReadFailed, paidTruncated, () => paidTotal)}
+          value={sumValue(paidReadFailed, paidTruncated, paidTotal)}
         />
         <Tile
           icon={<FolderKanban />}

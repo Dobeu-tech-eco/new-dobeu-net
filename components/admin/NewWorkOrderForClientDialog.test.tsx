@@ -382,7 +382,7 @@ describe("admin tickets picker read isolation", () => {
   it("loads bounded picker data and enables posting after successful reads", async () => {
     const stub = arrangePage();
     render(await AdminTicketsPage({ searchParams: Promise.resolve({}) }));
-    expect(stub.listUsers).toHaveBeenCalledWith({ perPage: 200 });
+    expect(stub.listUsers).toHaveBeenCalledWith({ page: 1, perPage: 200 });
     expect(stub.recorded).toContainEqual({
       table: "companies",
       method: "eq",

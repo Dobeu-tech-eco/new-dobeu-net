@@ -29,6 +29,8 @@ export type InvoiceCreationResult =
         id: string;
         stripe_invoice_id: string | null;
         hosted_invoice_url: string | null;
+        /** True when Stripe returned an invoice we already recorded locally. */
+        reused?: true;
       };
     }
   // `localInvoiceId` is set only on a Stripe failure: the local row exists.
@@ -108,6 +110,39 @@ export async function createInvoiceForUser(
   } catch (e) {
     stripeError = e instanceof Error ? e.message : String(e);
     console.error("[createInvoiceForUser] Stripe failure:", stripeError);
+  }
+
+  // Defence in depth: Stripe's idempotency key returns the SAME invoice on a
+  // repeat call for a work order. If that invoice is already recorded locally,
+  // do not insert (or email) a second row; report the existing one.
+  if (stripeInvoiceId && input.work_order_id) {
+    const { data: existing, error: existingErr } = await admin
+      .from("invoices")
+      .select("id,hosted_invoice_url,status")
+      .eq("stripe_invoice_id", stripeInvoiceId)
+      .limit(10);
+    if (existingErr) {
+      return { ok: false, error: "Unable to check for an existing invoice record" };
+    }
+    const row = existing?.find((r) => r.status !== "void");
+    if (!row && existing?.length) {
+      return {
+        ok: false,
+        error:
+          "Stripe returned a voided invoice for this work order; wait 24h, then try again"
+      };
+    }
+    if (row) {
+      return {
+        ok: true,
+        data: {
+          id: row.id,
+          stripe_invoice_id: stripeInvoiceId,
+          hosted_invoice_url: row.hosted_invoice_url ?? hostedInvoiceUrl,
+          reused: true
+        }
+      };
+    }
   }
 
   // Persist local row regardless (NULL stripe_invoice_id is the visible

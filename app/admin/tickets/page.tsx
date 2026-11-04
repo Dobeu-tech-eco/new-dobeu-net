@@ -52,6 +52,29 @@ function statusTone(status: string): "indigo" | "amber" | "neutral" {
   }
 }
 
+const USERS_PER_PAGE = 200;
+const USERS_MAX_PAGES = 50;
+
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+/** Pages through every auth user (200 per page, hard cap of 50 pages). */
+async function listAllUsers(admin: AdminClient) {
+  const users: { id: string; email?: string }[] = [];
+  for (let page = 1; page <= USERS_MAX_PAGES; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: USERS_PER_PAGE,
+    });
+    if (error) return { users: [], failed: true, truncated: false };
+    const batch = data?.users ?? [];
+    users.push(...batch);
+    if (batch.length < USERS_PER_PAGE) {
+      return { users, failed: false, truncated: false };
+    }
+  }
+  return { users, failed: false, truncated: true };
+}
+
 interface PageProps {
   searchParams: Promise<{
     status?: string;
@@ -79,12 +102,12 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
 
   const [
     { data: tickets, error },
-    { data: clients, error: clientsError },
+    clientList,
     { data: companies, error: companiesError },
     { data: projects, error: projectsError },
   ] = await Promise.all([
     query,
-    admin.auth.admin.listUsers({ perPage: 200 }),
+    listAllUsers(admin),
     admin
       .from("companies")
       .select("id,name")
@@ -97,8 +120,8 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
       .order("created_at", { ascending: false })
       .limit(500),
   ]);
-  const pickerError = !!(clientsError || companiesError || projectsError);
-  const clientOptions = (clients?.users ?? []).map((client) => ({
+  const pickerError = !!(clientList.failed || companiesError || projectsError);
+  const clientOptions = clientList.users.map((client) => ({
     id: client.id,
     label: client.email ?? client.id.slice(0, 8),
   }));
@@ -132,6 +155,16 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
         >
           Work posting options could not be loaded. Post work is unavailable.
           Tickets are still shown when available.
+        </p>
+      )}
+
+      {!pickerError && clientList.truncated && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          The client list is truncated; some clients may not appear in the Post
+          work picker.
         </p>
       )}
 

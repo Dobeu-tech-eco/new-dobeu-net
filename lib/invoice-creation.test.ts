@@ -9,12 +9,17 @@ const profileSelect = vi.fn(() => ({ eq: profileEq }));
 const insertSingle = vi.fn();
 const insertSelect = vi.fn(() => ({ single: insertSingle }));
 const insert = vi.fn(() => ({ select: insertSelect }));
+const existingLimit = vi.fn();
+const existingEq = vi.fn(() => ({ limit: existingLimit }));
+const existingSelect = vi.fn(() => ({ eq: existingEq }));
 
 vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: vi.fn(() => ({
     auth: { admin: { getUserById } },
     from: (table: string) =>
-      table === "profiles" ? { select: profileSelect } : { insert }
+      table === "profiles"
+        ? { select: profileSelect }
+        : { insert, select: existingSelect }
   })),
   createClient: vi.fn()
 }));
@@ -67,6 +72,7 @@ beforeEach(() => {
   });
   insertSingle.mockResolvedValue({ data: { id: "inv_row_1" }, error: null });
   sendEmail.mockResolvedValue({ ok: true });
+  existingLimit.mockResolvedValue({ data: [], error: null });
 });
 
 // ---- Tests ---------------------------------------------------------------
@@ -187,6 +193,63 @@ describe("createInvoiceForUser", () => {
     const res = await createInvoiceForUser(BASE_INPUT);
 
     expect(res.ok).toBe(true);
+  });
+
+  it("reuses the existing local row (no second insert or email) when Stripe returns an invoice already recorded", async () => {
+    existingLimit.mockResolvedValue({
+      data: [
+        { id: "inv_row_old", hosted_invoice_url: "https://invoice.stripe.com/i/in_123", status: "open" }
+      ],
+      error: null
+    });
+
+    const res = await createInvoiceForUser({ ...BASE_INPUT, work_order_id: "wo_9" });
+
+    expect(res).toEqual({
+      ok: true,
+      data: {
+        id: "inv_row_old",
+        stripe_invoice_id: "in_123",
+        hosted_invoice_url: "https://invoice.stripe.com/i/in_123",
+        reused: true
+      }
+    });
+    expect(existingEq).toHaveBeenCalledWith("stripe_invoice_id", "in_123");
+    expect(insert).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects (no reuse, no insert) when the only matching local row is void", async () => {
+    existingLimit.mockResolvedValue({
+      data: [{ id: "inv_row_void", hosted_invoice_url: null, status: "void" }],
+      error: null
+    });
+
+    const res = await createInvoiceForUser({ ...BASE_INPUT, work_order_id: "wo_9" });
+
+    expect(res).toEqual({
+      ok: false,
+      error:
+        "Stripe returned a voided invoice for this work order; wait 24h, then try again"
+    });
+    expect(insert).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("fails closed without inserting when the existing-row lookup errors", async () => {
+    existingLimit.mockResolvedValue({ data: null, error: { message: "db down" } });
+
+    const res = await createInvoiceForUser({ ...BASE_INPUT, work_order_id: "wo_9" });
+
+    expect(res).toEqual({ ok: false, error: "Unable to check for an existing invoice record" });
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("inserts normally when no local row has the Stripe invoice id", async () => {
+    const res = await createInvoiceForUser({ ...BASE_INPUT, work_order_id: "wo_9" });
+
+    expect(res.ok).toBe(true);
+    expect(insert).toHaveBeenCalledTimes(1);
   });
 
   it("omits project linkage when project_id is absent (work-order invoices)", async () => {

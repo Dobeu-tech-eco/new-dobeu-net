@@ -20,6 +20,7 @@ const PROJECT_A = "00000000-0000-0000-0000-000000000010";
 const PROJECT_B = "00000000-0000-0000-0000-000000000011";
 const WO_A = "00000000-0000-0000-0000-000000000020";
 const WO_B = "00000000-0000-0000-0000-000000000021";
+const WO_C = "00000000-0000-0000-0000-000000000022";
 
 const props = {
   users: [
@@ -184,7 +185,7 @@ describe("NewInvoiceDialog", () => {
     });
     submit();
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Invoice saved, but Stripe failed. It is listed with no Stripe link. Do not submit again; fix the Stripe configuration and void the unsent invoice in Supabase if it should not stand.",
+      "Invoice saved, but Stripe failed. It is listed with no Stripe link. Do not submit again; fix the Stripe configuration and set the unsent invoice's status to void in Supabase if it should not stand (it has no Stripe invoice).",
     );
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await waitFor(() =>
@@ -199,10 +200,15 @@ describe("NewInvoiceDialog", () => {
     );
   });
 
-  it("shows a non-blocking notice and blocks resubmit when the work-order link failed", async () => {
+  it("shows a non-blocking notice naming the returned invoice id and blocks resubmit when the work-order link failed", async () => {
     h.create.mockResolvedValue({
       ok: true,
-      data: { id: "inv_1", stripe_invoice_id: "in_1", hosted_invoice_url: null, linkFailed: true },
+      data: {
+        id: "inv_link_failed_9",
+        stripe_invoice_id: "in_1",
+        hosted_invoice_url: null,
+        linkFailed: true,
+      },
     });
     render(<NewInvoiceDialog {...props} />);
     openAndPickClient();
@@ -213,9 +219,16 @@ describe("NewInvoiceDialog", () => {
       target: { value: "10" },
     });
     submit();
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Invoice created but could not be linked to the work order — link it from the ticket",
-    );
+    const notice = await screen.findByRole("status");
+    await waitFor(() => {
+      expect(notice).toHaveTextContent(
+        "Invoice inv_link_failed_9 was created but could not be linked to the work order.",
+      );
+      expect(notice).toHaveTextContent(
+        "work_orders.invoice_id = inv_link_failed_9",
+      );
+      expect(notice).toHaveTextContent("/admin/invoices");
+    });
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await waitFor(() =>
       expect(
@@ -230,9 +243,156 @@ describe("NewInvoiceDialog", () => {
     );
   });
 
+  it("keeps the form locked for the same work order after closing and reopening", async () => {
+    h.create.mockResolvedValue({
+      ok: true,
+      data: {
+        id: "inv_link_failed_9",
+        stripe_invoice_id: "in_1",
+        hosted_invoice_url: null,
+        linkFailed: true,
+      },
+    });
+    render(<NewInvoiceDialog {...props} />);
+    openAndPickClient();
+    fireEvent.change(screen.getByLabelText("Work order (optional)"), {
+      target: { value: WO_A },
+    });
+    fireEvent.change(screen.getByLabelText("Amount (USD)"), {
+      target: { value: "10" },
+    });
+    submit();
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+
+    openAndPickClient();
+    fireEvent.change(screen.getByLabelText("Work order (optional)"), {
+      target: { value: WO_A },
+    });
+    fireEvent.change(screen.getByLabelText("Amount (USD)"), {
+      target: { value: "20" },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Invoice inv_link_failed_9 was created but could not be linked to the work order",
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Create Stripe invoice" }),
+      ).toBeDisabled(),
+    );
+    submit();
+    await waitFor(() => expect(h.create).toHaveBeenCalledTimes(1));
+
+    // A different work order is not locked.
+    fireEvent.change(screen.getByLabelText("Work order (optional)"), {
+      target: { value: "" },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Create Stripe invoice" }),
+      ).toBeEnabled(),
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("names each work order's own invoice in the link-failed notice", async () => {
+    h.create
+      .mockResolvedValueOnce({
+        ok: true,
+        data: { id: "inv_for_a", stripe_invoice_id: "in_a", hosted_invoice_url: null, linkFailed: true },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        data: { id: "inv_for_a2", stripe_invoice_id: "in_a2", hosted_invoice_url: null, linkFailed: true },
+      });
+    const twoOrders = {
+      ...props,
+      workOrders: [
+        ...props.workOrders,
+        { id: WO_C, label: "A second work order", clientUserId: CLIENT_A },
+      ],
+    };
+    render(<NewInvoiceDialog {...twoOrders} />);
+    openAndPickClient();
+    fireEvent.change(screen.getByLabelText("Work order (optional)"), {
+      target: { value: WO_A },
+    });
+    fireEvent.change(screen.getByLabelText("Amount (USD)"), {
+      target: { value: "10" },
+    });
+    submit();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Invoice inv_for_a was created"),
+    );
+
+    // Switching to the second work order clears the first notice, and its own
+    // link failure names its own invoice id.
+    fireEvent.change(screen.getByLabelText("Work order (optional)"), {
+      target: { value: WO_C },
+    });
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Create Stripe invoice" }),
+      ).toBeEnabled(),
+    );
+    submit();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Invoice inv_for_a2 was created"),
+    );
+    expect(screen.getByRole("status")).not.toHaveTextContent("inv_for_a was");
+
+    // Back on the first work order the original id is still the one named.
+    fireEvent.change(screen.getByLabelText("Work order (optional)"), {
+      target: { value: WO_A },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Invoice inv_for_a was created"),
+    );
+  });
+
+  it("keeps the Stripe-failure lock for the same client and amount after reopening", async () => {
+    h.create.mockResolvedValue({ ok: false, error: "Stripe error: declined" });
+    render(<NewInvoiceDialog {...props} />);
+    openAndPickClient();
+    fireEvent.change(screen.getByLabelText("Amount (USD)"), {
+      target: { value: "10" },
+    });
+    submit();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Invoice saved, but Stripe failed.");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+
+    openAndPickClient();
+    fireEvent.change(screen.getByLabelText("Amount (USD)"), {
+      target: { value: "10" },
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent("Do not submit again");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Create Stripe invoice" }),
+      ).toBeDisabled(),
+    );
+    fireEvent.change(screen.getByLabelText("Amount (USD)"), {
+      target: { value: "11" },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Create Stripe invoice" }),
+      ).toBeEnabled(),
+    );
+  });
+
   it("shows the server-side unsent-duplicate rejection and stays editable", async () => {
     const message =
-      "An unsent invoice for this client and amount already exists from the last 24 hours (Stripe failed). Check the Stripe configuration, then void that invoice in Supabase (status = void) before creating another.";
+      "An unsent invoice for this client and amount already exists from the last 24 hours (the Stripe call failed). The unsent invoice has no Stripe invoice; set its status to void in Supabase before creating another.";
     h.create.mockResolvedValue({ ok: false, error: message });
     render(<NewInvoiceDialog {...props} />);
     openAndPickClient();

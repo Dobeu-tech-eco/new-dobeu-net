@@ -1,5 +1,9 @@
 import * as React from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+
+// The dialog and its form load through dynamic import(); under full-suite load
+// that can exceed findByRole's 1s default, so give the lazy lookups more time.
+const LAZY = { timeout: 5000 };
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 // Heavy tab bodies are stubbed; the real LightboxDialog (Radix Dialog) is used.
@@ -62,7 +66,7 @@ describe("Lightbox focus restoration", () => {
     trigger.focus();
     fireEvent.click(trigger);
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("dialog", {}, LAZY);
     fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -79,7 +83,7 @@ describe("Lightbox focus restoration", () => {
     trigger.focus();
     fireEvent.click(trigger);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Submit lead" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Submit lead" }, LAZY));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     await waitFor(() => expect(document.activeElement).toBe(trigger));
@@ -95,7 +99,7 @@ describe("Lightbox focus restoration", () => {
     item.focus();
     fireEvent.click(item);
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("dialog", {}, LAZY);
     fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -115,7 +119,7 @@ describe("Lightbox focus restoration", () => {
     const bodyFocus = vi.spyOn(document.body, "focus");
     fireEvent.click(trigger); // fireEvent.click does not focus the button
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("dialog", {}, LAZY);
     fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -137,7 +141,7 @@ describe("Lightbox focus restoration", () => {
     expect(document.activeElement).toBe(document.body);
     fireEvent.click(trigger);
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("dialog", {}, LAZY);
     fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -159,7 +163,7 @@ describe("Lightbox focus restoration", () => {
   }
 
   async function escapeAndExpectFocus(target: HTMLElement) {
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("dialog", {}, LAZY);
     fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     await waitFor(() => expect(document.activeElement).toBe(target));

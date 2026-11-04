@@ -229,6 +229,71 @@ describe("admin overview metrics", () => {
     expect(screen.queryByText(/Totals truncated/)).not.toBeInTheDocument();
   });
 
+  it("keeps currencies separate instead of summing across them", async () => {
+    stub({
+      ...emptyLeads,
+      tables: {
+        invoices: {
+          data: [
+            { amount_cents: 100000, currency: "usd", status: "open" },
+            { amount_cents: 20000, currency: "USD", status: "open" },
+            { amount_cents: 30000, currency: "eur", status: "open" },
+            { amount_cents: 5000, currency: "eur", status: "overdue" },
+          ],
+          error: null,
+        },
+      },
+      headTables: { invoices: { count: 4, error: null } },
+    });
+    render(await AdminOverview({ searchParams: Promise.resolve({}) }));
+    const open = tileValue("Open invoice total");
+    expect(open).toHaveTextContent("€300 · $1,200");
+    expect(open).not.toHaveTextContent("$1,500");
+    expect(tileValue("Overdue invoice total")).toHaveTextContent("€50");
+    expect(tileValue("Overdue invoice total")).not.toHaveTextContent("$");
+    expect(tileValue("Paid (30d)")).toHaveTextContent("€350 · $1,200");
+  });
+
+  it("does not throw on a malformed currency code", async () => {
+    stub({
+      ...emptyLeads,
+      tables: {
+        invoices: {
+          data: [
+            { amount_cents: 1000, currency: "1$A", status: "open" },
+            { amount_cents: 2000, currency: "eur", status: "open" },
+            { amount_cents: 3000, currency: "usd", status: "open" },
+          ],
+          error: null,
+        },
+      },
+      headTables: { invoices: { count: 3, error: null } },
+    });
+    render(await AdminOverview({ searchParams: Promise.resolve({}) }));
+    const open = tileValue("Open invoice total");
+    expect(open).toHaveTextContent("10 1$A");
+    expect(open).toHaveTextContent("€20");
+    expect(open).toHaveTextContent("$30");
+  });
+
+  it("renders a single currency as one value", async () => {
+    stub({
+      ...emptyLeads,
+      tables: {
+        invoices: {
+          data: [
+            { amount_cents: 1000, currency: "USD", status: "open" },
+            { amount_cents: 2500, currency: "USD", status: "open" },
+          ],
+          error: null,
+        },
+      },
+      headTables: { invoices: { count: 2, error: null } },
+    });
+    render(await AdminOverview({ searchParams: Promise.resolve({}) }));
+    expect(tileValue("Open invoice total")?.textContent).toBe("$35");
+  });
+
   it("selects only bounded columns for invoice sums", async () => {
     const selects = vi.fn();
     stub({ ...emptyLeads, selects });
@@ -236,7 +301,7 @@ describe("admin overview metrics", () => {
     const invoiceCols = selects.mock.calls
       .filter(([t]) => t === "invoices")
       .map(([, c]) => c);
-    expect(invoiceCols).toContain("amount_cents,status");
+    expect(invoiceCols).toContain("amount_cents,currency,status");
     expect(selects.mock.calls.some(([, c]) => c === "*")).toBe(false);
   });
 });
@@ -311,6 +376,31 @@ describe("admin overview activity feed", () => {
       "/admin/invoices",
     );
     expect(document.body).not.toHaveTextContent("secret@example.com");
+  });
+
+  it("formats feed amounts in each invoice's own currency", async () => {
+    stub({
+      ...emptyLeads,
+      tables: {
+        ...feedTables,
+        invoices: {
+          data: [
+            {
+              id: "i2",
+              amount_cents: 7000,
+              currency: "eur",
+              created_at: "2026-10-02T00:00:00Z",
+              paid_at: "2026-10-07T00:00:00Z",
+            },
+          ],
+          error: null,
+        },
+      },
+    });
+    render(await AdminOverview({ searchParams: Promise.resolve({}) }));
+    const items = [...feedItems()].map((li) => li.textContent);
+    expect(items.some((t) => t?.includes("Invoice paid: €70"))).toBe(true);
+    expect(items.some((t) => t?.includes("Invoice created: €70"))).toBe(true);
   });
 
   it("lists payments from the paid source and invoice creations separately", async () => {

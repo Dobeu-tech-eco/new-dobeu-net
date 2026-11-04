@@ -32,6 +32,15 @@ interface WorkOrderOption {
   clientUserId: string;
 }
 
+type LockKind = "stripe" | "link";
+
+function amountCents(value: string): number | null {
+  const dollars = Number(value);
+  return value.trim() !== "" && Number.isFinite(dollars) && dollars > 0
+    ? Math.round(dollars * 100)
+    : null;
+}
+
 const selectClassName =
   "flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -51,12 +60,16 @@ export function NewInvoiceDialog({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedWorkOrderId, setSelectedWorkOrderId] = useState("");
-  // Set once a submit comes back as "Stripe error:": the local invoice row was
-  // already inserted, so the form must not submit again.
-  const [stripeFailed, setStripeFailed] = useState(false);
-  // Set when the invoice exists but could not be linked to its work order:
-  // the form stays closed to resubmits so a second invoice cannot be created.
-  const [linkFailed, setLinkFailed] = useState(false);
+  const [amount, setAmount] = useState("");
+  // Locks survive close/reopen for the page session (UX only; the server guard
+  // in createInvoice is authoritative). "stripe": a "Stripe error:" came back,
+  // so the local row already exists. "link": the invoice exists but could not
+  // be linked to its work order. Keys are `wo:<id>` and `amt:<client>:<cents>`.
+  const [locks, setLocks] = useState<ReadonlyMap<string, LockKind>>(new Map());
+  // Id of the invoice that failed to link, by `wo:<id>` key, for the notice.
+  const [linkedInvoiceIds, setLinkedInvoiceIds] = useState<
+    ReadonlyMap<string, string>
+  >(new Map());
 
   // No recipient, no options: picking a project or work order first would be
   // silently wiped as soon as the recipient changes.
@@ -69,15 +82,35 @@ export function NewInvoiceDialog({
     [workOrders, selectedUserId]
   );
 
+  const cents = amountCents(amount);
+  const lock: LockKind | null =
+    (selectedWorkOrderId ? locks.get(`wo:${selectedWorkOrderId}`) : undefined) ??
+    (selectedUserId && cents !== null
+      ? locks.get(`amt:${selectedUserId}:${cents}`)
+      : undefined) ??
+    null;
+  const stripeFailed = lock === "stripe";
+  const linkFailed = lock === "link";
+  const linkedInvoiceId = selectedWorkOrderId
+    ? linkedInvoiceIds.get(`wo:${selectedWorkOrderId}`)
+    : undefined;
+
+  function addLocks(kind: LockKind, keys: string[]) {
+    setLocks((prev) => {
+      const next = new Map(prev);
+      for (const key of keys) next.set(key, kind);
+      return next;
+    });
+  }
+
   function changeOpen(nextOpen: boolean) {
     setOpen(nextOpen);
     if (nextOpen) {
       setSelectedUserId("");
       setSelectedProjectId("");
       setSelectedWorkOrderId("");
+      setAmount("");
       setError(null);
-      setStripeFailed(false);
-      setLinkFailed(false);
     }
   }
 
@@ -88,7 +121,7 @@ export function NewInvoiceDialog({
   }
 
   async function handleSubmit(formData: FormData) {
-    if (stripeFailed || linkFailed) return;
+    if (lock) return;
     setError(null);
     const dollars = Number(formData.get("amount") ?? 0);
     const description = (String(formData.get("description") ?? "").trim() || null) as string | null;
@@ -100,9 +133,12 @@ export function NewInvoiceDialog({
       setError("Amount must be a positive dollar value.");
       return;
     }
+    const submittedCents = Math.round(dollars * 100);
+    const submittedUserId = selectedUserId;
+    const submittedWorkOrderId = selectedWorkOrderId;
     const payload = {
       user_id: selectedUserId,
-      amount_cents: Math.round(dollars * 100),
+      amount_cents: submittedCents,
       description,
       ...(selectedProjectId ? { project_id: selectedProjectId } : {}),
       ...(selectedWorkOrderId ? { work_order_id: selectedWorkOrderId } : {}),
@@ -114,17 +150,22 @@ export function NewInvoiceDialog({
           if (result.error.startsWith("Stripe error:")) {
             // The local row was already inserted: lock the form so a retry
             // cannot duplicate the customer invoice.
-            setStripeFailed(true);
-            setError(
-              "Invoice saved, but Stripe failed. It is listed with no Stripe link. Do not submit again; fix the Stripe configuration and void the unsent invoice in Supabase if it should not stand."
-            );
+            addLocks("stripe", [
+              `amt:${submittedUserId}:${submittedCents}`,
+              ...(submittedWorkOrderId ? [`wo:${submittedWorkOrderId}`] : []),
+            ]);
           } else {
             setError(result.error);
           }
           return;
         }
         if (result.data.linkFailed) {
-          setLinkFailed(true);
+          if (submittedWorkOrderId) {
+            addLocks("link", [`wo:${submittedWorkOrderId}`]);
+            setLinkedInvoiceIds((prev) =>
+              new Map(prev).set(`wo:${submittedWorkOrderId}`, result.data.id)
+            );
+          }
           return;
         }
         setOpen(false);
@@ -223,6 +264,8 @@ export function NewInvoiceDialog({
               name="amount"
               type="number"
               step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
               placeholder="500.00"
             />
           </div>
@@ -244,9 +287,17 @@ export function NewInvoiceDialog({
             </p>
           )}
 
+          {stripeFailed && (
+            <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              Invoice saved, but Stripe failed. It is listed with no Stripe link. Do not submit again; fix the Stripe configuration and set the unsent invoice&apos;s status to void in Supabase if it should not stand (it has no Stripe invoice).
+            </p>
+          )}
+
           {linkFailed && (
             <p role="status" className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
-              Invoice created but could not be linked to the work order — link it from the ticket
+              {linkedInvoiceId
+                ? `Invoice ${linkedInvoiceId} was created but could not be linked to the work order. To link it, set work_orders.invoice_id = ${linkedInvoiceId} in Supabase. To bill again instead, void it in the Stripe dashboard (find it on /admin/invoices) and wait for the webhook to mark it void.`
+                : "Invoice created but could not be linked to the work order. Set work_orders.invoice_id to that invoice in Supabase (find it on /admin/invoices)."}
             </p>
           )}
 

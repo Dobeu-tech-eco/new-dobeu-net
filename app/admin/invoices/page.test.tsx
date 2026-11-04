@@ -33,8 +33,13 @@ type Res = { data: unknown; error: { message: string } | null };
 const ok = (data: unknown): Res => ({ data, error: null });
 const fail: Res = { data: null, error: { message: "private provider text" } };
 
-function client(tables: Record<string, Res>, listUsers: () => Promise<Res>) {
+// A table maps to one Res, or to one Res per `from(table)` call in order (the
+// page reads work_orders twice: unbilled first, then void-linked).
+type TableRes = Res | Res[];
+
+function client(tables: Record<string, TableRes>, listUsers: () => Promise<Res>) {
   const calls: Array<{ table: string; method: string; args: unknown[] }> = [];
+  const fromCount: Record<string, number> = {};
   const chain = (table: string, res: Res) => {
     const b: Record<string, unknown> = {
       select: (...a: unknown[]) => {
@@ -63,7 +68,11 @@ function client(tables: Record<string, Res>, listUsers: () => Promise<Res>) {
   };
   return {
     api: {
-      from: (t: string) => chain(t, tables[t] ?? ok([])),
+      from: (t: string) => {
+        const n = (fromCount[t] = (fromCount[t] ?? 0) + 1);
+        const res = tables[t];
+        return chain(t, (Array.isArray(res) ? res[n - 1] : res) ?? ok([]));
+      },
       auth: { admin: { listUsers } },
     },
     calls,
@@ -91,7 +100,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 function stubPage(
-  tables: Record<string, Res>,
+  tables: Record<string, TableRes>,
   listUsers: () => Promise<Res> = async () => ok({ users: [] }),
 ) {
   const c = client(tables, listUsers);
@@ -132,40 +141,106 @@ describe("admin invoices page degradation", () => {
     expect(container.textContent).not.toContain("private provider");
   });
 
-  it("reads only un-invoiced accepted work orders, newest first", async () => {
+  it("offers un-invoiced and void-linked accepted work orders, merged newest first", async () => {
     const c = stubPage({
       invoices: ok([invoice]),
       profiles: ok([]),
       projects: ok([]),
-      work_orders: ok([
-        { id: "wo-1", title: "Fix logo", created_by: "user-1" },
-      ]),
+      work_orders: [
+        ok([
+          { id: "wo-new", title: "New", created_by: "user-1", created_at: "2026-10-03T00:00:00Z" },
+          { id: "wo-old", title: "Old", created_by: "user-1", created_at: "2026-10-01T00:00:00Z" },
+        ]),
+        ok([
+          {
+            id: "wo-void",
+            title: "Voided",
+            created_by: "user-2",
+            created_at: "2026-10-02T00:00:00Z",
+            invoices: { status: "void" },
+          },
+        ]),
+      ],
     });
     render(await AdminInvoicesPage(params));
     expect(h.dialogProps?.workOrders).toEqual([
-      { id: "wo-1", label: "Fix logo", clientUserId: "user-1" },
+      { id: "wo-new", label: "New", clientUserId: "user-1" },
+      { id: "wo-void", label: "Voided", clientUserId: "user-2" },
+      { id: "wo-old", label: "Old", clientUserId: "user-1" },
     ]);
-    expect(c.calls).toContainEqual({
+    const wo = c.calls.filter((x) => x.table === "work_orders");
+    expect(wo).toContainEqual({
       table: "work_orders",
       method: "is",
       args: ["invoice_id", null],
     });
-    expect(c.calls).toContainEqual({
+    // The void read is an inner embed on the invoice FK filtered to void, so a
+    // non-void linked work order can never match it.
+    expect(wo).toContainEqual({
+      table: "work_orders",
+      method: "select",
+      args: [
+        "id,title,created_by,created_at,invoices!work_orders_invoice_id_fkey!inner(status)",
+      ],
+    });
+    expect(wo).toContainEqual({
       table: "work_orders",
       method: "eq",
-      args: ["status", "accepted"],
+      args: ["invoices.status", "void"],
     });
-    expect(c.calls).toContainEqual({
-      table: "work_orders",
-      method: "order",
-      args: ["created_at", { ascending: false }],
-    });
-    expect(c.calls).toContainEqual({
-      table: "work_orders",
-      method: "limit",
-      args: [500],
-    });
+    expect(wo.filter((x) => x.method === "eq" && x.args[0] === "status")).toEqual([
+      { table: "work_orders", method: "eq", args: ["status", "accepted"] },
+      { table: "work_orders", method: "eq", args: ["status", "accepted"] },
+    ]);
+    expect(
+      wo.filter((x) => x.method === "order" || x.method === "limit"),
+    ).toEqual([
+      { table: "work_orders", method: "order", args: ["created_at", { ascending: false }] },
+      { table: "work_orders", method: "limit", args: [500] },
+      { table: "work_orders", method: "order", args: ["created_at", { ascending: false }] },
+      { table: "work_orders", method: "limit", args: [500] },
+    ]);
     expect(screen.queryByText(/New Invoice picker could not/)).not.toBeInTheDocument();
+  });
+
+  it("caps the merged picker list at 500, keeping the newest", async () => {
+    const row = (id: string, day: number) => ({
+      id,
+      title: id,
+      created_by: "user-1",
+      created_at: `2026-01-01T00:00:${String(day).padStart(2, "0")}Z`,
+    });
+    const unbilled = Array.from({ length: 500 }, (_, i) =>
+      row(`u${i}`, i % 50),
+    );
+    stubPage({
+      invoices: ok([invoice]),
+      work_orders: [ok(unbilled), ok([{ ...row("v-newest", 59), invoices: { status: "void" } }])],
+    });
+    render(await AdminInvoicesPage(params));
+    const options = h.dialogProps?.workOrders as { id: string }[];
+    expect(options).toHaveLength(500);
+    expect(options[0].id).toBe("v-newest");
+  });
+
+  it("keeps the un-invoiced options and a non-blocking notice when the void-linked read fails", async () => {
+    stubPage({
+      invoices: ok([invoice]),
+      profiles: ok([]),
+      projects: ok([]),
+      work_orders: [
+        ok([{ id: "wo-1", title: "Fix logo", created_by: "user-1", created_at: "2026-10-01T00:00:00Z" }]),
+        fail,
+      ],
+    });
+    const { container } = render(await AdminInvoicesPage(params));
+    expect(h.dialogProps?.workOrders).toEqual([
+      { id: "wo-1", label: "Fix logo", clientUserId: "user-1" },
+    ]);
+    expect(screen.getByText("inv-1234…")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/New Invoice picker could not/);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(container.textContent).not.toContain("private provider");
   });
 
   it("shows the mark-paid button only for non-terminal invoices", async () => {
