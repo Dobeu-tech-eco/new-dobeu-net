@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { companyNext, guardCompanyPage, pickCompany, resolveAdminCompanies, GuardNotice } from "../_lib/admin-companies";
 import { memberNoticeMessage, type MemberNoticeTone } from "./notices";
+import { safeErrorFields } from "@/lib/log-safe";
 import { isCompanyMemberStatus, type CompanyMemberStatus } from "@/lib/domain-types";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +45,7 @@ async function resolveEmails(userIds: string[]): Promise<Map<string, string>> {
       if (users.length < 200 || byId.size >= wanted.size) break;
     }
   } catch (e) {
-    console.warn("[company members] email resolution failed:", e);
+    console.warn("[company members] email resolution failed:", safeErrorFields(e));
   }
   return byId;
 }
@@ -108,7 +109,7 @@ export default async function CompanyMembersPage({
 
       {notice && (
         <p
-          role={sp.notice === "invite_email_failed" ? "alert" : "status"}
+          role={notice.role}
           className={`rounded-lg border p-3 text-sm ${NOTICE_STYLES[notice.tone]}`}
         >
           {notice.text}
@@ -119,7 +120,7 @@ export default async function CompanyMembersPage({
       <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="font-display text-xl font-semibold mb-1">Invite a member</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Adds them with an <code>invited</code> status, then emails them a link to sign in.
+          Adds them with an <code>invited</code> status, then emails them to sign in at /login.
         </p>
         <form action={inviteMemberForm.bind(null, companyId)} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto] items-end">

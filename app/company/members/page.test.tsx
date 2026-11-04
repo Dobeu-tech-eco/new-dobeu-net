@@ -74,6 +74,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import { AuthError } from "@/lib/actions/auth";
 import CompanyMembersPage from "./page";
+import { memberNoticeMessage } from "./notices";
 
 beforeEach(() => {
   h.requireCompanyAdmin.mockReset();
@@ -176,18 +177,24 @@ describe("CompanyMembersPage guard", () => {
 
   describe("invite notices", () => {
     it.each([
-      ["member_added", "Member added. We've emailed them a link to sign in.", "status"],
-      [
-        "invite_email_failed",
-        "Member added, but the invite email didn't send. Ask them to request a sign-in link at /login with their email address.",
-        "alert"
-      ],
-      ["invite_failed", "Couldn't add that member. Check the email and role and try again.", "status"],
-      ["rate_limited", "Too many invites in a minute. Wait a moment and try again.", "status"]
-    ])("renders %s with role=%s", async (code, text, role) => {
+      ["member_added", "status"],
+      ["invite_email_failed", "alert"],
+      ["already_member", "status"],
+      ["invite_failed", "alert"],
+      ["daily_limit", "status"],
+      ["rate_limited", "status"],
+      ["mfa_required", "alert"],
+      ["forbidden", "alert"]
+    ] as const)("renders %s as the only %s element with the mapped copy", async (code, role) => {
       h.requireCompanyAdmin.mockResolvedValue({});
       render(await CompanyMembersPage(withNotice(code)));
-      expect(screen.getByRole(role, { name: "" })).toHaveTextContent(text);
+      const expected = memberNoticeMessage(code);
+      expect(expected?.role).toBe(role);
+      const found = screen.getAllByRole(role);
+      expect(found).toHaveLength(1);
+      expect(found[0].textContent).toBe(expected?.text);
+      const other = role === "alert" ? "status" : "alert";
+      expect(screen.queryByRole(other)).not.toBeInTheDocument();
     });
 
     it.each(["bogus", "<script>alert(1)</script>", "victim@example.com"])(
