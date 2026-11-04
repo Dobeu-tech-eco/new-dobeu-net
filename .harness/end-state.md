@@ -130,7 +130,7 @@ The 66-row map is approved.
 | 43 | Portal work orders | P3 | `app/portal/tickets/page.tsx` | 4,37 | normal | done |
 | 44 | Portal work-order detail | P3 | `app/portal/tickets/[id]/page.tsx` | 43 | normal | done |
 | 45 | Portal settings | P3 | `app/portal/settings/page.tsx` | 3,4,37 | normal | done |
-| 46 | MFA settings | P3 | `app/portal/settings/mfa/page.tsx` | 3,45 | normal | blocked |
+| 46 | MFA settings (H3) | P3 | `app/portal/settings/mfa/page.tsx` | 3,45 | normal | blocked |
 | 47 | Admin dashboard | P4 | `app/admin/page.tsx` | 3,4,15 | normal | done |
 | 48 | Admin analytics | P4 | `app/admin/analytics/page.tsx` | 12,47 | normal | done |
 | 49 | Admin bookings | P4 | `app/admin/bookings/page.tsx` | 6,47 | normal | done |

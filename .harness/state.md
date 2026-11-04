@@ -49,6 +49,7 @@ Append entries as `- <date> <text>`.
 - 2026-11-04 D13 closed: #314 and #315 merged (3a9d749); 20261104000100 applied to prod (supabase-dobe-net) via Composio SQL after a 0-duplicate re-check; prod history 21/21, db push dry-run up to date.
 - 2026-11-04 Backlog D17, D18, D20, D23, D24, D26, D27 fixed on fix/backlog-d17-d27 (approved by Jeremy); 3 parallel builders on disjoint files; opus review APPROVE (MEDIUM: submit route session check, fixed). verify 1003/1003, pgTAP 137/137. D25 (zod 4) follows separately.
 - Ruling: builders shared one tree on disjoint file sets (no worktrees) — local Supabase stack and node_modules shared — cost if wrong: transient cross-builder test failures (seen twice, cleared on rerun).
+- 2026-11-04 Outstanding items: P1 done (L-002 promoted to review-checklist.md); lessons inbox consolidated into L-007..L-015, L-003/L-010/L-012 promoted (P2-P4 done); row 46 linked to H3 (live TOTP, owner Jeremy); postcss-selector-parser pinned 6.1.5 (GHSA-rj75-hqrm-r3gf fixed); deepmerge GHSA-gcqx-w48m-w2h4 accepted (no upstream fix) in SECURITY.md. pnpm audit --prod: 1 low.
 - Fallback: reviewer:security copilot -> grok (copilot monthly quota exhausted).
 
 ## Failures and escalations
