@@ -67,7 +67,7 @@ async function isCompanyActive(
  * Sign-in methods that prove control of the mailbox (not password or totp).
  * NOTE: `otp` is also emitted by phone/SMS OTP; this gate assumes phone
  * sign-in stays disabled (supabase/config.toml [auth.sms] enable_signup =
- * false; see D52).
+ * false; see D53).
  */
 const MAILBOX_PROOF_METHODS: ReadonlySet<string> = new Set([
   "otp",
