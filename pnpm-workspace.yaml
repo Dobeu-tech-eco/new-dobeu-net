@@ -33,3 +33,5 @@ overrides:
   "source-map-js@1": "1.2.2"
   "proxy-addr@2": "2.0.8"
   "compression@1": "1.8.2"
+  # GHSA-rj75-hqrm-r3gf (CPU exhaustion in selector parsing) fixed in 6.1.5; stay on 6.x.
+  "postcss-selector-parser@6": "6.1.5"

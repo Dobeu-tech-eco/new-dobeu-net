@@ -46,6 +46,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 |---|---|---|---|---|
 | Complete approved build and verification | Complete; receipt saved to runs/20261022-172443/receipt.md and awaiting ship checkpoint | done | harness lead | 2026-10-22 |
 | Review recovered plan and present run checkpoint | Revised plan saved to runs/20261022-172443/plan-draft-r2.md; checkpoint prepared | done | harness lead | 2026-10-22 |
+| Live TOTP check for end-state row 46 (MFA settings): sign in on https://dobeu.net as a real portal user, enroll TOTP at /portal/settings/mfa, sign out, sign back in and pass the AAL2 step-up, then tell the harness so row 46 can move to done (needs a human and a real device) |  | open | Jeremy | 2026-11-03 |
 
 ## Deploy
 
@@ -58,4 +59,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 
 | item | context | status | owner | added |
 |---|---|---|---|---|
-| promote L-002 to review-checklist.md (verify owned-file sha256 before reusing test results from a worktree or after a polish pass) |  | open |  | 2026-10-28 |
+| promote L-002 to review-checklist.md (verify owned-file sha256 before reusing test results from a worktree or after a polish pass) |  | done |  | 2026-10-28 |
+| promote L-003 to review-checklist.md (dialog close vs focus restoration) |  | done |  | 2026-11-03 |
+| promote L-010 to review-checklist.md (rebase --onto origin/main after a squash-merged base) |  | done |  | 2026-11-03 |
+| promote L-012 to review-checklist.md (grep SECURITY.md/docs/.harness when closing a documented gap) |  | done |  | 2026-11-03 |

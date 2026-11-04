@@ -36,6 +36,14 @@
 - [ ] No `next.config.js` added (shadows the `.ts` file)
 - [ ] `runtime = "edge"` only where genuinely needed (not static metadata routes)
 
+## Evidence
+- [ ] Test results reused after a review or polish pass are tied to the same app/source manifest and owned-file sha256s; re-run when either changed (L-002)
+
+## Process
+- [ ] Dialog changes keep close behaviour and focus restoration as separate concerns; preexisting accessibility findings are reported, not silently fixed in a copy-only change (L-003)
+- [ ] A branch whose base was squash-merged is rebased with `git rebase --onto origin/main <old-base>` before pushing (L-010)
+- [ ] Closing a documented gap or adding a classification list re-checks SECURITY.md, docs/security/, docs/DEPLOYMENT.md and .harness/ for sentences it contradicts (L-012)
+
 ## Scope
 - [ ] PR is focused — no unrelated cleanup bundled
 - [ ] No features/abstractions beyond what the task requires
