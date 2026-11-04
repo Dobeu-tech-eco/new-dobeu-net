@@ -8,6 +8,8 @@
 --
 -- Fail closed: a missing/null 'aal' claim yields '' and therefore false.
 -- The service role bypasses RLS and is unaffected.
+-- If a prerequisite table/function is missing the migration RAISES instead of
+-- silently leaving the old rank-only policies in place (fail loudly).
 -- Column grants, the activation trigger, company_members_select_comember,
 -- company_role_rank and is_company_member are intentionally untouched.
 -- =============================================================================
@@ -26,12 +28,12 @@ begin
     security definer
     set search_path = pg_catalog, public, pg_temp
     as $fn$
-      select coalesce((select auth.jwt()->>'aal'), '') = 'aal2'
-        and public.company_role_rank(cid) >= 100
+      select public.company_role_rank(cid) >= 100
         and exists (
           select 1 from public.companies c
           where c.id = cid and c.status = 'active'
         )
+        and coalesce((select auth.jwt()->>'aal'), '') = 'aal2'
     $fn$;
 
     comment on function public.can_manage_company_members(uuid) is
@@ -70,5 +72,13 @@ begin
       for delete
       to authenticated
       using (public.can_manage_company_members(company_id));
+  else
+    raise exception 'company_members AAL2 migration cannot apply: missing prerequisite(s): %',
+      concat_ws(', ',
+        case when to_regclass('public.company_members') is null then 'public.company_members' end,
+        case when to_regclass('public.companies') is null then 'public.companies' end,
+        case when to_regclass('public.company_roles') is null then 'public.company_roles' end,
+        case when to_regprocedure('public.company_role_rank(uuid)') is null then 'public.company_role_rank(uuid)' end
+      );
   end if;
 end $$;
