@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("@/lib/leads", () => ({ processLead: vi.fn(), findLeadByVerifyNonce: vi.fn() }));
+vi.mock("@/lib/leads", () => ({
+  processLead: vi.fn(),
+  findLeadByVerifyNonce: vi.fn(),
+  LeadAlreadyConfirmedError: class LeadAlreadyConfirmedError extends Error {}
+}));
 
 import * as routeModule from "@/app/api/lead/confirm/route";
 import { POST } from "@/app/api/lead/confirm/route";
-import { findLeadByVerifyNonce, processLead } from "@/lib/leads";
+import { findLeadByVerifyNonce, LeadAlreadyConfirmedError, processLead } from "@/lib/leads";
 import { signLeadToken, LEAD_TOKEN_TTL_MS } from "@/lib/lead-verification";
 
 const mockedProcess = vi.mocked(processLead);
@@ -127,6 +131,18 @@ describe("POST /api/lead/confirm", () => {
     const again = await POST(req({ token }));
     expect(again.status).toBe(200);
     expect(await again.json()).toEqual({ ok: true, source: "form", has_message: true });
+    expect(mockedProcess).toHaveBeenCalledTimes(1);
+  });
+
+  it("lost cross-instance race (LeadAlreadyConfirmedError) returns 200 and keeps the lock", async () => {
+    const token = signLeadToken(input, SECRET, Date.now());
+    mockedProcess.mockRejectedValueOnce(new LeadAlreadyConfirmedError());
+    const res = await POST(req({ token }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, source: "form", has_message: true });
+    // Lock still held: an immediate confirm that misses the dedupe lookup is 409, not a second processLead.
+    const again = await POST(req({ token }));
+    expect(again.status).toBe(409);
     expect(mockedProcess).toHaveBeenCalledTimes(1);
   });
 

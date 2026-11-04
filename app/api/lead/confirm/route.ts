@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { findLeadByVerifyNonce, processLead } from "@/lib/leads";
+import { findLeadByVerifyNonce, LeadAlreadyConfirmedError, processLead } from "@/lib/leads";
 import { isLeadSecretUsable, verifyLeadToken } from "@/lib/lead-verification";
 import { checkRateLimit, releaseRateLimit } from "@/lib/rate-limit";
 
@@ -51,8 +51,8 @@ export async function POST(request: Request) {
 
     // Per-nonce lock: parallel first confirms of one token would otherwise all
     // miss the dedupe lookup and each create a lead. Upstash makes this hold
-    // across instances; residual risk is cross-instance races only when Upstash
-    // is unset. Note: the /lead/confirm page sends no-referrer, so these POSTs
+    // across instances; without it the leads_verify_nonce_key unique index still
+    // makes a duplicate insert impossible (see the catch below). Note: the /lead/confirm page sends no-referrer, so these POSTs
     // can carry Origin: null — do not add an Origin check here.
     const lock = await checkRateLimit(nonceKey, { windowSec: 30, max: 1 });
     if (lock.limited) return NextResponse.json({ ok: false, error: "in_progress" }, { status: 409 });
@@ -75,6 +75,9 @@ export async function POST(request: Request) {
     heldLock = null;
     return NextResponse.json({ ok: true, ...summary });
   } catch (e) {
+    // Lost a cross-instance race: the lead exists, so answer like the
+    // already-confirmed path. Keep the lock, matching the success path.
+    if (e instanceof LeadAlreadyConfirmedError) return NextResponse.json({ ok: true, ...summary });
     if (heldLock) await releaseRateLimit(nonceKey, heldLock);
     console.error("[api/lead/confirm] persistence failed", e instanceof Error ? e.message : e);
     return unavailable();
