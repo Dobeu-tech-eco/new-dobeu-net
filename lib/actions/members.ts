@@ -79,8 +79,6 @@ export type InviteNoticeCode =
   | "rate_limited"
   | "daily_limit"
   | "already_member"
-  | "mfa_required"
-  | "forbidden"
   | "invite_failed";
 
 /** Returns the limiter that tripped, or null. Fails closed if the limiter throws. */
@@ -139,6 +137,22 @@ async function resolveInviteeUserId(
     return null;
   }
   return { id: data.user.id, createdByUs: true };
+}
+
+/** True if the user has any membership (or the check fails: fail safe, keep). */
+async function userHasMembership(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+): Promise<boolean> {
+  const { count, error } = await admin
+    .from("company_members")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (error) {
+    console.warn("[inviteMember] membership check failed:", safeErrorFields(error));
+    return true;
+  }
+  return (count ?? 0) > 0;
 }
 
 export type InviteMemberData = {
@@ -238,9 +252,18 @@ export async function inviteMember(
     .single();
 
   if (insertErr || !member) {
-    // Compensate only for a user this call created: a fresh invitee has just a
-    // profiles row (ON DELETE CASCADE), so deleting leaves no orphan.
-    if (invitee.createdByUs) {
+    const duplicate = insertErr?.code === "23505";
+    // A unique violation proves another request just inserted a membership for
+    // this user, and company_members.user_id is ON DELETE CASCADE: deleting the
+    // user would remove it. Never compensate on 23505. For other errors, delete
+    // only a user this call created AND that still has no memberships. Accepted
+    // residual risk: a concurrent request could attach one between the count and
+    // the delete; the window is tiny and the user was created seconds ago.
+    if (
+      !duplicate &&
+      invitee.createdByUs &&
+      !(await userHasMembership(admin, invitedUserId))
+    ) {
       const { error: delErr } = await admin.auth.admin.deleteUser(invitedUserId);
       if (delErr) {
         console.warn("[inviteMember] deleteUser failed:", safeErrorFields(delErr));
@@ -249,7 +272,7 @@ export async function inviteMember(
     // Fixed codes only: never hand a Supabase message back to callers.
     return {
       ok: false,
-      error: insertErr?.code === "23505" ? "already_member" : "invite failed",
+      error: duplicate ? "already_member" : "invite failed",
     };
   }
 
@@ -365,9 +388,12 @@ export async function deactivateMember(
 // They return void (the form ignores the result) so the typed core actions
 // stay the tested, value-returning API.
 // ---------------------------------------------------------------------------
+// Guard failures (mfa_required, forbidden, not_authenticated) return null: the
+// page guard already routes the user (step-up / guard notice), so a carried
+// notice would only show stale on the step-up deep link.
 function inviteNotice(
   result: ActionResult<InviteMemberData>,
-): InviteNoticeCode {
+): InviteNoticeCode | null {
   if (result.ok) {
     return result.data.emailSent ? "member_added" : "invite_email_failed";
   }
@@ -375,11 +401,11 @@ function inviteNotice(
     case "rate_limited":
     case "daily_limit":
     case "already_member":
-    case "mfa_required":
       return result.error;
     case "forbidden":
     case "not_authenticated":
-      return "forbidden";
+    case "mfa_required":
+      return null;
     default:
       return "invite_failed";
   }
@@ -399,7 +425,8 @@ export async function inviteMemberForm(
     ? `company=${encodeURIComponent(companyId)}&`
     : "";
   // redirect() throws; keep it outside any try/catch.
-  redirect(`/company/members?${companyParam}notice=${notice}`);
+  const noticeParam = notice ? `notice=${notice}` : "";
+  redirect(`/company/members?${companyParam}${noticeParam}`.replace(/[?&]$/, ""));
 }
 
 export async function changeMemberRoleForm(

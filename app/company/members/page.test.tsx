@@ -182,9 +182,7 @@ describe("CompanyMembersPage guard", () => {
       ["already_member", "status"],
       ["invite_failed", "alert"],
       ["daily_limit", "status"],
-      ["rate_limited", "status"],
-      ["mfa_required", "alert"],
-      ["forbidden", "alert"]
+      ["rate_limited", "status"]
     ] as const)("renders %s as the only %s element with the mapped copy", async (code, role) => {
       h.requireCompanyAdmin.mockResolvedValue({});
       render(await CompanyMembersPage(withNotice(code)));

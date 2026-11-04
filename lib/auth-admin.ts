@@ -11,7 +11,8 @@ export const LIST_USERS_MAX_PAGES = 20;
 
 /**
  * Detect Supabase's "already registered" signal from a createUser error, across
- * the shapes it has shipped (message text, `email_exists` code, 422 status).
+ * the shapes it has shipped (message text, `email_exists` code). A bare 422 is
+ * NOT enough: it also covers validation failures such as a weak password.
  */
 export function isAlreadyRegistered(error: {
   message?: string;
@@ -22,8 +23,7 @@ export function isAlreadyRegistered(error: {
   return (
     msg.includes("already registered") ||
     msg.includes("already been registered") ||
-    error.code === "email_exists" ||
-    error.status === 422
+    error.code === "email_exists"
   );
 }
 

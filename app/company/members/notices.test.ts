@@ -7,12 +7,14 @@ describe("memberNoticeMessage", () => {
     ["invite_email_failed", "warning", "alert", "Member added, but the invite email didn't send. Ask them to sign in at /login with their email address."],
     ["already_member", "warning", "status", "That person is already a member of this company."],
     ["invite_failed", "error", "alert", "Couldn't add that member. Check the email address and role, then try again."],
-    ["daily_limit", "warning", "status", "This company has reached today's invite limit. Try again tomorrow."],
-    ["rate_limited", "warning", "status", "Too many invites in a minute. Wait a moment, then try again."],
-    ["mfa_required", "warning", "alert", "Confirm it's you with two-factor first (Portal → Settings → two-factor), then try again."],
-    ["forbidden", "error", "alert", "You can't manage members for this company right now. Return to the portal or contact Dobeu."]
+    ["daily_limit", "warning", "status", "This company has reached its invite limit for the last 24 hours. Try again later."],
+    ["rate_limited", "warning", "status", "Too many invites in a minute. Wait a moment, then try again."]
   ] as const)("maps %s to exact tone, role and copy", (code, tone, role, text) => {
     expect(memberNoticeMessage(code)).toEqual({ tone, role, text });
+  });
+
+  it.each(["mfa_required", "forbidden"])("no longer has a notice for %s", (code) => {
+    expect(memberNoticeMessage(code)).toBeNull();
   });
 
   it.each([undefined, null, "", "nope", "__proto__", "toString", ["member_added"], 5, {}])(

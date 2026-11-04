@@ -6,8 +6,14 @@ describe("isAlreadyRegistered", () => {
     [{ message: "User already registered" }],
     [{ message: "A user has already been registered" }],
     [{ code: "email_exists" }],
-    [{ status: 422 }],
   ])("detects %j", (e) => expect(isAlreadyRegistered(e)).toBe(true));
+
+  it("does not treat a bare 422 as already registered", () => {
+    expect(isAlreadyRegistered({ status: 422 })).toBe(false);
+    expect(
+      isAlreadyRegistered({ status: 422, code: "weak_password", message: "Password too short" }),
+    ).toBe(false);
+  });
 
   it("ignores other errors", () => {
     expect(isAlreadyRegistered({ message: "smtp down", status: 500 })).toBe(false);

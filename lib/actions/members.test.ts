@@ -20,6 +20,8 @@ const h = vi.hoisted(() => {
     listError: { message: string } | null;
     limitThrows: boolean;
     counts: Map<string, number>;
+    membershipCount: number;
+    membershipError: { message: string } | null;
   } = {
     client: null,
     createResult: { data: { user: { id: "new_user_1" } }, error: null },
@@ -32,6 +34,8 @@ const h = vi.hoisted(() => {
     listError: null,
     limitThrows: false,
     counts: new Map(),
+    membershipCount: 0,
+    membershipError: null,
   };
   return {
     state,
@@ -71,6 +75,16 @@ import { createAdminClient } from "@/lib/supabase/server";
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => h.state.client),
   createAdminClient: vi.fn(() => ({
+    from: vi.fn((table: string) => ({
+      select: () => ({
+        eq: async (col: string, val: string) => {
+          h.state.events.push(`count:${table}.${col}=${val}`);
+          return h.state.membershipError
+            ? { count: null, error: h.state.membershipError }
+            : { count: h.state.membershipCount, error: null };
+        },
+      }),
+    })),
     auth: {
       admin: {
         createUser: h.createUser,
@@ -205,6 +219,8 @@ beforeEach(() => {
   h.state.listError = null;
   h.state.limitThrows = false;
   h.state.counts = new Map();
+  h.state.membershipCount = 0;
+  h.state.membershipError = null;
   h.createUser.mockImplementation(async () => {
     h.state.events.push("createUser");
     return h.state.createResult;
@@ -357,7 +373,33 @@ describe("inviteMember", () => {
     expect(result).toEqual({ ok: false, error: "invite failed" });
     expect(h.sendEmail).not.toHaveBeenCalled();
     expect(h.deleteUser).toHaveBeenCalledWith("new_user_1");
-    expect(h.state.events).toEqual(["createUser", "insert", "deleteUser"]);
+    expect(h.state.events).toEqual([
+      "createUser",
+      "insert",
+      "count:company_members.user_id=new_user_1",
+      "deleteUser",
+    ]);
+  });
+
+  it("insert error for a created user that already has a membership: user NOT deleted", async () => {
+    h.state.client = makeClient({
+      user: { id: "inv_dup3", email: "a@d.net" },
+      insert: { error: { message: "boom" } },
+    });
+    h.state.membershipCount = 1;
+    expect(await invite()).toEqual({ ok: false, error: "invite failed" });
+    expect(h.deleteUser).not.toHaveBeenCalled();
+    expect(h.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("insert error with a failing membership check: user NOT deleted", async () => {
+    h.state.client = makeClient({
+      user: { id: "inv_dup4", email: "a@d.net" },
+      insert: { error: { message: "boom" } },
+    });
+    h.state.membershipError = { message: "db down" };
+    expect(await invite()).toEqual({ ok: false, error: "invite failed" });
+    expect(h.deleteUser).not.toHaveBeenCalled();
   });
 
   it("insert error for an existing user: no email, user NOT deleted", async () => {
@@ -389,7 +431,9 @@ describe("inviteMember", () => {
     const result = await invite();
     expect(result).toEqual({ ok: false, error: "already_member" });
     expect(h.sendEmail).not.toHaveBeenCalled();
-    expect(h.deleteUser).toHaveBeenCalledWith("new_user_1");
+    // A conflict proves a concurrent membership exists; deleting would cascade it.
+    expect(h.deleteUser).not.toHaveBeenCalled();
+    expect(h.state.events).toEqual(["createUser", "insert"]);
   });
 
   it("send failure keeps the membership and flags a partial result", async () => {
@@ -536,6 +580,7 @@ describe("inviteMemberForm", () => {
     return h.redirect.mock.calls[h.redirect.mock.calls.length - 1][0] as string;
   };
   const base = `/company/members?company=${COMPANY_ID}&notice=`;
+  const noNotice = `/company/members?company=${COMPANY_ID}`;
 
   it("redirects member_added when the email was sent", async () => {
     h.state.client = makeClient({ user: { id: "f_ok", email: "a@d.net" } });
@@ -574,22 +619,22 @@ describe("inviteMemberForm", () => {
     expect(await submit(COMPANY_ID)).toBe(`${base}already_member`);
   });
 
-  it("redirects mfa_required for an AAL1 admin", async () => {
+  it("redirects with no notice for an AAL1 admin (no stale mfa message)", async () => {
     h.state.client = makeClient({ aal: AAL1 });
-    expect(await submit(COMPANY_ID)).toBe(`${base}mfa_required`);
+    expect(await submit(COMPANY_ID)).toBe(noNotice);
   });
 
-  it("redirects forbidden for a non-admin", async () => {
+  it("redirects with no notice for a non-admin", async () => {
     h.state.client = makeClient({
       member: { role: "manager", status: "active" },
       rank: 60,
     });
-    expect(await submit(COMPANY_ID)).toBe(`${base}forbidden`);
+    expect(await submit(COMPANY_ID)).toBe(noNotice);
   });
 
-  it("redirects forbidden when signed out", async () => {
+  it("redirects with no notice when signed out", async () => {
     h.state.client = makeClient({ user: null });
-    expect(await submit(COMPANY_ID)).toBe(`${base}forbidden`);
+    expect(await submit(COMPANY_ID)).toBe(noNotice);
   });
 
   it("redirects invite_failed on an other insert error", async () => {

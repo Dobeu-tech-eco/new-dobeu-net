@@ -33,22 +33,12 @@ const MEMBER_NOTICES = {
   daily_limit: {
     tone: "warning",
     role: "status",
-    text: "This company has reached today's invite limit. Try again tomorrow."
+    text: "This company has reached its invite limit for the last 24 hours. Try again later."
   },
   rate_limited: {
     tone: "warning",
     role: "status",
     text: "Too many invites in a minute. Wait a moment, then try again."
-  },
-  mfa_required: {
-    tone: "warning",
-    role: "alert",
-    text: "Confirm it's you with two-factor first (Portal → Settings → two-factor), then try again."
-  },
-  forbidden: {
-    tone: "error",
-    role: "alert",
-    text: "You can't manage members for this company right now. Return to the portal or contact Dobeu."
   }
 } as const satisfies Record<string, MemberNotice>;
 
