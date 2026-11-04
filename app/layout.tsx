@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Source_Sans_3, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { RouteLight } from "@/components/motion/RouteLight";
@@ -16,22 +16,27 @@ import { getSiteUrl, safeJsonLdStringify } from "@/lib/utils";
 import "./globals.css";
 
 /**
- * Dobeu site typography — Source Sans 3 (weights 400/500/600/700/800).
+ * Dobeu site typography — Source Sans 3 (variable, self-hosted; the app uses weights 400-800).
  * Used for both `font-sans` and `font-display` in tailwind.config.ts.
  */
-const sourceSans = Source_Sans_3({
-  subsets: ["latin"],
+const sourceSans = localFont({
+  // Self-hosted (app/fonts, SIL OFL 1.1) so builds and the E2E dev server never
+  // fetch from Google Fonts: a network hiccup there used to fail CI.
+  src: "./fonts/SourceSans3-latin-var.woff2",
+  weight: "200 900",
+  style: "normal",
   // optional: if the font misses the first paint, keep the fallback so a late
   // swap cannot become LCP after homepage JS (mobile LH was 3.4s / 0.89).
   display: "optional",
   variable: "--font-source-sans",
-  weight: ["400", "500", "600", "700", "800"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains",
+const jetbrainsMono = localFont({
+  src: "./fonts/JetBrainsMono-latin-var.woff2",
+  weight: "100 800",
+  style: "normal",
   display: "optional",
+  variable: "--font-jetbrains",
 });
 
 const SITE_URL = getSiteUrl();
