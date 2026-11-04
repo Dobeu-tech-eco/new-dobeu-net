@@ -3,7 +3,9 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { sanitizeNextPath } from "@/lib/utils";
 
 /** Code-only AAL2 challenge against the user's existing verified TOTP factor. */
 export function MfaStepUp({ next }: { next: string }) {
@@ -11,6 +13,7 @@ export function MfaStepUp({ next }: { next: string }) {
   const supabase = React.useMemo(() => createClient(), []);
   const [code, setCode] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [noFactor, setNoFactor] = React.useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,6 +22,7 @@ export function MfaStepUp({ next }: { next: string }) {
     const factor = (factors?.totp ?? []).find((f) => f.status === "verified");
     if (!factor) {
       setBusy(false);
+      setNoFactor(true);
       toast.error("No verified authenticator found. Enroll in Settings first.");
       return;
     }
@@ -35,7 +39,7 @@ export function MfaStepUp({ next }: { next: string }) {
       setCode("");
       return;
     }
-    router.replace(next);
+    router.replace(sanitizeNextPath(next, "/portal"));
     router.refresh();
   }
 
@@ -60,8 +64,15 @@ export function MfaStepUp({ next }: { next: string }) {
         disabled={busy || code.length !== 6}
         className="w-full rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
       >
-        {busy ? "Verifying…" : "Continue to admin"}
+        {busy ? "Verifying…" : "Continue"}
       </button>
+      {noFactor && (
+        <p className="text-sm text-muted-foreground">
+          <Link href="/portal/settings" className="text-primary hover:underline">
+            Set up two-factor in Settings
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

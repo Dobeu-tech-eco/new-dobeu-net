@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
-// The /company surface is entirely per-request auth/membership-driven, so it
-// must never be statically pre-rendered.
-export const dynamic = "force-dynamic";
-
 import { LayoutDashboard, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
-import { COMPANY_ADMIN_RANK } from "@/lib/actions/company-auth";
+import { needsAal2StepUp } from "@/lib/actions/company-auth";
+import { resolveAdminCompanies, SuspendedNotice } from "./_lib/admin-companies";
+
+// The /company surface is entirely per-request auth/membership-driven, so it
+// must never be statically pre-rendered.
+export const dynamic = "force-dynamic";
 
 const NAV = [
   { href: "/company", label: "Overview", icon: LayoutDashboard },
@@ -23,29 +23,31 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     data: { user }
   } = await supabase.auth.getUser();
 
+  // Backstop only: middleware is the authoritative redirect (it preserves the
+  // full path + query in `next`).
   if (!user) {
     redirect("/login?next=/company");
   }
 
   // Gate: the caller must be a company_admin (rank >= 100) of at least one
-  // company. RLS already limits which member rows they can read; we additionally
-  // resolve the role rank from the extensible catalog so new admin-tier roles
-  // work without touching this gate.
-  const { data: memberships } = await supabase
-    .from("company_members")
-    .select("company_id, role")
-    .eq("user_id", user.id)
-    .eq("status", "active");
-
-  let isCompanyAdmin = false;
-  if (memberships && memberships.length > 0) {
-    const { data: roles } = await supabase.from("company_roles").select("key, rank");
-    const rankByKey = new Map((roles ?? []).map((r) => [r.key, r.rank]));
-    isCompanyAdmin = memberships.some((m) => (rankByKey.get(m.role) ?? 0) >= COMPANY_ADMIN_RANK);
+  // ACTIVE company. A read error fails closed. Checked before any AAL lookup so
+  // a suspended-only admin learns nothing about MFA state. (Pages re-check per
+  // company themselves: layout and page render in parallel.)
+  const { companies, error } = await resolveAdminCompanies(supabase, user.id);
+  if (error || companies.length === 0) {
+    redirect("/portal");
+  }
+  if (!companies.some((c) => c.status === "active")) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4 md:p-8">
+        <SuspendedNotice />
+      </main>
+    );
   }
 
-  if (!isCompanyAdmin) {
-    redirect("/portal");
+  // MFA is mandatory for company admins too (fail closed, see needsAal2StepUp).
+  if (await needsAal2StepUp(supabase)) {
+    redirect("/portal/settings/mfa?next=/company");
   }
 
   return (

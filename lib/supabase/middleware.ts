@@ -5,7 +5,9 @@ import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/u
 
 /**
  * Refresh the Supabase session on every request so server components see fresh auth.
- * Also enforces /portal and /admin gating in one place.
+ * Also enforces /portal, /admin and /company gating in one place. /company is
+ * sign-in only here; company-admin rank, active company and AAL2 are enforced by
+ * the /company layout, each /company page, and requireCompanyAdmin().
  *
  * If Supabase env vars are missing (e.g., before the project is provisioned),
  * fall through without crashing so the marketing landing still renders.
@@ -32,9 +34,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  const isCompanyPath = path === "/company" || path.startsWith("/company/");
+
   // Bail gracefully if Supabase isn't configured yet
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (path.startsWith("/portal") || path.startsWith("/admin")) {
+    if (path.startsWith("/portal") || path.startsWith("/admin") || isCompanyPath) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("error", "supabase_not_configured");
@@ -71,6 +75,18 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);
+    return NextResponse.redirect(url);
+  }
+
+  // Gate /company — authentication only. Membership (company-admin rank) and
+  // AAL2 are enforced authoritatively in app/company/layout.tsx; middleware
+  // does no AAL or membership lookups here. `next` keeps the full path + query.
+  if (isCompanyPath && !user) {
+    const url = request.nextUrl.clone();
+    const next = path + request.nextUrl.search;
+    url.pathname = "/login";
+    url.search = "";
+    url.searchParams.set("next", next);
     return NextResponse.redirect(url);
   }
 

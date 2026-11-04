@@ -1,5 +1,5 @@
+import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { COMPANY_ADMIN_RANK } from "@/lib/actions/company-auth";
 import {
   inviteMemberForm,
   changeMemberRoleForm,
@@ -8,15 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { DBClient } from "@/lib/actions/auth";
+import { guardCompanyPage, pickCompany, resolveAdminCompanies, GuardNotice } from "../_lib/admin-companies";
 import { isCompanyMemberStatus, type CompanyMemberStatus } from "@/lib/domain-types";
 
 export const dynamic = "force-dynamic";
-
-interface AdminCompany {
-  id: string;
-  name: string;
-}
 
 interface RoleOption {
   key: string;
@@ -24,32 +19,14 @@ interface RoleOption {
   rank: number;
 }
 
-/** Companies where the caller is an admin (rank >= 100). */
-async function resolveAdminCompanies(supabase: DBClient, userId: string): Promise<AdminCompany[]> {
-  const { data: memberships } = await supabase
-    .from("company_members")
-    .select("company_id, role")
-    .eq("user_id", userId)
-    .eq("status", "active");
-  if (!memberships || memberships.length === 0) return [];
-
-  const { data: roles } = await supabase.from("company_roles").select("key, rank");
-  const rankByKey = new Map((roles ?? []).map((r) => [r.key, r.rank]));
-  const adminIds = memberships
-    .filter((m) => (rankByKey.get(m.role) ?? 0) >= COMPANY_ADMIN_RANK)
-    .map((m) => m.company_id);
-  if (adminIds.length === 0) return [];
-
-  const { data: companies } = await supabase.from("companies").select("id, name").in("id", adminIds);
-  return (companies ?? []) as AdminCompany[];
-}
-
 /**
  * Resolve member emails for display. Member rows expose only `user_id` to the
  * cookie-bound client (other users' profiles/auth rows are not RLS-readable),
  * so we use the service-role Auth admin API — the same pattern as the global
- * admin users page. Safe here: the layout gated this route to company admins,
- * and we only surface emails for the caller's own company members.
+ * admin users page. Safe here only because the page's `guardCompanyPage`
+ * (requireCompanyAdmin: admin rank, active company, AAL2) runs BEFORE this is
+ * called — layout and page render in parallel, so the layout is not a gate for
+ * this read. We only surface emails for the caller's own company members.
  */
 async function resolveEmails(userIds: string[]): Promise<Map<string, string>> {
   const wanted = new Set(userIds);
@@ -82,8 +59,12 @@ export default async function CompanyMembersPage({
     data: { user }
   } = await supabase.auth.getUser();
 
-  const companies = await resolveAdminCompanies(supabase, user?.id ?? "");
-  const selected = companies.find((c) => c.id === sp.company) ?? companies[0];
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent("/company/members")}`);
+  }
+
+  const { companies } = await resolveAdminCompanies(supabase, user.id);
+  const selected = pickCompany(companies, sp.company);
 
   if (!selected) {
     return (
@@ -94,6 +75,11 @@ export default async function CompanyMembersPage({
   }
 
   const companyId = selected.id;
+  const guard = await guardCompanyPage(selected, "/company/members");
+  if (guard !== "ok") {
+    return <GuardNotice outcome={guard} />;
+  }
+
   const [membersRes, rolesRes] = await Promise.all([
     supabase
       .from("company_members")
@@ -176,7 +162,7 @@ export default async function CompanyMembersPage({
             </thead>
             <tbody className="divide-y divide-border">
               {members.map((m) => {
-                const isSelf = m.user_id === user?.id;
+                const isSelf = m.user_id === user.id;
                 return (
                   <tr key={m.id} className="align-middle">
                     <td className="p-3">

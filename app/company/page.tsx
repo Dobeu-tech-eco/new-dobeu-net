@@ -1,43 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Users, FolderKanban, Ticket, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { COMPANY_ADMIN_RANK } from "@/lib/actions/company-auth";
-import type { DBClient } from "@/lib/actions/auth";
+import {
+  guardCompanyPage,
+  pickCompany,
+  resolveAdminCompanies,
+  GuardNotice,
+  type AdminCompany
+} from "./_lib/admin-companies";
 
 export const dynamic = "force-dynamic";
-
-interface AdminCompany {
-  id: string;
-  name: string;
-  status: "active" | "suspended";
-}
-
-/**
- * Resolve the companies where the caller is an admin (rank >= 100). The layout
- * has already gated access, so this returns at least one company for a valid
- * caller; the pages use it to pick the active company and offer a switcher.
- */
-async function resolveAdminCompanies(supabase: DBClient, userId: string): Promise<AdminCompany[]> {
-  const { data: memberships } = await supabase
-    .from("company_members")
-    .select("company_id, role")
-    .eq("user_id", userId)
-    .eq("status", "active");
-  if (!memberships || memberships.length === 0) return [];
-
-  const { data: roles } = await supabase.from("company_roles").select("key, rank");
-  const rankByKey = new Map((roles ?? []).map((r) => [r.key, r.rank]));
-  const adminIds = memberships
-    .filter((m) => (rankByKey.get(m.role) ?? 0) >= COMPANY_ADMIN_RANK)
-    .map((m) => m.company_id);
-  if (adminIds.length === 0) return [];
-
-  const { data: companies } = await supabase
-    .from("companies")
-    .select("id, name, status")
-    .in("id", adminIds);
-  return (companies ?? []) as AdminCompany[];
-}
 
 export default async function CompanyOverviewPage({
   searchParams
@@ -50,8 +23,12 @@ export default async function CompanyOverviewPage({
     data: { user }
   } = await supabase.auth.getUser();
 
-  const companies = await resolveAdminCompanies(supabase, user?.id ?? "");
-  const selected = companies.find((c) => c.id === sp.company) ?? companies[0];
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent("/company")}`);
+  }
+
+  const { companies } = await resolveAdminCompanies(supabase, user.id);
+  const selected = pickCompany(companies, sp.company);
 
   // Defensive: the layout gates access, but if resolution turns up empty, render
   // an empty state rather than throwing.
@@ -67,6 +44,13 @@ export default async function CompanyOverviewPage({
   }
 
   const companyId = selected.id;
+  // Layout and page render in parallel: re-check active company + AAL2 here,
+  // before any count read.
+  const guard = await guardCompanyPage(selected, "/company");
+  if (guard !== "ok") {
+    return <GuardNotice outcome={guard} />;
+  }
+
   const [membersRes, projectsRes, workOrdersRes, entitlementsRes] = await Promise.all([
     supabase.from("company_members").select("id", { count: "exact", head: true }).eq("company_id", companyId),
     supabase.from("projects").select("id", { count: "exact", head: true }).eq("company_id", companyId),
