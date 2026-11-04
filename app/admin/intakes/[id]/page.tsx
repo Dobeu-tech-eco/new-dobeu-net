@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { requireAdminAal2 } from "@/lib/actions/auth";
 import type { Json } from "@/lib/database.types";
+import { isIntakeStatus } from "@/lib/domain-types";
 import { IntakeReviewActions } from "./IntakeReviewActions";
 
 export const dynamic = "force-dynamic";
@@ -183,7 +184,7 @@ export default async function AdminIntakeDetailPage({ params }: PageProps) {
         </p>
         <IntakeReviewActions
           intakeId={intake.id}
-          status={intake.status}
+          status={isIntakeStatus(intake.status) ? intake.status : "new"}
           initialNotes={intake.review_notes}
         />
       </section>

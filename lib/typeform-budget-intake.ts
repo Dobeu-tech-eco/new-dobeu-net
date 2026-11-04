@@ -1,4 +1,8 @@
 import type { Json } from "@/lib/database.types";
+import {
+  isIntakeMappingStatus,
+  type IntakeMappingStatus,
+} from "@/lib/domain-types";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export const TYPEFORM_BUDGET_FORM_ID = "wKVKIBe7";
@@ -259,6 +263,10 @@ function coerceWarnings(
   return warnings.length === value.length ? warnings : null;
 }
 
+function coerceMappingStatus(value: string): IntakeMappingStatus {
+  return isIntakeMappingStatus(value) ? value : "needs_review";
+}
+
 function isUniqueViolation(error: { code?: string } | null): boolean {
   return error?.code === "23505";
 }
@@ -273,6 +281,11 @@ export async function persistTypeformBudgetIntake(
   eventIdFallback: string | null = null,
 ): Promise<PersistedTypeformBudgetIntake> {
   const intake = extractTypeformBudgetIntake(payload, eventIdFallback);
+
+  // raw_payload is NOT NULL in the schema; a null would only ever fail at insert.
+  if (rawPayload === null) {
+    throw new TypeformBudgetIntakeStorageError("raw_payload_required");
+  }
 
   let admin: ReturnType<typeof createAdminClient>;
   try {
@@ -310,7 +323,7 @@ export async function persistTypeformBudgetIntake(
     return {
       id: data.id,
       duplicate: false,
-      mappingStatus: data.mapping_status,
+      mappingStatus: coerceMappingStatus(data.mapping_status),
       mappingWarnings: coerceWarnings(data.mapping_warnings) ?? [
         ...intake.mappingWarnings,
       ],
@@ -341,7 +354,7 @@ export async function persistTypeformBudgetIntake(
   return {
     id: existing.id,
     duplicate: true,
-    mappingStatus: existing.mapping_status,
+    mappingStatus: coerceMappingStatus(existing.mapping_status),
     mappingWarnings: coerceWarnings(existing.mapping_warnings) ?? [],
   };
 }

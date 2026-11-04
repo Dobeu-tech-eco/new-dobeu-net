@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DBClient } from "@/lib/actions/auth";
+import { isCompanyMemberStatus, type CompanyMemberStatus } from "@/lib/domain-types";
 
 export const dynamic = "force-dynamic";
 
@@ -256,15 +257,15 @@ export default async function CompanyMembersPage({
   );
 }
 
-function StatusBadge({ status }: { status: "invited" | "active" | "disabled" }) {
-  const styles: Record<typeof status, string> = {
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<CompanyMemberStatus, string> = {
     active: "bg-primary/15 text-primary",
     invited: "bg-accent/15 text-accent",
     disabled: "bg-muted text-muted-foreground"
   };
   return (
     <span
-      className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${styles[status]}`}
+      className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${styles[isCompanyMemberStatus(status) ? status : "disabled"]}`}
     >
       {status}
     </span>
