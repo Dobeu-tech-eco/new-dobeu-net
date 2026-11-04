@@ -30,6 +30,11 @@ const MEMBER_NOTICES = {
     role: "alert",
     text: "Couldn't add that member. Check the email address and role, then try again."
   },
+  invitee_needs_link_signin: {
+    tone: "error",
+    role: "alert",
+    text: "This address already has an account that has never signed in with an emailed sign-in link. Ask them to sign in once at the login page using the emailed link, then invite them again."
+  },
   daily_limit: {
     tone: "warning",
     role: "status",

@@ -2,11 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const exchangeCodeForSession = vi.fn();
 const verifyOtp = vi.fn();
+const getUser = vi.fn();
+const getAal = vi.fn();
+const updateUserById = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
-    auth: { exchangeCodeForSession, verifyOtp }
-  }))
+    auth: { exchangeCodeForSession, verifyOtp, getUser, mfa: { getAuthenticatorAssuranceLevel: getAal } }
+  })),
+  createAdminClient: vi.fn(() => ({ auth: { admin: { updateUserById } } }))
 }));
 
 import { GET } from "@/app/auth/callback/route";
@@ -14,6 +18,12 @@ import { GET } from "@/app/auth/callback/route";
 beforeEach(() => {
   exchangeCodeForSession.mockReset();
   verifyOtp.mockReset();
+  getUser.mockReset();
+  getAal.mockReset();
+  updateUserById.mockReset();
+  getUser.mockResolvedValue({ data: { user: { id: "u1", email: "me@example.com" } } });
+  getAal.mockResolvedValue({ data: { currentAuthenticationMethods: [{ method: "otp" }] }, error: null });
+  updateUserById.mockResolvedValue({ error: null });
 });
 
 describe("GET /auth/callback", () => {
@@ -91,5 +101,31 @@ describe("GET /auth/callback", () => {
       new Request("http://localhost/auth/callback?token_hash=abc&type=invite&next=/%09/evil.example"),
     );
     expect(res.headers.get("location")).toBe("http://localhost/auth/confirm?next=%2Fportal");
+  });
+
+  it("records the email-link sign-in after a successful exchange", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null });
+    await GET(new Request("http://localhost/auth/callback?code=abc"));
+    expect(updateUserById).toHaveBeenCalledWith("u1", {
+      app_metadata: { email_link_signin: { at: expect.any(String), email: "me@example.com" } }
+    });
+  });
+
+  it("does not record when the exchange fails", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: new Error("bad code") });
+    await GET(new Request("http://localhost/auth/callback?code=bad"));
+    expect(getUser).not.toHaveBeenCalled();
+    expect(updateUserById).not.toHaveBeenCalled();
+  });
+
+  it("still redirects when the marker write fails or throws", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null });
+    updateUserById.mockResolvedValue({ error: new Error("db down") });
+    let res = await GET(new Request("http://localhost/auth/callback?code=abc&next=%2Fportal%2Ffiles"));
+    expect(res.headers.get("location")).toBe("http://localhost/portal/files");
+    getUser.mockRejectedValue(new Error("auth down"));
+    res = await GET(new Request("http://localhost/auth/callback?code=abc&next=%2Fportal%2Ffiles"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("http://localhost/portal/files");
   });
 });

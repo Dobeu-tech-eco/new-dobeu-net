@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizeNextPath } from "@/lib/utils";
+import { recordEmailLinkSignIn } from "@/lib/email-link-signin";
 import { otpParamsSchema } from "@/app/auth/confirm/schema";
 import { OTP_COOKIE, OTP_COOKIE_PATH } from "@/app/auth/confirm/cookie";
 
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      await recordEmailLinkSignIn(supabase);
       return NextResponse.redirect(new URL(next, url.origin));
     }
   } else if (url.searchParams.has("token_hash")) {

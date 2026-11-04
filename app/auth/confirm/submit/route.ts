@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizeNextPath } from "@/lib/utils";
+import { recordEmailLinkSignIn } from "@/lib/email-link-signin";
 import { otpParamsSchema } from "../schema";
 import { OTP_COOKIE, OTP_COOKIE_PATH } from "../cookie";
 
@@ -72,5 +73,6 @@ export async function POST(request: Request) {
 
   const { error } = await supabase.auth.verifyOtp(parsed.data);
   if (error) return fail(origin);
+  await recordEmailLinkSignIn(supabase);
   return clear(NextResponse.redirect(new URL(next, origin), 303));
 }

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const verifyOtp = vi.fn();
 const getUser = vi.fn();
+const record = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/email-link-signin", () => ({ recordEmailLinkSignIn: record }));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({ auth: { verifyOtp, getUser } })),
 }));
@@ -31,6 +33,8 @@ function post(opts: { cookie?: string; origin?: string | null; fetchSite?: strin
 beforeEach(() => {
   verifyOtp.mockReset();
   getUser.mockReset();
+  record.mockReset();
+  record.mockResolvedValue(undefined);
   getUser.mockResolvedValue({ data: { user: null }, error: null });
 });
 
@@ -143,5 +147,21 @@ describe("POST /auth/confirm/submit", () => {
     const res = await post({ cookie: pending(), origin: "https://evil.example" });
     expect(res.status).toBe(403);
     expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("records the email-link sign-in only after a successful verify", async () => {
+    verifyOtp.mockResolvedValue({ error: null });
+    await post({ cookie: pending() });
+    expect(record).toHaveBeenCalledTimes(1);
+    verifyOtp.mockResolvedValue({ error: new Error("expired") });
+    await post({ cookie: pending() });
+    expect(record).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not record when blocked by Origin or an existing session", async () => {
+    await post({ cookie: pending(), origin: "https://evil.example" });
+    getUser.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+    await post({ cookie: pending() });
+    expect(record).not.toHaveBeenCalled();
   });
 });

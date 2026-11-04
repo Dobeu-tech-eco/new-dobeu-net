@@ -22,6 +22,9 @@ const h = vi.hoisted(() => {
     counts: Map<string, number>;
     membershipCount: number;
     membershipError: { message: string } | null;
+    // Result of admin.auth.admin.getUserById for the attach-time guard.
+    existingUser: Record<string, unknown> | null;
+    getUserError: { message: string } | null;
   } = {
     client: null,
     createResult: { data: { user: { id: "new_user_1" } }, error: null },
@@ -36,6 +39,8 @@ const h = vi.hoisted(() => {
     counts: new Map(),
     membershipCount: 0,
     membershipError: null,
+    existingUser: { id: "existing", last_sign_in_at: null },
+    getUserError: null,
   };
   return {
     state,
@@ -89,6 +94,11 @@ vi.mock("@/lib/supabase/server", () => ({
       admin: {
         createUser: h.createUser,
         deleteUser: h.deleteUser,
+        getUserById: vi.fn(async () =>
+          h.state.getUserError
+            ? { data: { user: null }, error: h.state.getUserError }
+            : { data: { user: h.state.existingUser }, error: null },
+        ),
         listUsers: vi.fn(async () => {
           h.state.events.push("listUsers");
           if (h.state.listError) {
@@ -221,6 +231,8 @@ beforeEach(() => {
   h.state.counts = new Map();
   h.state.membershipCount = 0;
   h.state.membershipError = null;
+  h.state.existingUser = { id: "existing", last_sign_in_at: null };
+  h.state.getUserError = null;
   h.createUser.mockImplementation(async () => {
     h.state.events.push("createUser");
     return h.state.createResult;
@@ -321,6 +333,76 @@ describe("inviteMember", () => {
       "sendEmail",
     ]);
     expect(h.deleteUser).not.toHaveBeenCalled();
+  });
+
+  describe("attach-time squatter guard (existing accounts)", () => {
+    const existingErr = { data: { user: null }, error: { code: "email_exists", status: 422 } };
+    const SIGNED = "2026-11-01T10:00:00.000Z";
+    const emailUser = (over: Record<string, unknown>) => ({
+      id: "existing_9",
+      email: "client@example.com",
+      last_sign_in_at: SIGNED,
+      identities: [{ provider: "email", updated_at: "2026-10-31T00:00:00.000Z" }],
+      app_metadata: {},
+      ...over,
+    });
+    const setup = (user: Record<string, unknown> | null) => {
+      h.state.client = makeClient({ user: { id: "guard_admin", email: "a@d.net" } });
+      h.state.createResult = existingErr;
+      h.state.users = [{ id: "existing_9", email: "client@example.com" }];
+      h.state.existingUser = user;
+    };
+    const refused = () => {
+      expect(h.state.events).not.toContain("insert");
+      expect(h.sendEmail).not.toHaveBeenCalled();
+    };
+
+    it("refuses a signed-in existing user with no email-link marker (password only)", async () => {
+      setup(emailUser({}));
+      expect(await invite()).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+      refused();
+    });
+
+    it("attaches a never-signed-in existing user", async () => {
+      setup(emailUser({ last_sign_in_at: null }));
+      expect(await invite()).toMatchObject({ ok: true, data: { user_id: "existing_9" } });
+      expect(h.state.events).toContain("insert");
+    });
+
+    it("attaches an existing user with a current marker", async () => {
+      setup(
+        emailUser({
+          app_metadata: {
+            email_link_signin: { at: SIGNED, email: "Client@Example.com" },
+          },
+        }),
+      );
+      expect(await invite()).toMatchObject({ ok: true, data: { emailSent: true } });
+    });
+
+    it("refuses when the email identity changed after the marker", async () => {
+      setup(
+        emailUser({
+          identities: [{ provider: "email", updated_at: "2026-11-02T00:00:00.000Z" }],
+          app_metadata: { email_link_signin: { at: SIGNED, email: "client@example.com" } },
+        }),
+      );
+      expect(await invite()).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+      refused();
+    });
+
+    it("lookup error fails as invite failed with no insert or email", async () => {
+      setup(null);
+      h.state.getUserError = { message: "boom" };
+      expect(await invite()).toEqual({ ok: false, error: "invite failed" });
+      refused();
+    });
+
+    it("a user created by this call skips the guard", async () => {
+      h.state.client = makeClient({ user: { id: "guard_new", email: "a@d.net" } });
+      h.state.existingUser = emailUser({});
+      expect(await invite()).toMatchObject({ ok: true });
+    });
   });
 
   it("new email: no listUsers paging at all (createUser first)", async () => {
@@ -617,6 +699,23 @@ describe("inviteMemberForm", () => {
       insert: { error: { message: "dup", code: "23505" } },
     });
     expect(await submit(COMPANY_ID)).toBe(`${base}already_member`);
+  });
+
+  it("redirects invitee_needs_link_signin to its notice", async () => {
+    h.state.client = makeClient({ user: { id: "f_guard", email: "a@d.net" } });
+    h.state.createResult = {
+      data: { user: null },
+      error: { code: "email_exists", status: 422 },
+    };
+    h.state.users = [{ id: "existing_9", email: "client@example.com" }];
+    h.state.existingUser = {
+      id: "existing_9",
+      email: "client@example.com",
+      last_sign_in_at: "2026-11-01T10:00:00.000Z",
+      app_metadata: {},
+      identities: [],
+    };
+    expect(await submit(COMPANY_ID)).toBe(`${base}invitee_needs_link_signin`);
   });
 
   it("redirects with no notice for an AAL1 admin (no stale mfa message)", async () => {
