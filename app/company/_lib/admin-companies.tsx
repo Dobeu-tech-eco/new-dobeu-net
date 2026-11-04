@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthError, type DBClient } from "@/lib/actions/auth";
+import { COMPANY_PATH_HEADER, companyDeepLink } from "@/lib/company-path";
 import { COMPANY_ADMIN_RANK, requireCompanyAdmin } from "@/lib/actions/company-auth";
 
 export interface AdminCompany {
@@ -68,11 +70,18 @@ export type GuardOutcome = "ok" | "suspended" | "denied";
  * redirect() is called outside the try/catch so NEXT_REDIRECT is never
  * swallowed.
  */
+/** The validated `next` target shared by layout, pages and guards. */
+export async function companyNext(fallback: string): Promise<string> {
+  return companyDeepLink((await headers()).get(COMPANY_PATH_HEADER), fallback);
+}
+
 export async function guardCompanyPage(
   company: AdminCompany,
   path: string
 ): Promise<GuardOutcome> {
-  const here = `${path}?company=${encodeURIComponent(company.id)}`;
+  // Same validated source as the layout, so whichever redirect wins carries the
+  // identical deep link; falls back to this page's own path + company.
+  const here = await companyNext(`${path}?company=${encodeURIComponent(company.id)}`);
   let outcome: GuardOutcome | "mfa_required" | "not_authenticated" = "ok";
   try {
     await requireCompanyAdmin(company.id);

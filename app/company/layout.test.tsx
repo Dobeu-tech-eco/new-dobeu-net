@@ -99,6 +99,15 @@ describe("CompanyLayout", () => {
     expect(await redirectTarget()).toBe("/portal/settings/mfa?next=%2Fcompany%2Fmembers%3Fcompany%3Dx");
   });
 
+  it.each(["/company/../admin", "/company/%2e%2e/admin", "/company/foo/../../portal", "/company/./members", "/company/%2E%2e/x"])(
+    "rejects dot-segment header %j",
+    async (value) => {
+      h.getAal.mockResolvedValue({ data: { currentLevel: "aal1", nextLevel: "aal2" }, error: null });
+      h.pathname = value;
+      expect(await redirectTarget()).toBe(MFA);
+    },
+  );
+
   it.each(["//evil.com", "/portal", "https://x.example", "/company/\u0001x", "/company\tx", "/companyfoo"])(
     "falls back to /company for hostile header %j",
     async (value) => {

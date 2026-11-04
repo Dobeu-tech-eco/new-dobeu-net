@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { guardCompanyPage, pickCompany, resolveAdminCompanies, GuardNotice } from "../_lib/admin-companies";
+import { companyNext, guardCompanyPage, pickCompany, resolveAdminCompanies, GuardNotice } from "../_lib/admin-companies";
 import { isCompanyMemberStatus, type CompanyMemberStatus } from "@/lib/domain-types";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +60,7 @@ export default async function CompanyMembersPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent("/company/members")}`);
+    redirect(`/login?next=${encodeURIComponent(await companyNext("/company/members"))}`);
   }
 
   const { companies } = await resolveAdminCompanies(supabase, user.id);

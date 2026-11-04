@@ -6,8 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
-import { COMPANY_PATH_HEADER } from "@/lib/supabase/middleware";
-import { sanitizeNextPath } from "@/lib/utils";
+import { COMPANY_PATH_HEADER, companyDeepLink } from "@/lib/company-path";
 import { needsAal2StepUp } from "@/lib/actions/company-auth";
 import { resolveAdminCompanies, SuspendedNotice } from "./_lib/admin-companies";
 
@@ -20,16 +19,8 @@ const NAV = [
   { href: "/company/members", label: "Members", icon: Users }
 ];
 
-// Deep link the middleware forwarded; anything not under /company falls back
-// to the overview.
-function companyTarget(raw: string | null): string {
-  const safe = sanitizeNextPath(raw, "/company");
-  const ok = safe === "/company" || safe.startsWith("/company/") || safe.startsWith("/company?");
-  return ok ? safe : "/company";
-}
-
 export default async function CompanyLayout({ children }: { children: React.ReactNode }) {
-  const target = companyTarget((await headers()).get(COMPANY_PATH_HEADER));
+  const target = companyDeepLink((await headers()).get(COMPANY_PATH_HEADER));
   const supabase = await createClient();
   const {
     data: { user }

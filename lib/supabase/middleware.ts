@@ -1,14 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { COMPANY_PATH_HEADER } from "@/lib/company-path";
 import type { Database } from "@/lib/database.types";
 import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
 
-/**
- * Request header carrying the requested /company path + query to server
- * components (the layout cannot read the URL otherwise). Set only by this
- * middleware; any inbound value is always discarded.
- */
-export const COMPANY_PATH_HEADER = "x-dobeu-pathname";
+export { COMPANY_PATH_HEADER };
 
 /**
  * Refresh the Supabase session on every request so server components see fresh auth.
