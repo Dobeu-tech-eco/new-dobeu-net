@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(28);
 
 insert into auth.users (id, email, aud, role) values
   ('a1000000-0000-0000-0000-000000000001', 'aal2-a1@example.test', 'authenticated', 'authenticated'),
@@ -24,6 +24,8 @@ insert into auth.users (id, email, aud, role) values
 insert into public.companies (id, name, status) values
   ('c1000000-0000-0000-0000-000000000001', 'AAL2 Active Co', 'active'),
   ('c2000000-0000-0000-0000-000000000002', 'AAL2 Suspended Co', 'suspended');
+
+insert into public.company_roles (key, label, rank) values ('aal2_test_super', 'AAL2 Test Super', 200);
 
 insert into public.company_members (company_id, user_id, role, status) values
   ('c1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'company_admin', 'active'),
@@ -152,11 +154,30 @@ select is_empty(
 select set_config('request.jwt.claims',
   '{"sub":"a1000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal2"}', true);
 
+select throws_ok(
+  $$ insert into public.company_members (company_id, user_id, role, status, invited_by)
+     values ('c1000000-0000-0000-0000-000000000001', 'a5000000-0000-0000-0000-000000000005',
+             'aal2_test_super', 'invited', 'a1000000-0000-0000-0000-000000000001') $$,
+  '42501', null, 'AAL2 admin cannot invite a role ranked above their own');
+select throws_ok(
+  $$ update public.company_members set role = 'aal2_test_super'
+      where user_id = 'a3000000-0000-0000-0000-000000000003' $$,
+  '42501', null, 'AAL2 admin cannot assign a role ranked above their own');
+select throws_ok(
+  $$ insert into public.company_members (company_id, user_id, role, status, invited_by)
+     values ('c1000000-0000-0000-0000-000000000001', 'a5000000-0000-0000-0000-000000000005',
+             'employee', 'active', 'a1000000-0000-0000-0000-000000000001') $$,
+  '42501', null, 'AAL2 admin cannot insert an active member');
+
 select isnt_empty(
   $$ insert into public.company_members (company_id, user_id, role, status, invited_by)
      values ('c1000000-0000-0000-0000-000000000001', 'a5000000-0000-0000-0000-000000000005',
              'employee', 'invited', 'a1000000-0000-0000-0000-000000000001') returning id $$,
   'AAL2 admin can invite');
+select throws_ok(
+  $$ update public.company_members set status = 'active'
+      where user_id = 'a5000000-0000-0000-0000-000000000005' $$,
+  '42501', null, 'AAL2 admin cannot activate an invited member (trigger)');
 select isnt_empty(
   $$ update public.company_members set role = 'viewer'
       where user_id = 'a3000000-0000-0000-0000-000000000003' returning id $$,

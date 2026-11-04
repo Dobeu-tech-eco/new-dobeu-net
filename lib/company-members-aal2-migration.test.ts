@@ -82,6 +82,12 @@ describe("20261104000200_company_members_admin_aal2.sql", () => {
     expect(p).toContain("to authenticated");
   });
 
+  it("raises when a prerequisite is missing instead of silently skipping", () => {
+    expect(sql).toMatch(/ else raise exception 'company_members aal2 migration cannot apply/);
+    expect(sql).toContain("to_regprocedure('public.company_role_rank(uuid)') is null");
+    expect(sql).toMatch(/end if; end \$\$;\s*$/);
+  });
+
   it("no longer relies on a bare rank check for the policy gate", () => {
     expect(sql).not.toMatch(
       /(using|with check) \(\s*public\.company_role_rank\(company_id\) >= 100/

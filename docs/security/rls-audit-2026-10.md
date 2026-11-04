@@ -1,10 +1,10 @@
 # RLS and database-advisor audit (2026-10)
 
 - **Date:** 2026-10-22
-- **Method:** static read of every file in `supabase/migrations/` (`20260521000000` to `20260829010000`), replayed in order to get the effective policy set, then cross-checked against callers in `lib/actions/**` and `app/api/**`. The Supabase MCP and live advisors were **not** available, and the live schema has not been diffed against migrations yet (S2). Findings describe the schema the migrations produce, not production.
+- **Method:** static read of every file in `supabase/migrations/` (`20260521000000` to `20261104000200`), replayed in order to get the effective policy set, then cross-checked against callers in `lib/actions/**` and `app/api/**`. The Supabase MCP and live advisors were **not** available, and the live schema has not been diffed against migrations yet (S2). Findings describe the schema the migrations produce, not production.
 - **Fix:** `supabase/migrations/20261022000100_rls_advisor_hardening.sql`
 - **Follow-up (Run 2, 2026-10-23):** `20261023000100_digital_assets_storage.sql` (D1), `20261023000200_drop_company_members_company_idx.sql` (D4), `20261023000300_project_files_storage_path_unique.sql`, `20261023000400_company_storage_select.sql` (D2), `20261023000500_storage_path_unique_indexes.sql`. See "Run 2 follow-up" below.
-- **Tests:** `lib/rls-migration.test.ts` and `lib/run2-migrations.test.ts` (static, run in CI), `supabase/tests/database/rls_hardening.test.sql` and `supabase/tests/database/run2_storage.test.sql` (pgTAP, run with `pnpm supabase test db` against the local Docker stack).
+- **Tests:** `lib/rls-migration.test.ts`, `lib/run2-migrations.test.ts` and `lib/company-members-aal2-migration.test.ts` (static, run in CI), `supabase/tests/database/rls_hardening.test.sql`, `supabase/tests/database/run2_storage.test.sql` and `supabase/tests/database/company_members_aal2.test.sql` (pgTAP, run with `pnpm supabase test db` against the local Docker stack).
 
 ## Access model (unchanged)
 
@@ -60,12 +60,13 @@ Superseded 2026-11-03: `20261103000100` replaces both `*_storage_select_own` pol
 | `handle_new_user()` | **definer** (trigger) | `public` | PUBLIC | `pg_catalog, public, pg_temp`; revoke from public/anon/authenticated |
 | `is_company_member(uuid)` | **definer** | `public` | PUBLIC + anon | `pg_catalog, public, pg_temp`; revoke public/anon; **authenticated + service_role keep EXECUTE** |
 | `company_role_rank(uuid)` | **definer** | `public` | PUBLIC + anon | same as above |
+| `can_manage_company_members(uuid)` | **definer** | new in 20261104000200 (`pg_catalog, public, pg_temp`) | revoked from public/anon at creation | true only for an AAL2 session, rank >= 100 and an ACTIVE company (fails closed on a missing `aal` claim); **authenticated + service_role keep EXECUTE** (the `company_members_admin_*` policies call it) |
 | `enforce_typeform_budget_intake_state()` | invoker (trigger) | `pg_catalog, public` | already revoked | re-pinned (no-op); EXECUTE re-revoked from public/anon/authenticated if the function exists |
 | `audit_typeform_budget_intake_review()` | **definer** (trigger) | `pg_catalog, public` | already revoked | `pg_catalog, public, pg_temp`; EXECUTE re-revoked as above |
 
 Rationale:
 
-- **`pg_temp` listed explicitly last on SECURITY DEFINER functions.** Round 2 dropped it, which was a regression: when `pg_temp` is not named in `search_path`, Postgres searches the temporary schema FIRST for relations and types. The documented safe form (CREATE FUNCTION, "Writing SECURITY DEFINER Functions Safely") is to name it last, `pg_catalog, public, pg_temp`. The four definer functions use that form. SECURITY INVOKER functions (`set_updated_at`, `enforce_typeform_budget_intake_state`, `enforce_company_member_activation`) keep `pg_catalog, public`, since they run with the caller's own privileges. Bodies are also schema-qualified (`public.*`, `auth.uid()`).
+- **`pg_temp` listed explicitly last on SECURITY DEFINER functions.** Round 2 dropped it, which was a regression: when `pg_temp` is not named in `search_path`, Postgres searches the temporary schema FIRST for relations and types. The documented safe form (CREATE FUNCTION, "Writing SECURITY DEFINER Functions Safely") is to name it last, `pg_catalog, public, pg_temp`. The five definer functions (`handle_new_user`, `is_company_member`, `company_role_rank`, `can_manage_company_members`, `audit_typeform_budget_intake_review`) use that form. SECURITY INVOKER functions (`set_updated_at`, `enforce_typeform_budget_intake_state`, `enforce_company_member_activation`) keep `pg_catalog, public`, since they run with the caller's own privileges. Bodies are also schema-qualified (`public.*`, `auth.uid()`).
 - **Why not an empty path.** `search_path = ''` was considered and rejected. The live function bodies have not been diffed (S2), and a drifted `handle_new_user` with an unqualified table name would break every signup.
 - **Why `authenticated` keeps EXECUTE on the membership helpers.** RLS policies run their expressions as the querying role. Revoking it would turn every company-scoped read into `permission denied for function`. After this migration every policy that calls the helpers is `to authenticated`, so anon never evaluates them and can safely lose EXECUTE.
 
@@ -82,6 +83,7 @@ Rationale:
 - **F9:** a work order could pair a company the caller belongs to with a project owned by the caller but belonging to a different company, leaking that project id into the first company's view.
 - **F10:** `company_members` insert/update checks only tested the caller's rank, so `user_id`/`company_id` were rewritable. `inviteMember` inserts through the cookie-bound client, so the insert policy stays but is constrained; `changeMemberRole` / `deactivateMember` only write `role` / `status`.
 - **F12:** an active company admin could mint an active `company_admin` in two steps: insert an `invited` row, then UPDATE `status='active'`. A WITH CHECK cannot tell a role edit on an already-active row from a transition to active (it sees only the new row), so the block is a trigger that compares OLD and NEW. Activation is service-role only.
+- **D42 (CLOSED, 20261104000200):** `company_members_admin_insert/update/delete` only checked rank >= 100, so a direct PostgREST call with an AAL1 token, or for a suspended company, bypassed the app gate `requireCompanyAdmin` (rank, active company, AAL2). The policies now call `can_manage_company_members(company_id)`, which enforces the same three conditions and fails closed. The insert/update rank cap, `status = 'invited'` and `invited_by` checks are kept. The migration raises an exception if a prerequisite table or function is missing, rather than skipping. The service role is unaffected.
 - **F11:** `digital_assets` select was not entitlement-scoped.
 
 ## UPDATE policies
