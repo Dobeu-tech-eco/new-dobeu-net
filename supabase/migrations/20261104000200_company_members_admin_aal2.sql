@@ -72,6 +72,34 @@ begin
       for delete
       to authenticated
       using (public.can_manage_company_members(company_id));
+
+    -- Postgres ORs permissive policies: any other permissive write policy would
+    -- silently reopen the AAL1 / suspended-company paths. Fail loudly on drift.
+    if exists (
+      select 1 from pg_policies
+      where schemaname = 'public'
+        and tablename = 'company_members'
+        and permissive = 'PERMISSIVE'
+        and cmd in ('INSERT', 'UPDATE', 'DELETE', 'ALL')
+        and policyname not in (
+          'company_members_admin_insert',
+          'company_members_admin_update',
+          'company_members_admin_delete'
+        )
+    ) then
+      raise exception 'company_members AAL2 migration: unexpected permissive write policy on public.company_members (%)',
+        (select string_agg(policyname::text, ', ')
+           from pg_policies
+          where schemaname = 'public'
+            and tablename = 'company_members'
+            and permissive = 'PERMISSIVE'
+            and cmd in ('INSERT', 'UPDATE', 'DELETE', 'ALL')
+            and policyname not in (
+              'company_members_admin_insert',
+              'company_members_admin_update',
+              'company_members_admin_delete'
+            ));
+    end if;
   else
     raise exception 'company_members AAL2 migration cannot apply: missing prerequisite(s): %',
       concat_ws(', ',

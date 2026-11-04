@@ -23,7 +23,7 @@ const sql = readFileSync(MIGRATION, "utf8")
 
 const policy = (name: string): string => {
   const m = sql.match(
-    new RegExp(`create policy "${name}"[\\s\\S]*?;(?= drop | end if)`)
+    new RegExp(`create policy "${name}"[\\s\\S]*?;(?= drop | if exists \\(| end if)`)
   );
   expect(m, `policy ${name}`).not.toBeNull();
   return m![0];
@@ -86,6 +86,14 @@ describe("20261104000200_company_members_admin_aal2.sql", () => {
     expect(sql).toMatch(/ else raise exception 'company_members aal2 migration cannot apply/);
     expect(sql).toContain("to_regprocedure('public.company_role_rank(uuid)') is null");
     expect(sql).toMatch(/end if; end \$\$;\s*$/);
+  });
+
+  it("raises when a stray permissive write policy exists", () => {
+    expect(sql).toContain("from pg_policies");
+    expect(sql).toContain("permissive = 'permissive'");
+    expect(sql).toContain("cmd in ('insert', 'update', 'delete', 'all')");
+    expect(sql).toContain("policyname not in ( 'company_members_admin_insert', 'company_members_admin_update', 'company_members_admin_delete' )");
+    expect(sql).toMatch(/raise exception 'company_members aal2 migration: unexpected permissive write policy/);
   });
 
   it("no longer relies on a bare rank check for the policy gate", () => {
