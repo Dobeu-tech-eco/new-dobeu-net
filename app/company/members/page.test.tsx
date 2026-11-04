@@ -94,6 +94,9 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const props = { searchParams: Promise.resolve({ company: "c1" }) };
+const withNotice = (notice: string | string[]) => ({
+  searchParams: Promise.resolve({ company: "c1", notice })
+});
 const MEMBER_READS = ["company_roles"];
 
 describe("CompanyMembersPage guard", () => {
@@ -169,5 +172,59 @@ describe("CompanyMembersPage guard", () => {
     render(await CompanyMembersPage(props));
     expect(screen.getByText("a@b.co")).toBeInTheDocument();
     expect(h.createAdminClient).toHaveBeenCalledTimes(1);
+  });
+
+  describe("invite notices", () => {
+    it.each([
+      ["member_added", "Member added. We've emailed them a link to sign in.", "status"],
+      [
+        "invite_email_failed",
+        "Member added, but the invite email didn't send. Ask them to request a sign-in link at /login with their email address.",
+        "alert"
+      ],
+      ["invite_failed", "Couldn't add that member. Check the email and role and try again.", "status"],
+      ["rate_limited", "Too many invites in a minute. Wait a moment and try again.", "status"]
+    ])("renders %s with role=%s", async (code, text, role) => {
+      h.requireCompanyAdmin.mockResolvedValue({});
+      render(await CompanyMembersPage(withNotice(code)));
+      expect(screen.getByRole(role, { name: "" })).toHaveTextContent(text);
+    });
+
+    it.each(["bogus", "<script>alert(1)</script>", "victim@example.com"])(
+      "renders and echoes nothing for %j",
+      async (value) => {
+        h.requireCompanyAdmin.mockResolvedValue({});
+        const { container } = render(await CompanyMembersPage(withNotice(value)));
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+        expect(container.innerHTML).not.toContain(value);
+        expect(container.querySelector("script")).toBeNull();
+      }
+    );
+
+    it("renders nothing for an array value", async () => {
+      h.requireCompanyAdmin.mockResolvedValue({});
+      render(await CompanyMembersPage(withNotice(["member_added", "invite_failed"])));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(screen.queryByText(/member added/i)).not.toBeInTheDocument();
+    });
+
+    it("shows no notice when the guard fails (forbidden, suspended)", async () => {
+      h.requireCompanyAdmin.mockRejectedValue(new AuthError("forbidden"));
+      render(await CompanyMembersPage(withNotice("member_added")));
+      expect(screen.queryByText(/member added/i)).not.toBeInTheDocument();
+      cleanup();
+      h.companies = [{ id: "c1", name: "Acme", status: "suspended" }];
+      render(await CompanyMembersPage(withNotice("invite_failed")));
+      expect(screen.queryByText(/couldn't add that member/i)).not.toBeInTheDocument();
+    });
+
+    it("redirects (no notice) when MFA is required", async () => {
+      h.requireCompanyAdmin.mockRejectedValue(new AuthError("mfa_required"));
+      await expect(CompanyMembersPage(withNotice("member_added"))).rejects.toMatchObject({
+        url: expect.stringContaining("/portal/settings/mfa")
+      });
+    });
   });
 });
