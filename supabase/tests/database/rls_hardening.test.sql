@@ -186,7 +186,7 @@ select is_empty(
 -- As user D (company_admin of company X)
 -- -----------------------------------------------------------------------------
 select set_config('request.jwt.claims',
-  '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}', true);
+  '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated","aal":"aal2"}', true);
 
 select throws_ok(
   $$ update public.company_members

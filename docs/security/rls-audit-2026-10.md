@@ -10,7 +10,7 @@
 
 - Admin reads and writes use `createAdminClient()` (service role, bypasses RLS) behind the `ADMIN_EMAILS` gate. RLS only governs the cookie-bound `authenticated` client and `anon`.
 - Clients read their own rows. Active company members also get read-only access to company-scoped rows (`projects`, `work_orders`, and through them `project_files`, `invoices`, `work_order_attachments`).
-- Clients write only `profiles` (own row), `work_orders` and `work_order_attachments` (insert), and `company_members` (company admins only).
+- Clients write only `profiles` (own row), `work_orders` and `work_order_attachments` (insert), and `company_members` (company admins only; since 20261104000200 also AAL2 and an active company, see below).
 
 ## Table audit
 
@@ -29,7 +29,7 @@ Legend: S/I/U/D = select/insert/update/delete. "uid wrapped" means every caller-
 | `work_order_attachments` | yes | S: `wo_att_select_own` + `wo_attachments_select_company`; I: `wo_att_insert_own` | I: ownership only | no | ok | F1; F2; F4b: `storage_path` not bound to the work-order namespace in RLS (code checks it) | merged SELECT; insert also requires `storage_path like work_order_id \|\| '/%'` |
 | `companies` | yes | S: `companies_select_member` | S only | n/a (helper) | `created_by` missing | F3: no `to` role, so anon evaluates the helper; F7 | `to authenticated`; `companies_created_by_idx` |
 | `company_roles` | yes | S: `company_roles_select_authed` (`auth.uid() is not null`) | S only | no | n/a | F1 | wrapped uid, `to authenticated` |
-| `company_members` | yes | S: `..._select_comember`; I/U/D: `..._admin_*` (rank >= 100) | U has both | S no | `role`, `invited_by` missing | F1; F3; F7; F10: an admin could rewrite `user_id`/`company_id` or insert any user as an active admin | column-level grants: UPDATE only `(role, status)`, INSERT only `(company_id, user_id, role, status, invited_by)`; insert policy also requires `status = 'invited'` and `invited_by = auth.uid()`; a BEFORE trigger (`enforce_company_member_activation`) rejects any transition to `active` by `anon`/`authenticated` (F12); insert and update both cap the assigned role's rank at the caller's own; wrapped uid + `to authenticated`; `company_members_role_idx`, `company_members_invited_by_idx` |
+| `company_members` | yes | S: `..._select_comember`; I/U/D: `..._admin_*` (`can_manage_company_members`: rank >= 100, active company, AAL2 session) | U has both | S no | `role`, `invited_by` missing | F1; F3; F7; F10: an admin could rewrite `user_id`/`company_id` or insert any user as an active admin | column-level grants: UPDATE only `(role, status)`, INSERT only `(company_id, user_id, role, status, invited_by)`; insert policy also requires `status = 'invited'` and `invited_by = auth.uid()`; a BEFORE trigger (`enforce_company_member_activation`) rejects any transition to `active` by `anon`/`authenticated` (F12); insert and update both cap the assigned role's rank at the caller's own; client writes also require an AAL2 session and an active company via `can_manage_company_members` (20261104000200, D42; fails closed when the `aal` claim is missing; the service role is unaffected); wrapped uid + `to authenticated`; `company_members_role_idx`, `company_members_invited_by_idx` |
 | `digital_assets` | yes | S: `digital_assets_select_active` | S only | no | n/a | F1; F11: every signed-in user could read `storage_path`, `stripe_product_id`, `price_cents` of every active asset | select now requires `active` AND an entitlement (own user grant or active company membership); wrapped uid, `to authenticated` |
 | `asset_entitlements` | yes | S: `asset_entitlements_select_entitled` | S only | no | `asset_id` missing | F1; F7 | wrapped uid; `asset_entitlements_asset_idx` |
 | `admin_audit_log` | yes | none (service role only), grants revoked | n/a | n/a | `actor_user_id` missing | F7 | re-assert RLS + revoke; `admin_audit_log_actor_idx` |
@@ -86,7 +86,7 @@ Rationale:
 
 ## UPDATE policies
 
-After this migration only two client UPDATE policies exist: `profiles_update_own` and `company_members_admin_update`. Both have USING and WITH CHECK, and both are further limited by column-level UPDATE grants (`profiles`: `full_name, company, phone, notify_email`; `company_members`: `role, status`). `service_role` keeps full table privileges. `work_orders` has no client UPDATE policy: it was intentionally removed in 20260717064702, and every transition runs through the service role.
+After this migration only two client UPDATE policies exist: `profiles_update_own` and `company_members_admin_update`. Both have USING and WITH CHECK, and both are further limited by column-level UPDATE grants (`profiles`: `full_name, company, phone, notify_email`; `company_members`: `role, status`). `company_members_admin_insert/update/delete` additionally require `public.can_manage_company_members(company_id)` (20261104000200, D42): an AAL2 session, rank >= 100 and an active company, failing closed. `service_role` keeps full table privileges and is unaffected. `work_orders` has no client UPDATE policy: it was intentionally removed in 20260717064702, and every transition runs through the service role.
 
 ## Deferred (not fixed here, needs a decision)
 
