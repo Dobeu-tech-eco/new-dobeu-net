@@ -15,7 +15,7 @@ Verify with metadata only (names and timestamps, never values):
 ```bash
 vercel env ls production | grep -c '^ *ADMIN_EMAILS'   # expect 1
 vercel env ls preview    | grep -c '^ *ADMIN_EMAILS'   # expect 1
-vercel api /v10/projects/new-dobeu-net/env
+vercel api /v10/projects/new-dobeu-net/env \
   | jq '.envs[] | select(.key=="ADMIN_EMAILS") | {key,target,type,updatedAt}'   # never shows a value
 ```
 
@@ -37,12 +37,12 @@ The invite script's `ADMIN_EMAILS` refusal reads the LOCAL environment only
 A non-allowlisted account (the test customer) requesting `/admin` is redirected
 to `/portal`.
 
-## (c) Create the test customer with the scrip
+## (c) Create the test customer with the script
 
 Always dry-run first. Nothing is written without `--apply`.
 
 ```bash
-# Local stack firs
+# Local stack first
 node scripts/invite-test-customer.mjs jswilliamstu@gmail.com --with-company
 node scripts/invite-test-customer.mjs jswilliamstu@gmail.com --with-company --apply
 ```
@@ -66,10 +66,13 @@ Behavior:
 
 Signed in as an admin with AAL2, use `/admin/users` to invite the address. Add the
 customer to a company from the company admin screens if a company-scoped test is
-wanted. Company-member invites (and `provisionCompanyAdmin`) create an `invited`
-row: the invitee signs in with the invited email address and clicks Accept under
-"Pending company invites" on `/portal` (Decline removes the row; an admin can
-re-invite). Until they accept, they are not an active member.
+wanted. Company-member invites (`inviteMember`) create an `invited` row and send a
+fixed-copy email: the invitee signs in with the invited email address and clicks
+Accept under "Pending company invites" on `/portal` (Decline removes the row; an
+admin can re-invite). Until they accept, they are not an active member.
+`provisionCompanyAdmin` is unchanged (a new address gets a Supabase invite link, an
+existing address is inserted active); its invited rows can also be accepted from
+`/portal`, and aligning it with this flow is D49.
 
 ## (e) Stripe stays in test mode
 
