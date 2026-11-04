@@ -99,13 +99,18 @@ function epochSeconds(iso: string | null | undefined): number | null {
  *  - the session needs an email-link entry WITH a timestamp (the newest wins);
  *  - that link sign-in must not predate the invite (`invite_signin_stale`);
  *  - the email identity must exist and not have changed after the link
- *    sign-in (`invite_email_changed`). Equal seconds pass.
+ *    sign-in (`invite_email_changed`). Equal seconds pass;
+ *  - no email change may have been REQUESTED since the invite was created
+ *    (`emailChangeSentAt` >= the invite's second, `invite_email_changed`): a
+ *    squatter's pending change can complete later, so the request time counts.
  * Returns null when proven.
  */
 export function checkMailboxProof(input: {
   methods: SessionMethod[];
   identities: ProofIdentity[] | null | undefined;
   inviteCreatedAt: string;
+  /** The user's `email_change_sent_at` (when an email change was requested). */
+  emailChangeSentAt?: string | null;
 }): null | MailboxProofFailure {
   let linkTs: number | null = null;
   for (const m of input.methods) {
@@ -124,6 +129,10 @@ export function checkMailboxProof(input: {
   const changedAt = epochSeconds(emailIdentity.updated_at);
   if (changedAt === null) return "invite_email_unconfirmed";
   if (changedAt > linkTs) return "invite_email_changed";
+
+  const changeRequestedAt = epochSeconds(input.emailChangeSentAt);
+  if (input.emailChangeSentAt && changeRequestedAt === null) return "invite_email_changed";
+  if (changeRequestedAt !== null && changeRequestedAt >= invitedAt) return "invite_email_changed";
   return null;
 }
 
@@ -201,6 +210,7 @@ export async function listPendingInvites(
 export type SessionProof = {
   methods: SessionMethod[];
   identities: ProofIdentity[] | null | undefined;
+  emailChangeSentAt?: string | null;
 };
 
 type MemberRow = { company_id: string; role: string };
@@ -290,6 +300,7 @@ async function acceptInvite(
   const proofError = checkMailboxProof({
     methods: proof.methods,
     identities: proof.identities,
+    emailChangeSentAt: proof.emailChangeSentAt,
     inviteCreatedAt: current.created_at,
   });
   if (proofError) return fail(proofError);
@@ -396,6 +407,7 @@ async function declineInvite(
   const proofError = checkMailboxProof({
     methods: proof.methods,
     identities: proof.identities,
+    emailChangeSentAt: proof.emailChangeSentAt,
     inviteCreatedAt: current.created_at,
   });
   if (proofError) return fail(proofError);

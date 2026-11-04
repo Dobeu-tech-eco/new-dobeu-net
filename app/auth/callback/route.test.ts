@@ -21,8 +21,21 @@ beforeEach(() => {
   getUser.mockReset();
   getAal.mockReset();
   updateUserById.mockReset();
-  getUser.mockResolvedValue({ data: { user: { id: "u1", email: "me@example.com" } } });
-  getAal.mockResolvedValue({ data: { currentAuthenticationMethods: [{ method: "otp" }] }, error: null });
+  getUser.mockResolvedValue({
+    data: {
+      user: {
+        id: "u1",
+        email: "me@example.com",
+        recovery_sent_at: "2026-11-01T10:00:00.000Z",
+        email_change_sent_at: null,
+        identities: [{ provider: "email", updated_at: "2026-10-01T00:00:00.000Z" }],
+      },
+    },
+  });
+  getAal.mockResolvedValue({
+    data: { currentAuthenticationMethods: [{ method: "otp", timestamp: 1793527205 }] },
+    error: null,
+  });
   updateUserById.mockResolvedValue({ error: null });
 });
 
@@ -107,7 +120,7 @@ describe("GET /auth/callback", () => {
     exchangeCodeForSession.mockResolvedValue({ error: null });
     await GET(new Request("http://localhost/auth/callback?code=abc"));
     expect(updateUserById).toHaveBeenCalledWith("u1", {
-      app_metadata: { email_link_signin: { at: expect.any(String), email: "me@example.com" } }
+      app_metadata: { email_link_signin: { at: "2026-11-01T10:00:05.000Z", email: "me@example.com" } }
     });
   });
 

@@ -179,6 +179,25 @@ describe("checkMailboxProof", () => {
     ).toBe("invite_email_changed");
   });
 
+  it("H-A: an email change requested after the invite is refused even with a newer link sign-in and an old identity", () => {
+    expect(
+      checkMailboxProof({ ...base, emailChangeSentAt: "2026-01-01T00:00:30Z" }),
+    ).toBe("invite_email_changed");
+  });
+
+  it("an email change requested in the invite's second is refused; before it is not", () => {
+    expect(checkMailboxProof({ ...base, emailChangeSentAt: "2026-01-01T00:00:10.900Z" })).toBe(
+      "invite_email_changed",
+    );
+    expect(checkMailboxProof({ ...base, emailChangeSentAt: "2026-01-01T00:00:09.999Z" })).toBeNull();
+    expect(checkMailboxProof({ ...base, emailChangeSentAt: null })).toBeNull();
+    expect(checkMailboxProof({ ...base, emailChangeSentAt: undefined })).toBeNull();
+  });
+
+  it("an unparseable email_change_sent_at fails closed", () => {
+    expect(checkMailboxProof({ ...base, emailChangeSentAt: "garbage" })).toBe("invite_email_changed");
+  });
+
   it("equal seconds pass at both boundaries", () => {
     // invite created in the same second as the link sign-in
     expect(
@@ -345,6 +364,7 @@ describe("respondToInvite accept", () => {
 
   it.each([
     ["email changed", proof({ identities: [{ provider: "email", updated_at: "2026-01-02T00:00:00Z" }] }), "invite_email_changed"],
+    ["email change requested after the invite", proof({ emailChangeSentAt: "2026-01-01T00:00:30Z" }), "invite_email_changed"],
     ["sign-in older than the invite", proof({ methods: [{ method: "otp", timestamp: sec(CREATED) - 1 }] }), "invite_signin_stale"],
     ["password session", proof({ methods: [{ method: "password", timestamp: LINK_AT }] }), "invite_email_unconfirmed"],
   ] as const)("%s is refused with %s and nothing is written", async (_n, p, code) => {
@@ -602,6 +622,7 @@ describe("respondToInvite decline", () => {
 
   it.each([
     ["email changed", proof({ identities: [{ provider: "email", updated_at: "2026-01-02T00:00:00Z" }] }), "invite_email_changed"],
+    ["email change requested after the invite", proof({ emailChangeSentAt: "2026-01-01T00:00:30Z" }), "invite_email_changed"],
     ["stale sign-in", proof({ methods: [{ method: "otp", timestamp: sec(CREATED) - 1 }] }), "invite_signin_stale"],
     ["password session", proof({ methods: [{ method: "password", timestamp: LINK_AT }] }), "invite_email_unconfirmed"],
   ] as const)("%s is refused with %s and the row is kept", async (_n, p, code) => {

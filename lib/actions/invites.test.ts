@@ -86,7 +86,7 @@ describe("acceptCompanyInvite / declineCompanyInvite", () => {
       ok: true,
       data: { companyId: C, isAdminRole: false },
     });
-    const proofArg = { methods: [{ method: "otp", timestamp: 1 }], identities };
+    const proofArg = { methods: [{ method: "otp", timestamp: 1 }], identities, emailChangeSentAt: null };
     expect(h.respond).toHaveBeenCalledWith({ admin: true }, U, M, "accept", proofArg);
     await declineCompanyInvite(M);
     expect(h.respond).toHaveBeenLastCalledWith({ admin: true }, U, M, "decline", proofArg);
@@ -121,6 +121,15 @@ describe("acceptCompanyInvite / declineCompanyInvite", () => {
     expect(h.respond.mock.calls.at(-1)![4]).toEqual({
       methods: [{ method: "password", timestamp: 5 }, { method: "totp", timestamp: 6 }],
       identities,
+      emailChangeSentAt: null,
+    });
+  });
+
+  it("hands the user's email_change_sent_at to the core", async () => {
+    signIn({ ...confirmed, email_change_sent_at: "2026-01-02T00:00:00Z" });
+    await acceptCompanyInvite(M);
+    expect(h.respond.mock.calls.at(-1)![4]).toMatchObject({
+      emailChangeSentAt: "2026-01-02T00:00:00Z",
     });
   });
 

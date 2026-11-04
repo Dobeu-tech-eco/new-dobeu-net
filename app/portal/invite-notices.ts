@@ -50,7 +50,7 @@ const INVITE_NOTICES = {
   invite_email_changed: {
     tone: "warning",
     role: "alert",
-    text: "Your account email changed after you signed in. Sign out and sign in again with the emailed sign-in link to answer this invite.",
+    text: "Your account email changed after this invite was sent, so it can't be answered from this account. Ask a company admin to invite your current address.",
   },
   invite_email_unconfirmed: {
     tone: "warning",
