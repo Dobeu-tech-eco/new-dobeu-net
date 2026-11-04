@@ -330,11 +330,11 @@ ${button(args.confirmUrl, "Confirm and send")}
  * own sign-in link from the login page.
  */
 export function companyMemberInviteEmail(args: { loginUrl: string }): EmailContent {
-  const subject = "You've been added to a company on Dobeu";
+  const subject = "You've been invited to a company on Dobeu";
   const text = [
     `Hey there —`,
     ``,
-    `You've been invited to join a company on dobeu.net. To get started, open the sign-in page and request a sign-in link with this email address:`,
+    `You've been invited to join a company on Dobeu. Sign in at the link below with this email address. You'll see the company once your membership is activated.`,
     ``,
     args.loginUrl,
     ``,
@@ -345,10 +345,10 @@ export function companyMemberInviteEmail(args: { loginUrl: string }): EmailConte
   const html = shell(
     `
 <h1 style="margin:0 0 12px;font-size:22px;font-weight:800;color:${DOBEU_INDIGO};">Hey there —</h1>
-<p style="margin:0 0 12px;">You've been invited to join a company on dobeu.net. Open the sign-in page and request a sign-in link with this email address.</p>
+<p style="margin:0 0 12px;">You've been invited to join a company on Dobeu. Sign in at the link below with this email address. You'll see the company once your membership is activated.</p>
 ${button(args.loginUrl, "Go to sign in")}
 <p style="margin:12px 0 0;color:${DOBEU_MUTED};font-size:12px;">If you weren&apos;t expecting this, you can ignore this email.</p>`,
-    { previewText: "You've been added to a company on Dobeu" }
+    { previewText: "You've been invited to a company on Dobeu" }
   );
   return { subject, text, html };
 }

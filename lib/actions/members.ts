@@ -17,9 +17,9 @@
  * admin calls (`listUsers` / `createUser` / `deleteUser`) — there is no
  * cookie-scoped equivalent, and an invitee's auth user may not exist yet.
  *
- * `inviteMember` is rate-limited per calling admin, mirroring the pattern in
- * app/api/lead/route.ts: an Upstash sliding window when configured, with a
- * module-level in-memory fallback so the limit still applies without Redis.
+ * `inviteMember` is rate-limited twice via lib/rate-limit.ts `checkRateLimit`
+ * (Upstash when configured, in-memory fallback): per calling admin per minute,
+ * then per company per 24h. A limiter failure fails closed as `rate_limited`.
  *
  * The `*Form` exports are thin FormData adapters so the /company/members page
  * can wire progressive-enhancement `<form action={fn.bind(null, ...)}>` forms
@@ -29,14 +29,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSiteUrl } from "@/lib/utils";
 import { z } from "zod";
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 import { requireCompanyAdmin } from "@/lib/actions/company-auth";
 import { AuthError } from "@/lib/actions/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isResendConfigured, sendEmail } from "@/lib/resend";
 import { companyMemberInviteEmail } from "@/lib/resend-templates";
 import { safeErrorFields } from "@/lib/log-safe";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { findUserIdByEmail, isAlreadyRegistered } from "@/lib/auth-admin";
 import type { DBClient } from "@/lib/actions/auth";
 
 const uuid = z.guid("invalid id");
@@ -67,37 +67,36 @@ export type ActionResult<T> =
   { ok: true; data: T } | { ok: false; error: string };
 
 // ---------------------------------------------------------------------------
-// Rate limiting (mirrors app/api/lead/route.ts): Upstash sliding window when
-// configured, else a module-level in-memory per-key bucket.
+// Rate limiting: per admin per minute, then per company per 24h.
 // ---------------------------------------------------------------------------
-const INVITE_RL_WINDOW_MS = 60_000;
-const INVITE_RL_MAX = 5;
-const inviteBuckets = new Map<string, { count: number; resetAt: number }>();
-const upstashReady =
-  Boolean(process.env.UPSTASH_REDIS_REST_URL) &&
-  Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
-const upstashRatelimit = upstashReady
-  ? new Ratelimit({
-      redis: Redis.fromEnv(),
-      limiter: Ratelimit.slidingWindow(INVITE_RL_MAX, "1 m"),
-      prefix: "action:invite-member",
-    })
-  : null;
+const INVITE_MINUTE = { windowSec: 60, max: 5 } as const;
+const INVITE_DAILY = { windowSec: 86_400, max: 20 } as const;
 
-async function isInviteRateLimited(key: string): Promise<boolean> {
-  if (upstashRatelimit) {
-    const { success } = await upstashRatelimit.limit(key);
-    return !success;
+/** Fixed notice codes emitted by inviteMemberForm (read by the members page). */
+export type InviteNoticeCode =
+  | "member_added"
+  | "invite_email_failed"
+  | "rate_limited"
+  | "daily_limit"
+  | "already_member"
+  | "mfa_required"
+  | "forbidden"
+  | "invite_failed";
+
+/** Returns the limiter that tripped, or null. Fails closed if the limiter throws. */
+async function inviteLimitHit(
+  userId: string,
+  companyId: string,
+): Promise<"rate_limited" | "daily_limit" | null> {
+  try {
+    const perMinute = await checkRateLimit(`invite:min:${userId}`, INVITE_MINUTE);
+    if (perMinute.limited) return "rate_limited";
+    const daily = await checkRateLimit(`invite:day:${companyId}`, INVITE_DAILY);
+    return daily.limited ? "daily_limit" : null;
+  } catch (e) {
+    console.warn("[inviteMember] rate limiter failed:", safeErrorFields(e));
+    return "rate_limited";
   }
-  const now = Date.now();
-  const b = inviteBuckets.get(key);
-  if (!b || b.resetAt < now) {
-    inviteBuckets.set(key, { count: 1, resetAt: now + INVITE_RL_WINDOW_MS });
-    return false;
-  }
-  if (b.count >= INVITE_RL_MAX) return true;
-  b.count += 1;
-  return false;
 }
 
 /**
@@ -116,42 +115,30 @@ async function roleExists(supabase: DBClient, key: string): Promise<boolean> {
 }
 
 /**
- * Detect Supabase's "already registered" signal from a createUser error, across
- * the shapes it has shipped (message text, `email_exists` code, 422 status).
+ * Resolve the invitee's auth user. createUser goes FIRST (no per-invite paging
+ * for new emails); only an "already registered" answer falls back to the email
+ * lookup. `createdByUs` is true only for a user this call created, so the
+ * compensating delete can never remove a pre-existing account.
  */
-function isAlreadyRegistered(error: {
-  message?: string;
-  code?: string;
-  status?: number;
-}): boolean {
-  const msg = (error.message ?? "").toLowerCase();
-  return (
-    msg.includes("already registered") ||
-    msg.includes("already been registered") ||
-    error.code === "email_exists" ||
-    error.status === 422
-  );
-}
-
-/**
- * Find an existing auth user id by email. Pages through the admin list
- * (bounded). Returns null when no user matches or the list call fails.
- */
-async function findUserIdByEmail(
+async function resolveInviteeUserId(
   admin: ReturnType<typeof createAdminClient>,
   email: string,
-): Promise<string | null> {
-  const target = email.toLowerCase();
-  const perPage = 200;
-  for (let page = 1; page <= 10; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-    if (error) return null;
-    const users = data?.users ?? [];
-    const match = users.find((u) => (u.email ?? "").toLowerCase() === target);
-    if (match) return match.id;
-    if (users.length < perPage) break;
+): Promise<{ id: string; createdByUs: boolean } | null> {
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: false,
+  });
+  if (error && isAlreadyRegistered(error)) {
+    // Some shapes return a user id alongside the error; prefer it over paging.
+    const returned = (data as { user?: { id?: string } | null } | null)?.user?.id;
+    const id = returned ?? (await findUserIdByEmail(admin, email));
+    return id ? { id, createdByUs: false } : null;
   }
-  return null;
+  if (error || !data?.user?.id) {
+    console.warn("[inviteMember] createUser failed:", safeErrorFields(error));
+    return null;
+  }
+  return { id: data.user.id, createdByUs: true };
 }
 
 export type InviteMemberData = {
@@ -229,31 +216,14 @@ export async function inviteMember(
     return { ok: false, error: `unknown role "${input.roleKey}"` };
   }
 
-  if (await isInviteRateLimited(user.id)) {
-    return { ok: false, error: "rate_limited" };
-  }
+  const limit = await inviteLimitHit(user.id, input.companyId);
+  if (limit) return { ok: false, error: limit };
 
-  // Resolve the invitee's auth user, creating an unconfirmed one if needed.
   // No Supabase email is sent here; the invitee signs in via /login.
   const admin = createAdminClient();
-  let invitedUserId = await findUserIdByEmail(admin, input.email);
-  let createdByUs = false;
-  if (!invitedUserId) {
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email: input.email,
-      email_confirm: false,
-    });
-    if (created?.user?.id) {
-      invitedUserId = created.user.id;
-      createdByUs = true;
-    } else if (createErr && isAlreadyRegistered(createErr)) {
-      // Lost a race with another signup/invite: use the user that now exists.
-      invitedUserId = await findUserIdByEmail(admin, input.email);
-    } else {
-      console.warn("[inviteMember] createUser failed:", safeErrorFields(createErr));
-    }
-    if (!invitedUserId) return { ok: false, error: "invite failed" };
-  }
+  const invitee = await resolveInviteeUserId(admin, input.email);
+  if (!invitee) return { ok: false, error: "invite failed" };
+  const invitedUserId = invitee.id;
 
   const { data: member, error: insertErr } = await supabase
     .from("company_members")
@@ -270,13 +240,17 @@ export async function inviteMember(
   if (insertErr || !member) {
     // Compensate only for a user this call created: a fresh invitee has just a
     // profiles row (ON DELETE CASCADE), so deleting leaves no orphan.
-    if (createdByUs) {
+    if (invitee.createdByUs) {
       const { error: delErr } = await admin.auth.admin.deleteUser(invitedUserId);
       if (delErr) {
         console.warn("[inviteMember] deleteUser failed:", safeErrorFields(delErr));
       }
     }
-    return { ok: false, error: insertErr?.message ?? "member insert failed" };
+    // Fixed codes only: never hand a Supabase message back to callers.
+    return {
+      ok: false,
+      error: insertErr?.code === "23505" ? "already_member" : "invite failed",
+    };
   }
 
   revalidatePath("/company");
@@ -391,6 +365,26 @@ export async function deactivateMember(
 // They return void (the form ignores the result) so the typed core actions
 // stay the tested, value-returning API.
 // ---------------------------------------------------------------------------
+function inviteNotice(
+  result: ActionResult<InviteMemberData>,
+): InviteNoticeCode {
+  if (result.ok) {
+    return result.data.emailSent ? "member_added" : "invite_email_failed";
+  }
+  switch (result.error) {
+    case "rate_limited":
+    case "daily_limit":
+    case "already_member":
+    case "mfa_required":
+      return result.error;
+    case "forbidden":
+    case "not_authenticated":
+      return "forbidden";
+    default:
+      return "invite_failed";
+  }
+}
+
 export async function inviteMemberForm(
   companyId: string,
   formData: FormData,
@@ -400,12 +394,7 @@ export async function inviteMemberForm(
     String(formData.get("email") ?? ""),
     String(formData.get("roleKey") ?? ""),
   );
-  let notice = "invite_failed";
-  if (result.ok) {
-    notice = result.data.emailSent ? "member_added" : "invite_email_failed";
-  } else if (result.error === "rate_limited") {
-    notice = "rate_limited";
-  }
+  const notice = inviteNotice(result);
   const companyParam = uuid.safeParse(companyId).success
     ? `company=${encodeURIComponent(companyId)}&`
     : "";
