@@ -5,3 +5,4 @@
 {"stamp":"20261104-052739","rounds":2,"failures":{"review_findings":3,"context_guard":1},"duration_s":5400,"agents":["claude","copilot","grok"],"verdict":"VERIFIED"}
 {"stamp":"20261104-073007","rounds":2,"failures":{"review_findings":2,"builder_env":1},"duration_s":7200,"agents":["claude"],"verdict":"VERIFIED"}
 {"stamp":"20261104-125154","rounds":2,"failures":{"review_findings":2},"duration_s":5400,"agents":["claude"],"verdict":"VERIFIED"}
+{"stamp":"20261104-124711","rounds":2,"failures":{"review_findings":3,"agent_quota":1},"duration_s":6300,"agents":["claude","grok"],"verdict":"VERIFIED"}

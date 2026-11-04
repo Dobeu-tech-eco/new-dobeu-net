@@ -126,3 +126,7 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
 - Portal: lib/company-status.ts + components/portal/CompanySuspendedBanner.tsx in app/portal/layout.tsx (fixed copy, role=status, fail quiet); walkthrough 8/8 (light/dark, 390/1440) on a locally seeded suspended company: banner shown, own project visible, company-shared project hidden.
 - `pnpm verify` 1417/1417, strict build clean; lib/database.types.ts drift = the one new function.
 - P3 access-boundary box stays unchecked (L-011): this adds evidence for company-shared reads, not every route.
+## 2026-11-04 run 20261104-124711 — D47 accept-invite flow (sections 4, 36, 37)
+- New: lib/company-invites.ts (listPendingInvites, respondToInvite → acceptInvite/declineInvite, requireMailboxProof, isCompanyActive), lib/actions/invites.ts (accept/decline + form wrappers), components/portal/PendingInvites.tsx, app/portal/invite-notices.ts; invite email → /login?next=/portal.
+- Evidence (local stack, 6c54016): `pnpm verify` 1473/1473 + strict build; pgTAP 198/198 (company_member_accept: invitee self-activate/delete filtered, AAL2 admin and anon activation 42501 from the trigger, service role accept/decline); walkthrough 8/8 incl. real magic link via /auth/callback?code (amr magiclink) and a refused password session (amr password). Post-step-up landing NOT WALKED (TOTP off locally).
+- Receipt: `runs/20261104-124711/receipt.md`. Follow-ups D52, D53; D48-D50 held.

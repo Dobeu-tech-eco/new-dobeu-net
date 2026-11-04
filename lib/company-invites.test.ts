@@ -176,9 +176,9 @@ describe("respondToInvite accept", () => {
   });
 
   it.each([
-    ["errors", { error: { message: "revert down" } }],
-    ["matches zero rows", { data: [] }],
-  ])("a revert that %s audits the still-active row and warns", async (_n, revert) => {
+    ["errors", { error: { message: "revert down" } }, "revert_failed"],
+    ["matches zero rows", { data: [] }, "revert_no_row"],
+  ])("a revert that %s audits the committed accept with its own flag and warns", async (_n, revert, flag) => {
     const warn = vi.spyOn(console, "warn");
     const { admin, calls } = fakeAdmin(
       acceptScript({
@@ -200,7 +200,7 @@ describe("respondToInvite accept", () => {
         user_id: U,
         role: "employee",
         company_inactive_after_accept: true,
-        revert_failed: true,
+        [flag]: true,
       },
     });
     expect(warn.mock.calls.some((c) => String(c[0]).includes("revert"))).toBe(true);

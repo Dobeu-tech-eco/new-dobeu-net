@@ -52,7 +52,7 @@ async function isCompanyActive(
  * Sign-in methods that prove control of the mailbox (not password or totp).
  * NOTE: `otp` is also emitted by phone/SMS OTP; this gate assumes phone
  * sign-in stays disabled (supabase/config.toml [auth.sms] enable_signup =
- * false; see D51).
+ * false; see D52).
  */
 const MAILBOX_PROOF_METHODS: ReadonlySet<string> = new Set([
   "otp",
@@ -200,6 +200,10 @@ async function acceptInvite(
   const applied = { row, isAdminRole: isAdminRank(roles, row.role) };
   if (stillActive) return applied;
 
+  // A revert error leaves the row active; a zero-row revert means someone
+  // else changed the row first (an admin disabled or removed it), so it may
+  // no longer be active. The audit labels the two cases differently.
+  let revertFlag: "revert_failed" | "revert_no_row" = "revert_failed";
   try {
     const { data: reverted, error: revertError } = await admin
       .from("company_members")
@@ -210,14 +214,15 @@ async function acceptInvite(
       .select("id");
     if (revertError) throw revertError;
     if (reverted && reverted.length > 0) return { error: "invite_unavailable" };
+    revertFlag = "revert_no_row";
     console.warn(`[${scope}] revert matched no row`);
   } catch (e) {
     console.warn(`[${scope}] revert failed:`, safeErrorFields(e));
   }
-  // The row is still active: the audit must say so.
+  // The accept committed and was not undone by us: the audit must record it.
   return {
     ...applied,
-    auditExtra: { company_inactive_after_accept: true, revert_failed: true },
+    auditExtra: { company_inactive_after_accept: true, [revertFlag]: true },
     refuse: "invite_unavailable",
   };
 }
