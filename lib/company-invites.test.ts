@@ -185,13 +185,92 @@ describe("checkMailboxProof", () => {
     ).toBe("invite_email_changed");
   });
 
-  it("an email change requested in the invite's second is refused; before it is not", () => {
+  it("an email change requested after the invite is refused by the 24 h quiet period and by the invite rule", () => {
+    // Quiet rule: the change is within 24 h before the link sign-in.
     expect(checkMailboxProof({ ...base, emailChangeSentAt: "2026-01-01T00:00:10.900Z" })).toBe(
       "invite_email_changed",
     );
-    expect(checkMailboxProof({ ...base, emailChangeSentAt: "2026-01-01T00:00:09.999Z" })).toBeNull();
+    // Invite rule alone: the link is days later, so the change is outside the
+    // quiet window yet still after the invite was created.
+    const late = [{ method: "otp", timestamp: sec(CREATED) + 3 * 86_400 }];
+    const afterInvite = new Date((sec(CREATED) + 86_400) * 1000).toISOString();
+    expect(checkMailboxProof({ ...base, methods: late, emailChangeSentAt: afterInvite })).toBe(
+      "invite_email_changed",
+    );
+    const inInviteSecond = "2026-01-01T00:00:10.900Z";
+    expect(checkMailboxProof({ ...base, methods: late, emailChangeSentAt: inInviteSecond })).toBe(
+      "invite_email_changed",
+    );
+    const beforeInvite = "2026-01-01T00:00:09.999Z";
+    expect(checkMailboxProof({ ...base, methods: late, emailChangeSentAt: beforeInvite })).toBeNull();
     expect(checkMailboxProof({ ...base, emailChangeSentAt: null })).toBeNull();
     expect(checkMailboxProof({ ...base, emailChangeSentAt: undefined })).toBeNull();
+    expect(checkMailboxProof({ ...base, emailChangeSentAt: "" })).toBeNull();
+  });
+
+  it("H-B3: a change requested 5 s before the link with the identity touched 1 s before is refused", () => {
+    expect(
+      checkMailboxProof({
+        ...base,
+        emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(),
+        identities: [{ provider: "email", updated_at: new Date((LINK_AT - 1) * 1000).toISOString() }],
+      }),
+    ).toBe("invite_email_changed");
+  });
+
+  it("a change requested 2 h before the link is refused", () => {
+    expect(
+      checkMailboxProof({
+        ...base,
+        emailChangeSentAt: new Date((LINK_AT - 7_200) * 1000).toISOString(),
+      }),
+    ).toBe("invite_email_changed");
+  });
+
+  it("a change 25 h before the link and exactly 86400 s before it are allowed (from a pre-invite change)", () => {
+    // Invite created after the change so only the quiet period is in play.
+    const linkTs = sec("2026-01-12T12:00:00Z");
+    const methods = [{ method: "otp", timestamp: linkTs }];
+    const at = (secs: number) => new Date((linkTs - secs) * 1000).toISOString();
+    const inviteCreatedAt = "2026-01-11T12:30:00Z";
+    for (const secs of [25 * 3_600, 86_400]) {
+      expect(
+        checkMailboxProof({ ...base, methods, inviteCreatedAt, emailChangeSentAt: at(secs) }),
+      ).toBeNull();
+    }
+    expect(
+      checkMailboxProof({ ...base, methods, inviteCreatedAt, emailChangeSentAt: at(86_399) }),
+    ).toBe("invite_email_changed");
+  });
+
+  it("a first-time confirmed invitee (identity created before the link, no change) is allowed", () => {
+    expect(
+      checkMailboxProof({
+        ...base,
+        identities: [{ provider: "email", updated_at: new Date((LINK_AT - 30) * 1000).toISOString() }],
+        emailChangeSentAt: null,
+      }),
+    ).toBeNull();
+  });
+
+  it("decline needs only a link sign-in made after the invite", () => {
+    const changed = {
+      ...base,
+      emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(),
+      identities: [{ provider: "email", updated_at: new Date((LINK_AT + 5) * 1000).toISOString() }],
+    };
+    expect(checkMailboxProof(changed)).toBe("invite_email_changed");
+    expect(checkMailboxProof({ ...changed, response: "decline" })).toBeNull();
+    expect(
+      checkMailboxProof({ ...changed, response: "decline", methods: [{ method: "password", timestamp: LINK_AT }] }),
+    ).toBe("invite_email_unconfirmed");
+    expect(
+      checkMailboxProof({
+        ...changed,
+        response: "decline",
+        methods: [{ method: "otp", timestamp: sec(CREATED) - 1 }],
+      }),
+    ).toBe("invite_signin_stale");
   });
 
   it("an unparseable email_change_sent_at fails closed", () => {
@@ -216,15 +295,15 @@ describe("checkMailboxProof", () => {
     ).toBeNull();
   });
 
-  it("no email identity is unconfirmed (null, undefined, empty or other provider)", () => {
+  it("no email identity fails closed (null, undefined, empty or other provider)", () => {
     for (const identities of [null, undefined, [], [{ provider: "github", updated_at: "2020-01-01T00:00:00Z" }]]) {
-      expect(checkMailboxProof({ ...base, identities })).toBe("invite_email_unconfirmed");
+      expect(checkMailboxProof({ ...base, identities })).toBe("invite_email_changed");
     }
   });
 
   it("an email identity with no usable updated_at fails closed", () => {
     expect(checkMailboxProof({ ...base, identities: [{ provider: "email", updated_at: null }] })).toBe(
-      "invite_email_unconfirmed",
+      "invite_email_changed",
     );
   });
 
@@ -345,6 +424,35 @@ describe("respondToInvite accept", () => {
     expect(wrote(calls) || !!auditOf(calls)).toBe(false);
   });
 
+  it("an already active row on a suspended company is flagged companyInactive", async () => {
+    const { admin } = fakeAdmin(
+      acceptScript({
+        "company_members.select": [ownRow({ status: "active" })],
+        "companies.select": [{ data: { status: "suspended" } }],
+      }),
+    );
+    expect(await respondToInvite(admin, U, M, "accept", proof())).toEqual({
+      ok: true,
+      companyId: C,
+      isAdminRole: false,
+      companyInactive: true,
+    });
+  });
+
+  it("an already active row whose company check throws is a plain ok", async () => {
+    const { admin } = fakeAdmin(
+      acceptScript({
+        "company_members.select": [ownRow({ status: "active" })],
+        "companies.select": [{ error: { message: "read down" } }],
+      }),
+    );
+    expect(await respondToInvite(admin, U, M, "accept", proof())).toEqual({
+      ok: true,
+      companyId: C,
+      isAdminRole: false,
+    });
+  });
+
   it("an already active row succeeds even for a stale session", async () => {
     const { admin } = fakeAdmin(acceptScript({ "company_members.select": [ownRow({ status: "active" })] }));
     const stale = proof({ methods: [{ method: "otp", timestamp: 1 }] });
@@ -365,6 +473,7 @@ describe("respondToInvite accept", () => {
   it.each([
     ["email changed", proof({ identities: [{ provider: "email", updated_at: "2026-01-02T00:00:00Z" }] }), "invite_email_changed"],
     ["email change requested after the invite", proof({ emailChangeSentAt: "2026-01-01T00:00:30Z" }), "invite_email_changed"],
+    ["H-B3 change 5 s before the link", proof({ emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(), identities: [{ provider: "email", updated_at: new Date((LINK_AT - 1) * 1000).toISOString() }] }), "invite_email_changed"],
     ["sign-in older than the invite", proof({ methods: [{ method: "otp", timestamp: sec(CREATED) - 1 }] }), "invite_signin_stale"],
     ["password session", proof({ methods: [{ method: "password", timestamp: LINK_AT }] }), "invite_email_unconfirmed"],
   ] as const)("%s is refused with %s and nothing is written", async (_n, p, code) => {
@@ -664,14 +773,28 @@ describe("respondToInvite decline", () => {
   });
 
   it.each([
-    ["email changed", proof({ identities: [{ provider: "email", updated_at: "2026-01-02T00:00:00Z" }] }), "invite_email_changed"],
-    ["email change requested after the invite", proof({ emailChangeSentAt: "2026-01-01T00:00:30Z" }), "invite_email_changed"],
     ["stale sign-in", proof({ methods: [{ method: "otp", timestamp: sec(CREATED) - 1 }] }), "invite_signin_stale"],
     ["password session", proof({ methods: [{ method: "password", timestamp: LINK_AT }] }), "invite_email_unconfirmed"],
   ] as const)("%s is refused with %s and the row is kept", async (_n, p, code) => {
     const { admin, calls } = fakeAdmin(declineScript());
     expect(await respondToInvite(admin, U, M, "decline", p)).toEqual({ ok: false, error: code });
     expect(wrote(calls) || !!auditOf(calls)).toBe(false);
+  });
+
+  it("decline succeeds after an email change that accept refuses", async () => {
+    const changed = proof({
+      emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(),
+      identities: [{ provider: "email", updated_at: new Date((LINK_AT - 1) * 1000).toISOString() }],
+    });
+    const declined = fakeAdmin(declineScript());
+    expect((await respondToInvite(declined.admin, U, M, "decline", changed)).ok).toBe(true);
+    expect(declined.calls.some((c) => c.op === "delete")).toBe(true);
+    const accepted = fakeAdmin(acceptScript());
+    expect(await respondToInvite(accepted.admin, U, M, "accept", changed)).toEqual({
+      ok: false,
+      error: "invite_email_changed",
+    });
+    expect(wrote(accepted.calls)).toBe(false);
   });
 
   it("zero rows deleted and the row now active is already accepted, unaudited", async () => {

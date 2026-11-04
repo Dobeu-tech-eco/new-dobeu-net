@@ -7,8 +7,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import { hasCurrentEmailLinkSignIn, recordEmailLinkSignIn } from "@/lib/email-link-signin";
 
-// Link requested at SENT, session created (amr timestamp) at LINK_TS.
-const SENT = "2026-11-01T10:00:00.000Z";
+// Session created (amr timestamp) at LINK_TS.
 const LINK_TS = Math.floor(Date.parse("2026-11-01T10:00:05.000Z") / 1000);
 
 type Method = string | { method: string; timestamp?: number };
@@ -21,8 +20,6 @@ function client(
   const user = {
     id: "u1",
     email: "me@example.com",
-    recovery_sent_at: SENT,
-    confirmation_sent_at: null,
     email_change_sent_at: null,
     identities: [{ provider: "email", updated_at: "2026-10-01T00:00:00.000Z" }],
     ...opts.user,
@@ -82,13 +79,15 @@ describe("recordEmailLinkSignIn", () => {
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
-  it("H-B race: link requested, then email change requested and confirmed, then code exchanged: no marker", async () => {
+  const iso = (secs: number) => new Date(secs * 1000).toISOString();
+
+  it("H-B3: change requested 5 s before the link, identity updated 1 s before: no marker", async () => {
     await recordEmailLinkSignIn(
       client([m("magiclink")], {
         user: {
-          email: "attacker@example.com",
-          email_change_sent_at: "2026-11-01T10:00:02.000Z",
-          identities: [{ provider: "email", updated_at: "2026-11-01T10:00:04.000Z" }],
+          email: "victim@example.com",
+          email_change_sent_at: iso(LINK_TS - 5),
+          identities: [{ provider: "email", updated_at: iso(LINK_TS - 1) }],
         },
       }),
     );
@@ -96,52 +95,57 @@ describe("recordEmailLinkSignIn", () => {
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("marker skipped"));
   });
 
-  it("an email change requested after the link was sent skips the marker even while the identity is untouched", async () => {
+  it("a change requested 2 h before the link (inside the quiet period) skips the marker", async () => {
     await recordEmailLinkSignIn(
-      client([m("magiclink")], { user: { email_change_sent_at: "2026-11-01T10:00:02.000Z" } }),
+      client([m("magiclink")], { user: { email_change_sent_at: iso(LINK_TS - 7_200) } }),
     );
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
-  it("an email change confirmed after the link was sent skips the marker even without email_change_sent_at", async () => {
+  it("an identity confirmed after the sign-in skips the marker even without email_change_sent_at", async () => {
     await recordEmailLinkSignIn(
       client([m("magiclink")], {
-        user: { identities: [{ provider: "email", updated_at: "2026-11-01T10:00:03.000Z" }] },
+        user: { identities: [{ provider: "email", updated_at: iso(LINK_TS + 1) }] },
       }),
     );
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
-  it("a legitimate magic link after an old email change writes the marker", async () => {
+  it("a change 25 h before and exactly 86400 s before the link write the marker; 86399 s does not", async () => {
+    for (const secs of [25 * 3_600, 86_400]) {
+      updateUserById.mockClear();
+      await recordEmailLinkSignIn(
+        client([m("magiclink")], {
+          user: {
+            email_change_sent_at: iso(LINK_TS - secs),
+            identities: [{ provider: "email", updated_at: iso(LINK_TS - secs + 300) }],
+          },
+        }),
+      );
+      expect(updateUserById).toHaveBeenCalledTimes(1);
+    }
+    updateUserById.mockClear();
     await recordEmailLinkSignIn(
-      client([m("magiclink")], {
-        user: {
-          email_change_sent_at: "2026-10-20T00:00:00.000Z",
-          identities: [{ provider: "email", updated_at: "2026-10-20T00:05:00.000Z" }],
-        },
-      }),
+      client([m("magiclink")], { user: { email_change_sent_at: iso(LINK_TS - 86_399) } }),
     );
-    expect(updateUserById).toHaveBeenCalledTimes(1);
+    expect(updateUserById).not.toHaveBeenCalled();
   });
 
-  it("a first-time unconfirmed invitee (confirmation_sent_at) writes the marker", async () => {
+  it("a first-time confirmed invitee (identity created before the link) writes the marker", async () => {
     await recordEmailLinkSignIn(
       client([m("email/signup")], {
-        user: {
-          recovery_sent_at: null,
-          confirmation_sent_at: SENT,
-          identities: [{ provider: "email", updated_at: "2026-11-01T10:00:01.000Z" }],
-        },
+        user: { identities: [{ provider: "email", updated_at: iso(LINK_TS - 4) }] },
       }),
     );
     expect(updateUserById).toHaveBeenCalledTimes(1);
   });
 
-  it("skips when no link-sent timestamp exists or the identity is missing", async () => {
-    await recordEmailLinkSignIn(
-      client([m("otp")], { user: { recovery_sent_at: null, confirmation_sent_at: null } }),
-    );
+  it("fails closed on an unparseable email_change_sent_at, a missing identity or an unparseable updated_at", async () => {
+    await recordEmailLinkSignIn(client([m("otp")], { user: { email_change_sent_at: "garbage" } }));
     await recordEmailLinkSignIn(client([m("otp")], { user: { identities: [] } }));
+    await recordEmailLinkSignIn(
+      client([m("otp")], { user: { identities: [{ provider: "email", updated_at: "nope" }] } }),
+    );
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
@@ -205,8 +209,18 @@ describe("hasCurrentEmailLinkSignIn", () => {
     expect(hasCurrentEmailLinkSignIn(base({ email_change_sent_at: "2026-11-01T10:00:30.000Z" }))).toBe(false);
   });
 
-  it("is true when the email change was requested before the marker", () => {
-    expect(hasCurrentEmailLinkSignIn(base({ email_change_sent_at: "2026-11-01T09:00:00.000Z" }))).toBe(true);
+  it("is false when the change was requested inside the quiet period before the marker", () => {
+    expect(hasCurrentEmailLinkSignIn(base({ email_change_sent_at: "2026-11-01T09:00:00.000Z" }))).toBe(false);
+  });
+
+  it("is true when the change was requested at least 86400 s before the marker", () => {
+    expect(hasCurrentEmailLinkSignIn(base({ email_change_sent_at: "2026-10-31T10:00:00.000Z" }))).toBe(true);
+    expect(hasCurrentEmailLinkSignIn(base({ email_change_sent_at: "2026-10-31T10:00:01.000Z" }))).toBe(false);
+    expect(hasCurrentEmailLinkSignIn(base({ email_change_sent_at: null }))).toBe(true);
+  });
+
+  it("fails closed on an unparseable email_change_sent_at", () => {
+    expect(hasCurrentEmailLinkSignIn(base({ email_change_sent_at: "garbage" }))).toBe(false);
   });
 
   it("fails closed without an email identity", () => {

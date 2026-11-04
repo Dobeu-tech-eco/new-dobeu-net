@@ -9,6 +9,13 @@ import { COMPANY_ADMIN_RANK } from "@/lib/actions/company-auth";
 import type { DBClient } from "@/lib/actions/auth";
 import { writeAdminAudit } from "@/lib/admin-audit";
 import { safeErrorFields } from "@/lib/log-safe";
+import {
+  emailChangeQuiet,
+  latestLinkTimestamp,
+  toSeconds,
+  type ProofIdentity,
+  type SessionMethod,
+} from "@/lib/mailbox-proof";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export type InviteFailure =
@@ -63,47 +70,32 @@ async function isCompanyActive(
   return data?.status === "active";
 }
 
-/**
- * Sign-in methods that prove control of the mailbox (not password or totp).
- * NOTE: `otp` is also emitted by phone/SMS OTP; this gate assumes phone
- * sign-in stays disabled (supabase/config.toml [auth.sms] enable_signup =
- * false; see D53).
- */
-const MAILBOX_PROOF_METHODS: ReadonlySet<string> = new Set([
-  "otp",
-  "magiclink",
-  "invite",
-  "email/signup",
-]);
-
-export type SessionMethod = { method: string; timestamp: number } | string;
-
-export type ProofIdentity = { provider: string; updated_at?: string | null };
+export type { SessionMethod, ProofIdentity };
 
 export type MailboxProofFailure =
   | "invite_email_unconfirmed"
   | "invite_signin_stale"
   | "invite_email_changed";
 
-/** Whole seconds since the epoch, or null for a missing / unparseable date. */
-function epochSeconds(iso: string | null | undefined): number | null {
-  if (!iso) return null;
-  const ms = Date.parse(iso);
-  return Number.isNaN(ms) ? null : Math.floor(ms / 1000);
-}
-
 /**
  * `email_confirmed_at` alone is not mailbox proof (signups may auto-confirm,
  * so a squatter can register a victim's address). Pure check, all in whole
- * seconds, failing closed:
- *  - the session needs an email-link entry WITH a timestamp (the newest wins);
- *  - that link sign-in must not predate the invite (`invite_signin_stale`);
- *  - the email identity must exist and not have changed after the link
- *    sign-in (`invite_email_changed`). Equal seconds pass;
- *  - no email change may have been REQUESTED since the invite was created
- *    (`emailChangeSentAt` >= the invite's second, `invite_email_changed`): a
- *    squatter's pending change can complete later, so the request time counts.
- * Returns null when proven.
+ * seconds, failing closed. In order:
+ *  1. the session needs an email-link entry WITH a timestamp (the newest
+ *     wins), else `invite_email_unconfirmed`;
+ *  2. that link sign-in must not predate the invite, else
+ *     `invite_signin_stale`;
+ *  3. accept only: `emailChangeQuiet` (no email change requested within
+ *     EMAIL_CHANGE_QUIET_SECONDS before the link sign-in, identity untouched
+ *     since), else `invite_email_changed`. A code's sign-in time is the
+ *     exchange time, not the send time, so send-time ordering cannot work;
+ *  4. accept only: no email change may have been REQUESTED since the invite
+ *     was created (`emailChangeSentAt` >= the invite's second), else
+ *     `invite_email_changed`.
+ * Decline stops after step 2: deleting the caller's own invited row grants
+ * nothing, and skipping the email-change rules keeps an invitee who changed
+ * their email from being stuck with an invite they can neither answer nor
+ * clear. Returns null when proven.
  */
 export function checkMailboxProof(input: {
   methods: SessionMethod[];
@@ -111,28 +103,31 @@ export function checkMailboxProof(input: {
   inviteCreatedAt: string;
   /** The user's `email_change_sent_at` (when an email change was requested). */
   emailChangeSentAt?: string | null;
+  /** Defaults to "accept" (the strict rules). */
+  response?: InviteResponse;
 }): null | MailboxProofFailure {
-  let linkTs: number | null = null;
-  for (const m of input.methods) {
-    if (typeof m === "string") continue;
-    if (!MAILBOX_PROOF_METHODS.has(m.method)) continue;
-    if (typeof m.timestamp !== "number" || !Number.isFinite(m.timestamp)) continue;
-    if (linkTs === null || m.timestamp > linkTs) linkTs = m.timestamp;
-  }
+  const linkTs = latestLinkTimestamp(input.methods);
   if (linkTs === null) return "invite_email_unconfirmed";
 
-  const invitedAt = epochSeconds(input.inviteCreatedAt);
+  const invitedAt = toSeconds(input.inviteCreatedAt);
   if (invitedAt === null || invitedAt > linkTs) return "invite_signin_stale";
 
-  const emailIdentity = input.identities?.find((i) => i.provider === "email");
-  if (!emailIdentity) return "invite_email_unconfirmed";
-  const changedAt = epochSeconds(emailIdentity.updated_at);
-  if (changedAt === null) return "invite_email_unconfirmed";
-  if (changedAt > linkTs) return "invite_email_changed";
+  if (input.response === "decline") return null;
 
-  const changeRequestedAt = epochSeconds(input.emailChangeSentAt);
-  if (input.emailChangeSentAt && changeRequestedAt === null) return "invite_email_changed";
-  if (changeRequestedAt !== null && changeRequestedAt >= invitedAt) return "invite_email_changed";
+  if (
+    !emailChangeQuiet({
+      emailChangeSentAt: input.emailChangeSentAt,
+      identities: input.identities,
+      linkTs,
+    })
+  ) {
+    return "invite_email_changed";
+  }
+
+  if (input.emailChangeSentAt) {
+    const requestedAt = toSeconds(input.emailChangeSentAt);
+    if (requestedAt === null || requestedAt >= invitedAt) return "invite_email_changed";
+  }
   return null;
 }
 
@@ -287,11 +282,19 @@ async function acceptInvite(
 
   // Double click: already active is a success, with no write and no audit.
   if (current.status === "active") {
+    // Same company check as the zero-row loser: the winner may be reverting.
+    let companyActive = true;
+    try {
+      companyActive = await isCompanyActive(admin, current.company_id);
+    } catch (e) {
+      console.warn(`[${scope}] already-active company check failed:`, safeErrorFields(e));
+    }
     return {
       result: {
         ok: true,
         companyId: current.company_id,
         isAdminRole: isAdminRank(roles, current.role),
+        ...(companyActive ? {} : { companyInactive: true }),
       },
     };
   }
@@ -302,6 +305,7 @@ async function acceptInvite(
     identities: proof.identities,
     emailChangeSentAt: proof.emailChangeSentAt,
     inviteCreatedAt: current.created_at,
+    response: "accept",
   });
   if (proofError) return fail(proofError);
 
@@ -425,6 +429,7 @@ async function declineInvite(
     identities: proof.identities,
     emailChangeSentAt: proof.emailChangeSentAt,
     inviteCreatedAt: current.created_at,
+    response: "decline",
   });
   if (proofError) return fail(proofError);
 

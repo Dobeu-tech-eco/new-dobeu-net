@@ -6,9 +6,9 @@
  * Order is load-bearing: `requireUser()` (cookie-bound) first, then the
  * confirmed-email check and the session's sign-in methods, and only THEN the
  * service-role client is created. `respondToInvite` requires an email-link
- * sign-in made after the invite, with the account email unchanged since and
- * no email change requested since the invite (`checkMailboxProof`); a
- * password-only session is refused. After an accept
+ * sign-in made after the invite (`checkMailboxProof`); a password-only
+ * session is refused. Accept additionally needs a 24 h email-change quiet
+ * period (decline does not: it only deletes the caller's own row). After an accept
  * commits, the company status is re-checked and the activation reverted if it
  * was suspended, and the user's other sessions are revoked. The membership
  * write itself is service-role (clients cannot activate members: see

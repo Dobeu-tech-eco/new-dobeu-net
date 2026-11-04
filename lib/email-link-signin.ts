@@ -10,14 +10,13 @@
  */
 import { createAdminClient } from "@/lib/supabase/server";
 import { safeErrorFields } from "@/lib/log-safe";
-
-/** Sign-in methods that prove control of the mailbox (not password or totp). */
-const EMAIL_LINK_METHODS: ReadonlySet<string> = new Set([
-  "otp",
-  "magiclink",
-  "invite",
-  "email/signup",
-]);
+import {
+  EMAIL_CHANGE_QUIET_SECONDS,
+  emailChangeQuiet,
+  latestLinkTimestamp,
+  toSeconds,
+  type SessionMethod,
+} from "@/lib/mailbox-proof";
 
 export interface EmailLinkMarker {
   at: string;
@@ -32,19 +31,11 @@ export interface MarkerUser {
   email_change_sent_at?: string | null;
 }
 
-type SessionMethod = string | { method: string; timestamp?: number };
-
 type AuthClient = {
   auth: {
     getUser: () => Promise<{
       data: {
-        user:
-          | (MarkerUser & {
-              id: string;
-              recovery_sent_at?: string | null;
-              confirmation_sent_at?: string | null;
-            })
-          | null;
+        user: (MarkerUser & { id: string }) | null;
       };
     }>;
     mfa: {
@@ -58,26 +49,16 @@ type AuthClient = {
   };
 };
 
-function toSeconds(value: unknown): number | null {
-  if (typeof value !== "string") return null;
-  const ms = Date.parse(value);
-  return Number.isNaN(ms) ? null : Math.floor(ms / 1000);
-}
-
 /**
  * After a SUCCESSFUL code exchange or OTP verify: if the session was created by
  * an email-link method, stamp the account. Never throws and never affects the
  * caller's redirect.
  *
- * The marker is written only when the link was requested AFTER the last email
- * change (otherwise a squatter could request a link for the old address, change
- * the email, and have the link sign-in vouch for an address it never proved):
- *  - linkSentAt = the later of `recovery_sent_at` (magic link / OTP for a
- *    confirmed user) and `confirmation_sent_at` (first link for an unconfirmed
- *    user) must exist;
- *  - `email_change_sent_at` must be null or earlier than linkSentAt;
- *  - the email identity's `updated_at` must be at most one second after
- *    linkSentAt (first-time confirmation may touch it just after the send).
+ * The marker is written only when an email change cannot have redirected the
+ * link (`emailChangeQuiet`): a code's sign-in timestamp is the exchange time,
+ * not the send time, so instead of ordering against send timestamps we require
+ * that no change was requested in the 24 h before the sign-in (GoTrue's
+ * maximum link lifetime) and the email identity was not touched after it.
  * `at` is the link method's own amr timestamp, not the wall clock.
  */
 export async function recordEmailLinkSignIn(supabase: unknown): Promise<void> {
@@ -89,32 +70,21 @@ export async function recordEmailLinkSignIn(supabase: unknown): Promise<void> {
     const { data, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
     if (error || !data) return;
 
-    let linkAt: number | null = null;
-    for (const m of data.currentAuthenticationMethods) {
-      if (typeof m === "string" || !EMAIL_LINK_METHODS.has(m.method)) continue;
-      if (typeof m.timestamp !== "number" || !Number.isFinite(m.timestamp)) continue;
-      if (linkAt === null || m.timestamp > linkAt) linkAt = m.timestamp;
-    }
-    if (linkAt === null) return;
-
-    const sentAt = [user.recovery_sent_at, user.confirmation_sent_at]
-      .map(toSeconds)
-      .filter((v): v is number => v !== null);
-    const linkSentAt = sentAt.length > 0 ? Math.max(...sentAt) : null;
-    const changeSentAt = toSeconds(user.email_change_sent_at);
-    const identityAt = toSeconds(user.identities?.find((i) => i.provider === "email")?.updated_at);
+    const linkTs = latestLinkTimestamp(data.currentAuthenticationMethods);
+    if (linkTs === null) return;
     if (
-      linkSentAt === null ||
-      (changeSentAt !== null && changeSentAt >= linkSentAt) ||
-      identityAt === null ||
-      identityAt > linkSentAt + 1
+      !emailChangeQuiet({
+        emailChangeSentAt: user.email_change_sent_at,
+        identities: user.identities,
+        linkTs,
+      })
     ) {
-      console.warn("[email-link-signin] marker skipped: link not newer than the last email change");
+      console.warn("[email-link-signin] marker skipped: recent email change");
       return;
     }
 
     const marker: EmailLinkMarker = {
-      at: new Date(linkAt * 1000).toISOString(),
+      at: new Date(linkTs * 1000).toISOString(),
       email: user.email,
     };
     const { error: updateErr } = await createAdminClient().auth.admin.updateUserById(
@@ -133,7 +103,8 @@ export async function recordEmailLinkSignIn(supabase: unknown): Promise<void> {
  * True iff the account's current email was proven by an email-link sign-in: the
  * marker's email equals the current email (case-insensitive) and the email
  * identity was not updated after the marker (second precision, `<=`), and no
- * email change was requested after the marker.
+ * email change was requested within the quiet period before the marker
+ * (`email_change_sent_at` null, or at least EMAIL_CHANGE_QUIET_SECONDS earlier).
  */
 export function hasCurrentEmailLinkSignIn(user: MarkerUser): boolean {
   const raw = user.app_metadata?.email_link_signin;
@@ -146,7 +117,10 @@ export function hasCurrentEmailLinkSignIn(user: MarkerUser): boolean {
   const identity = user.identities?.find((i) => i.provider === "email");
   const identityAt = toSeconds(identity?.updated_at);
   if (identityAt === null) return false;
-  const changeSentAt = toSeconds(user.email_change_sent_at);
-  if (changeSentAt !== null && changeSentAt > markerAt) return false;
+  if (user.email_change_sent_at) {
+    const changeSentAt = toSeconds(user.email_change_sent_at);
+    if (changeSentAt === null) return false;
+    if (changeSentAt > markerAt - EMAIL_CHANGE_QUIET_SECONDS) return false;
+  }
   return identityAt <= markerAt;
 }
