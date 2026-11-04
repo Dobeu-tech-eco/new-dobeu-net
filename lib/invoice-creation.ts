@@ -31,7 +31,8 @@ export type InvoiceCreationResult =
         hosted_invoice_url: string | null;
       };
     }
-  | { ok: false; error: string };
+  // `localInvoiceId` is set only on a Stripe failure: the local row exists.
+  | { ok: false; error: string; localInvoiceId?: string };
 
 export interface CreateInvoiceForUserInput {
   user_id: string;
@@ -147,7 +148,7 @@ export async function createInvoiceForUser(
   }
 
   if (stripeError) {
-    return { ok: false, error: `Stripe error: ${stripeError}` };
+    return { ok: false, error: `Stripe error: ${stripeError}`, localInvoiceId: data.id };
   }
 
   return {

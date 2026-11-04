@@ -39,6 +39,12 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | zod major upgrade for high advisory | done 2026-11-04 on chore/d25-zod4: zod 4.6.7; .uuid() -> z.guid() (keeps lenient ids), enum errorMap -> error; pnpm audit --prod high advisory gone (2 left: moderate postcss-selector-parser, low deepmerge); default zod message wording differs (admin-only text) | done |  | 2026-11-03 |
 | Webhook invalid-signature log uses void, not after() | done 2026-11-04 on fix/backlog-d17-d27: D26 after() from next/server; tests prove the log is deferred | done |  | 2026-11-03 |
 | Auth confirm: don't silently replace an existing session | done 2026-11-04 on fix/backlog-d17-d27: D27 /auth/confirm page AND /auth/confirm/submit refuse to switch an already-signed-in visitor; SECURITY.md updated | done |  | 2026-11-03 |
+| Security: add /company/* to the middleware gate (lib/supabase/middleware.ts); require MFA (AAL2) and check company status = active on company-admin actions (lib/actions/members.ts inviteMember/changeMemberRole/deactivateMember, requireCompanyAdmin) — run 20261103-213646 audit §2/§5 |  | open |  | 2026-11-03 |
+| Remove the 200-user cap on the admin user pickers (listUsers perPage 200, page 1 only: app/admin/invoices/page.tsx, app/admin/users/page.tsx, app/admin/tickets/page.tsx) — page through all users or switch to a search picker — run 20261103-213646 |  | open |  | 2026-11-03 |
+| Make work-order status changes conditional on the status they read (quoteWorkOrder, updateWorkOrderStatus, acceptWorkOrderQuote in lib/actions/work-orders.ts: add .eq("status", current) and treat zero rows as a conflict; audit previous_status can be stale today) — run 20261103-213646 final review |  | open |  | 2026-11-03 |
+| Bring "Bill this work order" (createInvoiceForWorkOrder, lib/actions/invoices.ts) up to the new invoice safeguards: Stripe-failure audit with localInvoiceId, duplicate guard, conditional back-link with linkFailed — run 20261103-213646 final review LOW-1 |  | open |  | 2026-11-03 |
+| Add void/retry for unsent invoices (stripe_invoice_id null after a Stripe failure): an admin action + button on /admin/invoices; the duplicate-guard message currently points to a manual void in Supabase — run 20261103-213646 |  | open |  | 2026-11-03 |
+| De-flake components/landing/LightboxFocus.test.tsx 'returns focus to the opening control when Escape closes the dialog' (Unable to find role=dialog under full-suite load; ~1 in 20 runs; pre-existing, untouched by run 20261103-213646) — can block the pre-commit hook |  | open |  | 2026-11-03 |
 
 ## Handoff
 
@@ -63,3 +69,5 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | promote L-003 to review-checklist.md (dialog close vs focus restoration) |  | done |  | 2026-11-03 |
 | promote L-010 to review-checklist.md (rebase --onto origin/main after a squash-merged base) |  | done |  | 2026-11-03 |
 | promote L-012 to review-checklist.md (grep SECURITY.md/docs/.harness when closing a documented gap) |  | done |  | 2026-11-03 |
+| promote L-004 to review-checklist.md (builder seat capability + skipped rules file recorded in receipt) |  | open |  | 2026-11-03 |
+| promote L-021 to review-checklist.md (async submit button state asserted in waitFor; focus flake = check disabled target) |  | open |  | 2026-11-03 |

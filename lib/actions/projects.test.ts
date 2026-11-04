@@ -43,6 +43,7 @@ function arrange(
     insert?: { data?: unknown; error?: { message: string } | null };
     updateError?: { message: string };
     deleteError?: { message: string };
+    auditError?: { message: string };
   } = {},
 ) {
   const cookie = buildStubClient({
@@ -85,6 +86,9 @@ function arrange(
               : options.company,
           error: options.companyError,
         },
+      },
+      admin_audit_log: {
+        insert: { error: options.auditError },
       },
     },
   });
@@ -410,6 +414,106 @@ describe("deleteProject", () => {
       error: "FK violation",
     });
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("admin audit", () => {
+  function audits() {
+    return admin.recorded.filter(
+      (entry) => entry.table === "admin_audit_log" && entry.method === "insert",
+    );
+  }
+
+  it("audits project.create on success", async () => {
+    expect(await createProject(CREATE_INPUT)).toEqual({
+      ok: true,
+      data: { id: PROJECT_ID },
+    });
+    expect(audits()).toHaveLength(1);
+    expect(audits()[0].args).toEqual([
+      expect.objectContaining({
+        action: "project.create",
+        target_type: "project",
+        target_id: PROJECT_ID,
+      }),
+    ]);
+  });
+
+  it("writes no audit when a guard rejects the create", async () => {
+    admin = arrange({ company: { id: COMPANY_ID, status: "suspended" } });
+    expect(
+      await createProject({ ...CREATE_INPUT, company_id: COMPANY_ID }),
+    ).toEqual({ ok: false, error: "Company must be active" });
+    expect(audits()).toEqual([]);
+  });
+
+  it("audits project.update on success", async () => {
+    expect(await updateProject({ id: PROJECT_ID, title: "Renamed" })).toEqual({
+      ok: true,
+      data: { id: PROJECT_ID },
+    });
+    expect(audits()).toHaveLength(1);
+    expect(audits()[0].args).toEqual([
+      expect.objectContaining({
+        action: "project.update",
+        target_type: "project",
+        target_id: PROJECT_ID,
+      }),
+    ]);
+  });
+
+  it("writes no audit when an update is forbidden", async () => {
+    admin = arrange({
+      user: { id: "other", email: "stranger@example.com" },
+    });
+    expect(
+      await updateProject({ id: PROJECT_ID, title: "Renamed" }),
+    ).toEqual({ ok: false, error: "forbidden" });
+    expect(audits()).toEqual([]);
+  });
+
+  it("audits project.delete on success", async () => {
+    expect(await deleteProject({ id: PROJECT_ID })).toEqual({
+      ok: true,
+      data: { id: PROJECT_ID },
+    });
+    expect(audits()).toHaveLength(1);
+    expect(audits()[0].args).toEqual([
+      expect.objectContaining({
+        action: "project.delete",
+        target_type: "project",
+        target_id: PROJECT_ID,
+      }),
+    ]);
+  });
+
+  it("writes no audit when a delete is forbidden", async () => {
+    admin = arrange({
+      user: { id: "other", email: "stranger@example.com" },
+    });
+    expect(await deleteProject({ id: PROJECT_ID })).toEqual({
+      ok: false,
+      error: "forbidden",
+    });
+    expect(audits()).toEqual([]);
+  });
+
+  it("keeps primary success when the audit insert fails (non-fatal)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    admin = arrange({ auditError: { message: "denied" } });
+    try {
+      expect(await createProject(CREATE_INPUT)).toEqual({
+        ok: true,
+        data: { id: PROJECT_ID },
+      });
+      expect(audits()).toHaveLength(1);
+      expect(warn).toHaveBeenCalledWith(
+        "[projects] audit log insert failed (non-fatal):",
+        undefined,
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 

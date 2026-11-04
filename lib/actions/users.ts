@@ -19,6 +19,7 @@ import { revalidatePath } from "next/cache";
 import { buildServerAuthCallbackUrl } from "@/lib/utils";
 import { z } from "zod";
 import { requireAdmin, AuthError } from "@/lib/actions/auth";
+import { writeAdminAudit } from "@/lib/admin-audit";
 
 const uuid = z.guid("invalid id");
 
@@ -58,9 +59,9 @@ export async function inviteUser(
   }
   const { email, full_name } = parsed.data;
 
-  let admin;
+  let user, admin;
   try {
-    ({ admin } = await requireAdmin());
+    ({ user, admin } = await requireAdmin());
   } catch (e) {
     if (e instanceof AuthError) return { ok: false, error: e.code };
     throw e;
@@ -74,6 +75,15 @@ export async function inviteUser(
   if (error || !data?.user) {
     return { ok: false, error: error?.message ?? "invite failed" };
   }
+
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "user.invite",
+    targetType: "user",
+    targetId: data.user.id,
+    data: { user_id: data.user.id },
+    logScope: "users",
+  });
 
   revalidatePath("/admin/users");
   return { ok: true, data: { id: data.user.id, email } };
@@ -99,9 +109,9 @@ export async function updateUser(
     return { ok: false, error: "no fields to update" };
   }
 
-  let admin;
+  let user, admin;
   try {
-    ({ admin } = await requireAdmin());
+    ({ user, admin } = await requireAdmin());
   } catch (e) {
     if (e instanceof AuthError) return { ok: false, error: e.code };
     throw e;
@@ -109,6 +119,15 @@ export async function updateUser(
 
   const { error } = await admin.from("profiles").update(patch).eq("id", id);
   if (error) return { ok: false, error: error.message };
+
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "user.update",
+    targetType: "user",
+    targetId: id,
+    data: { user_id: id },
+    logScope: "users",
+  });
 
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${id}`);

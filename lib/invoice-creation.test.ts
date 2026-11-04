@@ -155,7 +155,11 @@ describe("createInvoiceForUser", () => {
 
     const res = await createInvoiceForUser(BASE_INPUT);
 
-    expect(res).toEqual({ ok: false, error: "Stripe error: customer_creation_failed" });
+    expect(res).toEqual({
+      ok: false,
+      error: "Stripe error: customer_creation_failed",
+      localInvoiceId: "inv_row_1"
+    });
     // The NULL stripe_invoice_id row is the admin-visible signal of the failure.
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({

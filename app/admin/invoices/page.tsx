@@ -22,6 +22,7 @@ export default async function AdminInvoicesPage({
     { data: invoices, error: invoicesError },
     { data: profilesData, error: profilesError },
     { data: projects, error: projectsError },
+    { data: workOrders, error: workOrdersError },
   ] = await Promise.all([
     supabase
       .from("invoices")
@@ -32,6 +33,15 @@ export default async function AdminInvoicesPage({
       .limit(200),
     supabase.from("profiles").select("id,full_name,company").limit(500),
     supabase.from("projects").select("id,title,owner_user_id").limit(500),
+    // Only un-invoiced, accepted work orders, newest first: past 500 rows the
+    // slice would otherwise be all already-billed tickets with no ORDER BY.
+    supabase
+      .from("work_orders")
+      .select("id,title,created_by")
+      .is("invoice_id", null)
+      .eq("status", "accepted")
+      .order("created_at", { ascending: false })
+      .limit(500),
   ]);
 
   // Resolve auth emails for the picker — bulk via auth admin.
@@ -61,7 +71,16 @@ export default async function AdminInvoicesPage({
     ownerUserId: p.owner_user_id,
   }));
 
-  const pickerError = Boolean(profilesError || projectsError || authError);
+  // Already filtered + ordered server-side; map straight through.
+  const workOrderOptions = (workOrders ?? []).map((w) => ({
+    id: w.id,
+    label: w.title,
+    clientUserId: w.created_by,
+  }));
+
+  const pickerError = Boolean(
+    profilesError || projectsError || workOrdersError || authError,
+  );
 
   const open =
     invoices?.filter((i) => i.status === "open" || i.status === "overdue") ??
@@ -84,7 +103,11 @@ export default async function AdminInvoicesPage({
             </strong>
           </p>
         </div>
-        <NewInvoiceDialog users={usersForPicker} projects={projectOptions} />
+        <NewInvoiceDialog
+          users={usersForPicker}
+          projects={projectOptions}
+          workOrders={workOrderOptions}
+        />
       </header>
 
       <AdminStatusBanner
@@ -171,7 +194,7 @@ export default async function AdminInvoicesPage({
                     )}
                   </td>
                   <td className="p-3 text-right">
-                    {inv.status !== "paid" && (
+                    {inv.status !== "paid" && inv.status !== "void" && (
                       <AdminMarkPaidButton invoiceId={inv.id} />
                     )}
                   </td>

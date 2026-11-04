@@ -15,6 +15,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin, AuthError } from "@/lib/actions/auth";
+import { writeAdminAudit } from "@/lib/admin-audit";
 
 const uuid = z.guid("invalid id");
 
@@ -55,9 +56,9 @@ export async function createProject(
   }
   const input = parsed.data;
 
-  let admin;
+  let user, admin;
   try {
-    ({ admin } = await requireAdmin());
+    ({ user, admin } = await requireAdmin());
   } catch (e) {
     if (e instanceof AuthError) return { ok: false, error: e.code };
     throw e;
@@ -91,6 +92,20 @@ export async function createProject(
   if (error || !data)
     return { ok: false, error: error?.message ?? "insert failed" };
 
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "project.create",
+    targetType: "project",
+    targetId: data.id,
+    data: {
+      owner_user_id: input.owner_user_id,
+      company_id: input.company_id ?? null,
+      status: input.status,
+      total_cents: input.total_cents,
+    },
+    logScope: "projects",
+  });
+
   revalidatePath("/admin/projects");
   revalidatePath("/portal/projects");
   if (input.company_id) revalidatePath(`/admin/companies/${input.company_id}`);
@@ -114,9 +129,9 @@ export async function updateProject(
     return { ok: false, error: "no fields to update" };
   }
 
-  let admin;
+  let user, admin;
   try {
-    ({ admin } = await requireAdmin());
+    ({ user, admin } = await requireAdmin());
   } catch (e) {
     if (e instanceof AuthError) return { ok: false, error: e.code };
     throw e;
@@ -144,6 +159,23 @@ export async function updateProject(
   const { error } = await admin.from("projects").update(patch).eq("id", id);
   if (error) return { ok: false, error: error.message };
 
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "project.update",
+    targetType: "project",
+    targetId: id,
+    data: {
+      ...(patch.status ? { status: patch.status } : {}),
+      ...(patch.company_id !== undefined
+        ? { company_id: patch.company_id }
+        : {}),
+      ...(patch.total_cents !== undefined
+        ? { total_cents: patch.total_cents }
+        : {}),
+    },
+    logScope: "projects",
+  });
+
   revalidatePath("/admin/projects");
   revalidatePath(`/admin/projects/${id}`);
   revalidatePath("/portal/projects");
@@ -166,9 +198,9 @@ export async function deleteProject(
   }
   const { id } = parsed.data;
 
-  let admin;
+  let user, admin;
   try {
-    ({ admin } = await requireAdmin());
+    ({ user, admin } = await requireAdmin());
   } catch (e) {
     if (e instanceof AuthError) return { ok: false, error: e.code };
     throw e;
@@ -176,6 +208,15 @@ export async function deleteProject(
 
   const { error } = await admin.from("projects").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "project.delete",
+    targetType: "project",
+    targetId: id,
+    data: {},
+    logScope: "projects",
+  });
 
   revalidatePath("/admin/projects");
   revalidatePath("/portal/projects");

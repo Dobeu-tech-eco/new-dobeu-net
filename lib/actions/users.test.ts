@@ -9,12 +9,14 @@ const h = vi.hoisted(() => {
       error: { message: string } | null;
     };
     updateError: { message: string } | null;
+    auditError: { message: string } | null;
     recorded: { table: string; method: string; args: unknown[] }[];
     capturedInvite: { email: string; options?: unknown } | null;
   } = {
     user: { id: "admin_id", email: "admin@dobeu.net" },
     inviteResult: { data: { user: { id: "new_user_1" } }, error: null },
     updateError: null,
+    auditError: null,
     recorded: [],
     capturedInvite: null,
   };
@@ -36,7 +38,10 @@ vi.mock("@/lib/supabase/server", () => {
   function buildClient() {
     const base = buildStubClient({
       user: h.state.user,
-      tables: { profiles: { update: { error: h.state.updateError } } },
+      tables: {
+        profiles: { update: { error: h.state.updateError } },
+        admin_audit_log: { insert: { error: h.state.auditError } },
+      },
     });
     h.state.recorded = base.recorded;
     return {
@@ -70,10 +75,21 @@ beforeEach(() => {
   h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
   h.state.inviteResult = { data: { user: { id: "new_user_1" } }, error: null };
   h.state.updateError = null;
+  h.state.auditError = null;
   h.state.recorded = [];
   h.state.capturedInvite = null;
   process.env.ADMIN_EMAILS = "admin@dobeu.net";
 });
+
+function auditInserts() {
+  return h.state.recorded.filter(
+    (entry) => entry.table === "admin_audit_log" && entry.method === "insert",
+  );
+}
+
+function expectNoAudit() {
+  expect(auditInserts()).toEqual([]);
+}
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -100,11 +116,55 @@ describe("inviteUser", () => {
     });
   });
 
+  it("audits user.invite on success", async () => {
+    const { inviteUser } = await import("@/lib/actions/users");
+    const result = await inviteUser({ email: "client@example.com" });
+    expect(result.ok).toBe(true);
+    expect(auditInserts()).toHaveLength(1);
+    expect(auditInserts()[0].args).toEqual([
+      expect.objectContaining({
+        actor_user_id: "admin_id",
+        action: "user.invite",
+        target_type: "user",
+        target_id: "new_user_1",
+      }),
+    ]);
+  });
+
   it("blocks non-admin callers", async () => {
     h.state.user = { id: "u", email: "stranger@example.com" };
     const { inviteUser } = await import("@/lib/actions/users");
     const result = await inviteUser({ email: "client@example.com" });
     expect(result).toEqual({ ok: false, error: "forbidden" });
+    expectNoAudit();
+  });
+
+  it("writes no audit when the invite fails", async () => {
+    h.state.inviteResult = {
+      data: { user: null },
+      error: { message: "smtp not configured" },
+    };
+    const { inviteUser } = await import("@/lib/actions/users");
+    const result = await inviteUser({ email: "client@example.com" });
+    expect(result).toEqual({ ok: false, error: "smtp not configured" });
+    expectNoAudit();
+  });
+
+  it("keeps primary success when the audit insert fails (non-fatal)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.state.auditError = { message: "private database details" };
+    try {
+      const { inviteUser } = await import("@/lib/actions/users");
+      const result = await inviteUser({ email: "client@example.com" });
+      expect(result.ok).toBe(true);
+      expect(auditInserts()).toHaveLength(1);
+      expect(warn).toHaveBeenCalledWith(
+        "[users] audit log insert failed (non-fatal):",
+        undefined,
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("blocks unauthenticated callers", async () => {
@@ -154,11 +214,27 @@ describe("updateUser", () => {
     if (!result.ok) expect(result.error).toMatch(/no fields/);
   });
 
+  it("audits user.update on success", async () => {
+    const { updateUser } = await import("@/lib/actions/users");
+    const result = await updateUser({ id: validId, full_name: "Jane" });
+    expect(result).toEqual({ ok: true, data: { id: validId } });
+    expect(auditInserts()).toHaveLength(1);
+    expect(auditInserts()[0].args).toEqual([
+      expect.objectContaining({
+        actor_user_id: "admin_id",
+        action: "user.update",
+        target_type: "user",
+        target_id: validId,
+      }),
+    ]);
+  });
+
   it("blocks non-admin", async () => {
     h.state.user = { id: "u", email: "x@x.com" };
     const { updateUser } = await import("@/lib/actions/users");
     const result = await updateUser({ id: validId, full_name: "Jane" });
     expect(result).toEqual({ ok: false, error: "forbidden" });
+    expectNoAudit();
   });
 
   it("rejects invalid id", async () => {

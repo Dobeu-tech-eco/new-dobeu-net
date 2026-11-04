@@ -34,6 +34,8 @@ import { requireUser, requireAdmin, AuthError } from "@/lib/actions/auth";
 import type { Database } from "@/lib/database.types";
 import type { WorkOrderStatus } from "@/lib/domain-types";
 import { sendEmail } from "@/lib/resend";
+import { writeAdminAudit } from "@/lib/admin-audit";
+import { safeErrorFields } from "@/lib/log-safe";
 import {
   workOrderReceivedToAdmin,
   workOrderQuoteSentToClient,
@@ -251,6 +253,146 @@ export async function submitWorkOrder(
   return { ok: true, data: { id: workOrderId, uploadPaths, uploadTargets } };
 }
 
+const createForClientInput = submitInput.omit({ attachments: true }).extend({
+  client_user_id: uuid,
+  company_id: uuid.optional().nullable(),
+  project_id: uuid.optional().nullable(),
+  priority: z.enum(["low", "normal", "high"]).optional().default("normal"),
+  quoted_amount_cents: positiveInt.optional()
+});
+
+export async function createWorkOrderForClient(
+  raw: unknown
+): Promise<ActionResult<{ id: string; status: WorkOrderStatus; quoteFailed?: true }>> {
+  const parsed = createForClientInput.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+  }
+  const input = parsed.data;
+
+  let user, admin;
+  try {
+    ({ user, admin } = await requireAdmin());
+  } catch (e) {
+    if (e instanceof AuthError) return { ok: false, error: e.code };
+    throw e;
+  }
+
+  const { data: client, error: clientError } = await admin.auth.admin.getUserById(input.client_user_id);
+  if (clientError || !client.user) return { ok: false, error: "Client not found" };
+
+  if (input.company_id) {
+    const { data: company, error } = await admin
+      .from("companies")
+      .select("id,status")
+      .eq("id", input.company_id)
+      .single();
+    if (error || !company) return { ok: false, error: "Company not found" };
+    if (company.status !== "active") return { ok: false, error: "Company must be active" };
+
+    const { data: membership, error: memberError } = await admin
+      .from("company_members")
+      .select("id")
+      .eq("company_id", input.company_id)
+      .eq("user_id", input.client_user_id)
+      .eq("status", "active")
+      .single();
+    if (memberError || !membership) {
+      return { ok: false, error: "Client must be an active company member" };
+    }
+  }
+
+  if (input.project_id) {
+    const { data: project, error } = await admin
+      .from("projects")
+      .select("owner_user_id,company_id")
+      .eq("id", input.project_id)
+      .single();
+    if (error || !project) return { ok: false, error: "Project not found" };
+    if (project.owner_user_id !== input.client_user_id &&
+        !(input.company_id && project.company_id === input.company_id)) {
+      return { ok: false, error: "Project must belong to the client or selected company" };
+    }
+  }
+
+  const { data: inserted, error: insertError } = await admin
+    .from("work_orders")
+    .insert({
+      created_by: input.client_user_id,
+      company_id: input.company_id ?? null,
+      project_id: input.project_id ?? null,
+      service_type: input.service_type,
+      title: input.title,
+      description: input.description ?? null,
+      priority: input.priority,
+      status: "open"
+    })
+    .select("id")
+    .single();
+  if (insertError || !inserted) return { ok: false, error: insertError?.message ?? "insert failed" };
+
+  const id = inserted.id;
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "work_order.create_for_client",
+    targetType: "work_order",
+    targetId: id,
+    data: {
+      client_user_id: input.client_user_id,
+      company_id: input.company_id ?? null,
+      project_id: input.project_id ?? null,
+      status: "open"
+    },
+    logScope: "createWorkOrderForClient"
+  });
+  // The open ticket is durable even if the optional quote update fails.
+  revalidatePath("/admin/tickets");
+  revalidatePath("/portal/tickets");
+  revalidatePath("/admin");
+
+  if (input.quoted_amount_cents === undefined) return { ok: true, data: { id, status: "open" } };
+  if (!canTransition("open", "quoted")) return { ok: true, data: { id, status: "open", quoteFailed: true } };
+
+  const { data: quoted, error: quoteError } = await admin
+    .from("work_orders")
+    .update({
+      status: "quoted",
+      quoted_amount_cents: input.quoted_amount_cents,
+      quoted_at: new Date().toISOString()
+    })
+    .eq("id", id)
+    .eq("status", "open")
+    .select("id")
+    .single();
+  if (quoteError || !quoted) {
+    return { ok: true, data: { id, status: "open", quoteFailed: true } };
+  }
+
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "work_order.quote",
+    targetType: "work_order",
+    targetId: id,
+    data: { previous_status: "open", status: "quoted", amount_cents: input.quoted_amount_cents },
+    logScope: "createWorkOrderForClient"
+  });
+  try {
+    if (client.user.email) {
+      const tpl = workOrderQuoteSentToClient({
+        workOrder: { id, title: input.title, service_type: input.service_type },
+        amountCents: input.quoted_amount_cents
+      });
+      const result = await sendEmail({ to: client.user.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
+      if (!result.ok) {
+        console.warn("[createWorkOrderForClient] client email failed (non-fatal):", safeErrorFields(result.error));
+      }
+    }
+  } catch (e) {
+    console.warn("[createWorkOrderForClient] client email failed (non-fatal):", safeErrorFields(e));
+  }
+  return { ok: true, data: { id, status: "quoted" } };
+}
+
 const finalizeAttachmentInput = z.object({
   work_order_id: uuid,
   storage_path: z.string().min(1).max(512),
@@ -326,9 +468,9 @@ export async function quoteWorkOrder(
   }
   const { id, amount_cents } = parsed.data;
 
-  let admin;
+  let user, admin;
   try {
-    ({ admin } = await requireAdmin());
+    ({ user, admin } = await requireAdmin());
   } catch (e) {
     if (e instanceof AuthError) return { ok: false, error: e.code };
     throw e;
@@ -358,6 +500,15 @@ export async function quoteWorkOrder(
     .single();
 
   if (error || !data) return { ok: false, error: error?.message ?? "update failed" };
+
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "work_order.quote",
+    targetType: "work_order",
+    targetId: data.id,
+    data: { previous_status: current.status, status: "quoted", amount_cents },
+    logScope: "quoteWorkOrder"
+  });
 
   // Email the work-order owner that a quote is ready.
   try {
@@ -469,9 +620,9 @@ export async function updateWorkOrderStatus(
   }
   const { id, status } = parsed.data;
 
-  let admin;
+  let user, admin;
   try {
-    ({ admin } = await requireAdmin());
+    ({ user, admin } = await requireAdmin());
   } catch (e) {
     if (e instanceof AuthError) return { ok: false, error: e.code };
     throw e;
@@ -505,6 +656,15 @@ export async function updateWorkOrderStatus(
     .single();
 
   if (error || !data) return { ok: false, error: error?.message ?? "update failed" };
+
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "work_order.status",
+    targetType: "work_order",
+    targetId: id,
+    data: { previous_status: current.status, status },
+    logScope: "updateWorkOrderStatus"
+  });
 
   // Email the owner about the status change (in_progress/delivered/closed/cancelled).
   try {
