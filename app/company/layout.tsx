@@ -11,6 +11,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
 import { COMPANY_ADMIN_RANK } from "@/lib/actions/company-auth";
+import { SuspendedNotice } from "./_lib/admin-companies";
 import { requiresAal2Stepup, requiresMfaEnrollment, type AssuranceLevel } from "@/lib/utils";
 
 const NAV = [
@@ -40,15 +41,36 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     .eq("user_id", user.id)
     .eq("status", "active");
 
-  let isCompanyAdmin = false;
+  let adminCompanyIds: string[] = [];
   if (memberships && memberships.length > 0) {
     const { data: roles } = await supabase.from("company_roles").select("key, rank");
     const rankByKey = new Map((roles ?? []).map((r) => [r.key, r.rank]));
-    isCompanyAdmin = memberships.some((m) => (rankByKey.get(m.role) ?? 0) >= COMPANY_ADMIN_RANK);
+    adminCompanyIds = memberships
+      .filter((m) => (rankByKey.get(m.role) ?? 0) >= COMPANY_ADMIN_RANK)
+      .map((m) => m.company_id);
   }
 
-  if (!isCompanyAdmin) {
+  if (adminCompanyIds.length === 0) {
     redirect("/portal");
+  }
+
+  // The shell is only for admins of at least one ACTIVE company. A read error
+  // fails closed. Checked before any AAL lookup so a suspended-only admin
+  // learns nothing about MFA state. (Pages re-check per company themselves:
+  // layout and page render in parallel.)
+  const { data: companies, error: companiesError } = await supabase
+    .from("companies")
+    .select("id, status")
+    .in("id", adminCompanyIds);
+  if (companiesError || !companies) {
+    redirect("/portal");
+  }
+  if (!companies.some((c) => c.status === "active")) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4 md:p-8">
+        <SuspendedNotice />
+      </main>
+    );
   }
 
   // MFA is mandatory for company admins too. Fail CLOSED: an assurance lookup

@@ -5,6 +5,7 @@ const h = vi.hoisted(() => ({
   getUser: vi.fn(),
   getAal: vi.fn(),
   members: [] as Array<{ company_id: string; role: string }>,
+  companies: { data: [] as Array<{ id: string; status: string }> | null, error: null as unknown },
 }));
 
 class RedirectError extends Error {
@@ -29,10 +30,13 @@ vi.mock("@/lib/supabase/server", () => ({
       const result =
         table === "company_members"
           ? { data: h.members }
-          : { data: [{ key: "company_admin", rank: 100 }, { key: "member", rank: 10 }] };
+          : table === "companies"
+            ? h.companies
+            : { data: [{ key: "company_admin", rank: 100 }, { key: "member", rank: 10 }] };
       const chain: Record<string, unknown> = {
         select: () => chain,
         eq: () => chain,
+        in: () => chain,
         then: (resolve: (v: unknown) => unknown) => resolve(result),
       };
       return chain;
@@ -50,6 +54,7 @@ beforeEach(() => {
   h.getUser.mockReset();
   h.getAal.mockReset();
   h.members = [{ company_id: "c1", role: "company_admin" }];
+  h.companies = { data: [{ id: "c1", status: "active" }], error: null };
   h.getUser.mockResolvedValue({ data: { user: { id: "u1", email: "a@b.co" } } });
 });
 
@@ -76,6 +81,37 @@ describe("CompanyLayout", () => {
 
   it("sends a non-admin member to /portal before any AAL lookup", async () => {
     h.members = [{ company_id: "c1", role: "member" }];
+    expect(await redirectTarget()).toBe("/portal");
+    expect(h.getAal).not.toHaveBeenCalled();
+  });
+
+  it("shows a suspended notice (no shell, no AAL lookup) when every admin company is suspended", async () => {
+    h.companies = { data: [{ id: "c1", status: "suspended" }], error: null };
+    render(await CompanyLayout({ children: <p>child</p> }));
+    expect(screen.getByText(/this company is suspended/i)).toBeInTheDocument();
+    expect(screen.queryByText("child")).not.toBeInTheDocument();
+    expect(h.getAal).not.toHaveBeenCalled();
+  });
+
+  it("still renders the shell when at least one admin company is active", async () => {
+    h.members = [
+      { company_id: "c1", role: "company_admin" },
+      { company_id: "c2", role: "company_admin" },
+    ];
+    h.companies = {
+      data: [
+        { id: "c1", status: "suspended" },
+        { id: "c2", status: "active" },
+      ],
+      error: null,
+    };
+    h.getAal.mockResolvedValue({ data: { currentLevel: "aal2", nextLevel: "aal2" }, error: null });
+    render(await CompanyLayout({ children: <p>child</p> }));
+    expect(screen.getByText("child")).toBeInTheDocument();
+  });
+
+  it("fails closed to /portal when the companies read errors", async () => {
+    h.companies = { data: null, error: { message: "rls" } };
     expect(await redirectTarget()).toBe("/portal");
     expect(h.getAal).not.toHaveBeenCalled();
   });

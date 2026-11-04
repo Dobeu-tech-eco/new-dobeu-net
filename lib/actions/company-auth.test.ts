@@ -199,6 +199,35 @@ describe("requireCompanyAdmin", () => {
     });
   });
 
+  it("checks status before AAL: an AAL1 admin of a suspended company gets forbidden", async () => {
+    const client = clientWith({
+      member: ADMIN,
+      rank: COMPANY_ADMIN_RANK,
+      company: { status: "suspended" },
+      aal: aalResult({ currentLevel: "aal1", nextLevel: "aal2" })
+    });
+    h.state.client = client;
+
+    await expect(requireCompanyAdmin(COMPANY_ID)).rejects.toMatchObject({
+      code: "forbidden"
+    });
+    expect(aalCalls(client)).not.toHaveBeenCalled();
+  });
+
+  it("throws forbidden when the companies read throws", async () => {
+    const client = clientWith({ member: ADMIN, rank: COMPANY_ADMIN_RANK, company: ACTIVE });
+    const realFrom = client.from.getMockImplementation() ?? client.from;
+    client.from.mockImplementation((table: string) => {
+      if (table === "companies") throw new Error("network");
+      return realFrom(table);
+    });
+    h.state.client = client;
+
+    await expect(requireCompanyAdmin(COMPANY_ID)).rejects.toMatchObject({
+      code: "forbidden"
+    });
+  });
+
   it("throws forbidden when the companies read errors", async () => {
     h.state.client = clientWith({
       member: ADMIN,

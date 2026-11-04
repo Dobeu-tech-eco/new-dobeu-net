@@ -88,12 +88,19 @@ export async function requireCompanyAdmin(
   const result = await requireCompanyMember(companyId, COMPANY_ADMIN_RANK);
   const { supabase } = result;
 
-  const { data: company, error: companyError } = await supabase
-    .from("companies")
-    .select("status")
-    .eq("id", companyId)
-    .single();
-  if (companyError || company?.status !== "active") {
+  // A thrown read fails closed too (not just a returned `{ error }`).
+  let companyActive = false;
+  try {
+    const { data: company, error: companyError } = await supabase
+      .from("companies")
+      .select("status")
+      .eq("id", companyId)
+      .single();
+    companyActive = !companyError && company?.status === "active";
+  } catch {
+    companyActive = false;
+  }
+  if (!companyActive) {
     throw new AuthError("forbidden");
   }
 
