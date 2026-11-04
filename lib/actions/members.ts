@@ -14,8 +14,8 @@
  * (`company_members_admin_*` policies, which require rank >= 100 plus an
  * active company and an AAL2 session via public.can_manage_company_members,
  * migration 20261104000200) is the enforcement layer. The service-role client is used ONLY for Supabase Auth
- * admin calls (`inviteUserByEmail` / `listUsers`) — there is no cookie-scoped
- * equivalent, and an invitee's auth user may not exist yet.
+ * admin calls (`listUsers` / `createUser` / `deleteUser`) — there is no
+ * cookie-scoped equivalent, and an invitee's auth user may not exist yet.
  *
  * `inviteMember` is rate-limited per calling admin, mirroring the pattern in
  * app/api/lead/route.ts: an Upstash sliding window when configured, with a
@@ -26,13 +26,17 @@
  * without a client component (the page owns no client bundle).
  */
 import { revalidatePath } from "next/cache";
-import { buildServerAuthCallbackUrl } from "@/lib/utils";
+import { redirect } from "next/navigation";
+import { getSiteUrl } from "@/lib/utils";
 import { z } from "zod";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { requireCompanyAdmin } from "@/lib/actions/company-auth";
 import { AuthError } from "@/lib/actions/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { isResendConfigured, sendEmail } from "@/lib/resend";
+import { companyMemberInviteEmail } from "@/lib/resend-templates";
+import { safeErrorFields } from "@/lib/log-safe";
 import type { DBClient } from "@/lib/actions/auth";
 
 const uuid = z.guid("invalid id");
@@ -112,9 +116,26 @@ async function roleExists(supabase: DBClient, key: string): Promise<boolean> {
 }
 
 /**
- * Find an existing auth user id by email. Used when `inviteUserByEmail` reports
- * the address is already registered — the person still becomes a member, they
- * just don't get a fresh invite email. Pages through the admin list (bounded).
+ * Detect Supabase's "already registered" signal from a createUser error, across
+ * the shapes it has shipped (message text, `email_exists` code, 422 status).
+ */
+function isAlreadyRegistered(error: {
+  message?: string;
+  code?: string;
+  status?: number;
+}): boolean {
+  const msg = (error.message ?? "").toLowerCase();
+  return (
+    msg.includes("already registered") ||
+    msg.includes("already been registered") ||
+    error.code === "email_exists" ||
+    error.status === 422
+  );
+}
+
+/**
+ * Find an existing auth user id by email. Pages through the admin list
+ * (bounded). Returns null when no user matches or the list call fails.
  */
 async function findUserIdByEmail(
   admin: ReturnType<typeof createAdminClient>,
@@ -133,15 +154,56 @@ async function findUserIdByEmail(
   return null;
 }
 
+export type InviteMemberData = {
+  id: string;
+  user_id: string;
+  email: string;
+  /** True only when the invite email was accepted by Resend. */
+  emailSent: boolean;
+  /** Present when the membership exists but the invite email did not go out. */
+  partial?: "invite_email_failed";
+};
+
+/** Send the fixed-copy invite email. Never throws; false means not delivered. */
+async function sendInviteEmail(to: string): Promise<boolean> {
+  if (!isResendConfigured()) {
+    console.warn("[inviteMember] invite email not sent: resend not configured");
+    return false;
+  }
+  try {
+    const loginUrl = `${getSiteUrl().replace(/\/$/, "")}/login?next=/company`;
+    const tpl = companyMemberInviteEmail({ loginUrl });
+    const result = await sendEmail({
+      to,
+      subject: tpl.subject,
+      text: tpl.text,
+      html: tpl.html,
+    });
+    if (!result.ok) {
+      console.warn("[inviteMember] invite email failed:", safeErrorFields(result.error));
+    }
+    return result.ok;
+  } catch (e) {
+    console.warn("[inviteMember] invite email failed:", safeErrorFields(e));
+    return false;
+  }
+}
+
 /**
  * Invite (or attach an already-registered user) as a company member.
  * Guarded by `requireCompanyAdmin`; rate-limited per calling admin.
+ *
+ * Order matters: the membership row is inserted BEFORE the invite email is
+ * sent, so an invitee is never told about a membership that does not exist.
+ * The email is fixed copy with no token; the invitee requests their own
+ * sign-in link on /login. A failed send leaves the membership in place and
+ * returns `ok: true` with `emailSent: false` and `partial`.
  */
 export async function inviteMember(
   companyId: string,
   email: string,
   roleKeyArg: string,
-): Promise<ActionResult<{ id: string; user_id: string; email: string }>> {
+): Promise<ActionResult<InviteMemberData>> {
   const parsed = inviteInput.safeParse({
     companyId,
     email,
@@ -171,19 +233,26 @@ export async function inviteMember(
     return { ok: false, error: "rate_limited" };
   }
 
-  // Resolve the invitee's auth user: try to invite; if already registered,
-  // fall back to a lookup so they're still added (no duplicate email sent).
+  // Resolve the invitee's auth user, creating an unconfirmed one if needed.
+  // No Supabase email is sent here; the invitee signs in via /login.
   const admin = createAdminClient();
-  const { data: invited, error: inviteErr } =
-    await admin.auth.admin.inviteUserByEmail(input.email, {
-      redirectTo: buildServerAuthCallbackUrl("/company"),
-    });
-  let invitedUserId = invited?.user?.id ?? null;
+  let invitedUserId = await findUserIdByEmail(admin, input.email);
+  let createdByUs = false;
   if (!invitedUserId) {
-    invitedUserId = await findUserIdByEmail(admin, input.email);
-    if (!invitedUserId) {
-      return { ok: false, error: inviteErr?.message ?? "invite failed" };
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      email: input.email,
+      email_confirm: false,
+    });
+    if (created?.user?.id) {
+      invitedUserId = created.user.id;
+      createdByUs = true;
+    } else if (createErr && isAlreadyRegistered(createErr)) {
+      // Lost a race with another signup/invite: use the user that now exists.
+      invitedUserId = await findUserIdByEmail(admin, input.email);
+    } else {
+      console.warn("[inviteMember] createUser failed:", safeErrorFields(createErr));
     }
+    if (!invitedUserId) return { ok: false, error: "invite failed" };
   }
 
   const { data: member, error: insertErr } = await supabase
@@ -199,14 +268,30 @@ export async function inviteMember(
     .single();
 
   if (insertErr || !member) {
+    // Compensate only for a user this call created: a fresh invitee has just a
+    // profiles row (ON DELETE CASCADE), so deleting leaves no orphan.
+    if (createdByUs) {
+      const { error: delErr } = await admin.auth.admin.deleteUser(invitedUserId);
+      if (delErr) {
+        console.warn("[inviteMember] deleteUser failed:", safeErrorFields(delErr));
+      }
+    }
     return { ok: false, error: insertErr?.message ?? "member insert failed" };
   }
 
   revalidatePath("/company");
   revalidatePath("/company/members");
+
+  const emailSent = await sendInviteEmail(input.email);
   return {
     ok: true,
-    data: { id: member.id, user_id: invitedUserId, email: input.email },
+    data: {
+      id: member.id,
+      user_id: invitedUserId,
+      email: input.email,
+      emailSent,
+      ...(emailSent ? {} : { partial: "invite_email_failed" as const }),
+    },
   };
 }
 
@@ -310,11 +395,22 @@ export async function inviteMemberForm(
   companyId: string,
   formData: FormData,
 ): Promise<void> {
-  await inviteMember(
+  const result = await inviteMember(
     companyId,
     String(formData.get("email") ?? ""),
     String(formData.get("roleKey") ?? ""),
   );
+  let notice = "invite_failed";
+  if (result.ok) {
+    notice = result.data.emailSent ? "member_added" : "invite_email_failed";
+  } else if (result.error === "rate_limited") {
+    notice = "rate_limited";
+  }
+  const companyParam = uuid.safeParse(companyId).success
+    ? `company=${encodeURIComponent(companyId)}&`
+    : "";
+  // redirect() throws; keep it outside any try/catch.
+  redirect(`/company/members?${companyParam}notice=${notice}`);
 }
 
 export async function changeMemberRoleForm(

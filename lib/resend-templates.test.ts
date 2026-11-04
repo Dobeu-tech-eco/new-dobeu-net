@@ -9,7 +9,8 @@ import {
   invoicePaidToClient,
   invoicePaymentFailedToAdmin,
   leadConfirmationToClient,
-  leadAdminNotification
+  leadAdminNotification,
+  companyMemberInviteEmail
 } from "@/lib/resend-templates";
 
 beforeEach(() => {
@@ -131,5 +132,29 @@ describe("lead templates (hoisted)", () => {
     expect(out.html).toContain("google");
     expect(out.html).not.toContain("utm_campaign");
     expect(out.html).toContain("Need a logo");
+  });
+});
+
+describe("companyMemberInviteEmail", () => {
+  const loginUrl = "https://dobeu.net/login?next=/company&x=\"<b>";
+
+  it("contains the escaped login url in html and the raw url in text", () => {
+    const out = companyMemberInviteEmail({ loginUrl });
+    expect(out.html).toContain(
+      'href="https://dobeu.net/login?next=/company&amp;x=&quot;&lt;b&gt;"'
+    );
+    expect(out.text).toContain(loginUrl);
+  });
+
+  it("is fixed copy: identical apart from the url", () => {
+    const a = companyMemberInviteEmail({ loginUrl: "https://a.example/login" });
+    const b = companyMemberInviteEmail({ loginUrl: "https://b.example/login" });
+    expect(a.subject).toBe(b.subject);
+    expect(a.text.replace("https://a.example/login", "")).toBe(
+      b.text.replace("https://b.example/login", "")
+    );
+    expect(a.html.split("https://a.example/login").join("")).toBe(
+      b.html.split("https://b.example/login").join("")
+    );
   });
 });
