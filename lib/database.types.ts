@@ -789,6 +789,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      can_manage_company_members: { Args: { cid: string }; Returns: boolean };
       company_role_rank: { Args: { cid: string }; Returns: number };
       is_company_member: { Args: { cid: string }; Returns: boolean };
     };
