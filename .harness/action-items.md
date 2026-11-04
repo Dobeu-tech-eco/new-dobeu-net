@@ -36,7 +36,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | Unmerged branch dts2/20261022-084201 (19 commits ahead of main) | shipped 2026-11-03 via #311 (62cf3e4, Vercel production deploy succeeded; /auth/confirm live); old branches dts2/20261022-084201 and -b1 deleted | done |  | 2026-11-03 |
 | Admin dashboard: leads tile count | done 2026-11-04 on fix/backlog-d17-d27: D23 exact count on first_seen >= now-30d; "—" on count error | done |  | 2026-11-03 |
 | Lead pipeline logs raw DB error text | done 2026-11-04 on fix/backlog-d17-d27: D24 lib/leads.ts + lead routes log safeErrorFields()/fixed strings only | done |  | 2026-11-03 |
-| zod major upgrade for high advisory | pnpm audit: zod ^3.25.76 memory-exhaustion advisory fixed only in 4.6.6 (major bump); separate PR | open |  | 2026-11-03 |
+| zod major upgrade for high advisory | done 2026-11-04 on chore/d25-zod4: zod 4.6.7; .uuid() -> z.guid() (keeps lenient ids), enum errorMap -> error; pnpm audit --prod high advisory gone (2 left: moderate postcss-selector-parser, low deepmerge); default zod message wording differs (admin-only text) | done |  | 2026-11-03 |
 | Webhook invalid-signature log uses void, not after() | done 2026-11-04 on fix/backlog-d17-d27: D26 after() from next/server; tests prove the log is deferred | done |  | 2026-11-03 |
 | Auth confirm: don't silently replace an existing session | done 2026-11-04 on fix/backlog-d17-d27: D27 /auth/confirm page AND /auth/confirm/submit refuse to switch an already-signed-in visitor; SECURITY.md updated | done |  | 2026-11-03 |
 

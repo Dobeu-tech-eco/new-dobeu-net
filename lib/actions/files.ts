@@ -60,10 +60,10 @@ function isStoragePathConflict(
   );
 }
 
-const uuid = z.string().uuid("invalid id");
+const uuid = z.guid("invalid id");
 
 const mimeEnum = z.enum(ALLOWED_DELIVERABLE_MIME, {
-  errorMap: () => ({ message: "Unsupported file type." })
+  error: "Unsupported file type."
 });
 
 const createUrlInput = z
