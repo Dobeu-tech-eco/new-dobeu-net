@@ -172,7 +172,7 @@ async function sendInviteEmail(to: string): Promise<boolean> {
     return false;
   }
   try {
-    const loginUrl = `${getSiteUrl().replace(/\/$/, "")}/login?next=/company`;
+    const loginUrl = `${getSiteUrl().replace(/\/$/, "")}/login?next=/portal`;
     const tpl = companyMemberInviteEmail({ loginUrl });
     const result = await sendEmail({
       to,
@@ -197,7 +197,8 @@ async function sendInviteEmail(to: string): Promise<boolean> {
  * Order matters: the membership row is inserted BEFORE the invite email is
  * sent, so an invitee is never told about a membership that does not exist.
  * The email is fixed copy with no token; the invitee requests their own
- * sign-in link on /login. A failed send leaves the membership in place and
+ * sign-in link on /login (next=/portal), then accepts the invite from the
+ * "Pending company invites" list on their portal. A failed send leaves the membership in place and
  * returns `ok: true` with `emailSent: false` and `partial`.
  */
 export async function inviteMember(

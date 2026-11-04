@@ -136,12 +136,12 @@ describe("lead templates (hoisted)", () => {
 });
 
 describe("companyMemberInviteEmail", () => {
-  const loginUrl = "https://dobeu.net/login?next=/company&x=\"<b>";
+  const loginUrl = "https://dobeu.net/login?next=/portal&x=\"<b>";
 
   it("contains the escaped login url in html and the raw url in text", () => {
     const out = companyMemberInviteEmail({ loginUrl });
     expect(out.html).toContain(
-      'href="https://dobeu.net/login?next=/company&amp;x=&quot;&lt;b&gt;"'
+      'href="https://dobeu.net/login?next=/portal&amp;x=&quot;&lt;b&gt;"'
     );
     expect(out.text).toContain(loginUrl);
   });
@@ -149,9 +149,17 @@ describe("companyMemberInviteEmail", () => {
   it("says invited consistently and does not promise access", () => {
     const out = companyMemberInviteEmail({ loginUrl: "https://a.example/login" });
     expect(out.subject).toBe("You've been invited to a company on Dobeu");
-    expect(out.text).toContain("You'll see the company once your membership is activated.");
-    expect(out.html).toContain("once your membership is activated");
+    expect(out.text).toContain("then accept the invite on your portal.");
+    expect(out.html).toContain("then accept the invite on your portal.");
+    expect(out.subject + out.text + out.html).not.toMatch(/membership is activated/i);
     expect(out.subject + out.text + out.html).not.toMatch(/added|get started/i);
+  });
+
+  it("links to sign-in with next=/portal and carries no token-like param", () => {
+    const out = companyMemberInviteEmail({ loginUrl: "https://a.example/login?next=/portal" });
+    expect(out.text).toContain("https://a.example/login?next=/portal");
+    expect(out.html).toContain('href="https://a.example/login?next=/portal"');
+    expect(out.html + out.text).not.toMatch(/token|code=|auth\/callback|next=\/company/i);
   });
 
   it("is fixed copy: identical apart from the url", () => {

@@ -261,7 +261,7 @@ describe("inviteMember", () => {
     expect(h.state.events).toEqual(["createUser", "insert", "sendEmail"]);
   });
 
-  it("sends fixed copy linking to /login?next=/company with no token", async () => {
+  it("sends fixed copy linking to /login?next=/portal with no token", async () => {
     h.state.client = makeClient({ user: { id: "inv_copy", email: "a@d.net" } });
     await invite();
     const arg = h.sendEmail.mock.calls[0][0] as {
@@ -270,7 +270,7 @@ describe("inviteMember", () => {
       text: string;
     };
     expect(arg.to).toBe("client@example.com");
-    expect(arg.text).toContain("https://admin-test.example/login?next=/company");
+    expect(arg.text).toContain("https://admin-test.example/login?next=/portal");
     expect(arg.html + arg.text).not.toMatch(/token|code=|auth\/callback/i);
   });
 
