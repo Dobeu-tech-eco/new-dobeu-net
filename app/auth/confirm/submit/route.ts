@@ -56,6 +56,20 @@ export async function POST(request: Request) {
   const next = sanitizeNextPath(String(form?.get("next") ?? ""), "/portal");
 
   const supabase = await createClient();
+
+  // Login-CSRF mitigation (SECURITY.md): never silently switch an existing session.
+  // Mirrors the page: if the session lookup throws, proceed as before.
+  let signedIn = false;
+  try {
+    const { data } = await supabase.auth.getUser();
+    signedIn = Boolean(data.user);
+  } catch {
+    signedIn = false;
+  }
+  if (signedIn) {
+    return clear(NextResponse.redirect(new URL("/auth/confirm", origin), 303));
+  }
+
   const { error } = await supabase.auth.verifyOtp(parsed.data);
   if (error) return fail(origin);
   return clear(NextResponse.redirect(new URL(next, origin), 303));

@@ -6,6 +6,7 @@ import { Redis } from "@upstash/redis";
 import { assessLead, buildAllowedOrigins } from "@/lib/lead-spam";
 import { isLeadSecretUsable, signLeadToken } from "@/lib/lead-verification";
 import { sendEmail } from "@/lib/resend";
+import { safeErrorFields } from "@/lib/log-safe";
 import { leadVerifyEmail } from "@/lib/resend-templates";
 
 // Whitelisted keys only (matches app/api/typeform/webhook/route.ts) so a
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
     const sent = await sendEmail({ to: email, subject: tpl.subject, text: tpl.text, html: tpl.html });
     if (!sent.ok) throw new Error(sent.error ?? "send_failed");
   } catch (e) {
-    console.error("[api/lead] verification email failed", e instanceof Error ? e.message : e);
+    console.error("[api/lead] verification email failed", safeErrorFields(e));
     return unavailable();
   }
 

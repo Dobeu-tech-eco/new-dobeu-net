@@ -769,6 +769,12 @@ end $$;
 -- =============================================================================
 -- 12. storage.objects policies — same semantics, wrapped caller id and
 --     `to authenticated`. (Bucket rows/limits are intentionally not touched.)
+--
+-- SUPERSEDED: the storage SELECT policies created here are replaced by
+-- 20261023000400 / 20261103000100, and wo_attachments_storage_delete_own is
+-- dropped by 20261103000200. Re-applying this migration by hand would recreate
+-- that delete policy; the pgTAP catalog checks in
+-- supabase/tests/database/rls_files_attachments.test.sql would catch it.
 -- =============================================================================
 do $$
 begin

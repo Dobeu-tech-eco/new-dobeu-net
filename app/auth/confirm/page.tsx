@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { sanitizeNextPath } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/server";
 import { otpParamsSchema } from "./schema";
 import { OTP_COOKIE } from "./cookie";
 
@@ -31,16 +32,41 @@ function hasPendingOtp(raw: string | undefined): boolean {
   }
 }
 
+// Login-CSRF mitigation (SECURITY.md): never silently switch an existing session.
+async function currentUserEmail(): Promise<string | null> {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    return data.user ? (data.user.email ?? "your account") : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function ConfirmPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const nextRaw = Array.isArray(sp.next) ? sp.next[0] : sp.next;
   const next = sanitizeNextPath(nextRaw ?? "", "/portal");
   const jar = await cookies();
   const pending = hasPendingOtp(jar.get(OTP_COOKIE)?.value);
+  const signedInAs = pending ? await currentUserEmail() : null;
 
   return (
     <main className="mx-auto max-w-sm p-8 text-center space-y-4">
-      {pending ? (
+      {signedInAs ? (
+        <>
+          <h1 className="font-display text-2xl font-bold tracking-tight">
+            You&apos;re already signed in
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            You&apos;re already signed in as {signedInAs}. Sign out, then open the sign-in link
+            from your email again. The pending link expires after a couple of minutes.
+          </p>
+          <Link href="/portal" className="text-sm font-medium text-primary hover:underline">
+            Go to the portal to sign out
+          </Link>
+        </>
+      ) : pending ? (
         <>
           <h1 className="font-display text-2xl font-bold tracking-tight">Continue signing in</h1>
           <form method="post" action="/auth/confirm/submit">

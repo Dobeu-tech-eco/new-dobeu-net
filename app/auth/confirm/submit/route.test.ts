@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const verifyOtp = vi.fn();
+const getUser = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn(async () => ({ auth: { verifyOtp } })),
+  createClient: vi.fn(async () => ({ auth: { verifyOtp, getUser } })),
 }));
 
 import { POST } from "@/app/auth/confirm/submit/route";
@@ -27,7 +28,11 @@ function post(opts: { cookie?: string; origin?: string | null; fetchSite?: strin
   );
 }
 
-beforeEach(() => verifyOtp.mockReset());
+beforeEach(() => {
+  verifyOtp.mockReset();
+  getUser.mockReset();
+  getUser.mockResolvedValue({ data: { user: null }, error: null });
+});
 
 describe("cookie scope", () => {
   it("cookie path covers the submit route (browsers send it to a sub-path)", () => {
@@ -103,5 +108,40 @@ describe("POST /auth/confirm/submit", () => {
     const res = await post({ cookie: pending() });
     expect(res.headers.get("location")).toBe("http://localhost/login?error=auth_callback_failed");
     expect(res.headers.get("set-cookie") ?? "").toMatch(/Max-Age=0/i);
+  });
+
+  it("does not verify, clears the cookie and redirects to /auth/confirm when already signed in", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "u1", email: "me@example.com" } }, error: null });
+    const res = await post({ cookie: pending() });
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("http://localhost/auth/confirm");
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain("sb-otp-pending=;");
+    expect(setCookie).toMatch(/Max-Age=0/i);
+  });
+
+  it("verifies as before when signed out", async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    verifyOtp.mockResolvedValue({ error: null });
+    const res = await post({ cookie: pending() });
+    expect(getUser).toHaveBeenCalledTimes(1);
+    expect(verifyOtp).toHaveBeenCalledTimes(1);
+    expect(res.headers.get("location")).toBe("http://localhost/portal/files");
+  });
+
+  it("proceeds to verify when getUser throws", async () => {
+    getUser.mockRejectedValue(new Error("auth down"));
+    verifyOtp.mockResolvedValue({ error: null });
+    const res = await post({ cookie: pending() });
+    expect(verifyOtp).toHaveBeenCalledTimes(1);
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("http://localhost/portal/files");
+  });
+
+  it("checks Origin before reading the session", async () => {
+    const res = await post({ cookie: pending(), origin: "https://evil.example" });
+    expect(res.status).toBe(403);
+    expect(getUser).not.toHaveBeenCalled();
   });
 });

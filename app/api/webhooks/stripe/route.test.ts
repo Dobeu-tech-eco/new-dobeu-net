@@ -15,6 +15,7 @@
  *     payload, signature header or webhook secret in the log args
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { after } from "next/server";
 
 const h = vi.hoisted(() => {
   const verifyMock = vi.fn();
@@ -39,12 +40,25 @@ const h = vi.hoisted(() => {
     throwOnUpdate: false,
     insertError: null as null | { message: string; code?: string }
   };
-  return { verifyMock, sendEmailMock, logMock, logErrorMock, adminInvocations, adminBehavior };
+  const afterCallbacks: unknown[] = [];
+  return { verifyMock, sendEmailMock, logMock, logErrorMock, adminInvocations, adminBehavior, afterCallbacks };
 });
 
 vi.mock("@/lib/stripe", () => ({
   verifyWebhookSignature: h.verifyMock
 }));
+
+vi.mock("next/server", async (orig) => ({
+  ...(await orig<typeof import("next/server")>()),
+  after: vi.fn((cb: unknown) => {
+    h.afterCallbacks.push(cb);
+  }),
+}));
+
+async function flushAfter() {
+  const cbs = h.afterCallbacks.splice(0);
+  for (const cb of cbs) await (typeof cb === "function" ? cb() : cb);
+}
 
 vi.mock("@/lib/datadog-server", () => ({
   logToDatadog: h.logMock,
@@ -115,6 +129,7 @@ async function importRouteFresh() {
 }
 
 beforeEach(() => {
+  h.afterCallbacks.length = 0;
   vi.clearAllMocks();
   h.adminInvocations.length = 0;
   h.adminBehavior.updatedRow = null;
@@ -490,6 +505,9 @@ describe("POST /api/webhooks/stripe", () => {
       const { POST } = await importRouteFresh();
       const res = await POST(makeRequest(RAW_BODY, SIG));
       expect(res.status).toBe(400);
+      expect(vi.mocked(after)).toHaveBeenCalledTimes(1);
+      expect(h.logMock).not.toHaveBeenCalled();
+      await flushAfter();
       expect(h.logMock).toHaveBeenCalledTimes(1);
       expect(h.logMock).toHaveBeenCalledWith("warn", "stripe_webhook_invalid_signature", {
         route: "/api/webhooks/stripe",

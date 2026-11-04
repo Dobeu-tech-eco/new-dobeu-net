@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { findLeadByVerifyNonce, LeadAlreadyConfirmedError, processLead } from "@/lib/leads";
 import { isLeadSecretUsable, verifyLeadToken } from "@/lib/lead-verification";
+import { safeErrorFields } from "@/lib/log-safe";
 import { checkRateLimit, releaseRateLimit } from "@/lib/rate-limit";
 
 // POST only: corporate link scanners issue GETs and must never confirm a lead.
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
     // already-confirmed path. Keep the lock, matching the success path.
     if (e instanceof LeadAlreadyConfirmedError) return NextResponse.json({ ok: true, ...summary });
     if (heldLock) await releaseRateLimit(nonceKey, heldLock);
-    console.error("[api/lead/confirm] persistence failed", e instanceof Error ? e.message : e);
+    console.error("[api/lead/confirm] persistence failed", safeErrorFields(e));
     return unavailable();
   }
 }

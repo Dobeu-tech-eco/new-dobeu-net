@@ -47,6 +47,8 @@ Append entries as `- <date> <text>`.
 - 2026-11-03 D11 closed via #313: real generated DB types, lib/domain-types.ts, CI drift check (green on GitHub). End-state row 1 done; P3 types box checked.
 - 2026-11-03 D12 closed: Jeremy added LEAD_VERIFY_SECRET= and CRON_SECRET= (empty values, commented) to .env.example (protected path, human edit); presence verified. The CRON_SECRET .env.example gap from run 20261027-134130 is closed too.
 - 2026-11-04 D13 closed: #314 and #315 merged (3a9d749); 20261104000100 applied to prod (supabase-dobe-net) via Composio SQL after a 0-duplicate re-check; prod history 21/21, db push dry-run up to date.
+- 2026-11-04 Backlog D17, D18, D20, D23, D24, D26, D27 fixed on fix/backlog-d17-d27 (approved by Jeremy); 3 parallel builders on disjoint files; opus review APPROVE (MEDIUM: submit route session check, fixed). verify 1003/1003, pgTAP 137/137. D25 (zod 4) follows separately.
+- Ruling: builders shared one tree on disjoint file sets (no worktrees) — local Supabase stack and node_modules shared — cost if wrong: transient cross-builder test failures (seen twice, cleared on rerun).
 - Fallback: reviewer:security copilot -> grok (copilot monthly quota exhausted).
 
 ## Failures and escalations

@@ -10,6 +10,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { upsertApolloContact } from "@/lib/apollo";
 import { cioIdentify, cioTrack, isCustomerIoConfigured } from "@/lib/customerio";
 import { sendEmail } from "@/lib/resend";
+import { safeErrorFields } from "@/lib/log-safe";
 import {
   leadConfirmationToClient,
   leadAdminNotification
@@ -93,13 +94,13 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
         console.warn("[processLead] duplicate verify nonce; lead already confirmed");
         raceLost = true;
       } else {
-        console.error("[processLead] leads insert failed:", error.message ?? error);
+        console.error("[processLead] leads insert failed", safeErrorFields(error));
       }
     } else {
       leadId = data?.id ?? null;
     }
   } catch (e) {
-    console.error("[processLead] Supabase insert threw", e);
+    console.error("[processLead] Supabase insert threw", safeErrorFields(e));
   }
 
   // Lost the race to another confirm of the same token: stop before any fan-out.
@@ -121,10 +122,10 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
         label_names: [`dobeu.net-${source}`, ...(utm.utm_source ? [`utm_source-${utm.utm_source}`] : [])]
       });
       if (result.ok) apolloContactId = result.contact_id;
-      else console.warn("[processLead] Apollo upsert failed:", result.error);
+      else console.warn("[processLead] Apollo upsert failed");
     }
   } catch (e) {
-    console.error("[processLead] Apollo upsert threw", e);
+    console.error("[processLead] Apollo upsert threw", safeErrorFields(e));
   }
 
   // 3. Backfill Supabase lead with Apollo contact id (best-effort)
@@ -155,10 +156,10 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
         cioIdentify({ email, attributes: cioAttrs }),
         cioTrack({ email, name: "lead_captured", data: { source, has_message: !!message, ...utm } })
       ]);
-      if (!idRes.ok) console.warn("[processLead] Customer.io identify:", idRes.error);
-      if (!trackRes.ok) console.warn("[processLead] Customer.io track:", trackRes.error);
+      if (!idRes.ok) console.warn("[processLead] Customer.io identify failed");
+      if (!trackRes.ok) console.warn("[processLead] Customer.io track failed");
     } catch (error) {
-      console.warn("[processLead] Customer.io failed (non-fatal)", error);
+      console.warn("[processLead] Customer.io failed (non-fatal)", safeErrorFields(error));
     }
   }
 
@@ -189,7 +190,7 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
       html: notify.html
     });
   } catch (e) {
-    console.error("[processLead] Resend failed (non-fatal)", e);
+    console.error("[processLead] Resend failed (non-fatal)", safeErrorFields(e));
   }
 
   return { leadId, apolloContactId };

@@ -94,8 +94,11 @@ Referer, analytics, and Datadog (`token_hash` is a redacted query key).
 Residual (accepted 2026-10-22): a victim who opens an attacker's own sign-in link
 and clicks Continue is signed into the attacker's account. This is inherent to
 OTP links that are not bound to the browser that requested them; Supabase cannot
-reveal the target identity without consuming the token. `recovery` links are not
-accepted by this flow.
+reveal the target identity without consuming the token. An already-signed-in
+visitor is no longer switched silently: `/auth/confirm` asks them to sign out
+and reopen the email link, and `/auth/confirm/submit` independently refuses to
+call `verifyOtp` while a session exists (it clears the pending cookie and
+redirects to `/auth/confirm`). `recovery` links are not accepted by this flow.
 
 ## Accepted risks — deliverable uploads
 

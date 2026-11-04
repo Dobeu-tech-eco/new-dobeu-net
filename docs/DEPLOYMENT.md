@@ -273,3 +273,8 @@ If anything goes wrong post-cutover:
 | Customer.io | `https://dobeu.net/api/webhooks/customerio` |
 
 Each webhook secret should be rotated on cutover and stored in Vercel env vars.
+
+## Local pre-commit hook (optional)
+
+`.git/hooks/pre-commit` is not tracked. To install it: `printf '#!/bin/sh\nset -eu\nroot="$(git rev-parse --show-toplevel)"\ngit diff --cached --check\n"$root/scripts/safe-env.sh" pnpm type-check\n"$root/scripts/safe-env.sh" pnpm test:ci\n' > "$(git rev-parse --git-common-dir)/hooks/pre-commit" && chmod +x "$(git rev-parse --git-common-dir)/hooks/pre-commit"`.
+`scripts/safe-env.sh` runs a command in the current checkout's root with a whitelisted env, so the hook works from worktrees (hooks are shared via the common git dir).

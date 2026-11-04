@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createHmac } from "node:crypto";
 
+const afterCallbacks = vi.hoisted(() => [] as unknown[]);
+
 // Mock the lead fan-out so tests stay pure.
 vi.mock("@/lib/leads", () => ({
   processLead: vi.fn().mockResolvedValue({ leadId: "lead_1", apolloContactId: "apollo_1" })
+}));
+vi.mock("next/server", async (orig) => ({
+  ...(await orig<typeof import("next/server")>()),
+  after: vi.fn((cb: unknown) => {
+    afterCallbacks.push(cb);
+  }),
 }));
 vi.mock("@/lib/datadog-server", () => ({
   logToDatadog: vi.fn(),
@@ -17,6 +25,7 @@ vi.mock("@/lib/supabase/server", () => ({
   }))
 }));
 
+import { after } from "next/server";
 import { POST } from "@/app/api/webhooks/calendly/route";
 import { processLead } from "@/lib/leads";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -24,6 +33,11 @@ import { logServerError, logToDatadog } from "@/lib/datadog-server";
 
 const mockedProcessLead = vi.mocked(processLead);
 const mockedLog = vi.mocked(logToDatadog);
+
+async function flushAfter() {
+  const cbs = afterCallbacks.splice(0);
+  for (const cb of cbs) await (typeof cb === "function" ? cb() : cb);
+}
 const mockedLogError = vi.mocked(logServerError);
 
 /** Everything sent to Datadog, serialized, for leak assertions. */
@@ -51,6 +65,8 @@ function makeRequest(rawBody: string, signature?: string | null): Request {
 
 beforeEach(() => {
   mockedProcessLead.mockClear();
+  vi.mocked(after).mockClear();
+  afterCallbacks.length = 0;
   mockedLog.mockReset();
   mockedLogError.mockReset();
 });
@@ -179,6 +195,9 @@ describe("POST /api/webhooks/calendly", () => {
       const badSig = sign(bookingBody, undefined, "wrong-key");
       const res = await POST(makeRequest(bookingBody, badSig));
       expect(res.status).toBe(401);
+      expect(vi.mocked(after)).toHaveBeenCalledTimes(1);
+      expect(mockedLog).not.toHaveBeenCalled();
+      await flushAfter();
       expect(mockedLog).toHaveBeenCalledTimes(1);
       expect(mockedLog).toHaveBeenCalledWith(
         "warn",
