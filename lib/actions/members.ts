@@ -6,7 +6,9 @@
  * discriminated `{ ok }` shape and validates input with zod. Authorization is
  * the COMPANY-scoped guard `requireCompanyAdmin` (rank >= 100 in the extensible
  * `company_roles` catalog), NOT the global ADMIN_EMAILS gate — a company admin
- * manages only their own company's roster.
+ * manages only their own company's roster. The guard also requires an active
+ * company and an AAL2 session (D28), so these actions return
+ * `{ ok: false, error: "forbidden" | "mfa_required" }` when either fails.
  *
  * Mutations run through the guard's COOKIE-BOUND client so RLS
  * (`company_members_admin_*` policies, which require rank >= 100) is the

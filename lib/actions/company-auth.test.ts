@@ -21,12 +21,18 @@ import {
 const COMPANY_ID = "c0000000-0000-0000-0000-000000000001";
 const USER = { id: "user_1", email: "member@example.com" };
 
+type Aal = { currentLevel: string | null; nextLevel: string | null };
+const AAL2: Aal = { currentLevel: "aal2", nextLevel: "aal2" };
+
 function clientWith(opts: {
   member?: { role: string; status: string } | null;
   memberError?: { message: string } | null;
   rank?: number | null;
+  company?: { status: string } | null;
+  companyError?: { message: string } | null;
+  aal?: () => Promise<{ data: Aal | null; error: { message: string } | null }>;
 }) {
-  return buildStubClient({
+  const stub = buildStubClient({
     user: USER,
     tables: {
       company_members: {
@@ -39,10 +45,30 @@ function clientWith(opts: {
         selectSingle: {
           data: opts.rank === null || opts.rank === undefined ? null : { rank: opts.rank }
         }
+      },
+      companies: {
+        selectSingle: {
+          data: opts.company ?? null,
+          error: opts.companyError ?? (opts.company ? null : { message: "0 rows" })
+        }
       }
     }
-  }).supabase;
+  });
+  return Object.assign(stub.supabase, {
+    auth: {
+      ...stub.supabase.auth,
+      mfa: {
+        getAuthenticatorAssuranceLevel: vi.fn(
+          opts.aal ?? (async () => ({ data: AAL2, error: null }))
+        )
+      }
+    }
+  });
 }
+
+type Stub = ReturnType<typeof clientWith>;
+const aalCalls = (c: Stub) => c.auth.mfa.getAuthenticatorAssuranceLevel;
+const tablesRead = (c: Stub) => c.from.mock.calls.map(([t]) => t);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -105,11 +131,17 @@ describe("requireCompanyMember", () => {
   });
 });
 
+const ADMIN = { role: "company_admin", status: "active" };
+const ACTIVE = { status: "active" };
+const aalResult = (data: Aal | null, error: { message: string } | null = null) =>
+  async () => ({ data, error });
+
 describe("requireCompanyAdmin", () => {
-  it("passes for a company_admin (rank 100)", async () => {
+  it("passes for an AAL2 company_admin of an active company", async () => {
     h.state.client = clientWith({
-      member: { role: "company_admin", status: "active" },
-      rank: COMPANY_ADMIN_RANK
+      member: ADMIN,
+      rank: COMPANY_ADMIN_RANK,
+      company: ACTIVE
     });
 
     const { membership } = await requireCompanyAdmin(COMPANY_ID);
@@ -117,14 +149,93 @@ describe("requireCompanyAdmin", () => {
     expect(membership.rank).toBe(COMPANY_ADMIN_RANK);
   });
 
-  it("rejects a manager (rank 60)", async () => {
-    h.state.client = clientWith({
+  it("rejects a manager (rank 60) as forbidden without touching companies or AAL", async () => {
+    const client = clientWith({
       member: { role: "manager", status: "active" },
-      rank: 60
+      rank: 60,
+      company: ACTIVE
+    });
+    h.state.client = client;
+
+    await expect(requireCompanyAdmin(COMPANY_ID)).rejects.toMatchObject({
+      code: "forbidden"
+    });
+    expect(aalCalls(client)).not.toHaveBeenCalled();
+    expect(tablesRead(client)).not.toContain("companies");
+  });
+
+  it.each([
+    ["AAL1 with a factor enrolled", aalResult({ currentLevel: "aal1", nextLevel: "aal2" })],
+    ["no factor enrolled", aalResult({ currentLevel: "aal1", nextLevel: "aal1" })],
+    ["AAL lookup error", aalResult(null, { message: "boom" })],
+    [
+      "AAL lookup throwing",
+      async () => {
+        throw new Error("network");
+      }
+    ]
+  ])("throws mfa_required on %s", async (_label, aal) => {
+    h.state.client = clientWith({
+      member: ADMIN,
+      rank: COMPANY_ADMIN_RANK,
+      company: ACTIVE,
+      aal
+    });
+
+    await expect(requireCompanyAdmin(COMPANY_ID)).rejects.toMatchObject({
+      code: "mfa_required"
+    });
+  });
+
+  it("throws forbidden for a suspended company", async () => {
+    h.state.client = clientWith({
+      member: ADMIN,
+      rank: COMPANY_ADMIN_RANK,
+      company: { status: "suspended" }
     });
 
     await expect(requireCompanyAdmin(COMPANY_ID)).rejects.toMatchObject({
       code: "forbidden"
     });
+  });
+
+  it("throws forbidden when the companies read errors", async () => {
+    h.state.client = clientWith({
+      member: ADMIN,
+      rank: COMPANY_ADMIN_RANK,
+      companyError: { message: "rls" }
+    });
+
+    await expect(requireCompanyAdmin(COMPANY_ID)).rejects.toMatchObject({
+      code: "forbidden"
+    });
+  });
+
+  it("throws forbidden when the company row is missing", async () => {
+    h.state.client = clientWith({
+      member: ADMIN,
+      rank: COMPANY_ADMIN_RANK,
+      company: null
+    });
+
+    await expect(requireCompanyAdmin(COMPANY_ID)).rejects.toMatchObject({
+      code: "forbidden"
+    });
+  });
+});
+
+describe("requireCompanyMember (regular member path)", () => {
+  it("passes without an AAL lookup or companies read", async () => {
+    const client = clientWith({
+      member: { role: "employee", status: "active" },
+      rank: 30
+    });
+    h.state.client = client;
+
+    await expect(requireCompanyMember(COMPANY_ID)).resolves.toMatchObject({
+      membership: { role: "employee", rank: 30 }
+    });
+    expect(aalCalls(client)).not.toHaveBeenCalled();
+    expect(tablesRead(client)).not.toContain("companies");
   });
 });
