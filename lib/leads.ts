@@ -31,6 +31,18 @@ export interface ProcessLeadInput {
   verifyNonce?: string;
 }
 
+/**
+ * Thrown by processLead() when the insert loses a race on the verify-nonce
+ * unique index (leads_verify_nonce_key): this nonce was already confirmed.
+ * Thrown before any Apollo / Customer.io / Resend step, so nothing fans out twice.
+ */
+export class LeadAlreadyConfirmedError extends Error {
+  constructor() {
+    super("lead_already_confirmed");
+    this.name = "LeadAlreadyConfirmedError";
+  }
+}
+
 export interface ProcessLeadResult {
   leadId: string | null;
   apolloContactId?: string;
@@ -47,6 +59,7 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
   // 1. Write to Supabase leads table (admin client bypasses RLS).
   // A failed insert must not send a confirmation or trigger downstream fan-out.
   let leadId: string | null = null;
+  let raceLost = false;
   try {
     const supa = createAdminClient();
     const { data, error } = await supa
@@ -72,13 +85,25 @@ export async function processLead(input: ProcessLeadInput): Promise<ProcessLeadR
       .select("id")
       .single();
     if (error) {
-      console.error("[processLead] leads insert failed:", error.message ?? error);
+      const pg = error as { code?: string; message?: string; details?: string };
+      if (
+        pg.code === "23505" &&
+        `${pg.message ?? ""} ${pg.details ?? ""}`.includes("leads_verify_nonce_key")
+      ) {
+        console.warn("[processLead] duplicate verify nonce; lead already confirmed");
+        raceLost = true;
+      } else {
+        console.error("[processLead] leads insert failed:", error.message ?? error);
+      }
     } else {
       leadId = data?.id ?? null;
     }
   } catch (e) {
     console.error("[processLead] Supabase insert threw", e);
   }
+
+  // Lost the race to another confirm of the same token: stop before any fan-out.
+  if (raceLost) throw new LeadAlreadyConfirmedError();
 
   // Never send a receipt or report success for a lead we cannot recover later.
   if (!leadId) throw new Error("lead_persistence_failed");

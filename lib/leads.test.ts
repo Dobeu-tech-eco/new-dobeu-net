@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 // All mutable state + vi.fn()s live inside vi.hoisted so they exist before the
 // hoisted vi.mock factories run.
 const h = vi.hoisted(() => {
-  const supaConfig: { insert: "success" | "error" | "throw"; insertId: string | null } = {
+  const supaConfig: { insert: "success" | "error" | "throw" | "dup_nonce" | "dup_other"; insertId: string | null } = {
     insert: "success",
     insertId: "lead_1"
   };
@@ -25,7 +25,17 @@ const h = vi.hoisted(() => {
         insert: vi.fn(() => ({
           select: vi.fn(() => ({
             single: vi.fn(() =>
-              supaConfig.insert === "error"
+              supaConfig.insert === "dup_nonce" || supaConfig.insert === "dup_other"
+                ? Promise.resolve({
+                    data: null,
+                    error: {
+                      code: "23505",
+                      message: `duplicate key value violates unique constraint "${
+                        supaConfig.insert === "dup_nonce" ? "leads_verify_nonce_key" : "leads_email_key"
+                      }"`
+                    }
+                  })
+                : supaConfig.insert === "error"
                 ? Promise.resolve({ data: null, error: new Error("insert failed") })
                 : Promise.resolve({ data: { id: supaConfig.insertId }, error: null })
             )
@@ -97,7 +107,7 @@ vi.mock("@/lib/customerio", () => ({
 }));
 vi.mock("resend", () => ({ Resend: h.ResendCtor }));
 
-import { processLead, escapeHtml } from "@/lib/leads";
+import { processLead, escapeHtml, LeadAlreadyConfirmedError } from "@/lib/leads";
 
 const baseInput = {
   email: "a@b.com",
@@ -202,10 +212,25 @@ describe("processLead — happy path", () => {
 });
 
 describe("processLead — durable acceptance is required", () => {
-  it.each(["error", "throw"] as const)("rejects %s before downstream fan-out", async (mode) => {
+  it.each(["error", "throw", "dup_other"] as const)("rejects %s before downstream fan-out", async (mode) => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     supaConfig.insert = mode;
     await expect(processLead(baseInput)).rejects.toThrow("lead_persistence_failed");
+    expect(upsertApolloContact).not.toHaveBeenCalled();
+    expect(cioIdentify).not.toHaveBeenCalled();
+    expect(cioTrack).not.toHaveBeenCalled();
+    expect(emailsSend).not.toHaveBeenCalled();
+    expect(updateEq).not.toHaveBeenCalled();
+  });
+
+  it("23505 on leads_verify_nonce_key throws LeadAlreadyConfirmedError with no fan-out", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    supaConfig.insert = "dup_nonce";
+    await expect(processLead({ ...baseInput, verifyNonce: "n1" })).rejects.toBeInstanceOf(
+      LeadAlreadyConfirmedError
+    );
+    expect(err).not.toHaveBeenCalled();
     expect(upsertApolloContact).not.toHaveBeenCalled();
     expect(cioIdentify).not.toHaveBeenCalled();
     expect(cioTrack).not.toHaveBeenCalled();
