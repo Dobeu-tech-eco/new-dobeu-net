@@ -124,9 +124,13 @@ async function resolveInviteeUserId(
   admin: ReturnType<typeof createAdminClient>,
   email: string,
 ): Promise<{ id: string; createdByUs: boolean } | null> {
+  // Created CONFIRMED: an unconfirmed user lets anyone call the public signUp
+  // for this address and get a session on it (auto-confirm config), then set
+  // a password that survives the invitee's accept. Confirmed, signUp returns no
+  // session. The invitee still proves the mailbox with an emailed link.
   const { data, error } = await admin.auth.admin.createUser({
     email,
-    email_confirm: false,
+    email_confirm: true,
   });
   if (error && isAlreadyRegistered(error)) {
     // Some shapes return a user id alongside the error; prefer it over paging.

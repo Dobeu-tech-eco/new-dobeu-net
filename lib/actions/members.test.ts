@@ -268,7 +268,7 @@ describe("inviteMember", () => {
     });
     expect(h.createUser).toHaveBeenCalledWith({
       email: "client@example.com",
-      email_confirm: false,
+      email_confirm: true,
     });
     expect(h.state.events).toEqual(["createUser", "insert", "sendEmail"]);
   });
