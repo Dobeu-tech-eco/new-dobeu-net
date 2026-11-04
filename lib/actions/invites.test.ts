@@ -39,11 +39,18 @@ const fd = new FormData();
 
 function signIn(
   user: Record<string, unknown> | null,
-  aal: { methods?: string[]; error?: boolean } = {},
+  aal: {
+    methods?: ({ method: string; timestamp: number } | string)[];
+    error?: boolean;
+    signOut?: () => Promise<unknown>;
+  } = {},
 ) {
   const { supabase } = buildStubClient({ user: user as never });
-  const methods = (aal.methods ?? ["otp"]).map((method) => ({ method, timestamp: 1 }));
-  (supabase.auth as Record<string, unknown>).mfa = {
+  const methods = aal.methods ?? [{ method: "otp", timestamp: 1 }];
+  const signOut = vi.fn(aal.signOut ?? (async () => ({ error: null })));
+  const auth = supabase.auth as Record<string, unknown>;
+  auth.signOut = signOut;
+  auth.mfa = {
     getAuthenticatorAssuranceLevel: vi.fn(async () =>
       aal.error
         ? { data: null, error: { message: "aal down" } }
@@ -51,8 +58,15 @@ function signIn(
     ),
   };
   h.client = supabase;
+  return { signOut };
 }
-const confirmed = { id: U, email: "a@example.com", email_confirmed_at: "2026-01-01T00:00:00Z" };
+const identities = [{ provider: "email", updated_at: "2026-01-01T00:00:00Z" }];
+const confirmed = {
+  id: U,
+  email: "a@example.com",
+  email_confirmed_at: "2026-01-01T00:00:00Z",
+  identities,
+};
 
 async function redirectOf(p: Promise<void>): Promise<string> {
   await expect(p).rejects.toThrow(/NEXT_REDIRECT/);
@@ -72,9 +86,10 @@ describe("acceptCompanyInvite / declineCompanyInvite", () => {
       ok: true,
       data: { companyId: C, isAdminRole: false },
     });
-    expect(h.respond).toHaveBeenCalledWith({ admin: true }, U, M, "accept");
+    const proofArg = { methods: [{ method: "otp", timestamp: 1 }], identities };
+    expect(h.respond).toHaveBeenCalledWith({ admin: true }, U, M, "accept", proofArg);
     await declineCompanyInvite(M);
-    expect(h.respond).toHaveBeenLastCalledWith({ admin: true }, U, M, "decline");
+    expect(h.respond).toHaveBeenLastCalledWith({ admin: true }, U, M, "decline", proofArg);
     expect(h.revalidate).toHaveBeenCalledWith("/portal");
     expect(h.revalidate).toHaveBeenCalledWith("/company");
   });
@@ -99,27 +114,69 @@ describe("acceptCompanyInvite / declineCompanyInvite", () => {
   it.each([
     ["accept", acceptCompanyInvite],
     ["decline", declineCompanyInvite],
-  ])("%s with a password-only (or password + totp) session is refused", async (_n, fn) => {
-    signIn(confirmed, { methods: ["password"] });
+  ])("%s hands the session methods and identities to the core, which decides", async (_n, fn) => {
+    h.respond.mockResolvedValue({ ok: false, error: "invite_email_unconfirmed" });
+    signIn(confirmed, { methods: [{ method: "password", timestamp: 5 }, { method: "totp", timestamp: 6 }] });
     expect(await fn(M)).toEqual({ ok: false, error: "invite_email_unconfirmed" });
-    signIn(confirmed, { methods: ["password", "totp"] });
-    expect(await fn(M)).toEqual({ ok: false, error: "invite_email_unconfirmed" });
-    expect(createAdminClient).not.toHaveBeenCalled();
-    expect(h.respond).not.toHaveBeenCalled();
+    expect(h.respond.mock.calls.at(-1)![4]).toEqual({
+      methods: [{ method: "password", timestamp: 5 }, { method: "totp", timestamp: 6 }],
+      identities,
+    });
   });
 
-  it.each(["otp", "magiclink", "invite", "email/signup"])(
-    "a %s session proves the mailbox",
-    async (method) => {
-      signIn(confirmed, { methods: ["password", method] });
-      expect((await acceptCompanyInvite(M)).ok).toBe(true);
-    },
-  );
+  it.each([
+    ["accept", acceptCompanyInvite],
+    ["decline", declineCompanyInvite],
+  ])("%s with an expired or stale sign-in is refused with that code", async (_n, fn) => {
+    h.respond.mockResolvedValue({ ok: false, error: "invite_signin_stale" });
+    expect(await fn(M)).toEqual({ ok: false, error: "invite_signin_stale" });
+    expect(h.revalidate).not.toHaveBeenCalled();
+  });
 
   it("a lookup error is invite_response_failed and creates no admin client", async () => {
     signIn(confirmed, { error: true });
     expect(await acceptCompanyInvite(M)).toEqual({ ok: false, error: "invite_response_failed" });
     expect(createAdminClient).not.toHaveBeenCalled();
+    expect(h.respond).not.toHaveBeenCalled();
+  });
+
+  it("a successful accept revokes the user's other sessions", async () => {
+    const { signOut } = signIn(confirmed);
+    expect((await acceptCompanyInvite(M)).ok).toBe(true);
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledWith({ scope: "others" });
+  });
+
+  it("a failed accept, any decline and a refused session never revoke sessions", async () => {
+    const { signOut } = signIn(confirmed);
+    h.respond.mockResolvedValue({ ok: false, error: "invite_company_inactive" });
+    await acceptCompanyInvite(M);
+    h.respond.mockResolvedValue({ ok: true, companyId: C, isAdminRole: false });
+    await declineCompanyInvite(M);
+    await acceptCompanyInvite("not-a-uuid");
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["returns an error", async () => ({ error: { message: "raw gotrue text" } })],
+    ["throws", async () => { throw new Error("raw gotrue text"); }],
+  ])("a signOut that %s is non-fatal and logs no raw text", async (_n, signOut) => {
+    signIn(confirmed, { signOut });
+    const warn = vi.spyOn(console, "warn");
+    expect(await acceptCompanyInvite(M)).toEqual({
+      ok: true,
+      data: { companyId: C, isAdminRole: false },
+    });
+    expect(h.revalidate).toHaveBeenCalledWith("/portal");
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("raw gotrue text");
+  });
+
+  it("carries companyInactive through to the data", async () => {
+    h.respond.mockResolvedValue({ ok: true, companyId: C, isAdminRole: true, companyInactive: true });
+    expect(await acceptCompanyInvite(M)).toEqual({
+      ok: true,
+      data: { companyId: C, isAdminRole: true, companyInactive: true },
+    });
   });
 
   it("a malformed member id makes no database call", async () => {
@@ -156,21 +213,44 @@ describe("form wrappers", () => {
     expect(await redirectOf(acceptCompanyInviteForm(M, fd))).toBe(`/company?company=${C}`);
   });
 
+  it.each([true, false])(
+    "accept into a suspended company (admin=%s) goes to /portal, never /company",
+    async (isAdminRole) => {
+      h.respond.mockResolvedValue({ ok: true, companyId: C, isAdminRole, companyInactive: true });
+      expect(await redirectOf(acceptCompanyInviteForm(M, fd))).toBe(
+        "/portal?notice=invite_accepted_company_inactive",
+      );
+    },
+  );
+
   it("decline goes to /portal with the declined notice", async () => {
     expect(await redirectOf(declineCompanyInviteForm(M, fd))).toBe(
       "/portal?notice=invite_declined",
     );
   });
 
-  it("failures redirect with one fixed code", async () => {
-    h.respond.mockResolvedValue({ ok: false, error: "invite_unavailable" });
+  it.each([
+    "invite_unavailable",
+    "invite_email_unconfirmed",
+    "invite_signin_stale",
+    "invite_email_changed",
+    "invite_company_inactive",
+    "invite_already_accepted",
+    "invite_response_failed",
+  ])("failure %s redirects with that fixed code", async (code) => {
+    h.respond.mockResolvedValue({ ok: false, error: code });
+    expect(await redirectOf(acceptCompanyInviteForm(M, fd))).toBe(`/portal?notice=${code}`);
+    expect(await redirectOf(declineCompanyInviteForm(M, fd))).toBe(`/portal?notice=${code}`);
+  });
+
+  it("an unknown failure code collapses to invite_response_failed", async () => {
+    h.respond.mockResolvedValue({ ok: false, error: "raw supabase text" });
     expect(await redirectOf(acceptCompanyInviteForm(M, fd))).toBe(
-      "/portal?notice=invite_unavailable",
-    );
-    h.respond.mockResolvedValue({ ok: false, error: "invite_response_failed" });
-    expect(await redirectOf(declineCompanyInviteForm(M, fd))).toBe(
       "/portal?notice=invite_response_failed",
     );
+  });
+
+  it("an unconfirmed email redirects with the unconfirmed code", async () => {
     signIn({ id: U, email: "a@example.com", email_confirmed_at: null });
     expect(await redirectOf(acceptCompanyInviteForm(M, fd))).toBe(
       "/portal?notice=invite_email_unconfirmed",

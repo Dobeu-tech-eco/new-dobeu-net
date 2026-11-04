@@ -22,10 +22,35 @@ const INVITE_NOTICES = {
     role: "status",
     text: "Invite declined and removed.",
   },
+  invite_accepted_company_inactive: {
+    tone: "warning",
+    role: "status",
+    text: "You're now a member, but this company is suspended right now, so its pages are unavailable until it is active again.",
+  },
   invite_unavailable: {
     tone: "warning",
     role: "status",
-    text: "That invite is no longer available. It may already be answered, withdrawn, or the company is inactive. Ask a company admin to send a new invite.",
+    text: "This invite is no longer available. It may have been withdrawn or already answered. Ask a company admin if you still need access.",
+  },
+  invite_company_inactive: {
+    tone: "warning",
+    role: "status",
+    text: "This company is suspended right now, so the invite can't be accepted yet. It is still pending: you can accept it once the company is active again, or decline it.",
+  },
+  invite_already_accepted: {
+    tone: "success",
+    role: "status",
+    text: "You already accepted this invite.",
+  },
+  invite_signin_stale: {
+    tone: "warning",
+    role: "alert",
+    text: "To answer this invite, sign out and sign in again with the emailed sign-in link. Your current sign-in started before the invite was sent.",
+  },
+  invite_email_changed: {
+    tone: "warning",
+    role: "alert",
+    text: "Your account email changed after you signed in. Sign out and sign in again with the emailed sign-in link to answer this invite.",
   },
   invite_email_unconfirmed: {
     tone: "warning",
