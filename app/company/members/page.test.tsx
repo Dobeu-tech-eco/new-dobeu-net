@@ -74,6 +74,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import { AuthError } from "@/lib/actions/auth";
 import CompanyMembersPage from "./page";
+import { memberNoticeMessage } from "./notices";
 
 beforeEach(() => {
   h.requireCompanyAdmin.mockReset();
@@ -94,6 +95,9 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const props = { searchParams: Promise.resolve({ company: "c1" }) };
+const withNotice = (notice: string | string[]) => ({
+  searchParams: Promise.resolve({ company: "c1", notice })
+});
 const MEMBER_READS = ["company_roles"];
 
 describe("CompanyMembersPage guard", () => {
@@ -169,5 +173,63 @@ describe("CompanyMembersPage guard", () => {
     render(await CompanyMembersPage(props));
     expect(screen.getByText("a@b.co")).toBeInTheDocument();
     expect(h.createAdminClient).toHaveBeenCalledTimes(1);
+  });
+
+  describe("invite notices", () => {
+    it.each([
+      ["member_added", "status"],
+      ["invite_email_failed", "alert"],
+      ["already_member", "status"],
+      ["invite_failed", "alert"],
+      ["daily_limit", "status"],
+      ["rate_limited", "status"]
+    ] as const)("renders %s as the only %s element with the mapped copy", async (code, role) => {
+      h.requireCompanyAdmin.mockResolvedValue({});
+      render(await CompanyMembersPage(withNotice(code)));
+      const expected = memberNoticeMessage(code);
+      expect(expected?.role).toBe(role);
+      const found = screen.getAllByRole(role);
+      expect(found).toHaveLength(1);
+      expect(found[0].textContent).toBe(expected?.text);
+      const other = role === "alert" ? "status" : "alert";
+      expect(screen.queryByRole(other)).not.toBeInTheDocument();
+    });
+
+    it.each(["bogus", "<script>alert(1)</script>", "victim@example.com"])(
+      "renders and echoes nothing for %j",
+      async (value) => {
+        h.requireCompanyAdmin.mockResolvedValue({});
+        const { container } = render(await CompanyMembersPage(withNotice(value)));
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+        expect(container.innerHTML).not.toContain(value);
+        expect(container.querySelector("script")).toBeNull();
+      }
+    );
+
+    it("renders nothing for an array value", async () => {
+      h.requireCompanyAdmin.mockResolvedValue({});
+      render(await CompanyMembersPage(withNotice(["member_added", "invite_failed"])));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(screen.queryByText(/member added/i)).not.toBeInTheDocument();
+    });
+
+    it("shows no notice when the guard fails (forbidden, suspended)", async () => {
+      h.requireCompanyAdmin.mockRejectedValue(new AuthError("forbidden"));
+      render(await CompanyMembersPage(withNotice("member_added")));
+      expect(screen.queryByText(/member added/i)).not.toBeInTheDocument();
+      cleanup();
+      h.companies = [{ id: "c1", name: "Acme", status: "suspended" }];
+      render(await CompanyMembersPage(withNotice("invite_failed")));
+      expect(screen.queryByText(/couldn't add that member/i)).not.toBeInTheDocument();
+    });
+
+    it("redirects (no notice) when MFA is required", async () => {
+      h.requireCompanyAdmin.mockRejectedValue(new AuthError("mfa_required"));
+      await expect(CompanyMembersPage(withNotice("member_added"))).rejects.toMatchObject({
+        url: expect.stringContaining("/portal/settings/mfa")
+      });
+    });
   });
 });

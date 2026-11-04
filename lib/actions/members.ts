@@ -14,25 +14,29 @@
  * (`company_members_admin_*` policies, which require rank >= 100 plus an
  * active company and an AAL2 session via public.can_manage_company_members,
  * migration 20261104000200) is the enforcement layer. The service-role client is used ONLY for Supabase Auth
- * admin calls (`inviteUserByEmail` / `listUsers`) — there is no cookie-scoped
- * equivalent, and an invitee's auth user may not exist yet.
+ * admin calls (`listUsers` / `createUser` / `deleteUser`) — there is no
+ * cookie-scoped equivalent, and an invitee's auth user may not exist yet.
  *
- * `inviteMember` is rate-limited per calling admin, mirroring the pattern in
- * app/api/lead/route.ts: an Upstash sliding window when configured, with a
- * module-level in-memory fallback so the limit still applies without Redis.
+ * `inviteMember` is rate-limited twice via lib/rate-limit.ts `checkRateLimit`
+ * (Upstash when configured, in-memory fallback): per calling admin per minute,
+ * then per company per 24h. A limiter failure fails closed as `rate_limited`.
  *
  * The `*Form` exports are thin FormData adapters so the /company/members page
  * can wire progressive-enhancement `<form action={fn.bind(null, ...)}>` forms
  * without a client component (the page owns no client bundle).
  */
 import { revalidatePath } from "next/cache";
-import { buildServerAuthCallbackUrl } from "@/lib/utils";
+import { redirect } from "next/navigation";
+import { getSiteUrl } from "@/lib/utils";
 import { z } from "zod";
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 import { requireCompanyAdmin } from "@/lib/actions/company-auth";
 import { AuthError } from "@/lib/actions/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { isResendConfigured, sendEmail } from "@/lib/resend";
+import { companyMemberInviteEmail } from "@/lib/resend-templates";
+import { safeErrorFields } from "@/lib/log-safe";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { findUserIdByEmail, isAlreadyRegistered } from "@/lib/auth-admin";
 import type { DBClient } from "@/lib/actions/auth";
 
 const uuid = z.guid("invalid id");
@@ -63,37 +67,34 @@ export type ActionResult<T> =
   { ok: true; data: T } | { ok: false; error: string };
 
 // ---------------------------------------------------------------------------
-// Rate limiting (mirrors app/api/lead/route.ts): Upstash sliding window when
-// configured, else a module-level in-memory per-key bucket.
+// Rate limiting: per admin per minute, then per company per 24h.
 // ---------------------------------------------------------------------------
-const INVITE_RL_WINDOW_MS = 60_000;
-const INVITE_RL_MAX = 5;
-const inviteBuckets = new Map<string, { count: number; resetAt: number }>();
-const upstashReady =
-  Boolean(process.env.UPSTASH_REDIS_REST_URL) &&
-  Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
-const upstashRatelimit = upstashReady
-  ? new Ratelimit({
-      redis: Redis.fromEnv(),
-      limiter: Ratelimit.slidingWindow(INVITE_RL_MAX, "1 m"),
-      prefix: "action:invite-member",
-    })
-  : null;
+const INVITE_MINUTE = { windowSec: 60, max: 5 } as const;
+const INVITE_DAILY = { windowSec: 86_400, max: 20 } as const;
 
-async function isInviteRateLimited(key: string): Promise<boolean> {
-  if (upstashRatelimit) {
-    const { success } = await upstashRatelimit.limit(key);
-    return !success;
+/** Fixed notice codes emitted by inviteMemberForm (read by the members page). */
+export type InviteNoticeCode =
+  | "member_added"
+  | "invite_email_failed"
+  | "rate_limited"
+  | "daily_limit"
+  | "already_member"
+  | "invite_failed";
+
+/** Returns the limiter that tripped, or null. Fails closed if the limiter throws. */
+async function inviteLimitHit(
+  userId: string,
+  companyId: string,
+): Promise<"rate_limited" | "daily_limit" | null> {
+  try {
+    const perMinute = await checkRateLimit(`invite:min:${userId}`, INVITE_MINUTE);
+    if (perMinute.limited) return "rate_limited";
+    const daily = await checkRateLimit(`invite:day:${companyId}`, INVITE_DAILY);
+    return daily.limited ? "daily_limit" : null;
+  } catch (e) {
+    console.warn("[inviteMember] rate limiter failed:", safeErrorFields(e));
+    return "rate_limited";
   }
-  const now = Date.now();
-  const b = inviteBuckets.get(key);
-  if (!b || b.resetAt < now) {
-    inviteBuckets.set(key, { count: 1, resetAt: now + INVITE_RL_WINDOW_MS });
-    return false;
-  }
-  if (b.count >= INVITE_RL_MAX) return true;
-  b.count += 1;
-  return false;
 }
 
 /**
@@ -112,36 +113,98 @@ async function roleExists(supabase: DBClient, key: string): Promise<boolean> {
 }
 
 /**
- * Find an existing auth user id by email. Used when `inviteUserByEmail` reports
- * the address is already registered — the person still becomes a member, they
- * just don't get a fresh invite email. Pages through the admin list (bounded).
+ * Resolve the invitee's auth user. createUser goes FIRST (no per-invite paging
+ * for new emails); only an "already registered" answer falls back to the email
+ * lookup. `createdByUs` is true only for a user this call created, so the
+ * compensating delete can never remove a pre-existing account.
  */
-async function findUserIdByEmail(
+async function resolveInviteeUserId(
   admin: ReturnType<typeof createAdminClient>,
   email: string,
-): Promise<string | null> {
-  const target = email.toLowerCase();
-  const perPage = 200;
-  for (let page = 1; page <= 10; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-    if (error) return null;
-    const users = data?.users ?? [];
-    const match = users.find((u) => (u.email ?? "").toLowerCase() === target);
-    if (match) return match.id;
-    if (users.length < perPage) break;
+): Promise<{ id: string; createdByUs: boolean } | null> {
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: false,
+  });
+  if (error && isAlreadyRegistered(error)) {
+    // Some shapes return a user id alongside the error; prefer it over paging.
+    const returned = (data as { user?: { id?: string } | null } | null)?.user?.id;
+    const id = returned ?? (await findUserIdByEmail(admin, email));
+    return id ? { id, createdByUs: false } : null;
   }
-  return null;
+  if (error || !data?.user?.id) {
+    console.warn("[inviteMember] createUser failed:", safeErrorFields(error));
+    return null;
+  }
+  return { id: data.user.id, createdByUs: true };
+}
+
+/** True if the user has any membership (or the check fails: fail safe, keep). */
+async function userHasMembership(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+): Promise<boolean> {
+  const { count, error } = await admin
+    .from("company_members")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (error) {
+    console.warn("[inviteMember] membership check failed:", safeErrorFields(error));
+    return true;
+  }
+  return (count ?? 0) > 0;
+}
+
+export type InviteMemberData = {
+  id: string;
+  user_id: string;
+  email: string;
+  /** True only when the invite email was accepted by Resend. */
+  emailSent: boolean;
+  /** Present when the membership exists but the invite email did not go out. */
+  partial?: "invite_email_failed";
+};
+
+/** Send the fixed-copy invite email. Never throws; false means not delivered. */
+async function sendInviteEmail(to: string): Promise<boolean> {
+  if (!isResendConfigured()) {
+    console.warn("[inviteMember] invite email not sent: resend not configured");
+    return false;
+  }
+  try {
+    const loginUrl = `${getSiteUrl().replace(/\/$/, "")}/login?next=/company`;
+    const tpl = companyMemberInviteEmail({ loginUrl });
+    const result = await sendEmail({
+      to,
+      subject: tpl.subject,
+      text: tpl.text,
+      html: tpl.html,
+    });
+    if (!result.ok) {
+      console.warn("[inviteMember] invite email failed:", safeErrorFields(result.error));
+    }
+    return result.ok;
+  } catch (e) {
+    console.warn("[inviteMember] invite email failed:", safeErrorFields(e));
+    return false;
+  }
 }
 
 /**
  * Invite (or attach an already-registered user) as a company member.
  * Guarded by `requireCompanyAdmin`; rate-limited per calling admin.
+ *
+ * Order matters: the membership row is inserted BEFORE the invite email is
+ * sent, so an invitee is never told about a membership that does not exist.
+ * The email is fixed copy with no token; the invitee requests their own
+ * sign-in link on /login. A failed send leaves the membership in place and
+ * returns `ok: true` with `emailSent: false` and `partial`.
  */
 export async function inviteMember(
   companyId: string,
   email: string,
   roleKeyArg: string,
-): Promise<ActionResult<{ id: string; user_id: string; email: string }>> {
+): Promise<ActionResult<InviteMemberData>> {
   const parsed = inviteInput.safeParse({
     companyId,
     email,
@@ -167,24 +230,14 @@ export async function inviteMember(
     return { ok: false, error: `unknown role "${input.roleKey}"` };
   }
 
-  if (await isInviteRateLimited(user.id)) {
-    return { ok: false, error: "rate_limited" };
-  }
+  const limit = await inviteLimitHit(user.id, input.companyId);
+  if (limit) return { ok: false, error: limit };
 
-  // Resolve the invitee's auth user: try to invite; if already registered,
-  // fall back to a lookup so they're still added (no duplicate email sent).
+  // No Supabase email is sent here; the invitee signs in via /login.
   const admin = createAdminClient();
-  const { data: invited, error: inviteErr } =
-    await admin.auth.admin.inviteUserByEmail(input.email, {
-      redirectTo: buildServerAuthCallbackUrl("/company"),
-    });
-  let invitedUserId = invited?.user?.id ?? null;
-  if (!invitedUserId) {
-    invitedUserId = await findUserIdByEmail(admin, input.email);
-    if (!invitedUserId) {
-      return { ok: false, error: inviteErr?.message ?? "invite failed" };
-    }
-  }
+  const invitee = await resolveInviteeUserId(admin, input.email);
+  if (!invitee) return { ok: false, error: "invite failed" };
+  const invitedUserId = invitee.id;
 
   const { data: member, error: insertErr } = await supabase
     .from("company_members")
@@ -199,14 +252,43 @@ export async function inviteMember(
     .single();
 
   if (insertErr || !member) {
-    return { ok: false, error: insertErr?.message ?? "member insert failed" };
+    const duplicate = insertErr?.code === "23505";
+    // A unique violation proves another request just inserted a membership for
+    // this user, and company_members.user_id is ON DELETE CASCADE: deleting the
+    // user would remove it. Never compensate on 23505. For other errors, delete
+    // only a user this call created AND that still has no memberships. Accepted
+    // residual risk: a concurrent request could attach one between the count and
+    // the delete; the window is tiny and the user was created seconds ago.
+    if (
+      !duplicate &&
+      invitee.createdByUs &&
+      !(await userHasMembership(admin, invitedUserId))
+    ) {
+      const { error: delErr } = await admin.auth.admin.deleteUser(invitedUserId);
+      if (delErr) {
+        console.warn("[inviteMember] deleteUser failed:", safeErrorFields(delErr));
+      }
+    }
+    // Fixed codes only: never hand a Supabase message back to callers.
+    return {
+      ok: false,
+      error: duplicate ? "already_member" : "invite failed",
+    };
   }
 
   revalidatePath("/company");
   revalidatePath("/company/members");
+
+  const emailSent = await sendInviteEmail(input.email);
   return {
     ok: true,
-    data: { id: member.id, user_id: invitedUserId, email: input.email },
+    data: {
+      id: member.id,
+      user_id: invitedUserId,
+      email: input.email,
+      emailSent,
+      ...(emailSent ? {} : { partial: "invite_email_failed" as const }),
+    },
   };
 }
 
@@ -306,15 +388,45 @@ export async function deactivateMember(
 // They return void (the form ignores the result) so the typed core actions
 // stay the tested, value-returning API.
 // ---------------------------------------------------------------------------
+// Guard failures (mfa_required, forbidden, not_authenticated) return null: the
+// page guard already routes the user (step-up / guard notice), so a carried
+// notice would only show stale on the step-up deep link.
+function inviteNotice(
+  result: ActionResult<InviteMemberData>,
+): InviteNoticeCode | null {
+  if (result.ok) {
+    return result.data.emailSent ? "member_added" : "invite_email_failed";
+  }
+  switch (result.error) {
+    case "rate_limited":
+    case "daily_limit":
+    case "already_member":
+      return result.error;
+    case "forbidden":
+    case "not_authenticated":
+    case "mfa_required":
+      return null;
+    default:
+      return "invite_failed";
+  }
+}
+
 export async function inviteMemberForm(
   companyId: string,
   formData: FormData,
 ): Promise<void> {
-  await inviteMember(
+  const result = await inviteMember(
     companyId,
     String(formData.get("email") ?? ""),
     String(formData.get("roleKey") ?? ""),
   );
+  const notice = inviteNotice(result);
+  const companyParam = uuid.safeParse(companyId).success
+    ? `company=${encodeURIComponent(companyId)}&`
+    : "";
+  // redirect() throws; keep it outside any try/catch.
+  const noticeParam = notice ? `notice=${notice}` : "";
+  redirect(`/company/members?${companyParam}${noticeParam}`.replace(/[?&]$/, ""));
 }
 
 export async function changeMemberRoleForm(

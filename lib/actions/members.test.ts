@@ -6,46 +6,103 @@ import { buildStubClient } from "./__test-helpers";
 const h = vi.hoisted(() => {
   const state: {
     client: unknown;
-    inviteResult: {
+    createResult: {
       data: { user: { id: string } | null } | null;
-      error: { message: string } | null;
+      error: { message?: string; code?: string; status?: number } | null;
     };
     users: { id: string; email: string }[];
-    capturedInvite: { email: string; options?: unknown } | null;
+    // Successive listUsers results; falls back to `users` when exhausted.
+    userSequence: { id: string; email: string }[][];
+    events: string[];
+    sendResult: { ok: boolean; id?: string; error?: string };
+    sendThrows: boolean;
+    resendConfigured: boolean;
+    listError: { message: string } | null;
+    limitThrows: boolean;
+    counts: Map<string, number>;
+    membershipCount: number;
+    membershipError: { message: string } | null;
   } = {
     client: null,
-    inviteResult: { data: { user: { id: "new_user_1" } }, error: null },
+    createResult: { data: { user: { id: "new_user_1" } }, error: null },
     users: [],
-    capturedInvite: null,
+    userSequence: [],
+    events: [],
+    sendResult: { ok: true, id: "email_1" },
+    sendThrows: false,
+    resendConfigured: true,
+    listError: null,
+    limitThrows: false,
+    counts: new Map(),
+    membershipCount: 0,
+    membershipError: null,
   };
-  return { state };
+  return {
+    state,
+    createUser: vi.fn(),
+    deleteUser: vi.fn(),
+    sendEmail: vi.fn(),
+    redirect: vi.fn(),
+  };
 });
+
+// Deterministic limiter: a counter per key, resettable per test, can throw.
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn(async (key: string, opts: { max: number }) => {
+    if (h.state.limitThrows) throw new Error("redis down");
+    const count = (h.state.counts.get(key) ?? 0) + 1;
+    h.state.counts.set(key, count);
+    return { limited: count > opts.max, count, backend: "memory" };
+  }),
+}));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-vi.mock("@/lib/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/utils")>()),
-  buildServerAuthCallbackUrl: vi.fn(
-    (next: string) =>
-      `https://admin-test.example/auth/callback?next=${encodeURIComponent(next)}`,
-  ),
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => {
+    h.redirect(url);
+    throw new Error(`NEXT_REDIRECT:${url}`);
+  },
 }));
-import { buildServerAuthCallbackUrl } from "@/lib/utils";
+
+vi.mock("@/lib/resend", () => ({
+  isResendConfigured: () => h.state.resendConfigured,
+  sendEmail: h.sendEmail,
+}));
+
 import { createAdminClient } from "@/lib/supabase/server";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => h.state.client),
   createAdminClient: vi.fn(() => ({
+    from: vi.fn((table: string) => ({
+      select: () => ({
+        eq: async (col: string, val: string) => {
+          h.state.events.push(`count:${table}.${col}=${val}`);
+          return h.state.membershipError
+            ? { count: null, error: h.state.membershipError }
+            : { count: h.state.membershipCount, error: null };
+        },
+      }),
+    })),
     auth: {
       admin: {
-        inviteUserByEmail: vi.fn(async (email: string, options?: unknown) => {
-          h.state.capturedInvite = { email, options };
-          return h.state.inviteResult;
+        createUser: h.createUser,
+        deleteUser: h.deleteUser,
+        listUsers: vi.fn(async () => {
+          h.state.events.push("listUsers");
+          if (h.state.listError) {
+            return { data: null, error: h.state.listError };
+          }
+          return {
+            data: {
+              users: h.state.userSequence.length
+                ? h.state.userSequence.shift()
+                : h.state.users,
+            },
+            error: null,
+          };
         }),
-        listUsers: vi.fn(async () => ({
-          data: { users: h.state.users },
-          error: null,
-        })),
       },
     },
   })),
@@ -53,6 +110,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import {
   inviteMember,
+  inviteMemberForm,
   changeMemberRole,
   deactivateMember,
 } from "@/lib/actions/members";
@@ -84,7 +142,10 @@ function makeClient(
     member?: Record<string, unknown> | null;
     rank?: number;
     roleValid?: boolean;
-    insert?: { data?: unknown; error?: { message: string } | null };
+    insert?: {
+      data?: unknown;
+      error?: { message: string; code?: string } | null;
+    };
     update?: { error?: { message: string } | null };
   } = {},
 ) {
@@ -109,6 +170,16 @@ function makeClient(
     },
   });
   recorded = stub.recorded;
+  const originalFrom = stub.supabase.from.bind(stub.supabase);
+  stub.supabase.from = ((table: string) => {
+    const q = originalFrom(table) as { insert: (...a: unknown[]) => unknown };
+    const insert = q.insert.bind(q);
+    q.insert = (...args: unknown[]) => {
+      if (table === "company_members") h.state.events.push("insert");
+      return insert(...args);
+    };
+    return q;
+  }) as typeof stub.supabase.from;
   return Object.assign(stub.supabase, {
     auth: {
       ...stub.supabase.auth,
@@ -138,80 +209,268 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://admin-test.example");
   h.state.client = makeClient();
-  h.state.inviteResult = { data: { user: { id: "new_user_1" } }, error: null };
+  h.state.createResult = { data: { user: { id: "new_user_1" } }, error: null };
   h.state.users = [];
-  h.state.capturedInvite = null;
+  h.state.userSequence = [];
+  h.state.events = [];
+  h.state.sendResult = { ok: true, id: "email_1" };
+  h.state.sendThrows = false;
+  h.state.resendConfigured = true;
+  h.state.listError = null;
+  h.state.limitThrows = false;
+  h.state.counts = new Map();
+  h.state.membershipCount = 0;
+  h.state.membershipError = null;
+  h.createUser.mockImplementation(async () => {
+    h.state.events.push("createUser");
+    return h.state.createResult;
+  });
+  h.deleteUser.mockImplementation(async () => {
+    h.state.events.push("deleteUser");
+    return { error: null };
+  });
+  h.sendEmail.mockImplementation(async () => {
+    h.state.events.push("sendEmail");
+    if (h.state.sendThrows) throw new Error("boom");
+    return h.state.sendResult;
+  });
 });
 
 afterEach(() => vi.unstubAllEnvs());
 
 describe("inviteMember", () => {
-  it("invites a new user and inserts an invited member row", async () => {
+  const invite = (emailAddr = "client@example.com") =>
+    inviteMember(COMPANY_ID, emailAddr, "employee");
+
+  it("creates an unconfirmed user, inserts the member, then sends the invite", async () => {
     h.state.client = makeClient({ user: { id: "inv_new", email: "a@d.net" } });
-    const result = await inviteMember(
-      COMPANY_ID,
-      "client@example.com",
-      "employee",
-    );
+    const result = await invite();
     expect(result).toEqual({
       ok: true,
-      data: { id: "m_new", user_id: "new_user_1", email: "client@example.com" },
-    });
-    expect(buildServerAuthCallbackUrl).toHaveBeenCalledWith("/company");
-    expect(h.state.capturedInvite).toEqual({
-      email: "client@example.com",
-      options: {
-        redirectTo: "https://admin-test.example/auth/callback?next=%2Fcompany",
+      data: {
+        id: "m_new",
+        user_id: "new_user_1",
+        email: "client@example.com",
+        emailSent: true,
       },
     });
+    expect(h.createUser).toHaveBeenCalledWith({
+      email: "client@example.com",
+      email_confirm: false,
+    });
+    expect(h.state.events).toEqual(["createUser", "insert", "sendEmail"]);
   });
 
-  it("attaches an already-registered user via listUsers lookup", async () => {
+  it("sends fixed copy linking to /login?next=/company with no token", async () => {
+    h.state.client = makeClient({ user: { id: "inv_copy", email: "a@d.net" } });
+    await invite();
+    const arg = h.sendEmail.mock.calls[0][0] as {
+      to: string;
+      html: string;
+      text: string;
+    };
+    expect(arg.to).toBe("client@example.com");
+    expect(arg.text).toContain("https://admin-test.example/login?next=/company");
+    expect(arg.html + arg.text).not.toMatch(/token|code=|auth\/callback/i);
+  });
+
+  it("existing user: createUser first, then lookup, insert, then the email (R2)", async () => {
     h.state.client = makeClient({
       user: { id: "inv_existing", email: "a@d.net" },
     });
-    h.state.inviteResult = {
-      data: { user: null },
-      error: { message: "already registered" },
-    };
     h.state.users = [{ id: "existing_9", email: "Client@Example.com" }];
-    const result = await inviteMember(
-      COMPANY_ID,
-      "client@example.com",
-      "employee",
-    );
+    h.state.createResult = {
+      data: { user: null },
+      error: { code: "email_exists", status: 422 },
+    };
+    const result = await invite();
     expect(result).toEqual({
       ok: true,
-      data: { id: "m_new", user_id: "existing_9", email: "client@example.com" },
+      data: {
+        id: "m_new",
+        user_id: "existing_9",
+        email: "client@example.com",
+        emailSent: true,
+      },
     });
+    expect(h.state.events).toEqual([
+      "createUser",
+      "listUsers",
+      "insert",
+      "sendEmail",
+    ]);
+    expect(h.deleteUser).not.toHaveBeenCalled();
   });
 
-  it("returns the invite error when the user cannot be resolved", async () => {
-    h.state.client = makeClient({ user: { id: "inv_fail", email: "a@d.net" } });
-    h.state.inviteResult = {
+  it("createUser already-registered: looks the user up, never deletes", async () => {
+    h.state.client = makeClient({ user: { id: "inv_race", email: "a@d.net" } });
+    h.state.createResult = {
       data: { user: null },
-      error: { message: "smtp down" },
+      error: { code: "email_exists", status: 422 },
     };
-    h.state.users = [];
-    const result = await inviteMember(
-      COMPANY_ID,
-      "client@example.com",
-      "employee",
-    );
-    expect(result).toEqual({ ok: false, error: "smtp down" });
+    h.state.userSequence = [[{ id: "raced_7", email: "client@example.com" }]];
+    const result = await invite();
+    expect(result).toMatchObject({
+      ok: true,
+      data: { user_id: "raced_7", emailSent: true },
+    });
+    expect(h.state.events).toEqual([
+      "createUser",
+      "listUsers",
+      "insert",
+      "sendEmail",
+    ]);
+    expect(h.deleteUser).not.toHaveBeenCalled();
   });
 
-  it("surfaces a member-insert error (e.g. duplicate membership)", async () => {
+  it("new email: no listUsers paging at all (createUser first)", async () => {
+    h.state.client = makeClient({ user: { id: "inv_nolist", email: "a@d.net" } });
+    await invite();
+    expect(h.state.events).not.toContain("listUsers");
+  });
+
+  it("createUser returning an id AND already-registered never sets createdByUs", async () => {
+    h.state.client = makeClient({
+      user: { id: "inv_both", email: "a@d.net" },
+      insert: { error: { message: "raw pg text", code: "23505" } },
+    });
+    h.state.createResult = {
+      data: { user: { id: "existing_both" } },
+      error: { code: "email_exists", status: 422 },
+    };
+    expect(await invite()).toEqual({ ok: false, error: "already_member" });
+    expect(h.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("listUsers error after already-registered: fails, no insert, no send, no delete", async () => {
+    h.state.client = makeClient({ user: { id: "inv_lerr", email: "a@d.net" } });
+    h.state.createResult = {
+      data: { user: null },
+      error: { code: "email_exists", status: 422 },
+    };
+    h.state.listError = { message: "db secret detail" };
+    expect(await invite()).toEqual({ ok: false, error: "invite failed" });
+    expect(recorded.filter((r) => r.method === "insert")).toEqual([]);
+    expect(h.sendEmail).not.toHaveBeenCalled();
+    expect(h.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("returns a generic failure when the user cannot be created or resolved", async () => {
+    h.state.client = makeClient({ user: { id: "inv_fail", email: "a@d.net" } });
+    h.state.createResult = { data: { user: null }, error: { message: "smtp down" } };
+    const result = await invite();
+    expect(result).toEqual({ ok: false, error: "invite failed" });
+    expect(h.sendEmail).not.toHaveBeenCalled();
+    expect(recorded.filter((r) => r.method === "insert")).toEqual([]);
+  });
+
+  it("insert error for a created user: no email, user deleted", async () => {
     h.state.client = makeClient({
       user: { id: "inv_dup", email: "a@d.net" },
       insert: { error: { message: "duplicate key value" } },
     });
-    const result = await inviteMember(
-      COMPANY_ID,
-      "client@example.com",
-      "employee",
-    );
-    expect(result).toEqual({ ok: false, error: "duplicate key value" });
+    const result = await invite();
+    expect(result).toEqual({ ok: false, error: "invite failed" });
+    expect(h.sendEmail).not.toHaveBeenCalled();
+    expect(h.deleteUser).toHaveBeenCalledWith("new_user_1");
+    expect(h.state.events).toEqual([
+      "createUser",
+      "insert",
+      "count:company_members.user_id=new_user_1",
+      "deleteUser",
+    ]);
+  });
+
+  it("insert error for a created user that already has a membership: user NOT deleted", async () => {
+    h.state.client = makeClient({
+      user: { id: "inv_dup3", email: "a@d.net" },
+      insert: { error: { message: "boom" } },
+    });
+    h.state.membershipCount = 1;
+    expect(await invite()).toEqual({ ok: false, error: "invite failed" });
+    expect(h.deleteUser).not.toHaveBeenCalled();
+    expect(h.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("insert error with a failing membership check: user NOT deleted", async () => {
+    h.state.client = makeClient({
+      user: { id: "inv_dup4", email: "a@d.net" },
+      insert: { error: { message: "boom" } },
+    });
+    h.state.membershipError = { message: "db down" };
+    expect(await invite()).toEqual({ ok: false, error: "invite failed" });
+    expect(h.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("insert error for an existing user: no email, user NOT deleted", async () => {
+    h.state.client = makeClient({
+      user: { id: "inv_dup2", email: "a@d.net" },
+      insert: { error: { message: "duplicate key value" } },
+    });
+    h.state.users = [{ id: "existing_9", email: "client@example.com" }];
+    h.state.createResult = {
+      data: { user: null },
+      error: { code: "email_exists", status: 422 },
+    };
+    const result = await invite();
+    expect(result).toEqual({ ok: false, error: "invite failed" });
+    expect(h.sendEmail).not.toHaveBeenCalled();
+    expect(h.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("23505 maps to already_member and never leaks the raw message", async () => {
+    h.state.client = makeClient({
+      user: { id: "inv_23505", email: "a@d.net" },
+      insert: {
+        error: {
+          message: 'duplicate key value violates unique constraint "x"',
+          code: "23505",
+        },
+      },
+    });
+    const result = await invite();
+    expect(result).toEqual({ ok: false, error: "already_member" });
+    expect(h.sendEmail).not.toHaveBeenCalled();
+    // A conflict proves a concurrent membership exists; deleting would cascade it.
+    expect(h.deleteUser).not.toHaveBeenCalled();
+    expect(h.state.events).toEqual(["createUser", "insert"]);
+  });
+
+  it("send failure keeps the membership and flags a partial result", async () => {
+    h.state.client = makeClient({ user: { id: "inv_sf", email: "a@d.net" } });
+    h.state.sendResult = { ok: false, error: "resend down" };
+    expect(await invite()).toEqual({
+      ok: true,
+      data: {
+        id: "m_new",
+        user_id: "new_user_1",
+        email: "client@example.com",
+        emailSent: false,
+        partial: "invite_email_failed",
+      },
+    });
+    expect(h.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("a throwing send is treated as a send failure, after the insert", async () => {
+    h.state.client = makeClient({ user: { id: "inv_st", email: "a@d.net" } });
+    h.state.sendThrows = true;
+    expect(await invite()).toMatchObject({
+      ok: true,
+      data: { emailSent: false, partial: "invite_email_failed" },
+    });
+    expect(h.deleteUser).not.toHaveBeenCalled();
+    expect(h.state.events).toEqual(["createUser", "insert", "sendEmail"]);
+  });
+
+  it("resend not configured counts as a send failure (R4)", async () => {
+    h.state.client = makeClient({ user: { id: "inv_nc", email: "a@d.net" } });
+    h.state.resendConfigured = false;
+    expect(await invite()).toMatchObject({
+      ok: true,
+      data: { id: "m_new", emailSent: false, partial: "invite_email_failed" },
+    });
+    expect(h.sendEmail).not.toHaveBeenCalled();
   });
 
   it("blocks a non-admin caller (rank below 100)", async () => {
@@ -243,27 +502,163 @@ describe("inviteMember", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("rate-limits a single admin after the window max", async () => {
+  it("rate-limits a single admin after the per-minute max", async () => {
     h.state.client = makeClient({
       user: { id: "rl_admin", email: "rl@dobeu.net" },
     });
-    const outcomes: boolean[] = [];
-    for (let i = 0; i < 6; i++) {
-      const r = await inviteMember(
-        COMPANY_ID,
-        `person${i}@example.com`,
-        "employee",
-      );
-      outcomes.push(r.ok);
+    for (let i = 0; i < 5; i++) {
+      expect((await invite(`person${i}@example.com`)).ok).toBe(true);
     }
-    // First 5 succeed; the 6th trips the limiter.
-    expect(outcomes.slice(0, 5).every(Boolean)).toBe(true);
-    const last = await inviteMember(
-      COMPANY_ID,
-      "one-more@example.com",
-      "employee",
+    expect(await invite("one-more@example.com")).toEqual({
+      ok: false,
+      error: "rate_limited",
+    });
+  });
+
+  it("caps invites per company per 24h (daily_limit) across admins", async () => {
+    h.state.counts.set(`invite:day:${COMPANY_ID}`, 20);
+    h.state.client = makeClient({ user: { id: "day_admin", email: "d@d.net" } });
+    expect(await invite("late@example.com")).toEqual({
+      ok: false,
+      error: "daily_limit",
+    });
+    expect(createAdminClient).not.toHaveBeenCalled();
+    expect(h.createUser).not.toHaveBeenCalled();
+  });
+
+  it("the 20th invite of the day still goes through", async () => {
+    h.state.counts.set(`invite:day:${COMPANY_ID}`, 19);
+    h.state.client = makeClient({ user: { id: "day_ok", email: "d@d.net" } });
+    expect((await invite("ok@example.com")).ok).toBe(true);
+  });
+
+  it("per-minute is checked before daily (a minute hit does not burn a daily slot)", async () => {
+    h.state.counts.set("invite:min:min_first", 5);
+    h.state.client = makeClient({ user: { id: "min_first", email: "m@d.net" } });
+    expect(await invite("x@example.com")).toEqual({
+      ok: false,
+      error: "rate_limited",
+    });
+    expect(h.state.counts.get(`invite:day:${COMPANY_ID}`)).toBeUndefined();
+  });
+
+  it("a limiter throw fails closed as rate_limited, before any auth-admin call", async () => {
+    h.state.limitThrows = true;
+    h.state.client = makeClient({ user: { id: "rl_throw", email: "t@d.net" } });
+    expect(await invite("t@example.com")).toEqual({
+      ok: false,
+      error: "rate_limited",
+    });
+    expect(createAdminClient).not.toHaveBeenCalled();
+    expect(h.createUser).not.toHaveBeenCalled();
+  });
+
+  it("rate limiting happens before any auth-admin call (R6)", async () => {
+    h.state.client = makeClient({
+      user: { id: "rl_admin_2", email: "rl2@dobeu.net" },
+    });
+    for (let i = 0; i < 5; i++) await invite(`p${i}@example.com`);
+    vi.mocked(createAdminClient).mockClear();
+    h.createUser.mockClear();
+    expect(await invite("extra@example.com")).toEqual({
+      ok: false,
+      error: "rate_limited",
+    });
+    expect(createAdminClient).not.toHaveBeenCalled();
+    expect(h.createUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("inviteMemberForm", () => {
+  const submit = async (companyId: string, email = "client@example.com") => {
+    const fd = new FormData();
+    fd.set("email", email);
+    fd.set("roleKey", "employee");
+    await expect(inviteMemberForm(companyId, fd)).rejects.toThrow(
+      /NEXT_REDIRECT/,
     );
-    expect(last).toEqual({ ok: false, error: "rate_limited" });
+    return h.redirect.mock.calls[h.redirect.mock.calls.length - 1][0] as string;
+  };
+  const base = `/company/members?company=${COMPANY_ID}&notice=`;
+  const noNotice = `/company/members?company=${COMPANY_ID}`;
+
+  it("redirects member_added when the email was sent", async () => {
+    h.state.client = makeClient({ user: { id: "f_ok", email: "a@d.net" } });
+    expect(await submit(COMPANY_ID)).toBe(`${base}member_added`);
+  });
+
+  it("redirects invite_email_failed on a partial result", async () => {
+    h.state.client = makeClient({ user: { id: "f_partial", email: "a@d.net" } });
+    h.state.sendResult = { ok: false };
+    expect(await submit(COMPANY_ID)).toBe(`${base}invite_email_failed`);
+  });
+
+  it("redirects rate_limited when the limiter trips", async () => {
+    h.state.client = makeClient({ user: { id: "f_rl", email: "a@d.net" } });
+    for (let i = 0; i < 5; i++) await inviteMember(COMPANY_ID, `r${i}@example.com`, "employee");
+    expect(await submit(COMPANY_ID)).toBe(`${base}rate_limited`);
+  });
+
+  it("redirects daily_limit when the company cap is hit", async () => {
+    h.state.counts.set(`invite:day:${COMPANY_ID}`, 20);
+    h.state.client = makeClient({ user: { id: "f_day", email: "a@d.net" } });
+    expect(await submit(COMPANY_ID)).toBe(`${base}daily_limit`);
+  });
+
+  it("redirects rate_limited when the limiter throws", async () => {
+    h.state.limitThrows = true;
+    h.state.client = makeClient({ user: { id: "f_thr", email: "a@d.net" } });
+    expect(await submit(COMPANY_ID)).toBe(`${base}rate_limited`);
+  });
+
+  it("redirects already_member on a unique violation", async () => {
+    h.state.client = makeClient({
+      user: { id: "f_dup", email: "a@d.net" },
+      insert: { error: { message: "dup", code: "23505" } },
+    });
+    expect(await submit(COMPANY_ID)).toBe(`${base}already_member`);
+  });
+
+  it("redirects with no notice for an AAL1 admin (no stale mfa message)", async () => {
+    h.state.client = makeClient({ aal: AAL1 });
+    expect(await submit(COMPANY_ID)).toBe(noNotice);
+  });
+
+  it("redirects with no notice for a non-admin", async () => {
+    h.state.client = makeClient({
+      member: { role: "manager", status: "active" },
+      rank: 60,
+    });
+    expect(await submit(COMPANY_ID)).toBe(noNotice);
+  });
+
+  it("redirects with no notice when signed out", async () => {
+    h.state.client = makeClient({ user: null });
+    expect(await submit(COMPANY_ID)).toBe(noNotice);
+  });
+
+  it("redirects invite_failed on an other insert error", async () => {
+    h.state.client = makeClient({
+      user: { id: "f_ins", email: "a@d.net" },
+      insert: { error: { message: "x" } },
+    });
+    expect(await submit(COMPANY_ID)).toBe(`${base}invite_failed`);
+  });
+
+  it("redirects invite_failed when createUser fails", async () => {
+    h.state.client = makeClient({ user: { id: "f_cu", email: "a@d.net" } });
+    h.state.createResult = { data: { user: null }, error: { message: "boom" } };
+    expect(await submit(COMPANY_ID)).toBe(`${base}invite_failed`);
+  });
+
+  it("redirects invite_failed on validation failure", async () => {
+    expect(await submit(COMPANY_ID, "not-an-email")).toBe(`${base}invite_failed`);
+  });
+
+  it("drops company= when companyId is not a guid", async () => {
+    expect(await submit("not-a-guid")).toBe(
+      "/company/members?notice=invite_failed",
+    );
   });
 });
 

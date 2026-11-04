@@ -85,7 +85,7 @@ contains no vulnerabilities.
 
 ## Accepted risks — email sign-in links (token_hash)
 
-Invite and magic-link emails carry a one-time `token_hash`. `/auth/callback` never
+Supabase-sent invite and magic-link emails (admin `inviteUser`, `provisionCompanyAdmin`, `/login` magic links) carry a one-time `token_hash`. Company-member invites (`lib/actions/members.ts` `inviteMember`) carry no token at all: a fixed-copy Resend email links to `/login?next=/company`, and the invitee requests their own sign-in link there. `/auth/callback` never
 verifies it on GET: it parks the token in a short-lived (120 s) httpOnly, Lax,
 `/auth/confirm`-scoped cookie and shows a "Continue signing in" step; only the
 Origin-checked POST to `/auth/confirm/submit` calls `verifyOtp`. This defeats

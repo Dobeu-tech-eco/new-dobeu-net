@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { companyNext, guardCompanyPage, pickCompany, resolveAdminCompanies, GuardNotice } from "../_lib/admin-companies";
+import { memberNoticeMessage, type MemberNoticeTone } from "./notices";
+import { safeErrorFields } from "@/lib/log-safe";
 import { isCompanyMemberStatus, type CompanyMemberStatus } from "@/lib/domain-types";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +45,7 @@ async function resolveEmails(userIds: string[]): Promise<Map<string, string>> {
       if (users.length < 200 || byId.size >= wanted.size) break;
     }
   } catch (e) {
-    console.warn("[company members] email resolution failed:", e);
+    console.warn("[company members] email resolution failed:", safeErrorFields(e));
   }
   return byId;
 }
@@ -51,7 +53,7 @@ async function resolveEmails(userIds: string[]): Promise<Map<string, string>> {
 export default async function CompanyMembersPage({
   searchParams
 }: {
-  searchParams: Promise<{ company?: string }>;
+  searchParams: Promise<{ company?: string; notice?: string | string[] }>;
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
@@ -89,6 +91,9 @@ export default async function CompanyMembersPage({
     supabase.from("company_roles").select("key, label, rank").order("rank", { ascending: false })
   ]);
 
+  // Rendered only past the guard; a fixed-map lookup, never the raw param.
+  const notice = memberNoticeMessage(sp.notice);
+
   const members = membersRes.data ?? [];
   const roles = (rolesRes.data ?? []) as RoleOption[];
   const emailById = await resolveEmails(members.map((m) => m.user_id));
@@ -102,11 +107,20 @@ export default async function CompanyMembersPage({
         </p>
       </header>
 
+      {notice && (
+        <p
+          role={notice.role}
+          className={`rounded-lg border p-3 text-sm ${NOTICE_STYLES[notice.tone]}`}
+        >
+          {notice.text}
+        </p>
+      )}
+
       {/* Invite */}
       <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="font-display text-xl font-semibold mb-1">Invite a member</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Sends a Supabase invite and adds them with an <code>invited</code> status.
+          Adds them with an <code>invited</code> status, then emails them to sign in at /login.
         </p>
         <form action={inviteMemberForm.bind(null, companyId)} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto] items-end">
@@ -242,6 +256,12 @@ export default async function CompanyMembersPage({
     </div>
   );
 }
+
+const NOTICE_STYLES: Record<MemberNoticeTone, string> = {
+  success: "border-primary/30 bg-primary/10 text-foreground",
+  warning: "border-accent/40 bg-accent/10 text-foreground",
+  error: "border-destructive/40 bg-destructive/10 text-destructive"
+};
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<CompanyMemberStatus, string> = {
