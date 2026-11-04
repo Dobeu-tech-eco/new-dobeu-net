@@ -5,7 +5,8 @@ const h = vi.hoisted(() => ({
   getUser: vi.fn(),
   getAal: vi.fn(),
   members: [] as Array<{ company_id: string; role: string }>,
-  companies: { data: [] as Array<{ id: string; status: string }> | null, error: null as unknown },
+  membersError: null as unknown,
+  companies: { data: [] as Array<{ id: string; name?: string; status: string }> | null, error: null as unknown },
 }));
 
 class RedirectError extends Error {
@@ -29,7 +30,7 @@ vi.mock("@/lib/supabase/server", () => ({
     from: (table: string) => {
       const result =
         table === "company_members"
-          ? { data: h.members }
+          ? { data: h.members, error: h.membersError }
           : table === "companies"
             ? h.companies
             : { data: [{ key: "company_admin", rank: 100 }, { key: "member", rank: 10 }] };
@@ -54,6 +55,7 @@ beforeEach(() => {
   h.getUser.mockReset();
   h.getAal.mockReset();
   h.members = [{ company_id: "c1", role: "company_admin" }];
+  h.membersError = null;
   h.companies = { data: [{ id: "c1", status: "active" }], error: null };
   h.getUser.mockResolvedValue({ data: { user: { id: "u1", email: "a@b.co" } } });
 });
@@ -112,6 +114,12 @@ describe("CompanyLayout", () => {
 
   it("fails closed to /portal when the companies read errors", async () => {
     h.companies = { data: null, error: { message: "rls" } };
+    expect(await redirectTarget()).toBe("/portal");
+    expect(h.getAal).not.toHaveBeenCalled();
+  });
+
+  it("fails closed to /portal when the memberships read errors", async () => {
+    h.membersError = { message: "rls" };
     expect(await redirectTarget()).toBe("/portal");
     expect(h.getAal).not.toHaveBeenCalled();
   });

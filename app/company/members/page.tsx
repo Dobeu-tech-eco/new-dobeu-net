@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   inviteMemberForm,
@@ -7,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { guardCompanyPage, pickCompany, resolveAdminCompanies, SuspendedNotice } from "../_lib/admin-companies";
+import { guardCompanyPage, pickCompany, resolveAdminCompanies, GuardNotice } from "../_lib/admin-companies";
 import { isCompanyMemberStatus, type CompanyMemberStatus } from "@/lib/domain-types";
 
 export const dynamic = "force-dynamic";
@@ -58,7 +59,11 @@ export default async function CompanyMembersPage({
     data: { user }
   } = await supabase.auth.getUser();
 
-  const companies = await resolveAdminCompanies(supabase, user?.id ?? "");
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent("/company/members")}`);
+  }
+
+  const { companies } = await resolveAdminCompanies(supabase, user.id);
   const selected = pickCompany(companies, sp.company);
 
   if (!selected) {
@@ -70,8 +75,9 @@ export default async function CompanyMembersPage({
   }
 
   const companyId = selected.id;
-  if ((await guardCompanyPage(companyId, "/company/members")) === "suspended") {
-    return <SuspendedNotice />;
+  const guard = await guardCompanyPage(selected, "/company/members");
+  if (guard !== "ok") {
+    return <GuardNotice outcome={guard} />;
   }
 
   const [membersRes, rolesRes] = await Promise.all([
@@ -156,7 +162,7 @@ export default async function CompanyMembersPage({
             </thead>
             <tbody className="divide-y divide-border">
               {members.map((m) => {
-                const isSelf = m.user_id === user?.id;
+                const isSelf = m.user_id === user.id;
                 return (
                   <tr key={m.id} className="align-middle">
                     <td className="p-3">

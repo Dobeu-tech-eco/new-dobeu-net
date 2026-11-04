@@ -74,6 +74,24 @@ export async function requireCompanyMember(
 }
 
 /**
+ * Fail-closed AAL check for company admins: true when the session must enroll
+ * in or step up to MFA. A lookup error or throw is indeterminate and counts as
+ * "needs step-up".
+ */
+export async function needsAal2StepUp(supabase: DBClient): Promise<boolean> {
+  let assurance: AssuranceLevel = null;
+  try {
+    const { data, error } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    assurance = error ? null : data ?? null;
+  } catch {
+    assurance = null;
+  }
+  // `true` = this role must reach AAL2 (not an ADMIN_EMAILS check).
+  return requiresMfaEnrollment(assurance, true) || requiresAal2Stepup(assurance);
+}
+
+/**
  * Require the caller to be the company's admin (rank >= 100) of an ACTIVE
  * company whose session has reached AAL2. Fails closed, in this order, so a
  * non-admin always gets "forbidden" and never learns MFA state:
@@ -104,16 +122,7 @@ export async function requireCompanyAdmin(
     throw new AuthError("forbidden");
   }
 
-  let assurance: AssuranceLevel = null;
-  try {
-    const { data, error } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    assurance = error ? null : data ?? null;
-  } catch {
-    assurance = null;
-  }
-  // `true` = this role must reach AAL2 (not an ADMIN_EMAILS check).
-  if (requiresMfaEnrollment(assurance, true) || requiresAal2Stepup(assurance)) {
+  if (await needsAal2StepUp(supabase)) {
     throw new AuthError("mfa_required");
   }
 

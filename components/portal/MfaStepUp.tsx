@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { sanitizeNextPath } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ export function MfaStepUp({ next }: { next: string }) {
   const supabase = React.useMemo(() => createClient(), []);
   const [code, setCode] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [noFactor, setNoFactor] = React.useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,6 +22,7 @@ export function MfaStepUp({ next }: { next: string }) {
     const factor = (factors?.totp ?? []).find((f) => f.status === "verified");
     if (!factor) {
       setBusy(false);
+      setNoFactor(true);
       toast.error("No verified authenticator found. Enroll in Settings first.");
       return;
     }
@@ -63,6 +66,13 @@ export function MfaStepUp({ next }: { next: string }) {
       >
         {busy ? "Verifying…" : "Continue"}
       </button>
+      {noFactor && (
+        <p className="text-sm text-muted-foreground">
+          <Link href="/portal/settings" className="text-primary hover:underline">
+            Set up two-factor in Settings
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

@@ -9,30 +9,39 @@ export interface AdminCompany {
   status: string;
 }
 
-/** Companies where the caller is an active admin (rank >= 100), any status. */
+/**
+ * Companies where the caller is an active admin (rank >= 100), any status.
+ * `error` is true when any read failed, so callers that gate access can fail
+ * closed instead of treating a read error as "no companies".
+ */
 export async function resolveAdminCompanies(
   supabase: DBClient,
   userId: string
-): Promise<AdminCompany[]> {
-  const { data: memberships } = await supabase
+): Promise<{ companies: AdminCompany[]; error: boolean }> {
+  const { data: memberships, error: memberError } = await supabase
     .from("company_members")
     .select("company_id, role")
     .eq("user_id", userId)
     .eq("status", "active");
-  if (!memberships || memberships.length === 0) return [];
+  if (memberError) return { companies: [], error: true };
+  if (!memberships || memberships.length === 0) return { companies: [], error: false };
 
-  const { data: roles } = await supabase.from("company_roles").select("key, rank");
+  const { data: roles, error: rolesError } = await supabase
+    .from("company_roles")
+    .select("key, rank");
+  if (rolesError) return { companies: [], error: true };
   const rankByKey = new Map((roles ?? []).map((r) => [r.key, r.rank]));
   const adminIds = memberships
     .filter((m) => (rankByKey.get(m.role) ?? 0) >= COMPANY_ADMIN_RANK)
     .map((m) => m.company_id);
-  if (adminIds.length === 0) return [];
+  if (adminIds.length === 0) return { companies: [], error: false };
 
-  const { data: companies } = await supabase
+  const { data: companies, error: companiesError } = await supabase
     .from("companies")
     .select("id, name, status")
     .in("id", adminIds);
-  return (companies ?? []) as AdminCompany[];
+  if (companiesError || !companies) return { companies: [], error: true };
+  return { companies: companies as AdminCompany[], error: false };
 }
 
 /** Prefer the requested company; otherwise the first ACTIVE one. */
@@ -47,22 +56,26 @@ export function pickCompany(
   );
 }
 
+export type GuardOutcome = "ok" | "suspended" | "denied";
+
 /**
  * Next renders layout and page in parallel, so a page can never rely on the
  * layout for AAL2 / company status. Every /company page calls this BEFORE any
- * data read. Returns "ok" or "suspended" (render <SuspendedNotice/>, read
- * nothing); MFA and sign-in problems redirect. Unknown errors rethrow (fail
- * closed via the error boundary). redirect() is called outside the try/catch
- * so NEXT_REDIRECT is never swallowed.
+ * data read. Returns "ok", "suspended" (company status confirmed not active) or
+ * "denied" (any other `forbidden`: read error, lost role); render
+ * <GuardNotice/> for the latter two and read nothing. MFA and sign-in problems
+ * redirect. Unknown errors rethrow (fail closed via the error boundary).
+ * redirect() is called outside the try/catch so NEXT_REDIRECT is never
+ * swallowed.
  */
 export async function guardCompanyPage(
-  companyId: string,
+  company: AdminCompany,
   path: string
-): Promise<"ok" | "suspended"> {
-  const here = `${path}?company=${encodeURIComponent(companyId)}`;
-  let outcome: "ok" | "suspended" | "mfa_required" | "not_authenticated" = "ok";
+): Promise<GuardOutcome> {
+  const here = `${path}?company=${encodeURIComponent(company.id)}`;
+  let outcome: GuardOutcome | "mfa_required" | "not_authenticated" = "ok";
   try {
-    await requireCompanyAdmin(companyId);
+    await requireCompanyAdmin(company.id);
   } catch (e) {
     if (!(e instanceof AuthError)) throw e;
     outcome =
@@ -70,7 +83,9 @@ export async function guardCompanyPage(
         ? "mfa_required"
         : e.code === "not_authenticated"
           ? "not_authenticated"
-          : "suspended";
+          : company.status !== "active"
+            ? "suspended"
+            : "denied";
   }
   if (outcome === "mfa_required") {
     redirect(`/portal/settings/mfa?next=${encodeURIComponent(here)}`);
@@ -85,14 +100,37 @@ export async function guardCompanyPage(
 export function SuspendedNotice() {
   return (
     <div role="alert" className="rounded-xl border border-dashed border-border p-10 text-center">
-      <p className="font-semibold">This company is suspended</p>
-      <p className="text-sm text-muted-foreground mt-1">
-        Contact Dobeu to reactivate it, or{" "}
-        <Link href="/portal" className="text-primary hover:underline">
-          return to your portal
-        </Link>
-        .
+      <p className="font-semibold">
+        This company is suspended. Contact Dobeu to reactivate it.
       </p>
+      <PortalLink />
     </div>
+  );
+}
+
+/** Neutral fail-closed notice for a forbidden result that is not a confirmed suspension. */
+export function AccessDeniedNotice() {
+  return (
+    <div role="alert" className="rounded-xl border border-dashed border-border p-10 text-center">
+      <p className="font-semibold">
+        You don&apos;t have access to this company right now. Go back to the portal or contact
+        Dobeu.
+      </p>
+      <PortalLink />
+    </div>
+  );
+}
+
+export function GuardNotice({ outcome }: { outcome: Exclude<GuardOutcome, "ok"> }) {
+  return outcome === "suspended" ? <SuspendedNotice /> : <AccessDeniedNotice />;
+}
+
+function PortalLink() {
+  return (
+    <p className="text-sm mt-1">
+      <Link href="/portal" className="text-primary hover:underline">
+        Return to your portal
+      </Link>
+    </p>
   );
 }

@@ -15,6 +15,7 @@ vi.mock("@/lib/supabase/server", () => ({
 import {
   requireCompanyMember,
   requireCompanyAdmin,
+  needsAal2StepUp,
   COMPANY_ADMIN_RANK
 } from "@/lib/actions/company-auth";
 
@@ -266,5 +267,28 @@ describe("requireCompanyMember (regular member path)", () => {
     });
     expect(aalCalls(client)).not.toHaveBeenCalled();
     expect(tablesRead(client)).not.toContain("companies");
+  });
+});
+
+describe("needsAal2StepUp", () => {
+  const withAal = (aal: () => Promise<{ data: Aal | null; error: { message: string } | null }>) =>
+    ({ auth: { mfa: { getAuthenticatorAssuranceLevel: vi.fn(aal) } } }) as never;
+
+  it("is false at AAL2", async () => {
+    expect(await needsAal2StepUp(withAal(async () => ({ data: AAL2, error: null })))).toBe(false);
+  });
+
+  it.each([
+    ["AAL1 with a factor", async () => ({ data: { currentLevel: "aal1", nextLevel: "aal2" }, error: null })],
+    ["no factor", async () => ({ data: { currentLevel: "aal1", nextLevel: "aal1" }, error: null })],
+    ["a lookup error", async () => ({ data: null, error: { message: "boom" } })],
+    [
+      "a lookup throw",
+      async () => {
+        throw new Error("network");
+      }
+    ]
+  ])("is true on %s", async (_label, aal) => {
+    expect(await needsAal2StepUp(withAal(aal))).toBe(true);
   });
 });

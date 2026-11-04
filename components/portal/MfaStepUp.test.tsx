@@ -38,6 +38,7 @@ describe("MfaStepUp", () => {
     expect(mfa.verify).toHaveBeenCalledWith({ factorId: "f1", challengeId: "c1", code: "123456" });
     expect(refresh).toHaveBeenCalled();
     expect(toastError).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: /set up two-factor/i })).not.toBeInTheDocument();
   });
 
   it("shows an error and does not redirect on a wrong code", async () => {
@@ -55,6 +56,10 @@ describe("MfaStepUp", () => {
     render(<MfaStepUp next="/admin" />);
     submitCode("123456");
     await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(screen.getByRole("link", { name: /set up two-factor in settings/i })).toHaveAttribute(
+      "href",
+      "/portal/settings"
+    );
     expect(mfa.challenge).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
   });

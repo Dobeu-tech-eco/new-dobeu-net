@@ -5,7 +5,8 @@ const h = vi.hoisted(() => ({
   requireCompanyAdmin: vi.fn(),
   createAdminClient: vi.fn(),
   fromCalls: [] as string[],
-  companies: [] as Array<{ id: string; name: string; status: string }>
+  companies: [] as Array<{ id: string; name: string; status: string }>,
+  user: { id: "u1" } as { id: string } | null
 }));
 
 class RedirectError extends Error {
@@ -34,7 +35,7 @@ vi.mock("@/lib/actions/members", () => ({
 vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: h.createAdminClient,
   createClient: vi.fn(async () => ({
-    auth: { getUser: async () => ({ data: { user: { id: "u1" } } }) },
+    auth: { getUser: async () => ({ data: { user: h.user } }) },
     from: (table: string) => {
       h.fromCalls.push(table);
       const result =
@@ -80,6 +81,7 @@ beforeEach(() => {
     }
   });
   h.fromCalls.length = 0;
+  h.user = { id: "u1" };
   h.companies = [{ id: "c1", name: "Acme", status: "active" }];
 });
 
@@ -108,6 +110,23 @@ describe("CompanyMembersPage guard", () => {
     expect(screen.getByText(/contact dobeu/i)).toBeInTheDocument();
     expect(h.createAdminClient).not.toHaveBeenCalled();
     expect(h.fromCalls.filter((t) => MEMBER_READS.includes(t))).toHaveLength(1);
+  });
+
+  it("shows a neutral (not suspended) notice for forbidden on an active company", async () => {
+    h.requireCompanyAdmin.mockRejectedValue(new AuthError("forbidden"));
+    render(await CompanyMembersPage(props));
+    expect(screen.getByText(/don't have access to this company right now/i)).toBeInTheDocument();
+    expect(screen.queryByText(/is suspended/i)).not.toBeInTheDocument();
+    expect(h.createAdminClient).not.toHaveBeenCalled();
+  });
+
+  it("redirects to login before any query when there is no user", async () => {
+    h.user = null;
+    await expect(CompanyMembersPage(props)).rejects.toMatchObject({
+      url: `/login?next=${encodeURIComponent("/company/members")}`
+    });
+    expect(h.fromCalls).toEqual([]);
+    expect(h.createAdminClient).not.toHaveBeenCalled();
   });
 
   it("rethrows non-auth errors", async () => {

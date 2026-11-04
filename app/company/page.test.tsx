@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const h = vi.hoisted(() => ({
   requireCompanyAdmin: vi.fn(),
   fromCalls: [] as string[],
-  companies: [] as Array<{ id: string; name: string; status: string }>
+  companies: [] as Array<{ id: string; name: string; status: string }>,
+  user: { id: "u1" } as { id: string } | null
 }));
 
 class RedirectError extends Error {
@@ -26,7 +27,7 @@ vi.mock("@/lib/actions/company-auth", () => ({
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
-    auth: { getUser: async () => ({ data: { user: { id: "u1" } } }) },
+    auth: { getUser: async () => ({ data: { user: h.user } }) },
     from: (table: string) => {
       h.fromCalls.push(table);
       const result =
@@ -56,6 +57,7 @@ const DATA_TABLES = ["projects", "work_orders", "asset_entitlements"];
 beforeEach(() => {
   h.requireCompanyAdmin.mockReset();
   h.fromCalls.length = 0;
+  h.user = { id: "u1" };
   h.companies = [{ id: "c1", name: "Acme", status: "active" }];
 });
 
@@ -70,7 +72,7 @@ describe("CompanyOverviewPage guard", () => {
       url: `/portal/settings/mfa?next=${encodeURIComponent("/company?company=c1")}`
     });
     expect(h.requireCompanyAdmin).toHaveBeenCalledWith("c1");
-    expect(h.fromCalls).not.toEqual(expect.arrayContaining(DATA_TABLES));
+    expect(h.fromCalls.filter((t) => DATA_TABLES.includes(t))).toEqual([]);
   });
 
   it("renders a notice and reads no data for a suspended company", async () => {
@@ -80,6 +82,23 @@ describe("CompanyOverviewPage guard", () => {
     expect(screen.getByText(/this company is suspended/i)).toBeInTheDocument();
     expect(screen.getByText(/contact dobeu/i)).toBeInTheDocument();
     expect(h.fromCalls.filter((t) => DATA_TABLES.includes(t))).toEqual([]);
+  });
+
+  it("shows a neutral (not suspended) notice for forbidden on an active company and reads no data", async () => {
+    h.requireCompanyAdmin.mockRejectedValue(new AuthError("forbidden"));
+    render(await CompanyOverviewPage(props));
+    expect(screen.getByText(/don't have access to this company right now/i)).toBeInTheDocument();
+    expect(screen.queryByText(/is suspended/i)).not.toBeInTheDocument();
+    expect(h.fromCalls.filter((t) => DATA_TABLES.includes(t))).toEqual([]);
+  });
+
+  it("redirects to login before any query when there is no user", async () => {
+    h.user = null;
+    await expect(CompanyOverviewPage(props)).rejects.toMatchObject({
+      url: `/login?next=${encodeURIComponent("/company")}`
+    });
+    expect(h.fromCalls).toEqual([]);
+    expect(h.requireCompanyAdmin).not.toHaveBeenCalled();
   });
 
   it("redirects an unauthenticated guard failure to login with the deep link", async () => {

@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Users, FolderKanban, Ticket, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   guardCompanyPage,
   pickCompany,
   resolveAdminCompanies,
-  SuspendedNotice,
+  GuardNotice,
   type AdminCompany
 } from "./_lib/admin-companies";
 
@@ -22,7 +23,11 @@ export default async function CompanyOverviewPage({
     data: { user }
   } = await supabase.auth.getUser();
 
-  const companies = await resolveAdminCompanies(supabase, user?.id ?? "");
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent("/company")}`);
+  }
+
+  const { companies } = await resolveAdminCompanies(supabase, user.id);
   const selected = pickCompany(companies, sp.company);
 
   // Defensive: the layout gates access, but if resolution turns up empty, render
@@ -41,8 +46,9 @@ export default async function CompanyOverviewPage({
   const companyId = selected.id;
   // Layout and page render in parallel: re-check active company + AAL2 here,
   // before any count read.
-  if ((await guardCompanyPage(companyId, "/company")) === "suspended") {
-    return <SuspendedNotice />;
+  const guard = await guardCompanyPage(selected, "/company");
+  if (guard !== "ok") {
+    return <GuardNotice outcome={guard} />;
   }
 
   const [membersRes, projectsRes, workOrdersRes, entitlementsRes] = await Promise.all([
