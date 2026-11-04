@@ -15,7 +15,10 @@ vi.mock("next/navigation", () => ({
     throw new Error(`NEXT_REDIRECT:${url}`);
   },
 }));
-vi.mock("@/lib/company-invites", () => ({ respondToInvite: h.respond }));
+vi.mock("@/lib/company-invites", async (orig) => ({
+  ...(await orig<typeof import("@/lib/company-invites")>()),
+  respondToInvite: h.respond,
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => h.client),
   createAdminClient: vi.fn(() => ({ admin: true })),

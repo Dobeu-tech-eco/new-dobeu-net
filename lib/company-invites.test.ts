@@ -6,7 +6,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: vi.fn(() => h.admin),
 }));
 
-import { listPendingInvites, respondToInvite } from "./company-invites";
+import { listPendingInvites, requireMailboxProof, respondToInvite } from "./company-invites";
 
 type Res = { data?: unknown; error?: { message: string } | null };
 type Call = { table: string; op: string; filters: [string, unknown[]][]; payload?: unknown };
@@ -149,14 +149,15 @@ describe("respondToInvite accept", () => {
     });
   });
 
-  it("a company suspended after the read is reverted to invited, unaudited", async () => {
+  // Factories: the fake consumes (shift) its queues, so never share arrays.
+  const suspendedAfter = () => [{ data: { status: "active" } }, { data: { status: "suspended" } }];
+  const written = () => ({ data: [{ company_id: C, role: "employee" }] });
+
+  it("a company suspended after the write is reverted to invited, unaudited", async () => {
     const { admin, calls } = fakeAdmin(
       acceptScript({
-        "companies.select": [{ data: { status: "active" } }, { data: { status: "suspended" } }],
-        "company_members.update": [
-          { data: [{ company_id: C, role: "employee" }] },
-          { data: null },
-        ],
+        "companies.select": suspendedAfter(),
+        "company_members.update": [written(), { data: [{ id: M }] }],
       }),
     );
     expect(await respondToInvite(admin, U, M, "accept")).toEqual({
@@ -174,20 +175,56 @@ describe("respondToInvite accept", () => {
     expect(calls.some((c) => c.table === "admin_audit_log")).toBe(false);
   });
 
-  it("a failed revert is logged and still reports unavailable", async () => {
-    const { admin } = fakeAdmin(
+  it.each([
+    ["errors", { error: { message: "revert down" } }],
+    ["matches zero rows", { data: [] }],
+  ])("a revert that %s audits the still-active row and warns", async (_n, revert) => {
+    const warn = vi.spyOn(console, "warn");
+    const { admin, calls } = fakeAdmin(
       acceptScript({
-        "companies.select": [{ data: { status: "active" } }, { data: { status: "suspended" } }],
-        "company_members.update": [
-          { data: [{ company_id: C, role: "employee" }] },
-          { error: { message: "revert down" } },
-        ],
+        "companies.select": suspendedAfter(),
+        "company_members.update": [written(), revert],
       }),
     );
     expect(await respondToInvite(admin, U, M, "accept")).toEqual({
       ok: false,
       error: "invite_unavailable",
     });
+    expect(calls.find((c) => c.table === "admin_audit_log")!.payload).toEqual({
+      actor_user_id: U,
+      action: "company_member.accept",
+      target_type: "company",
+      target_id: C,
+      data: {
+        member_id: M,
+        user_id: U,
+        role: "employee",
+        company_inactive_after_accept: true,
+        revert_failed: true,
+      },
+    });
+    expect(warn.mock.calls.some((c) => String(c[0]).includes("revert"))).toBe(true);
+  });
+
+  it("a failed post-accept re-check keeps the accept and audits it (outer catch not reached)", async () => {
+    const warn = vi.spyOn(console, "warn");
+    const { admin, calls } = fakeAdmin(
+      acceptScript({
+        "companies.select": [
+          { data: { status: "active" } },
+          { error: { message: "read down" } },
+        ],
+      }),
+    );
+    expect(await respondToInvite(admin, U, M, "accept")).toEqual({
+      ok: true,
+      companyId: C,
+      isAdminRole: false,
+    });
+    const audit = calls.find((c) => c.table === "admin_audit_log")!;
+    expect((audit.payload as { action: string }).action).toBe("company_member.accept");
+    expect(calls.filter((c) => c.op === "update")).toHaveLength(1);
+    expect(warn.mock.calls.some((c) => String(c[0]).includes("re-check"))).toBe(true);
   });
 
   it("a suspended company cannot be joined", async () => {
@@ -323,5 +360,40 @@ describe("listPendingInvites", () => {
     });
     h.admin = admin;
     expect(await listPendingInvites(U)).toEqual({ invites: [], error: true });
+  });
+});
+
+describe("requireMailboxProof", () => {
+  const client = (res: unknown) =>
+    ({
+      auth: { mfa: { getAuthenticatorAssuranceLevel: vi.fn(async () => res) } },
+    }) as unknown as DBClient;
+  const withMethods = (methods: unknown[]) =>
+    client({ data: { currentAuthenticationMethods: methods }, error: null });
+
+  it.each(["otp", "magiclink", "invite", "email/signup"])("%s proves the mailbox", async (method) => {
+    expect(await requireMailboxProof(withMethods([{ method, timestamp: 1 }]))).toBeNull();
+  });
+
+  it("accepts a plain-string entry", async () => {
+    expect(await requireMailboxProof(withMethods(["otp"]))).toBeNull();
+    expect(await requireMailboxProof(withMethods(["password"]))).toBe("invite_email_unconfirmed");
+  });
+
+  it("password and totp alone do not count", async () => {
+    expect(
+      await requireMailboxProof(
+        withMethods([{ method: "password", timestamp: 1 }, { method: "totp", timestamp: 2 }]),
+      ),
+    ).toBe("invite_email_unconfirmed");
+  });
+
+  it("a lookup error or empty data is invite_response_failed", async () => {
+    expect(await requireMailboxProof(client({ data: null, error: { message: "x" } }))).toBe(
+      "invite_response_failed",
+    );
+    expect(await requireMailboxProof(client({ data: null, error: null }))).toBe(
+      "invite_response_failed",
+    );
   });
 });

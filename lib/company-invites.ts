@@ -30,6 +30,53 @@ export type PendingInvite = {
 
 type RoleInfo = { label: string; rank: number };
 
+function isAdminRank(roles: Map<string, RoleInfo>, role: string): boolean {
+  return (roles.get(role)?.rank ?? 0) >= COMPANY_ADMIN_RANK;
+}
+
+/** Throws on a read error; a missing company counts as not active. */
+async function isCompanyActive(
+  admin: DBClient,
+  companyId: string,
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from("companies")
+    .select("status")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.status === "active";
+}
+
+/**
+ * Sign-in methods that prove control of the mailbox (not password or totp).
+ * NOTE: `otp` is also emitted by phone/SMS OTP; this gate assumes phone
+ * sign-in stays disabled (supabase/config.toml [auth.sms] enable_signup =
+ * false; see D51).
+ */
+const MAILBOX_PROOF_METHODS: ReadonlySet<string> = new Set([
+  "otp",
+  "magiclink",
+  "invite",
+  "email/signup",
+]);
+
+/**
+ * `email_confirmed_at` alone is not mailbox proof (signups may auto-confirm,
+ * so a squatter can register a victim's address). Require that the current
+ * session was established through an email link. Returns null when proven.
+ */
+export async function requireMailboxProof(
+  supabase: DBClient,
+): Promise<null | "invite_email_unconfirmed" | "invite_response_failed"> {
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error || !data) return "invite_response_failed";
+  const proven = data.currentAuthenticationMethods.some((m) =>
+    MAILBOX_PROOF_METHODS.has(typeof m === "string" ? m : m.method),
+  );
+  return proven ? null : "invite_email_unconfirmed";
+}
+
 async function loadRoles(
   admin: DBClient,
 ): Promise<Map<string, RoleInfo> | null> {
@@ -77,7 +124,7 @@ export async function listPendingInvites(
           companyName,
           role: r.role,
           roleLabel: info?.label ?? r.role,
-          isAdminRole: (info?.rank ?? 0) >= COMPANY_ADMIN_RANK,
+          isAdminRole: isAdminRank(roles, r.role),
         },
       ];
     });
@@ -88,6 +135,111 @@ export async function listPendingInvites(
   }
 }
 
+type MemberRow = { company_id: string; role: string };
+
+/** A write that committed (`row`) or one that changed nothing (`error`). */
+type Applied =
+  | {
+      row: MemberRow;
+      isAdminRole: boolean;
+      /** Extra audit fields when the log must describe an inconsistent state. */
+      auditExtra?: Record<string, boolean>;
+      /** Set when the row stays written but the caller must still be refused. */
+      refuse?: InviteFailure;
+    }
+  | { error: InviteFailure };
+
+/**
+ * Accept: read own invited row, require an ACTIVE company, then activate.
+ * Throws only BEFORE the update commits; everything after is handled inline so
+ * the row and the audit log can never disagree with the reported result.
+ */
+async function acceptInvite(
+  admin: DBClient,
+  userId: string,
+  memberId: string,
+  scope: string,
+): Promise<Applied> {
+  const { data: current, error } = await admin
+    .from("company_members")
+    .select("company_id, role")
+    .eq("id", memberId)
+    .eq("user_id", userId)
+    .eq("status", "invited")
+    .maybeSingle();
+  if (error) throw error;
+  if (!current) return { error: "invite_unavailable" };
+  if (!(await isCompanyActive(admin, current.company_id))) {
+    return { error: "invite_unavailable" };
+  }
+
+  // Resolve the catalog before writing so a read failure cannot leave an
+  // accepted invite that reports an error.
+  const roles = await loadRoles(admin);
+  if (!roles) throw new Error("role catalog unavailable");
+
+  const { data: updated, error: updateError } = await admin
+    .from("company_members")
+    .update({ status: "active" })
+    .eq("id", memberId)
+    .eq("user_id", userId)
+    .eq("status", "invited")
+    .select("company_id, role");
+  if (updateError) throw updateError;
+  const row = updated?.[0];
+  if (!row) return { error: "invite_unavailable" };
+
+  // Committed. The status read above can be stale: re-check, and undo the
+  // activation if the company was suspended meanwhile.
+  let stillActive = true; // a failed re-check keeps the accept (pre-check passed)
+  try {
+    stillActive = await isCompanyActive(admin, row.company_id);
+  } catch (e) {
+    console.warn(`[${scope}] post-accept re-check failed:`, safeErrorFields(e));
+  }
+  const applied = { row, isAdminRole: isAdminRank(roles, row.role) };
+  if (stillActive) return applied;
+
+  try {
+    const { data: reverted, error: revertError } = await admin
+      .from("company_members")
+      .update({ status: "invited" })
+      .eq("id", memberId)
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .select("id");
+    if (revertError) throw revertError;
+    if (reverted && reverted.length > 0) return { error: "invite_unavailable" };
+    console.warn(`[${scope}] revert matched no row`);
+  } catch (e) {
+    console.warn(`[${scope}] revert failed:`, safeErrorFields(e));
+  }
+  // The row is still active: the audit must say so.
+  return {
+    ...applied,
+    auditExtra: { company_inactive_after_accept: true, revert_failed: true },
+    refuse: "invite_unavailable",
+  };
+}
+
+/** Decline never needs the company active: an invitee may always walk away. */
+async function declineInvite(
+  admin: DBClient,
+  userId: string,
+  memberId: string,
+): Promise<Applied> {
+  const { data, error } = await admin
+    .from("company_members")
+    .delete()
+    .eq("id", memberId)
+    .eq("user_id", userId)
+    .eq("status", "invited")
+    .select("company_id, role");
+  if (error) throw error;
+  const row = data?.[0];
+  return row ? { row, isAdminRole: false } : { error: "invite_unavailable" };
+}
+
 /**
  * Accept or decline the user's own pending invite with the service role.
  *
@@ -95,9 +247,6 @@ export async function listPendingInvites(
  * (id + user_id + status) and zero affected rows is reported as
  * `invite_unavailable`, so a concurrent accept, disable or admin delete can
  * never be overwritten and the audited transition is never false.
- *
- * Accept additionally needs the company to be ACTIVE. Decline deliberately
- * does NOT: an invitee may always walk away from a suspended company.
  */
 export async function respondToInvite(
   admin: DBClient,
@@ -107,89 +256,31 @@ export async function respondToInvite(
 ): Promise<InviteResponseResult> {
   const scope = `company-invite-${response}`;
   try {
-    let row: { company_id: string; role: string } | undefined;
-    let isAdminRole = false;
-    let roles: Map<string, RoleInfo> | null = null;
-
-    if (response === "accept") {
-      const { data: current, error } = await admin.from("company_members")
-        .select("company_id, role")
-        .eq("id", memberId)
-        .eq("user_id", userId)
-        .eq("status", "invited")
-        .maybeSingle();
-      if (error) throw error;
-      if (!current) return { ok: false, error: "invite_unavailable" };
-
-      const { data: company, error: companyError } = await admin
-        .from("companies")
-        .select("status")
-        .eq("id", current.company_id)
-        .maybeSingle();
-      if (companyError) throw companyError;
-      if (company?.status !== "active") {
-        return { ok: false, error: "invite_unavailable" };
-      }
-
-      // Resolve the rank before writing so a catalog read failure cannot
-      // leave an accepted invite that reports an error.
-      roles = await loadRoles(admin);
-      if (!roles) throw new Error("role catalog unavailable");
-
-      const { data: updated, error: updateError } = await admin.from("company_members")
-        .update({ status: "active" })
-        .eq("id", memberId)
-        .eq("user_id", userId)
-        .eq("status", "invited")
-        .select("company_id, role");
-      if (updateError) throw updateError;
-      row = updated?.[0];
-      if (row) {
-        // The status read above can go stale: re-check after the write and
-        // undo the activation if the company was suspended meanwhile.
-        const { data: after, error: afterError } = await admin
-          .from("companies")
-          .select("status")
-          .eq("id", row.company_id)
-          .maybeSingle();
-        if (afterError) throw afterError;
-        if (after?.status !== "active") {
-          const { error: revertError } = await admin
-            .from("company_members")
-            .update({ status: "invited" })
-            .eq("id", memberId)
-            .eq("user_id", userId)
-            .eq("status", "active");
-          if (revertError) {
-            console.warn(`[${scope}] revert failed:`, safeErrorFields(revertError));
-          }
-          return { ok: false, error: "invite_unavailable" };
-        }
-        // Rank comes from the row actually written, not the earlier read.
-        isAdminRole = (roles.get(row.role)?.rank ?? 0) >= COMPANY_ADMIN_RANK;
-      }
-    } else {
-      const { data: deleted, error } = await admin.from("company_members")
-        .delete()
-        .eq("id", memberId)
-        .eq("user_id", userId)
-        .eq("status", "invited")
-        .select("company_id, role");
-      if (error) throw error;
-      row = deleted?.[0];
-    }
-
-    if (!row) return { ok: false, error: "invite_unavailable" };
+    const applied =
+      response === "accept"
+        ? await acceptInvite(admin, userId, memberId, scope)
+        : await declineInvite(admin, userId, memberId);
+    if ("error" in applied) return { ok: false, error: applied.error };
 
     await writeAdminAudit(admin, {
       actorUserId: userId,
       action: `company_member.${response}`,
       targetType: "company",
-      targetId: row.company_id,
-      data: { member_id: memberId, user_id: userId, role: row.role },
+      targetId: applied.row.company_id,
+      data: {
+        member_id: memberId,
+        user_id: userId,
+        role: applied.row.role,
+        ...applied.auditExtra,
+      },
       logScope: scope,
     });
-    return { ok: true, companyId: row.company_id, isAdminRole };
+    if (applied.refuse) return { ok: false, error: applied.refuse };
+    return {
+      ok: true,
+      companyId: applied.row.company_id,
+      isAdminRole: applied.isAdminRole,
+    };
   } catch (e) {
     console.warn(`[${scope}] failed:`, safeErrorFields(e));
     return { ok: false, error: "invite_response_failed" };

@@ -3,9 +3,11 @@
  * Company invite accept / decline (D47).
  *
  * The invitee explicitly accepts or declines; nothing happens on sign-in.
- * Order is load-bearing: `requireUser()` (cookie-bound) first, the
- * confirmed-email check second, and only THEN the service-role client is
- * created. The membership write itself is service-role (clients cannot
+ * Order is load-bearing: `requireUser()` (cookie-bound) first, then the
+ * confirmed-email check and the email-link session requirement
+ * (`requireMailboxProof`: a password-only session is refused), and only THEN
+ * the service-role client is created. After an accept commits, the company
+ * status is re-checked and the activation reverted if it was suspended. The membership write itself is service-role (clients cannot
  * activate members: see enforce_company_member_activation) and is scoped to
  * the caller's own `invited` row inside `respondToInvite`.
  *
@@ -18,21 +20,16 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { AuthError, requireUser } from "@/lib/actions/auth";
 import {
+  requireMailboxProof,
   respondToInvite,
   type InviteResponse,
 } from "@/lib/company-invites";
 import { safeErrorFields } from "@/lib/log-safe";
 import { createAdminClient } from "@/lib/supabase/server";
 
-/** Sign-in methods that prove control of the mailbox (not password or totp). */
-const MAILBOX_PROOF_METHODS: ReadonlySet<string> = new Set([
-  "otp",
-  "magiclink",
-  "invite",
-  "email/signup",
-]);
-
 const uuid = z.guid("invalid id");
+
+type RespondData = { companyId: string; isAdminRole: boolean };
 
 export type ActionResult<T> =
   { ok: true; data: T } | { ok: false; error: string };
@@ -48,27 +45,14 @@ export type InviteResponseNoticeCode =
 async function respond(
   memberId: string,
   response: InviteResponse,
-): Promise<ActionResult<{ companyId: string; isAdminRole: boolean }>> {
+): Promise<ActionResult<RespondData>> {
   try {
     const { user, supabase } = await requireUser();
-    // email_confirmed_at alone is not mailbox proof (signups may auto-confirm,
-    // so a squatter can register a victim's address). Require a confirmed
-    // email AND a session established through an email link.
     if (!user.email_confirmed_at) {
       return { ok: false, error: "invite_email_unconfirmed" };
     }
-    const { data: aal, error: aalError } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aalError || !aal) {
-      return { ok: false, error: "invite_response_failed" };
-    }
-    if (
-      !aal.currentAuthenticationMethods.some((m) =>
-        MAILBOX_PROOF_METHODS.has(typeof m === "string" ? m : m.method),
-      )
-    ) {
-      return { ok: false, error: "invite_email_unconfirmed" };
-    }
+    const proofError = await requireMailboxProof(supabase);
+    if (proofError) return { ok: false, error: proofError };
     const id = uuid.safeParse(memberId);
     if (!id.success) {
       return { ok: false, error: "invite_unavailable" };
@@ -99,14 +83,14 @@ async function respond(
 
 export async function acceptCompanyInvite(
   memberId: string,
-): Promise<ActionResult<{ companyId: string; isAdminRole: boolean }>> {
+): Promise<ActionResult<RespondData>> {
   return respond(memberId, "accept");
 }
 
 /** Works for a suspended company too: leaving an invite never needs it active. */
 export async function declineCompanyInvite(
   memberId: string,
-): Promise<ActionResult<{ companyId: string; isAdminRole: boolean }>> {
+): Promise<ActionResult<RespondData>> {
   return respond(memberId, "decline");
 }
 
