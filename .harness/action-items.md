@@ -52,6 +52,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | createInvoiceForWorkOrder returns plain ok:true when the back-link fails (no linkFailed flag) so AdminCreateInvoiceButton shows nothing; return linkFailed:true and show the notice — PR #320 fix pass round-3 review M4 (L-023) |  | done |  | 2026-11-04 |
 | Document the manual Supabase remedies the invoice guard messages point to (set work_orders.invoice_id, set invoices.status = void, read admin_audit_log) in docs/runbooks/admin-and-test-customer.md; add a partial unique index on invoices(stripe_invoice_id) — PR #320 fix pass round-3 review L4/L5 |  | open |  | 2026-11-04 |
 | PR #320 round-4 review follow-ups: L1 notice when the linked-invoice read fails on app/admin/tickets/[id]/page.tsx; L2 keep role=status regions mounted before text (AdminCreateInvoiceButton, NewInvoiceDialog); L3 per-read assertions in app/admin/invoices/page.test.tsx; L4 one shared link-failed notice helper; L5 add 'then reload this page'; N1 quoted_amount_cents > 0 check; N2 reuse revalidateInvoicePaths() — pr-fix/review4-opus.md |  | open |  | 2026-11-04 |
+| D28 follow-up: signed-out /company/* redirects to /login?next=/company, dropping the path after /company and not URL-encoding next (seen on /company/members in the 2026-11-04 production walkthrough); align it with the middleware gate (lib/supabase/middleware.ts, next=<full encoded path>) when /company/* moves into the middleware for D28 |  | open |  | 2026-11-04 |
 
 ## Handoff
 
