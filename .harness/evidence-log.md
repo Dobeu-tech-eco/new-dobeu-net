@@ -115,3 +115,14 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
 - Evidence (local stack + vitest, final tree): `pnpm verify` 1148/1148, strict build; pgTAP 151/151 (new admin_audit_and_company_isolation: 8x 42501 on admin_audit_log for anon/authenticated, company and no-project isolation); types drift clean; e2e 71/71 non-visual (new admin-posted-work 3/3); verifier walkthrough 3/3 portal screens. Visual tests fail locally only (linux baselines). Admin AAL2 screens not walkable locally (TOTP disabled) — Jeremy checks on Preview.
 - Production: ADMIN_EMAILS set to exactly jeremyw@dobeu.net in Vercel Production + Preview (2026-11-04 02:45 UTC, metadata-verified). Nothing deployed; no production migration.
 - Receipt: `runs/20261103-213646/receipt.md`. Follow-ups D28-D32.
+
+## 2026-11-04 run 20261104-073007 (PR #326, merged 935d872) — D44 package, D45 local step-up
+- D45 local leg: supabase/config.toml [auth.mfa.totp] enroll/verify on; e2e/company-step-up.spec.ts (RFC 6238 helper e2e/totp.ts) signs in AAL1, opens /company/members?company=<id>, is sent to /portal/settings/mfa?next=<exact target>, passes a real TOTP step-up and lands on the exact deep link; chromium + mobile-chrome in parallel 10/10 with tickets + admin-posted-work; mutation goes red. bypassCSP (dev CSP blocks the local Supabase URL, D51); live walk is H4 with H3.
+- D44: decision package (memo, draft migration, draft pgTAP 73/73 inside BEGIN…ROLLBACK, negative control 10 not ok). `pnpm verify` 1404/1404. CI green on 7e0347e (Verify, E2E, Lighthouse, CodeQL, gitleaks, pnpm audit, claude-review, Bugbot).
+
+## 2026-11-04 run 20261104-125154 — D44 implemented (option b)
+- supabase/migrations/20261105000100_suspended_company_reads.sql: is_active_company_member (SECURITY DEFINER, STABLE, pinned search_path) on the 10 data-read policies (7 tables + 3 storage.objects); is_company_member, companies_select_member, company_members_select_comember, wo_insert_own unchanged; drift guards on the 7 tables and storage.objects (scoped to the 3 buckets). Idempotent (re-run via psql exit 0). Applied to the LOCAL stack only; production apply by Jeremy after merge.
+- pgTAP: suspended_company_reads 84 (owner branch per policy, policy-set pins), all suites 269/269; mutation (one policy back to is_company_member) -> not ok.
+- Portal: lib/company-status.ts + components/portal/CompanySuspendedBanner.tsx in app/portal/layout.tsx (fixed copy, role=status, fail quiet); walkthrough 8/8 (light/dark, 390/1440) on a locally seeded suspended company: banner shown, own project visible, company-shared project hidden.
+- `pnpm verify` 1417/1417, strict build clean; lib/database.types.ts drift = the one new function.
+- P3 access-boundary box stays unchecked (L-011): this adds evidence for company-shared reads, not every route.

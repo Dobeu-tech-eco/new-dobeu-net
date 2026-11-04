@@ -9,7 +9,7 @@
 ## Access model (unchanged)
 
 - Admin reads and writes use `createAdminClient()` (service role, bypasses RLS) behind the `ADMIN_EMAILS` gate. RLS only governs the cookie-bound `authenticated` client and `anon`.
-- Clients read their own rows. Active company members also get read-only access to company-scoped rows (`projects`, `work_orders`, and through them `project_files`, `invoices`, `work_order_attachments`).
+- Clients read their own rows. Active members of an ACTIVE company (`is_active_company_member`, since 20261105000100; a suspended company's members lose the company-shared path but keep rows they own or created) also get read-only access to company-scoped rows (`projects`, `work_orders`, and through them `project_files`, `invoices`, `work_order_attachments`, plus company-entitled `digital_assets` and their storage objects).
 - Clients write only `profiles` (own row), `work_orders` and `work_order_attachments` (insert), and `company_members` (company admins only; since 20261104000200 also AAL2 and an active company, see below).
 
 ## Table audit
@@ -59,6 +59,7 @@ Superseded 2026-11-03: `20261103000100` replaces both `*_storage_select_own` pol
 | `set_updated_at()` | invoker (trigger) | **unset** (advisor `function_search_path_mutable`) | PUBLIC | `pg_catalog, public`; revoke from public/anon/authenticated |
 | `handle_new_user()` | **definer** (trigger) | `public` | PUBLIC | `pg_catalog, public, pg_temp`; revoke from public/anon/authenticated |
 | `is_company_member(uuid)` | **definer** | `public` | PUBLIC + anon | `pg_catalog, public, pg_temp`; revoke public/anon; **authenticated + service_role keep EXECUTE** |
+| `is_active_company_member(uuid)` | **definer** | new in 20261105000100 (`pg_catalog, public, pg_temp`) | revoked from public/anon at creation | same membership check as `is_company_member`, plus `companies.status = 'active'`; used by the 10 data-read policies (D44) |
 | `company_role_rank(uuid)` | **definer** | `public` | PUBLIC + anon | same as above |
 | `can_manage_company_members(uuid)` | **definer** | new in 20261104000200 (`pg_catalog, public, pg_temp`) | revoked from public/anon at creation | true only for an AAL2 session, rank >= 100 and an ACTIVE company (fails closed on a missing `aal` claim); **authenticated + service_role keep EXECUTE** (the `company_members_admin_*` policies call it) |
 | `enforce_typeform_budget_intake_state()` | invoker (trigger) | `pg_catalog, public` | already revoked | re-pinned (no-op); EXECUTE re-revoked from public/anon/authenticated if the function exists |
@@ -66,9 +67,9 @@ Superseded 2026-11-03: `20261103000100` replaces both `*_storage_select_own` pol
 
 Rationale:
 
-- **`pg_temp` listed explicitly last on SECURITY DEFINER functions.** Round 2 dropped it, which was a regression: when `pg_temp` is not named in `search_path`, Postgres searches the temporary schema FIRST for relations and types. The documented safe form (CREATE FUNCTION, "Writing SECURITY DEFINER Functions Safely") is to name it last, `pg_catalog, public, pg_temp`. The five definer functions (`handle_new_user`, `is_company_member`, `company_role_rank`, `can_manage_company_members`, `audit_typeform_budget_intake_review`) use that form. SECURITY INVOKER functions (`set_updated_at`, `enforce_typeform_budget_intake_state`, `enforce_company_member_activation`) keep `pg_catalog, public`, since they run with the caller's own privileges. Bodies are also schema-qualified (`public.*`, `auth.uid()`).
+- **`pg_temp` listed explicitly last on SECURITY DEFINER functions.** Round 2 dropped it, which was a regression: when `pg_temp` is not named in `search_path`, Postgres searches the temporary schema FIRST for relations and types. The documented safe form (CREATE FUNCTION, "Writing SECURITY DEFINER Functions Safely") is to name it last, `pg_catalog, public, pg_temp`. The six definer functions (`handle_new_user`, `is_company_member`, `is_active_company_member`, `company_role_rank`, `can_manage_company_members`, `audit_typeform_budget_intake_review`) use that form. SECURITY INVOKER functions (`set_updated_at`, `enforce_typeform_budget_intake_state`, `enforce_company_member_activation`) keep `pg_catalog, public`, since they run with the caller's own privileges. Bodies are also schema-qualified (`public.*`, `auth.uid()`).
 - **Why not an empty path.** `search_path = ''` was considered and rejected. The live function bodies have not been diffed (S2), and a drifted `handle_new_user` with an unqualified table name would break every signup.
-- **Why `authenticated` keeps EXECUTE on the membership helpers.** RLS policies run their expressions as the querying role. Revoking it would turn every company-scoped read into `permission denied for function`. After this migration every policy that calls the helpers is `to authenticated`, so anon never evaluates them and can safely lose EXECUTE.
+- **Why `authenticated` keeps EXECUTE on the membership helpers (`is_company_member`, `is_active_company_member`, `can_manage_company_members`).** RLS policies run their expressions as the querying role. Revoking it would turn every company-scoped read into `permission denied for function`. After this migration every policy that calls the helpers is `to authenticated`, so anon never evaluates them and can safely lose EXECUTE.
 
 ## Finding key
 
@@ -84,6 +85,7 @@ Rationale:
 - **F10:** `company_members` insert/update checks only tested the caller's rank, so `user_id`/`company_id` were rewritable. `inviteMember` inserts through the cookie-bound client, so the insert policy stays but is constrained; `changeMemberRole` / `deactivateMember` only write `role` / `status`.
 - **F12:** an active company admin could mint an active `company_admin` in two steps: insert an `invited` row, then UPDATE `status='active'`. A WITH CHECK cannot tell a role edit on an already-active row from a transition to active (it sees only the new row), so the block is a trigger that compares OLD and NEW. Activation is service-role only.
 - **D42 (CLOSED, 20261104000200):** `company_members_admin_insert/update/delete` only checked rank >= 100, so a direct PostgREST call with an AAL1 token, or for a suspended company, bypassed the app gate `requireCompanyAdmin` (rank, active company, AAL2). The policies now call `can_manage_company_members(company_id)`, which enforces the same three conditions and fails closed. The insert/update rank cap, `status = 'invited'` and `invited_by` checks are kept. The migration raises an exception if a prerequisite table or function is missing, rather than skipping. The service role is unaffected.
+- **D44 (closed in code, migration 20261105000100; production apply pending, Jeremy, after merge):** `is_company_member` ignored `companies.status`, so a suspended company's members kept reading its projects, files, invoices, work orders, attachments, entitled assets and storage objects. The 7 public data-read policies and the 3 storage.objects SELECT policies now call `is_active_company_member`. `is_company_member`, `companies_select_member`, `company_members_select_comember` and `wo_insert_own` are unchanged (the suspended notice and banner read the company row; blocking insert is a separate decision).
 - **F11:** `digital_assets` select was not entitlement-scoped.
 
 ## UPDATE policies

@@ -119,5 +119,6 @@ token cannot replace stored bytes.
 - **Legacy objects.** Objects uploaded before SVG was removed from the allowlist
   are not rewritten by the migration.
 - **Company-member downloads.** Storage SELECT on `project-files` and
-  `work-order-attachments` matches the table SELECT policies (owner or active
-  company member) since `20261103000100`, so co-members can download (D2 closed).
+  `work-order-attachments` matches the table SELECT policies (owner or member of an active
+  company) since `20261103000100`, so co-members can download (D2 closed); a
+  suspended company's members lose the company path since `20261105000100` (D44).

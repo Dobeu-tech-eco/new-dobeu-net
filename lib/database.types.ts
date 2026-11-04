@@ -791,6 +791,7 @@ export type Database = {
     Functions: {
       can_manage_company_members: { Args: { cid: string }; Returns: boolean };
       company_role_rank: { Args: { cid: string }; Returns: number };
+      is_active_company_member: { Args: { cid: string }; Returns: boolean };
       is_company_member: { Args: { cid: string }; Returns: boolean };
     };
     Enums: {

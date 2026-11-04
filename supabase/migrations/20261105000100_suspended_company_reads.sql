@@ -1,19 +1,24 @@
 -- =============================================================================
--- DRAFT (D44): suspended-company members lose company-scoped READS.
--- Suggested file name: supabase/migrations/20261105000100_suspended_company_reads.sql
--- NOT applied. See memo.md for the decision and the traps.
+-- D44: members of a suspended company lose company-shared READS.
 --
--- Adds public.is_active_company_member(cid): is_company_member AND
--- companies.status = 'active'. Only the company-scoped SELECT policies below
--- switch to it. Deliberately UNCHANGED:
---   * public.is_company_member            (still membership-only; all other callers)
---   * companies_select_member             (the /company layout + guards read the
---                                          company row to show the "suspended" notice)
+-- Adds public.is_active_company_member(cid): the same membership check as
+-- is_company_member, plus companies.status = 'active', and switches the 10 company-shared data-read
+-- policies to it: 7 public tables (projects, project_files, invoices,
+-- work_orders, work_order_attachments, digital_assets, asset_entitlements) and
+-- the 3 storage.objects SELECT policies (project-files, work-order-attachments,
+-- digital-assets), so the bytes go dark together with the rows.
+--
+-- Deliberately UNCHANGED:
+--   * public.is_company_member            (membership-only; all other callers)
+--   * companies_select_member             (the /company layout and the portal
+--                                          banner read the company row to show
+--                                          the "suspended" notice)
 --   * company_members_select_comember     (own row via user_id = auth.uid())
---   * wo_insert_own                       (write; separate decision, see memo)
+--   * wo_insert_own                       (write; separate product decision)
 --   * owner / created_by / entitlement-user branches of every policy
--- Idempotent: create or replace + drop policy if exists + create. The service
--- role bypasses RLS and is unaffected.
+--
+-- Idempotent: create or replace + drop policy if exists + create; safe to run
+-- twice. The service role bypasses RLS and is unaffected.
 -- =============================================================================
 
 do $$
@@ -204,8 +209,10 @@ create policy "digital_assets_storage_select_entitled" on storage.objects
   );
 
 -- ---------------------------------------------------------------- drift guard
--- Permissive policies OR together: a stray permissive SELECT policy on these
--- tables would silently re-grant suspended members access. Fail loudly.
+-- Permissive policies OR together: a stray permissive SELECT/ALL policy would
+-- silently re-grant suspended members access. Fail loudly. For storage.objects
+-- the check is scoped to policies that reference the three company buckets
+-- (other buckets' policies are none of our business).
 do $$
 declare
   v_stray text;
@@ -225,5 +232,22 @@ begin
        'asset_entitlements_select_entitled');
   if v_stray is not null then
     raise exception 'D44 migration: unexpected permissive SELECT/ALL policy (%)', v_stray;
+  end if;
+
+  select string_agg('storage.objects.' || policyname::text, ', ')
+    into v_stray
+    from pg_policies
+   where schemaname = 'storage'
+     and tablename = 'objects'
+     and permissive = 'PERMISSIVE'
+     and cmd in ('SELECT', 'ALL')
+     and (coalesce(qual, '') ~ '(project-files|work-order-attachments|digital-assets)'
+          or coalesce(with_check, '') ~ '(project-files|work-order-attachments|digital-assets)')
+     and policyname not in (
+       'project_files_storage_select_owner_or_company',
+       'wo_attachments_storage_select_owner_or_company',
+       'digital_assets_storage_select_entitled');
+  if v_stray is not null then
+    raise exception 'D44 migration: unexpected permissive SELECT/ALL storage policy (%)', v_stray;
   end if;
 end $$;
