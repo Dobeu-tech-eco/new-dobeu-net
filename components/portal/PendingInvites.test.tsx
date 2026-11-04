@@ -10,6 +10,7 @@ const invites = vi.hoisted(() => ({
       role: string;
       roleLabel: string;
       isAdminRole: boolean;
+      companyActive?: boolean;
     }[];
     error: boolean;
   },
@@ -78,6 +79,43 @@ describe("PendingInvites", () => {
     expect(screen.getByRole("link", { name: "set it up in settings" }).getAttribute("href")).toBe(
       "/portal/settings/mfa",
     );
+  });
+
+  it("shows the suspended line and only Decline for a suspended company", async () => {
+    invites.result = { invites: [{ ...member, companyActive: false }], error: false };
+    render(await PendingInvites({ userId: "u1" }));
+    expect(
+      screen.getByText(
+        "Acme Co is suspended right now. You can decline this invite, or accept it once the company is active again.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Accept invite/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Decline invite to Acme Co" })).toBeTruthy();
+  });
+
+  it("shows both buttons and no suspended line for an active company", async () => {
+    invites.result = { invites: [{ ...member, companyActive: true }], error: false };
+    render(await PendingInvites({ userId: "u1" }));
+    expect(screen.getByRole("button", { name: "Accept invite to Acme Co" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Decline invite to Acme Co" })).toBeTruthy();
+    expect(screen.queryByText(/is suspended right now/)).toBeNull();
+  });
+
+  it("handles a mixed list per row", async () => {
+    invites.result = {
+      invites: [
+        { ...member, companyActive: true },
+        { ...member, memberId: "m2", companyName: "Beta LLC", companyActive: false },
+      ],
+      error: false,
+    };
+    render(await PendingInvites({ userId: "u1" }));
+    const rows = screen.getAllByRole("listitem");
+    expect(within(rows[0]).getByRole("button", { name: "Accept invite to Acme Co" })).toBeTruthy();
+    expect(within(rows[0]).queryByText(/is suspended right now/)).toBeNull();
+    expect(within(rows[1]).queryByRole("button", { name: /Accept invite/ })).toBeNull();
+    expect(within(rows[1]).getByText(/Beta LLC is suspended right now/)).toBeTruthy();
+    expect(within(rows[1]).getByRole("button", { name: "Decline invite to Beta LLC" })).toBeTruthy();
   });
 
   it("renders a non-blocking status notice on read failure", async () => {

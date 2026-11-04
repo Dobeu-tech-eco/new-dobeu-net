@@ -4,7 +4,11 @@ import {
   acceptCompanyInviteForm,
   declineCompanyInviteForm,
 } from "@/lib/actions/invites";
-import { listPendingInvites } from "@/lib/company-invites";
+import { listPendingInvites, type PendingInvite } from "@/lib/company-invites";
+
+// `companyActive` is added to PendingInvite in lib/company-invites.ts; until
+// that lands, treat an absent value as active.
+type InviteRow = PendingInvite & { companyActive?: boolean };
 
 /**
  * "Pending company invites" for the signed-in user. Takes only the user id
@@ -35,53 +39,68 @@ export async function PendingInvites({ userId }: { userId: string }) {
         Pending company invites
       </h2>
       <ul className="rounded-xl border border-border divide-y divide-border overflow-hidden">
-        {invites.map((invite) => (
-          <li
-            key={invite.memberId}
-            className="px-4 py-3.5 flex flex-wrap items-center justify-between gap-4"
-          >
-            <div className="min-w-0">
-              <p className="font-medium text-sm">{invite.companyName}</p>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground mt-0.5">
-                {invite.roleLabel}
-              </p>
-              {invite.isAdminRole && (
-                <p className="text-xs text-muted-foreground mt-1 max-w-md">
-                  This is an admin role. After accepting, you&apos;ll need
-                  two-factor verification;{" "}
-                  <Link
-                    href="/portal/settings/mfa"
-                    className="text-primary hover:underline"
-                  >
-                    set it up in settings
-                  </Link>
-                  .
+        {(invites as InviteRow[]).map((invite) => {
+          const suspended = invite.companyActive === false;
+          return (
+            <li
+              key={invite.memberId}
+              className="px-4 py-3.5 flex flex-wrap items-center justify-between gap-4"
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-sm">{invite.companyName}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mt-0.5">
+                  {invite.roleLabel}
                 </p>
-              )}
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <form action={acceptCompanyInviteForm.bind(null, invite.memberId)}>
-                <Button
-                  type="submit"
-                  size="sm"
-                  aria-label={`Accept invite to ${invite.companyName}`}
+                {invite.isAdminRole && (
+                  <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                    This is an admin role. After accepting, you&apos;ll need
+                    two-factor verification;{" "}
+                    <Link
+                      href="/portal/settings/mfa"
+                      className="text-primary hover:underline"
+                    >
+                      set it up in settings
+                    </Link>
+                    .
+                  </p>
+                )}
+                {suspended && (
+                  <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                    {invite.companyName} is suspended right now. You can decline
+                    this invite, or accept it once the company is active again.
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 gap-2">
+                {!suspended && (
+                  <form
+                    action={acceptCompanyInviteForm.bind(null, invite.memberId)}
+                  >
+                    <Button
+                      type="submit"
+                      size="sm"
+                      aria-label={`Accept invite to ${invite.companyName}`}
+                    >
+                      Accept
+                    </Button>
+                  </form>
+                )}
+                <form
+                  action={declineCompanyInviteForm.bind(null, invite.memberId)}
                 >
-                  Accept
-                </Button>
-              </form>
-              <form action={declineCompanyInviteForm.bind(null, invite.memberId)}>
-                <Button
-                  type="submit"
-                  size="sm"
-                  variant="outline"
-                  aria-label={`Decline invite to ${invite.companyName}`}
-                >
-                  Decline
-                </Button>
-              </form>
-            </div>
-          </li>
-        ))}
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="outline"
+                    aria-label={`Decline invite to ${invite.companyName}`}
+                  >
+                    Decline
+                  </Button>
+                </form>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
