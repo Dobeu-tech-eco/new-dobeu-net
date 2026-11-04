@@ -42,7 +42,8 @@
 ## Process
 - [ ] Dialog changes keep close behaviour and focus restoration as separate concerns; preexisting accessibility findings are reported, not silently fixed in a copy-only change (L-003)
 - [ ] A branch whose base was squash-merged is rebased with `git rebase --onto origin/main <old-base>` before pushing (L-010)
-- [ ] Closing a documented gap or adding a classification list re-checks SECURITY.md, docs/security/, docs/DEPLOYMENT.md and .harness/ for sentences it contradicts (L-012)
+- [ ] Closing a documented gap, adding a classification list, or changing a mechanism the docs name (e.g. a validator moved to a new helper) re-checks CLAUDE.md, SECURITY.md, docs/security/, docs/DEPLOYMENT.md and .harness/ for the old name and for sentences it contradicts, in the same commit (L-012)
+- [ ] Every builder worktree got a real pinned `pnpm install --frozen-lockfile --offline` from the lead before dispatch (`node_modules/next/package.json` present, `node_modules` not a symlink); a symlinked node_modules passes tsc/eslint/vitest but breaks `next build` (L-027)
 
 ## Scope
 - [ ] PR is focused — no unrelated cleanup bundled
