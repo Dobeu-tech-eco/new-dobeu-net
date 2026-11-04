@@ -10,7 +10,7 @@ const invites = vi.hoisted(() => ({
       role: string;
       roleLabel: string;
       isAdminRole: boolean;
-      companyActive?: boolean;
+      companyActive: boolean;
     }[];
     error: boolean;
   },
@@ -37,6 +37,7 @@ const member = {
   role: "member",
   roleLabel: "Member",
   isAdminRole: false,
+  companyActive: true,
 };
 
 afterEach(() => {

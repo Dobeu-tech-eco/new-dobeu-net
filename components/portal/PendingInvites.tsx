@@ -4,11 +4,7 @@ import {
   acceptCompanyInviteForm,
   declineCompanyInviteForm,
 } from "@/lib/actions/invites";
-import { listPendingInvites, type PendingInvite } from "@/lib/company-invites";
-
-// `companyActive` is added to PendingInvite in lib/company-invites.ts; until
-// that lands, treat an absent value as active.
-type InviteRow = PendingInvite & { companyActive?: boolean };
+import { listPendingInvites } from "@/lib/company-invites";
 
 /**
  * "Pending company invites" for the signed-in user. Takes only the user id
@@ -39,8 +35,8 @@ export async function PendingInvites({ userId }: { userId: string }) {
         Pending company invites
       </h2>
       <ul className="rounded-xl border border-border divide-y divide-border overflow-hidden">
-        {(invites as InviteRow[]).map((invite) => {
-          const suspended = invite.companyActive === false;
+        {invites.map((invite) => {
+          const suspended = !invite.companyActive;
           return (
             <li
               key={invite.memberId}
