@@ -43,6 +43,7 @@ Append entries as `- <date> <text>`.
 - 2026-11-03 #308 squash-merged (4143b91) after CI green (Vercel preview blocked by main-only gating; Entire Gates pending, not required). GAP 1 + GAP 2 fixed on fix/storage-gap1-gap2 (migrations 20261103000100/200, pgTAP 88/88). Receipt: .harness/runs/20261103-gaps/receipt.md
 - Ruling: GAP 1 widen storage SELECT (not narrow table SELECT); GAP 2 drop storage DELETE (not add table DELETE). One builder, not two parallel: single local DB + shared test file. Cost if wrong: one reversible migration each.
 - 2026-11-03 #309 merged (bc803d1); 20261103000100/200 applied to prod (supabase-dobe-net) via Composio SQL. Migration history reconciled: 5 prod-only 20261023* migrations added to repo from c5cc3d6 (byte-identical), prod 20260829202624 relabelled to 20260829010000, 10 repo migrations marked applied after schema evidence check; prod and local 20/20, db push dry-run up to date.
+- 2026-11-03 D10 closed: /writing-for-agents re-run on end-state.md and plan-style.md, approved by Jeremy (form only). Per-run evidence moved verbatim to .harness/evidence-log.md; end-state 317 -> 231 lines; P6 agent-writing box checked.
 - Fallback: reviewer:security copilot -> grok (copilot monthly quota exhausted).
 
 ## Failures and escalations

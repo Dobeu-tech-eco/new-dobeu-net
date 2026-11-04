@@ -1,10 +1,10 @@
 # Plan writing guidance
 
-Form-only guidance derived from the installed DTS2 end-state template and lead output contract. Scope, facts, approvals and acceptance criteria remain in `.harness/end-state.md`; runtime rules remain in the installed DTS2 workflow and `.harness/discipline.md` when scaffolded.
+Form-only guidance derived from the installed DTS2 end-state template and lead output contract. Scope, facts, approvals and acceptance criteria remain in `.harness/end-state.md`; runtime rules remain in the installed DTS2 workflow and `.harness/discipline.md`.
 
 ## Read before planning
 
-Read the current task, end state, config, lessons, scout and roster/probe results. For a rebrand task, also read `.agents/product-marketing-context.md` and the latest `.harness/gtm/<stamp>/readiness.md`. GTM recommendations are proposals, not new acceptance criteria or authority to change application behavior.
+For a rebrand task, also read `.agents/product-marketing-context.md` and the latest `.harness/gtm/<stamp>/readiness.md`. GTM recommendations are proposals, not new acceptance criteria or authority to change application behavior. When the task touches a section's status or an earlier gap, read the newest entries in `.harness/evidence-log.md`.
 
 ## Write in this order
 
