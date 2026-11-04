@@ -5,7 +5,9 @@ import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/u
 
 /**
  * Refresh the Supabase session on every request so server components see fresh auth.
- * Also enforces /portal and /admin gating in one place.
+ * Also enforces /portal, /admin and /company gating in one place. /company is
+ * sign-in only here; company-admin rank, active company and AAL2 are enforced by
+ * the /company layout, each /company page, and requireCompanyAdmin().
  *
  * If Supabase env vars are missing (e.g., before the project is provisioned),
  * fall through without crashing so the marketing landing still renders.

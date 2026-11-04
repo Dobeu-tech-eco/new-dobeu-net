@@ -58,6 +58,7 @@ Only `next.config.ts` is tracked (the shadowing `next.config.js` v0-import was r
 ### Three-surface app, one Next.js project
 - **`app/` (root)** -- public marketing landing, composed from `components/landing/*` (Hero, Services, FAQ, LeadForm, lightbox-based booking/Typeform tabs), plus the legal/opt-in pages listed above.
 - **`app/portal/*`** -- authenticated client area (projects, files, invoices, messages, settings). Requires a logged-in Supabase user.
+- **`app/company/*`** -- company-admin surface (overview, members). Middleware requires sign-in (signed-out -> `/login?next=<encoded path+query>`); the layout, each page (`app/company/_lib/admin-companies.tsx` `guardCompanyPage`) and `requireCompanyAdmin()` (`lib/actions/company-auth.ts`) require company-admin rank, an active company (`companies.status = 'active'`) and an AAL2 session, failing closed. Non-admin members are sent to `/portal`. RLS on `company_members` still checks rank only (AAL2/active-company at the DB layer is an open migration item).
 - **`app/admin/*`** -- admin-only dashboards with CRUD via `lib/actions/*`. **App-layer gated** in `app/admin/layout.tsx` by `isAdminEmail(user.email)` (from `lib/utils.ts`, backed by the `ADMIN_EMAILS` env var). Most admin pages read through `createAdminClient()` (service role), so **RLS is not the active enforcement layer for admin reads today** — the `ADMIN_EMAILS` check is.
 
 ### Second Vercel service: OCI container function (`containers/function/`)
@@ -72,7 +73,7 @@ Only `next.config.ts` is tracked (the shadowing `next.config.js` v0-import was r
 - `lib/supabase/client.ts` -- browser client.
 - `lib/supabase/server.ts` -> `createClient()` -- request-cookie-bound client for Server Components / Route Handlers / Server Actions; respects RLS as the logged-in user.
 - `lib/supabase/server.ts` -> `createAdminClient()` -- **service-role, bypasses RLS, server-only**. Use only for admin ops and webhooks (e.g. the lead API). Throws if `VERCEL_SUPABASE_SERVICE_ROLE_KEY` is missing.
-- `lib/supabase/middleware.ts` + root `middleware.ts` -- refreshes the auth session on every request (matcher excludes static assets).
+- `lib/supabase/middleware.ts` + root `middleware.ts` -- refreshes the auth session on every request (matcher excludes static assets) and gates `/portal`, `/admin` and `/company`.
 
 All `/admin/*` and `/api/lead` use `export const dynamic = "force-dynamic"` because they read per-request auth/cookies and must never be statically pre-rendered.
 
@@ -129,7 +130,8 @@ Datadog is the single pane: RUM + Session Replay + browser Logs client-side (`li
 - `lib/utils.ts` — `isAdminEmail()` lives here (admin gate); also shared cn/format helpers.
 - `lib/database.types.ts` — **generated**, regenerate with `pnpm db:types`.
 - `lib/actions/` — **server-action layer**. Every file is a `"use server"` module; all return a discriminated `{ ok: true, data } | { ok: false, error }` shape so callers can branch without throwing. Server-only by transitive import of `next/headers` from `@/lib/supabase/server`.
-  - `auth.ts` — `requireUser()` (cookie-bound client + authenticated user) and `requireAdmin()` (same + `isAdminEmail()` gate + admin client) shared guards. Throws `AuthError("not_authenticated" | "forbidden")`.
+  - `auth.ts` — `requireUser()` (cookie-bound client + authenticated user) and `requireAdmin()` (same + `isAdminEmail()` gate + admin client) shared guards. Throws `AuthError("not_authenticated" | "forbidden" | "mfa_required")`.
+  - `company-auth.ts` — `requireCompanyMember(companyId, minRank)` (active membership + rank) and `requireCompanyAdmin(companyId)` (rank >= 100, then active company, then AAL2; `forbidden` always precedes `mfa_required`). Used by `members.ts`.
   - `work-orders.ts` — `submitWorkOrder` (client), `quoteWorkOrder` (admin), `acceptWorkOrderQuote` (client, owner-only — triggers Stripe invoice creation via `lib/invoice-creation.ts`), `updateWorkOrderStatus` (admin). Resend notifications on each transition, all non-fatal.
   - `projects.ts` — `createProject` / `updateProject` / `deleteProject` (admin CRUD). Cascade-deletes `project_files` per the FK ON DELETE CASCADE.
   - `invoices.ts` — `createInvoice` (admin, Stripe-hosted) and `markInvoicePaidManually` (admin escape-hatch for payments outside Stripe).
