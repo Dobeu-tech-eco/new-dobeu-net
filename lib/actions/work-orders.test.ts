@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { SendEmailResult } from "@/lib/resend";
 
 // Hoisted shared mock state so the vi.mock factories below can read it.
 const h = vi.hoisted(() => {
@@ -46,10 +47,21 @@ const h = vi.hoisted(() => {
   };
 
   const adminEmails: { value: string } = { value: "admin@dobeu.net" };
-  const sendEmailMock = vi.fn(() => Promise.resolve({ ok: true }));
+  const sendEmailMock = vi.fn<() => Promise<SendEmailResult>>(() => Promise.resolve({ ok: true }));
   const cioTrackMock = vi.fn(() => Promise.resolve({ ok: true }));
 
-  return { state, adminEmails, sendEmailMock, cioTrackMock };
+  const recordings: { table: string; method: string; args: unknown[] }[][] = [];
+  return {
+    state, adminEmails, sendEmailMock, cioTrackMock,
+    recordings,
+    get recorded() { return recordings.flat(); },
+    level: "aal2",
+    client: { email: "owner@example.com" } as { email: string } | null,
+    company: { id: "company_1", status: "active" } as { id: string; status: string } | null,
+    membership: { id: "member_1" } as { id: string } | null,
+    project: { owner_user_id: "00000000-0000-0000-0000-000000000002", company_id: null } as { owner_user_id: string; company_id: string | null } | null,
+    auditError: null as { message: string; code: string } | null,
+  };
 });
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -64,14 +76,15 @@ vi.mock("@/lib/customerio", () => ({
   isCustomerIoConfigured: () => true
 }));
 
-vi.mock("@/lib/supabase/server", () => {
+vi.mock("@/lib/supabase/server", async () => {
+  const { buildStubClient } = await import("./__test-helpers");
   function buildAuthMock() {
     return {
-      mfa: { getAuthenticatorAssuranceLevel: vi.fn(async () => ({ data: { currentLevel: "aal2", nextLevel: "aal2" }, error: null })) },
+      mfa: { getAuthenticatorAssuranceLevel: vi.fn(async () => ({ data: { currentLevel: h.level, nextLevel: "aal2" }, error: null })) },
       getUser: vi.fn(async () => ({ data: { user: h.state.user }, error: null })),
       admin: {
         getUserById: vi.fn(async () => ({
-          data: { user: { email: "owner@example.com", user_metadata: {} } },
+          data: { user: h.client },
           error: null
         }))
       }
@@ -89,45 +102,43 @@ vi.mock("@/lib/supabase/server", () => {
     };
   }
 
-  function buildFromMock() {
-    return vi.fn((table: string) => ({
-      insert: vi.fn(() => {
-        if (table === "work_order_attachments") {
-          return Promise.resolve({ data: null, error: h.state.attachmentInsertError });
-        }
-        return {
-          select: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve(h.state.insertResult))
-          }))
-        };
-      }),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: vi.fn(() =>
-              Promise.resolve({
-                data: h.state.updateError ? null : h.state.updateSelectData,
-                error: h.state.updateError
-              })
-            )
-          })),
-          then: (resolve: (v: { data: unknown; error: unknown }) => void) =>
-            resolve({ data: null, error: h.state.updateError })
-        }))
-      })),
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve(h.state.selectResult))
-        }))
-      }))
-    }));
-  }
-
   function buildClient() {
+    const stub = buildStubClient({
+      tables: {
+        work_orders: {
+          insert: h.state.insertResult,
+          selectSingle: h.state.selectResult,
+          update: { error: h.state.updateError },
+        },
+        work_order_attachments: { insert: { error: h.state.attachmentInsertError } },
+        companies: { selectSingle: { data: h.company } },
+        company_members: { selectSingle: { data: h.membership } },
+        projects: { selectSingle: { data: h.project } },
+        admin_audit_log: { insert: { error: h.auditError } },
+      },
+    });
+    const from = stub.supabase.from.getMockImplementation()!;
+    stub.supabase.from.mockImplementation((table: string) => {
+      const api = from(table);
+      if (table === "work_orders") {
+        const update = api.update;
+        api.update = vi.fn((...args: unknown[]) => {
+          const chain = update(...args);
+          // buildStubClient's update terminal omits data; these actions RETURNING rows.
+          chain.single = vi.fn(async () => ({
+            data: h.state.updateError ? null : h.state.updateSelectData,
+            error: h.state.updateError,
+          }));
+          return chain;
+        });
+      }
+      return api;
+    });
+    h.recordings.push(stub.recorded);
     return {
+      ...stub.supabase,
       auth: buildAuthMock(),
       storage: buildStorageMock(),
-      from: buildFromMock()
     };
   }
 
@@ -139,6 +150,14 @@ vi.mock("@/lib/supabase/server", () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  h.recordings.length = 0;
+  h.level = "aal2";
+  h.client = { email: "owner@example.com" };
+  h.company = { id: "company_1", status: "active" };
+  h.membership = { id: "member_1" };
+  h.project = { owner_user_id: "00000000-0000-0000-0000-000000000002", company_id: null };
+  h.auditError = null;
+  h.sendEmailMock.mockResolvedValue({ ok: true });
   h.state.user = { id: "user_owner", email: "owner@example.com" };
   h.state.insertResult = { data: { id: "wo_1" }, error: null };
   h.state.selectResult = {
@@ -470,5 +489,199 @@ describe("updateWorkOrderStatus (admin)", () => {
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/illegal transition/);
+  });
+});
+
+const CLIENT_ID = "00000000-0000-0000-0000-000000000002";
+const COMPANY_ID = "00000000-0000-0000-0000-000000000003";
+const PROJECT_ID = "00000000-0000-0000-0000-000000000004";
+const CREATE_INPUT = { client_user_id: CLIENT_ID, service_type: "logo", title: "Client logo" };
+
+function writes(table: string, method = "insert") {
+  return h.recorded.filter((entry) => entry.table === table && entry.method === method).map((entry) => entry.args[0]);
+}
+
+describe("createWorkOrderForClient", () => {
+  beforeEach(() => {
+    h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
+  });
+
+  it("posts an open ticket for the client, audits only ids/statuses, and revalidates all three pages", async () => {
+    const { createWorkOrderForClient } = await import("./work-orders");
+    const { revalidatePath } = await import("next/cache");
+    const result = await createWorkOrderForClient({ ...CREATE_INPUT, description: "Private notes", priority: "high" });
+    expect(result).toEqual({ ok: true, data: { id: "wo_1", status: "open" } });
+    expect(writes("work_orders")).toEqual([{
+      created_by: CLIENT_ID, company_id: null, project_id: null,
+      service_type: "logo", title: "Client logo", description: "Private notes", priority: "high", status: "open",
+    }]);
+    expect(writes("admin_audit_log")).toEqual([{
+      actor_user_id: "admin_id", action: "work_order.create_for_client", target_type: "work_order", target_id: "wo_1",
+      data: { client_user_id: CLIENT_ID, company_id: null, project_id: null, status: "open" },
+    }]);
+    expect(h.sendEmailMock).not.toHaveBeenCalled();
+    expect(vi.mocked(revalidatePath).mock.calls).toEqual([["/admin/tickets"], ["/portal/tickets"], ["/admin"]]);
+  });
+
+  it("posts a quoted ticket with a guarded transition, email and both audits", async () => {
+    const { createWorkOrderForClient } = await import("./work-orders");
+    const result = await createWorkOrderForClient({ ...CREATE_INPUT, company_id: COMPANY_ID, project_id: PROJECT_ID, quoted_amount_cents: 12345 });
+    expect(result).toEqual({ ok: true, data: { id: "wo_1", status: "quoted" } });
+    expect(writes("work_orders", "update")).toEqual([{
+      status: "quoted", quoted_amount_cents: 12345, quoted_at: expect.any(String),
+    }]);
+    expect(h.recorded).toContainEqual({ table: "work_orders", method: "eq", args: ["status", "open"] });
+    for (const args of [["company_id", COMPANY_ID], ["user_id", CLIENT_ID], ["status", "active"]]) {
+      expect(h.recorded).toContainEqual({ table: "company_members", method: "eq", args });
+    }
+    expect(writes("admin_audit_log")).toEqual([
+      expect.objectContaining({ action: "work_order.create_for_client" }),
+      expect.objectContaining({ action: "work_order.quote", data: { previous_status: "open", status: "quoted", amount_cents: 12345 } }),
+    ]);
+    expect(h.sendEmailMock).toHaveBeenCalledWith(expect.objectContaining({ to: "owner@example.com", subject: expect.stringMatching(/Quote ready/) }));
+  });
+
+  it("allows a project owned by another member of the selected company", async () => {
+    h.project = { owner_user_id: "another-client", company_id: COMPANY_ID };
+    const { createWorkOrderForClient } = await import("./work-orders");
+    expect((await createWorkOrderForClient({ ...CREATE_INPUT, company_id: COMPANY_ID, project_id: PROJECT_ID })).ok).toBe(true);
+  });
+
+  it.each([
+    ["not_authenticated", null, "aal2"],
+    ["forbidden", { id: "client", email: "client@example.com" }, "aal2"],
+    ["mfa_required", { id: "admin_id", email: "admin@dobeu.net" }, "aal1"],
+  ] as const)("propagates %s without writes", async (error, user, level) => {
+    h.state.user = user;
+    h.level = level;
+    const { createWorkOrderForClient } = await import("./work-orders");
+    expect(await createWorkOrderForClient(CREATE_INPUT)).toEqual({ ok: false, error });
+    expect(h.recorded).toEqual([]);
+    expect(h.sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["client", "company", "inactive company", "membership", "project", "foreign project"])("rejects invalid %s before inserting or auditing", async (invalid) => {
+    if (invalid === "client") h.client = null;
+    if (invalid === "company") h.company = null;
+    if (invalid === "inactive company") h.company = { id: COMPANY_ID, status: "suspended" };
+    if (invalid === "membership") h.membership = null;
+    if (invalid === "project") h.project = null;
+    if (invalid === "foreign project") h.project = { owner_user_id: "someone-else", company_id: "another-company" };
+    const { createWorkOrderForClient } = await import("./work-orders");
+    const result = await createWorkOrderForClient({ ...CREATE_INPUT, company_id: COMPANY_ID, project_id: PROJECT_ID });
+    expect(result.ok).toBe(false);
+    expect(writes("work_orders")).toEqual([]);
+    expect(writes("admin_audit_log")).toEqual([]);
+  });
+
+  it("rejects a company project without selecting its company", async () => {
+    h.project = { owner_user_id: "another-client", company_id: COMPANY_ID };
+    const { createWorkOrderForClient } = await import("./work-orders");
+    expect((await createWorkOrderForClient({ ...CREATE_INPUT, project_id: PROJECT_ID })).ok).toBe(false);
+    expect(writes("work_orders")).toEqual([]);
+  });
+
+  it.each([
+    { client_user_id: "invalid" }, { company_id: "invalid" }, { project_id: "invalid" },
+    { title: "x" }, { title: "x".repeat(161) }, { description: "x".repeat(8001) },
+    { service_type: "invalid" }, { priority: "urgent" },
+    { quoted_amount_cents: 0 }, { quoted_amount_cents: -1 }, { quoted_amount_cents: 1.5 },
+  ])("validates the input: %o", async (patch) => {
+    const { createWorkOrderForClient } = await import("./work-orders");
+    expect((await createWorkOrderForClient({ ...CREATE_INPUT, ...patch })).ok).toBe(false);
+    expect(h.recorded).toEqual([]);
+  });
+
+  it("treats email delivery failure as non-fatal", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.sendEmailMock.mockRejectedValueOnce(new Error("email unavailable"));
+    const { createWorkOrderForClient } = await import("./work-orders");
+    expect(await createWorkOrderForClient({ ...CREATE_INPUT, quoted_amount_cents: 1000 })).toEqual({ ok: true, data: { id: "wo_1", status: "quoted" } });
+    expect(writes("admin_audit_log")).toHaveLength(2);
+    expect(warn).toHaveBeenCalledWith(
+      "[createWorkOrderForClient] client email failed (non-fatal):",
+      { kind: "Error" },
+    );
+    warn.mockRestore();
+  });
+
+  it.each([
+    { ok: false },
+    { ok: false, error: "private provider details" },
+  ])("warns safely when email delivery returns %o without throwing", async (emailResult) => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.sendEmailMock.mockResolvedValueOnce(emailResult);
+    const { createWorkOrderForClient } = await import("./work-orders");
+    expect(await createWorkOrderForClient({ ...CREATE_INPUT, quoted_amount_cents: 1000 })).toEqual({ ok: true, data: { id: "wo_1", status: "quoted" } });
+    expect(writes("admin_audit_log")).toHaveLength(2);
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      "[createWorkOrderForClient] client email failed (non-fatal):",
+      { kind: "UnknownError" },
+    );
+    warn.mockRestore();
+  });
+
+  it("treats audit failure as non-fatal", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.auditError = { message: "audit unavailable", code: "XX000" };
+    const { createWorkOrderForClient } = await import("./work-orders");
+    expect(await createWorkOrderForClient({ ...CREATE_INPUT, quoted_amount_cents: 1000 })).toEqual({ ok: true, data: { id: "wo_1", status: "quoted" } });
+    expect(warn).toHaveBeenCalledWith("[createWorkOrderForClient] audit log insert failed (non-fatal):", "XX000");
+    warn.mockRestore();
+  });
+
+  it("does not audit or email a failed insert", async () => {
+    h.state.insertResult = { data: null, error: { message: "insert failed" } };
+    const { createWorkOrderForClient } = await import("./work-orders");
+    expect(await createWorkOrderForClient(CREATE_INPUT)).toEqual({ ok: false, error: "insert failed" });
+    expect(writes("admin_audit_log")).toEqual([]);
+    expect(h.sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["database error", "zero rows"])("reports a saved open ticket when quoting returns %s", async (failure) => {
+    if (failure === "database error") h.state.updateError = { message: "conflict" };
+    else h.state.updateSelectData = null;
+    const { createWorkOrderForClient } = await import("./work-orders");
+    const { revalidatePath } = await import("next/cache");
+    const result = await createWorkOrderForClient({ ...CREATE_INPUT, quoted_amount_cents: 1000 });
+    expect(result).toEqual({ ok: true, data: { id: "wo_1", status: "open", quoteFailed: true } });
+    expect(writes("work_orders")).toHaveLength(1);
+    expect(writes("admin_audit_log")).toEqual([expect.objectContaining({ action: "work_order.create_for_client" })]);
+    expect(h.sendEmailMock).not.toHaveBeenCalled();
+    expect(vi.mocked(revalidatePath).mock.calls).toEqual([["/admin/tickets"], ["/portal/tickets"], ["/admin"]]);
+  });
+});
+
+describe("existing work-order transition audit rows", () => {
+  beforeEach(() => {
+    h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
+  });
+
+  it("audits a successful quote", async () => {
+    h.state.selectResult.data!.status = "open";
+    const { quoteWorkOrder } = await import("./work-orders");
+    await quoteWorkOrder({ id: CLIENT_ID, amount_cents: 5000 });
+    expect(writes("admin_audit_log")).toEqual([{
+      actor_user_id: "admin_id", action: "work_order.quote", target_type: "work_order", target_id: "wo_1",
+      data: { previous_status: "open", status: "quoted", amount_cents: 5000 },
+    }]);
+  });
+
+  it("audits a successful status change", async () => {
+    h.state.selectResult.data!.status = "accepted";
+    const { updateWorkOrderStatus } = await import("./work-orders");
+    await updateWorkOrderStatus({ id: CLIENT_ID, status: "in_progress" });
+    expect(writes("admin_audit_log")).toEqual([{
+      actor_user_id: "admin_id", action: "work_order.status", target_type: "work_order", target_id: CLIENT_ID,
+      data: { previous_status: "accepted", status: "in_progress" },
+    }]);
+  });
+
+  it.each(["quote", "status"])("does not audit a rejected %s transition", async (action) => {
+    h.state.selectResult.data!.status = "closed";
+    const { quoteWorkOrder, updateWorkOrderStatus } = await import("./work-orders");
+    if (action === "quote") await quoteWorkOrder({ id: CLIENT_ID, amount_cents: 5000 });
+    else await updateWorkOrderStatus({ id: CLIENT_ID, status: "in_progress" });
+    expect(writes("admin_audit_log")).toEqual([]);
   });
 });

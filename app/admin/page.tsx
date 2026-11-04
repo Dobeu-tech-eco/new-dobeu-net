@@ -1,10 +1,54 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import { Inbox, CalendarCheck, Receipt, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  Building2,
+  CalendarCheck,
+  ClipboardList,
+  FolderKanban,
+  Inbox,
+  Receipt,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { ADMIN_ERROR_MESSAGES } from "@/lib/admin-status";
+import type { WorkOrderStatus } from "@/lib/domain-types";
+import {
+  AdminActivityFeed,
+  mergeActivity,
+} from "@/components/admin/AdminActivityFeed";
 import {
   AdminStatusBanner,
   type AdminStatusParams,
 } from "@/components/admin/AdminStatusBanner";
+
+const DASH = "\u2014";
+const FEED_SOURCE_LIMIT = 10;
+const PAID_AT_EPOCH = "1970-01-01T00:00:00Z";
+const OPEN_INVOICE_STATUSES = ["open", "overdue"] as const;
+// Terminal statuses (closed, cancelled) are not "work in flight".
+const OPEN_WORK_ORDER_STATUSES = [
+  "open",
+  "quoted",
+  "accepted",
+  "in_progress",
+  "delivered",
+] as const satisfies readonly WorkOrderStatus[];
+
+const CURRENCY_CODE = /^[A-Z]{3}$/;
+
+/** Never throws: invoices.currency is unconstrained text. */
+function safeMoney(cents: number, currency: string | null | undefined): string {
+  const code = (currency || "USD").toUpperCase();
+  if (CURRENCY_CODE.test(code)) {
+    try {
+      return formatCurrency(cents, code);
+    } catch {
+      // Well-formed but unknown code; fall through to the raw form.
+    }
+  }
+  return `${cents / 100} ${code}`;
+}
 
 export default async function AdminOverview({
   searchParams,
@@ -18,12 +62,24 @@ export default async function AdminOverview({
   since.setDate(since.getDate() - 30);
   const thirtyDaysAgo = since.toISOString();
 
+  const countHead = { count: "exact", head: true } as const;
   const [
     leadsRes,
     leadsCountRes,
     bookingsRes,
     openInvoicesRes,
+    openInvoicesCountRes,
+    paidInvoicesRes,
+    paidInvoicesCountRes,
     usersRes,
+    companiesRes,
+    activeProjectsRes,
+    feedOrdersRes,
+    feedInvoicesRes,
+    feedPaidInvoicesRes,
+    feedProjectsRes,
+    feedAuditRes,
+    ...workOrderCountRes
   ] = await Promise.all([
     supabase
       .from("leads")
@@ -40,20 +96,159 @@ export default async function AdminOverview({
       .gte("scheduled_at", new Date().toISOString())
       .order("scheduled_at")
       .limit(10),
+    // Sums are bounded by PostgREST max_rows; the head counts below detect truncation.
     supabase
       .from("invoices")
-      .select("id,amount_cents,currency,status,due_date")
-      .in("status", ["open", "overdue"]),
-    supabase.from("profiles").select("id", { count: "exact", head: true }),
+      .select("amount_cents,currency,status")
+      .in("status", OPEN_INVOICE_STATUSES)
+      .order("id"),
+    supabase
+      .from("invoices")
+      .select("id", countHead)
+      .in("status", OPEN_INVOICE_STATUSES),
+    supabase
+      .from("invoices")
+      .select("amount_cents,currency,status")
+      .eq("status", "paid")
+      .gte("paid_at", thirtyDaysAgo)
+      .order("id"),
+    supabase
+      .from("invoices")
+      .select("id", countHead)
+      .eq("status", "paid")
+      .gte("paid_at", thirtyDaysAgo),
+    supabase.from("profiles").select("id", countHead),
+    supabase.from("companies").select("id", countHead),
+    supabase.from("projects").select("id", countHead).eq("status", "active"),
+    supabase
+      .from("work_orders")
+      .select("id,title,created_at,updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(FEED_SOURCE_LIMIT),
+    supabase
+      .from("invoices")
+      .select("id,amount_cents,currency,created_at,paid_at")
+      .order("created_at", { ascending: false })
+      .limit(FEED_SOURCE_LIMIT),
+    // Payments on older invoices would be missed by the created_at slice above.
+    // gte(epoch) excludes NULL paid_at (equivalent to NOT NULL) so unpaid rows
+    // can't fill the slice when sorting descending.
+    supabase
+      .from("invoices")
+      .select("id,amount_cents,currency,paid_at")
+      .gte("paid_at", PAID_AT_EPOCH)
+      .order("paid_at", { ascending: false })
+      .limit(FEED_SOURCE_LIMIT),
+    supabase
+      .from("projects")
+      .select("id,title,updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(FEED_SOURCE_LIMIT),
+    // Never select `data`: audit payloads can hold emails and other PII.
+    supabase
+      .from("admin_audit_log")
+      .select("id,action,target_type,created_at")
+      .order("created_at", { ascending: false })
+      .limit(FEED_SOURCE_LIMIT),
+    ...OPEN_WORK_ORDER_STATUSES.map((status) =>
+      supabase.from("work_orders").select("id", countHead).eq("status", status),
+    ),
   ]);
 
   const recentLeads = leadsRes.data ?? [];
   const upcomingBookings = bookingsRes.data ?? [];
-  const openInvoiceTotal = (openInvoicesRes.data ?? []).reduce(
-    (sum, i) => sum + i.amount_cents,
-    0,
+  const sumByCurrency = (
+    rows: readonly { amount_cents: number; currency: string }[],
+  ): [string, number][] => {
+    const totals = new Map<string, number>();
+    for (const r of rows) {
+      const code = (r.currency || "USD").toUpperCase();
+      totals.set(code, (totals.get(code) ?? 0) + r.amount_cents);
+    }
+    return [...totals.entries()].sort(([a], [b]) => a.localeCompare(b));
+  };
+  const sumByStatus = (status: string) =>
+    sumByCurrency(
+      (openInvoicesRes.data ?? []).filter((i) => i.status === status),
+    );
+  const paidTotal = () => sumByCurrency(paidInvoicesRes.data ?? []);
+  // A sum is only trustworthy when it covers every matching row.
+  const openReadFailed = Boolean(
+    openInvoicesRes.error || openInvoicesCountRes.error,
   );
-  const userCount = usersRes.count ?? 0;
+  const openTruncated =
+    !openReadFailed &&
+    (openInvoicesCountRes.count ?? 0) > (openInvoicesRes.data ?? []).length;
+  const paidReadFailed = Boolean(
+    paidInvoicesRes.error || paidInvoicesCountRes.error,
+  );
+  const paidTruncated =
+    !paidReadFailed &&
+    (paidInvoicesCountRes.count ?? 0) > (paidInvoicesRes.data ?? []).length;
+  const sumValue = (
+    failed: boolean,
+    truncated: boolean,
+    totals: () => [string, number][],
+  ) => {
+    if (failed || truncated) return DASH;
+    const parts = totals().map(([code, cents]) => safeMoney(cents, code));
+    return parts.length === 0 ? formatCurrency(0) : parts.join(" \u00b7 ");
+  };
+
+  const feedSources = [
+    feedOrdersRes,
+    feedInvoicesRes,
+    feedPaidInvoicesRes,
+    feedProjectsRes,
+    feedAuditRes,
+  ];
+  const activity = mergeActivity([
+    (feedOrdersRes.data ?? []).map((o) => ({
+      key: `wo-${o.id}`,
+      at: o.updated_at,
+      label: `Ticket ${o.updated_at === o.created_at ? "created" : "updated"}: ${o.title}`,
+      href: `/admin/tickets/${o.id}`,
+    })),
+    (feedInvoicesRes.data ?? []).map((i) => ({
+      key: `inv-created-${i.id}`,
+      at: i.created_at,
+      label: `Invoice created: ${safeMoney(i.amount_cents, i.currency)}`,
+      href: "/admin/invoices",
+    })),
+    (feedPaidInvoicesRes.data ?? []).map((i) => ({
+      key: `inv-paid-${i.id}`,
+      at: i.paid_at as string,
+      label: `Invoice paid: ${safeMoney(i.amount_cents, i.currency)}`,
+      href: "/admin/invoices",
+    })),
+    (feedProjectsRes.data ?? []).map((p) => ({
+      key: `proj-${p.id}`,
+      at: p.updated_at,
+      label: `Project updated: ${p.title}`,
+      href: `/admin/projects/${p.id}`,
+    })),
+    (feedAuditRes.data ?? []).map((a) => ({
+      key: `audit-${a.id}`,
+      at: a.created_at,
+      label: `${a.action} (${a.target_type})`,
+    })),
+  ]);
+
+  const tileReads = [
+    leadsRes,
+    leadsCountRes,
+    bookingsRes,
+    openInvoicesRes,
+    openInvoicesCountRes,
+    paidInvoicesRes,
+    paidInvoicesCountRes,
+    usersRes,
+    companiesRes,
+    activeProjectsRes,
+    ...workOrderCountRes,
+  ];
+  const countValue = (res: { count: number | null; error: unknown }) =>
+    res.error ? DASH : (res.count ?? 0).toString();
 
   return (
     <div className="space-y-8">
@@ -69,46 +264,88 @@ export default async function AdminOverview({
       <AdminStatusBanner
         error={params.error}
         loadError={
-          leadsRes.error ||
-          leadsCountRes.error ||
-          bookingsRes.error ||
-          openInvoicesRes.error ||
-          usersRes.error
-            ? "Unable to load some overview data. Try again."
+          tileReads.some((r) => r.error)
+            ? ADMIN_ERROR_MESSAGES.overview_load_failed
             : null
         }
       />
+
+      {(openTruncated || paidTruncated) && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground"
+        >
+          {ADMIN_ERROR_MESSAGES.totals_truncated}
+        </p>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Tile
           icon={<Inbox />}
           label="New leads (30d)"
-          value={
-            leadsCountRes.error
-              ? "\u2014"
-              : (leadsCountRes.count ?? 0).toString()
-          }
+          value={countValue(leadsCountRes)}
         />
         <Tile
           icon={<CalendarCheck />}
           label="Upcoming bookings"
-          value={
-            bookingsRes.error ? "\u2014" : upcomingBookings.length.toString()
-          }
+          value={bookingsRes.error ? DASH : upcomingBookings.length.toString()}
         />
         <Tile
           icon={<Receipt />}
           label="Open invoice total"
-          value={
-            openInvoicesRes.error ? "\u2014" : formatCurrency(openInvoiceTotal)
-          }
+          value={sumValue(openReadFailed, openTruncated, () =>
+            sumByStatus("open"),
+          )}
         />
         <Tile
           icon={<Users />}
           label="Client users"
-          value={usersRes.error ? "\u2014" : userCount.toString()}
+          value={countValue(usersRes)}
+        />
+        <Tile
+          icon={<AlertTriangle />}
+          label="Overdue invoice total"
+          value={sumValue(openReadFailed, openTruncated, () =>
+            sumByStatus("overdue"),
+          )}
+        />
+        <Tile
+          icon={<Wallet />}
+          label="Paid (30d)"
+          value={sumValue(paidReadFailed, paidTruncated, paidTotal)}
+        />
+        <Tile
+          icon={<FolderKanban />}
+          label="Active projects"
+          value={countValue(activeProjectsRes)}
+        />
+        <Tile
+          icon={<Building2 />}
+          label="Companies"
+          value={countValue(companiesRes)}
         />
       </div>
+
+      <section>
+        <h2 className="font-display text-xl font-semibold mb-3">
+          Work orders by status
+        </h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {OPEN_WORK_ORDER_STATUSES.map((status, i) => (
+            <Tile
+              key={status}
+              icon={<ClipboardList />}
+              label={`Work orders: ${status.replace("_", " ")}`}
+              value={countValue(workOrderCountRes[i])}
+            />
+          ))}
+        </div>
+      </section>
+
+      <AdminActivityFeed
+        entries={activity}
+        hasFailedSource={feedSources.some((r) => r.error)}
+      />
 
       <section>
         <h2 className="font-display text-xl font-semibold mb-3">

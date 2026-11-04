@@ -23,7 +23,7 @@ import { revalidatePath } from "next/cache";
 import { buildServerAuthCallbackUrl } from "@/lib/utils";
 import { z } from "zod";
 import { requireAdmin, AuthError, type DBClient } from "@/lib/actions/auth";
-import type { Json } from "@/lib/database.types";
+import { writeAdminAudit } from "@/lib/admin-audit";
 
 const uuid = z.guid("invalid id");
 
@@ -40,32 +40,6 @@ const provisionInput = z.object({
 
 export type ActionResult<T> =
   { ok: true; data: T } | { ok: false; error: string };
-
-/**
- * Best-effort audit write. A failure is logged (non-fatal) rather than
- * surfaced, so the primary action's success is never undone by an audit hiccup.
- */
-async function writeAudit(
-  admin: DBClient,
-  actorUserId: string,
-  action: string,
-  targetId: string | null,
-  data: Json,
-): Promise<void> {
-  const { error } = await admin.from("admin_audit_log").insert({
-    actor_user_id: actorUserId,
-    action,
-    target_type: "company",
-    target_id: targetId,
-    data,
-  });
-  if (error) {
-    console.warn(
-      "[companies] audit log insert failed (non-fatal):",
-      error.code,
-    );
-  }
-}
 
 export async function createCompany(
   raw: unknown,
@@ -96,7 +70,14 @@ export async function createCompany(
   if (error || !data)
     return { ok: false, error: error?.message ?? "insert failed" };
 
-  await writeAudit(admin, user.id, "company.create", data.id, { name });
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "company.create",
+    targetType: "company",
+    targetId: data.id,
+    data: {},
+    logScope: "companies",
+  });
 
   revalidatePath("/admin/companies");
   return { ok: true, data: { id: data.id } };
@@ -134,7 +115,14 @@ async function setCompanyStatus(
     .eq("id", id);
   if (error) return { ok: false, error: error.message };
 
-  await writeAudit(admin, user.id, action, id, { status });
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action,
+    targetType: "company",
+    targetId: id,
+    data: { status },
+    logScope: "companies",
+  });
 
   revalidatePath("/admin/companies");
   revalidatePath(`/admin/companies/${id}`);
@@ -286,10 +274,13 @@ export async function provisionCompanyAdmin(
     if (error) return { ok: false, error: error.message };
   }
 
-  await writeAudit(admin, user.id, "company.provision_admin", companyId, {
-    email,
-    user_id: userId,
-    status: memberStatus,
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "company.provision_admin",
+    targetType: "company",
+    targetId: companyId,
+    data: { user_id: userId, status: memberStatus },
+    logScope: "companies",
   });
 
   revalidatePath("/admin/companies");

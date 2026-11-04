@@ -9,11 +9,9 @@ import Link from "next/link";
 import { AdminStatusBanner } from "@/components/admin/AdminStatusBanner";
 import { createAdminClient } from "@/lib/supabase/server";
 import { formatCurrency, cn } from "@/lib/utils";
+import { NewWorkOrderForClientDialog } from "@/components/admin/NewWorkOrderForClientDialog";
 import { Badge } from "@/components/ui/badge";
-import type {
-  WorkOrderStatus,
-  WorkOrderServiceType,
-} from "@/lib/domain-types";
+import type { WorkOrderStatus, WorkOrderServiceType } from "@/lib/domain-types";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +52,29 @@ function statusTone(status: string): "indigo" | "amber" | "neutral" {
   }
 }
 
+const USERS_PER_PAGE = 200;
+const USERS_MAX_PAGES = 50;
+
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+/** Pages through every auth user (200 per page, hard cap of 50 pages). */
+async function listAllUsers(admin: AdminClient) {
+  const users: { id: string; email?: string }[] = [];
+  for (let page = 1; page <= USERS_MAX_PAGES; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: USERS_PER_PAGE,
+    });
+    if (error) return { users: [], failed: true, truncated: false };
+    const batch = data?.users ?? [];
+    users.push(...batch);
+    if (batch.length < USERS_PER_PAGE) {
+      return { users, failed: false, truncated: false };
+    }
+  }
+  return { users, failed: false, truncated: true };
+}
+
 interface PageProps {
   searchParams: Promise<{
     status?: string;
@@ -79,22 +100,73 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
   if (status !== "all") query = query.eq("status", status);
   if (serviceType !== "all") query = query.eq("service_type", serviceType);
 
-  const { data: tickets, error } = await query;
+  const [
+    { data: tickets, error },
+    clientList,
+    { data: companies, error: companiesError },
+    { data: projects, error: projectsError },
+  ] = await Promise.all([
+    query,
+    listAllUsers(admin),
+    admin
+      .from("companies")
+      .select("id,name")
+      .eq("status", "active")
+      .order("name")
+      .limit(200),
+    admin
+      .from("projects")
+      .select("id,title,owner_user_id,company_id")
+      .order("created_at", { ascending: false })
+      .limit(500),
+  ]);
+  const pickerError = !!(clientList.failed || companiesError || projectsError);
+  const clientOptions = clientList.users.map((client) => ({
+    id: client.id,
+    label: client.email ?? client.id.slice(0, 8),
+  }));
 
   // Resolve owner emails in a single bulk lookup against the auth admin API
   // is expensive; for now we just show the user-id prefix. The detail page
   // does the full email lookup.
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          Tickets
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          All work-order tickets across all clients. Click into one to quote,
-          transition, or invoice.
-        </p>
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            Tickets
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            All work-order tickets across all clients. Click into one to quote,
+            transition, or invoice.
+          </p>
+        </div>
+        <NewWorkOrderForClientDialog
+          clients={clientOptions}
+          companies={companies ?? []}
+          projects={projects ?? []}
+          disabled={pickerError}
+        />
       </header>
+      {pickerError && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          Work posting options could not be loaded. Post work is unavailable.
+          Tickets are still shown when available.
+        </p>
+      )}
+
+      {!pickerError && clientList.truncated && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          The client list is truncated; some clients may not appear in the Post
+          work picker.
+        </p>
+      )}
 
       <div className="space-y-2">
         <FilterRow
@@ -159,7 +231,9 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
                       {t.title}
                     </Link>
                   </td>
-                  <td className="p-3 text-muted-foreground">{serviceLabel(t.service_type)}</td>
+                  <td className="p-3 text-muted-foreground">
+                    {serviceLabel(t.service_type)}
+                  </td>
                   <td className="p-3 font-mono text-xs text-muted-foreground">
                     {t.created_by.slice(0, 8)}…
                   </td>

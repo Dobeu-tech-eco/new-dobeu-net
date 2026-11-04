@@ -6,6 +6,9 @@ export const ADMIN_ERROR_MESSAGES = {
   admin_provision_failed: "Unable to provision the company admin. Try again.",
   project_save_failed: "Unable to save the project. Try again.",
   load_failed: "Unable to load admin data. Try again.",
+  overview_load_failed: "Unable to load some overview data. Try again.",
+  activity_partial: "Some recent activity could not be loaded.",
+  totals_truncated: "Totals truncated; too many rows to sum here.",
   unknown: "Something went wrong. Try again.",
 } as const;
 

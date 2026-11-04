@@ -61,6 +61,10 @@ export function buildStubClient(opts: {
         recorded.push({ table, method: "in", args: a });
         return builder;
       }),
+      is: vi.fn((...a: unknown[]) => {
+        recorded.push({ table, method: "is", args: a });
+        return builder;
+      }),
       order: vi.fn((...a: unknown[]) => {
         recorded.push({ table, method: "order", args: a });
         return builder;

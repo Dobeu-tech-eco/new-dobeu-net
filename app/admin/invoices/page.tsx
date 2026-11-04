@@ -11,6 +11,8 @@ import { safeStripeInvoiceUrl } from "@/lib/stripe-url";
 
 export const dynamic = "force-dynamic";
 
+const WORK_ORDER_PICKER_LIMIT = 500;
+
 export default async function AdminInvoicesPage({
   searchParams,
 }: {
@@ -22,6 +24,8 @@ export default async function AdminInvoicesPage({
     { data: invoices, error: invoicesError },
     { data: profilesData, error: profilesError },
     { data: projects, error: projectsError },
+    { data: unbilledWorkOrders, error: workOrdersError },
+    { data: voidedWorkOrders, error: voidedWorkOrdersError },
   ] = await Promise.all([
     supabase
       .from("invoices")
@@ -32,6 +36,27 @@ export default async function AdminInvoicesPage({
       .limit(200),
     supabase.from("profiles").select("id,full_name,company").limit(500),
     supabase.from("projects").select("id,title,owner_user_id").limit(500),
+    // Billable work orders come from two reads (merged below): accepted ones
+    // with no invoice, and accepted ones whose linked invoice is void (voiding
+    // never clears work_orders.invoice_id, but the server allows a re-bill).
+    // Each read is newest first so a cap never drops recent rows for old
+    // already-billed tickets.
+    supabase
+      .from("work_orders")
+      .select("id,title,created_by,created_at")
+      .is("invoice_id", null)
+      .eq("status", "accepted")
+      .order("created_at", { ascending: false })
+      .limit(WORK_ORDER_PICKER_LIMIT),
+    supabase
+      .from("work_orders")
+      .select(
+        "id,title,created_by,created_at,invoices!work_orders_invoice_id_fkey!inner(status)",
+      )
+      .eq("status", "accepted")
+      .eq("invoices.status", "void")
+      .order("created_at", { ascending: false })
+      .limit(WORK_ORDER_PICKER_LIMIT),
   ]);
 
   // Resolve auth emails for the picker — bulk via auth admin.
@@ -61,7 +86,27 @@ export default async function AdminInvoicesPage({
     ownerUserId: p.owner_user_id,
   }));
 
-  const pickerError = Boolean(profilesError || projectsError || authError);
+  // Both reads are filtered + newest first server-side; merge, re-sort, and
+  // keep the same cap. A failed read just contributes no options.
+  const workOrderOptions = [
+    ...(unbilledWorkOrders ?? []),
+    ...(voidedWorkOrders ?? []),
+  ]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, WORK_ORDER_PICKER_LIMIT)
+    .map((w) => ({
+      id: w.id,
+      label: w.title,
+      clientUserId: w.created_by,
+    }));
+
+  const pickerError = Boolean(
+    profilesError ||
+      projectsError ||
+      workOrdersError ||
+      voidedWorkOrdersError ||
+      authError,
+  );
 
   const open =
     invoices?.filter((i) => i.status === "open" || i.status === "overdue") ??
@@ -84,7 +129,11 @@ export default async function AdminInvoicesPage({
             </strong>
           </p>
         </div>
-        <NewInvoiceDialog users={usersForPicker} projects={projectOptions} />
+        <NewInvoiceDialog
+          users={usersForPicker}
+          projects={projectOptions}
+          workOrders={workOrderOptions}
+        />
       </header>
 
       <AdminStatusBanner
@@ -171,7 +220,7 @@ export default async function AdminInvoicesPage({
                     )}
                   </td>
                   <td className="p-3 text-right">
-                    {inv.status !== "paid" && (
+                    {inv.status !== "paid" && inv.status !== "void" && (
                       <AdminMarkPaidButton invoiceId={inv.id} />
                     )}
                   </td>

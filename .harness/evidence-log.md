@@ -106,3 +106,12 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
 - `20261104000100_leads_verify_nonce_unique`: unique, non-partial `leads_verify_nonce_key` on `raw_payload->>'verify_nonce'`, with a guard that raises on duplicates. `processLead` throws `LeadAlreadyConfirmedError` on that 23505 before any fan-out; `/api/lead/confirm` answers it with the idempotent 200 and keeps the lock.
 - Local: pgTAP 136/136 (new `leads_verify_nonce.test.sql` 6/6), `pnpm verify` 993/993, types drift clean. CI green on #315.
 - Production: 0 duplicate nonces (46 leads, 1 with a nonce); index applied and verified; `migration list --linked` 21/21. No live confirm race was exercised.
+
+## run 20261103-213646 (super-admin dashboard, admin-posted work, audited billing, test-customer provisioning)
+
+- Sections extended (stay `done`): 4, 15, 47, 54, 58, 62, 63, 65. No migration, no type drift.
+- Audit: every /admin page and admin action is guarded server-side (`requireAdmin` = allowlist + AAL2); every /portal read uses createClient (RLS); the only portal/company service-role read (`/company/members` resolveEmails) checks ownership first.
+- New: lib/admin-audit.ts (every admin write in work-orders, invoices, projects, users, companies audits), createWorkOrderForClient + /admin/tickets Post work dialog, overview metrics + activity feed, invoice dialog without project / with linked work order, mark-paid paid/void guard, invoice duplicate guard, scripts/invite-test-customer.mjs (dry-run default, invite-only), docs/runbooks/admin-and-test-customer.md.
+- Evidence (local stack + vitest, final tree): `pnpm verify` 1148/1148, strict build; pgTAP 151/151 (new admin_audit_and_company_isolation: 8x 42501 on admin_audit_log for anon/authenticated, company and no-project isolation); types drift clean; e2e 71/71 non-visual (new admin-posted-work 3/3); verifier walkthrough 3/3 portal screens. Visual tests fail locally only (linux baselines). Admin AAL2 screens not walkable locally (TOTP disabled) — Jeremy checks on Preview.
+- Production: ADMIN_EMAILS set to exactly jeremyw@dobeu.net in Vercel Production + Preview (2026-11-04 02:45 UTC, metadata-verified). Nothing deployed; no production migration.
+- Receipt: `runs/20261103-213646/receipt.md`. Follow-ups D28-D32.

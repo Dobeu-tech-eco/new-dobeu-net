@@ -65,6 +65,12 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
     invoice = inv ?? null;
   }
 
+  // A voided invoice stays linked (voiding never clears work_orders.invoice_id),
+  // so the work order is billable again; any other linked state, or a failed
+  // invoice read, keeps the Bill section hidden.
+  const rebilling = invoice?.status === "void";
+  const canBill = ticket.status === "accepted" && (!ticket.invoice_id || rebilling);
+
   // Signed URLs for attachments — 5 min validity per spec.
   let signedAttachments: Array<{
     id: string;
@@ -176,12 +182,13 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
         </section>
       )}
 
-      {ticket.status === "accepted" && !ticket.invoice_id && ticket.quoted_amount_cents && (
+      {canBill && ticket.quoted_amount_cents && (
         <section className="rounded-lg border border-accent/30 bg-accent/5 p-5 space-y-3">
           <h2 className="font-semibold">Bill this work order</h2>
           <p className="text-sm text-muted-foreground">
             The client accepted the quote. Issue a Stripe hosted invoice — the client gets a
             payment link by email and can pay it from their portal.
+            {rebilling && " The previous invoice was voided; the new invoice replaces it. Stripe may refuse a new invoice for this work order for up to a day after the first one was created."}
           </p>
           <AdminCreateInvoiceButton
             workOrderId={ticket.id}
@@ -204,7 +211,7 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
           <h2 className="font-semibold">Linked invoice</h2>
           <p className="text-sm">
             {formatCurrency(invoice.amount_cents)} ·{" "}
-            <Badge tone={invoice.status === "paid" ? "neutral" : "amber"} aria-label={`Invoice status: ${invoice.status}`}>
+            <Badge tone={invoice.status === "paid" || invoice.status === "void" ? "neutral" : "amber"} aria-label={`Invoice status: ${invoice.status}`}>
               {invoice.status}
             </Badge>
           </p>
@@ -216,7 +223,9 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
               </a>
             </Button>
           )}
-          {invoice.status !== "paid" && <AdminMarkPaidButton invoiceId={invoice.id} />}
+          {invoice.status !== "paid" && invoice.status !== "void" && (
+            <AdminMarkPaidButton invoiceId={invoice.id} />
+          )}
         </section>
       )}
     </div>
