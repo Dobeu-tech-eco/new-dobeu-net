@@ -46,6 +46,7 @@ Append entries as `- <date> <text>`.
 - 2026-11-03 D10 closed: /writing-for-agents re-run on end-state.md and plan-style.md, approved by Jeremy (form only). Per-run evidence moved verbatim to .harness/evidence-log.md; end-state 317 -> 231 lines; P6 agent-writing box checked.
 - 2026-11-03 D11 closed via #313: real generated DB types, lib/domain-types.ts, CI drift check (green on GitHub). End-state row 1 done; P3 types box checked.
 - 2026-11-03 D12 closed: Jeremy added LEAD_VERIFY_SECRET= and CRON_SECRET= (empty values, commented) to .env.example (protected path, human edit); presence verified. The CRON_SECRET .env.example gap from run 20261027-134130 is closed too.
+- 2026-11-04 D13 closed: #314 and #315 merged (3a9d749); 20261104000100 applied to prod (supabase-dobe-net) via Composio SQL after a 0-duplicate re-check; prod history 21/21, db push dry-run up to date.
 - Fallback: reviewer:security copilot -> grok (copilot monthly quota exhausted).
 
 ## Failures and escalations

@@ -100,3 +100,9 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
 ## 2026-11-03 (D12, .env.example)
 
 - `LEAD_VERIFY_SECRET=` (`.env.example:83`) and `CRON_SECRET=` (`.env.example:87`) added by Jeremy with comments and empty values. This closes the "`.env.example` `CRON_SECRET` line" gap listed under run 20261027-134130.
+
+## 2026-11-04 (D13, lead verify-nonce uniqueness)
+
+- `20261104000100_leads_verify_nonce_unique`: unique, non-partial `leads_verify_nonce_key` on `raw_payload->>'verify_nonce'`, with a guard that raises on duplicates. `processLead` throws `LeadAlreadyConfirmedError` on that 23505 before any fan-out; `/api/lead/confirm` answers it with the idempotent 200 and keeps the lock.
+- Local: pgTAP 136/136 (new `leads_verify_nonce.test.sql` 6/6), `pnpm verify` 993/993, types drift clean. CI green on #315.
+- Production: 0 duplicate nonces (46 leads, 1 with a nonce); index applied and verified; `migration list --linked` 21/21. No live confirm race was exercised.
