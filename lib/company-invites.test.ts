@@ -519,6 +519,49 @@ describe("respondToInvite accept", () => {
     expect(payload.data).toMatchObject({ company_inactive_after_accept: true, revert_no_row: true });
   });
 
+  it("a failed revert whose re-read errors keeps the accept as ok with companyInactive", async () => {
+    const { admin, calls } = fakeAdmin(
+      acceptScript({
+        "companies.select": suspendedAfter(),
+        "company_members.update": [written(), { error: { message: "boom" } }],
+        "company_members.select": [ownRow(), { error: { message: "reread boom" } }],
+      }),
+    );
+    expect(await respondToInvite(admin, U, M, "accept", proof())).toEqual({
+      ok: true,
+      companyId: C,
+      isAdminRole: false,
+      companyInactive: true,
+    });
+    const payload = auditOf(calls)!.payload as { action: string; data: Record<string, unknown> };
+    expect(payload.action).toBe("company_member.accept");
+    expect(payload.data).toMatchObject({
+      company_inactive_after_accept: true,
+      revert_failed: true,
+      reread_failed: true,
+    });
+  });
+
+  it("a double submit that finds the row active on a suspended company is flagged companyInactive", async () => {
+    const { admin, calls } = fakeAdmin(
+      acceptScript({
+        "companies.select": suspendedAfter(),
+        "company_members.update": [{ data: [] }],
+        "company_members.select": [
+          ownRow(),
+          { data: { company_id: C, role: "employee", status: "active" } },
+        ],
+      }),
+    );
+    expect(await respondToInvite(admin, U, M, "accept", proof())).toEqual({
+      ok: true,
+      companyId: C,
+      isAdminRole: false,
+      companyInactive: true,
+    });
+    expect(auditOf(calls)).toBeUndefined();
+  });
+
   it("a failed post-accept re-check keeps the accept and audits it", async () => {
     const warn = vi.spyOn(console, "warn");
     const { admin, calls } = fakeAdmin(

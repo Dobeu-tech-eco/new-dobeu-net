@@ -319,17 +319,25 @@ async function acceptInvite(
   if (updateError) throw updateError;
   const row = updated?.[0];
   if (!row) {
-    // Lost a race. If the winner activated this same row, report success.
+    // Lost a race. If the winner activated this same row, report success,
+    // flagged when the company was suspended meanwhile (the winner may be
+    // reverting it).
     const active = await readActiveRow(admin, userId, memberId);
-    return active
-      ? {
-          result: {
-            ok: true,
-            companyId: active.company_id,
-            isAdminRole: isAdminRank(roles, active.role),
-          },
-        }
-      : fail("invite_unavailable");
+    if (!active) return fail("invite_unavailable");
+    let companyActive = true;
+    try {
+      companyActive = await isCompanyActive(admin, active.company_id);
+    } catch (e) {
+      console.warn(`[${scope}] double-submit company check failed:`, safeErrorFields(e));
+    }
+    return {
+      result: {
+        ok: true,
+        companyId: active.company_id,
+        isAdminRole: isAdminRank(roles, active.role),
+        ...(companyActive ? {} : { companyInactive: true }),
+      },
+    };
   }
 
   // Committed. The status read above can be stale: re-check, and undo the
@@ -373,14 +381,22 @@ async function acceptInvite(
   }
 
   // The accept committed and was not undone by us: the audit must record it.
-  const extra = { company_inactive_after_accept: true, [revertFlag]: true };
+  // Only a re-read that PROVES the row is no longer active reports the invite
+  // as unavailable; a failed re-read keeps the committed accept.
   let active: MemberRow | null = null;
+  let rereadFailed = false;
   try {
     active = await readActiveRow(admin, userId, memberId);
   } catch (e) {
+    rereadFailed = true;
     console.warn(`[${scope}] post-revert re-read failed:`, safeErrorFields(e));
   }
-  if (active) {
+  const extra: Record<string, boolean> = {
+    company_inactive_after_accept: true,
+    [revertFlag]: true,
+    ...(rereadFailed ? { reread_failed: true } : {}),
+  };
+  if (active || rereadFailed) {
     return {
       result: { ok: true, companyId: row.company_id, isAdminRole, companyInactive: true },
       audit: { action: "accept", row, extra },

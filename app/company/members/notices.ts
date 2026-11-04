@@ -33,7 +33,7 @@ const MEMBER_NOTICES = {
   invitee_needs_link_signin: {
     tone: "error",
     role: "alert",
-    text: "This address already has an account that has never signed in with an emailed sign-in link. Ask them to sign in once at the login page using the emailed link, then invite them again."
+    text: "This address already has an account whose current email has not been confirmed by an emailed sign-in link since it last changed. Ask them to sign in once at the login page using the emailed link, then invite them again."
   },
   daily_limit: {
     tone: "warning",

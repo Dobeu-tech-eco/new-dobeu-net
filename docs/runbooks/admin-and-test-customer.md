@@ -71,8 +71,8 @@ fixed-copy email: the invitee signs in with the invited email address using an
 emailed sign-in link (made after the invite was sent) and clicks Accept under
 "Pending company invites" on `/portal` (Decline removes the row; an admin can
 re-invite). Until they accept, they are not an active member. An existing account
-that has signed in before must have signed in once with an emailed link before an
-admin can invite it; otherwise the invite is refused and they should sign in once
+that has signed in before must have signed in with an emailed link at its current
+email address (after any email change) before an admin can invite it; otherwise the invite is refused and they should sign in once
 at the login page using the emailed link first. A password set earlier keeps working
 after accept.
 `provisionCompanyAdmin` is unchanged (a new address gets a Supabase invite link, an
