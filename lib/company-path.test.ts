@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { COMPANY_PATH_HEADER, companyDeepLink } from "@/lib/company-path";
 
 describe("companyDeepLink", () => {
+  it("falls back for values longer than 2048 chars", () => {
+    expect(companyDeepLink(`/company/${"a".repeat(2048)}`)).toBe("/company");
+    expect(companyDeepLink(`/company/${"a".repeat(2000)}`)).toBe(`/company/${"a".repeat(2000)}`);
+  });
+
   it("exports the header name", () => {
     expect(COMPANY_PATH_HEADER).toBe("x-dobeu-pathname");
   });

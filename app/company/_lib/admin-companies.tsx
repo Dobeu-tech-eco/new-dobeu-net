@@ -60,6 +60,11 @@ export function pickCompany(
 
 export type GuardOutcome = "ok" | "suspended" | "denied";
 
+/** The validated `next` target shared by layout, pages and guards. */
+export async function companyNext(fallback: string): Promise<string> {
+  return companyDeepLink((await headers()).get(COMPANY_PATH_HEADER), fallback);
+}
+
 /**
  * Next renders layout and page in parallel, so a page can never rely on the
  * layout for AAL2 / company status. Every /company page calls this BEFORE any
@@ -70,11 +75,6 @@ export type GuardOutcome = "ok" | "suspended" | "denied";
  * redirect() is called outside the try/catch so NEXT_REDIRECT is never
  * swallowed.
  */
-/** The validated `next` target shared by layout, pages and guards. */
-export async function companyNext(fallback: string): Promise<string> {
-  return companyDeepLink((await headers()).get(COMPANY_PATH_HEADER), fallback);
-}
-
 export async function guardCompanyPage(
   company: AdminCompany,
   path: string

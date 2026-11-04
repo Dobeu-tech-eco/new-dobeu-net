@@ -8,6 +8,7 @@ import { sanitizeNextPath } from "@/lib/utils";
 export const COMPANY_PATH_HEADER = "x-dobeu-pathname";
 
 const BASE = "https://x.invalid";
+const MAX_LENGTH = 2048;
 
 function safeDecode(value: string): string | null {
   try {
@@ -31,7 +32,7 @@ function hasDotSegment(rawPath: string): boolean {
  * Validated same-site /company deep link (path + query, no hash) from an
  * untrusted value such as the forwarded request header. Anything that is not
  * exactly /company or under /company/, or that contains dot segments or would be
- * normalized by URL parsing, yields `fallback` (returned as given; it is
+ * normalized by URL parsing, or is longer than 2048 chars, yields `fallback` (returned as given; it is
  * caller-controlled and trusted). Pure; one validator shared by the layout and
  * every page so whichever redirect wins carries the identical `next`.
  */
@@ -39,17 +40,14 @@ export function companyDeepLink(
   value: string | null | undefined,
   fallback = "/company"
 ): string {
+  if (value && value.length > MAX_LENGTH) return fallback;
   const safe = sanitizeNextPath(value, fallback);
   if (safe === fallback) return fallback;
   const rawPath = safe.split(/[?#]/, 1)[0];
   if (hasDotSegment(rawPath)) return fallback;
-  let parsed: URL;
-  try {
-    parsed = new URL(safe, BASE);
-  } catch {
-    return fallback;
-  }
-  if (parsed.origin !== BASE || parsed.pathname !== rawPath) return fallback;
+  // sanitizeNextPath guarantees a same-origin relative path, so this cannot throw.
+  const parsed = new URL(safe, BASE);
+  if (parsed.pathname !== rawPath) return fallback;
   if (parsed.pathname !== "/company" && !parsed.pathname.startsWith("/company/")) return fallback;
   return parsed.pathname + parsed.search;
 }

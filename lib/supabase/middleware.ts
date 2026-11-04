@@ -4,8 +4,6 @@ import { COMPANY_PATH_HEADER } from "@/lib/company-path";
 import type { Database } from "@/lib/database.types";
 import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
 
-export { COMPANY_PATH_HEADER };
-
 /**
  * Refresh the Supabase session on every request so server components see fresh auth.
  * Also enforces /portal, /admin and /company gating in one place. /company is

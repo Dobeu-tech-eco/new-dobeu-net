@@ -1,14 +1,12 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LayoutDashboard, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
-import { COMPANY_PATH_HEADER, companyDeepLink } from "@/lib/company-path";
 import { needsAal2StepUp } from "@/lib/actions/company-auth";
-import { resolveAdminCompanies, SuspendedNotice } from "./_lib/admin-companies";
+import { companyNext, resolveAdminCompanies, SuspendedNotice } from "./_lib/admin-companies";
 
 // The /company surface is entirely per-request auth/membership-driven, so it
 // must never be statically pre-rendered.
@@ -20,7 +18,7 @@ const NAV = [
 ];
 
 export default async function CompanyLayout({ children }: { children: React.ReactNode }) {
-  const target = companyDeepLink((await headers()).get(COMPANY_PATH_HEADER));
+  const target = await companyNext("/company");
   const supabase = await createClient();
   const {
     data: { user }

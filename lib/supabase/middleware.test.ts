@@ -19,7 +19,8 @@ vi.mock("@supabase/ssr", () => ({
   })),
 }));
 
-import { COMPANY_PATH_HEADER, updateSession } from "@/lib/supabase/middleware";
+import { COMPANY_PATH_HEADER } from "@/lib/company-path";
+import { updateSession } from "@/lib/supabase/middleware";
 
 /**
  * These tests exercise the defensive auth-code forwarder, which runs before any
@@ -267,6 +268,10 @@ describe("updateSession — /company gating", () => {
 });
 
 describe("updateSession — forwarded company path header", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   beforeEach(() => {
     process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL = "https://example.supabase.co";
     process.env.NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY = "anon-key";
@@ -316,7 +321,6 @@ describe("updateSession — forwarded company path header", () => {
     vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
     const res = await run("/", { [COMPANY_PATH_HEADER]: "/company" });
     expect(forwarded(res, COMPANY_PATH_HEADER)).toBeNull();
-    vi.unstubAllEnvs();
   });
 });
 
