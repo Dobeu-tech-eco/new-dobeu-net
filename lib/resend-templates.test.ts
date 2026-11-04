@@ -146,6 +146,14 @@ describe("companyMemberInviteEmail", () => {
     expect(out.text).toContain(loginUrl);
   });
 
+  it("says invited consistently and does not promise access", () => {
+    const out = companyMemberInviteEmail({ loginUrl: "https://a.example/login" });
+    expect(out.subject).toBe("You've been invited to a company on Dobeu");
+    expect(out.text).toContain("You'll see the company once your membership is activated.");
+    expect(out.html).toContain("once your membership is activated");
+    expect(out.subject + out.text + out.html).not.toMatch(/added|get started/i);
+  });
+
   it("is fixed copy: identical apart from the url", () => {
     const a = companyMemberInviteEmail({ loginUrl: "https://a.example/login" });
     const b = companyMemberInviteEmail({ loginUrl: "https://b.example/login" });
