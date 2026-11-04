@@ -130,6 +130,17 @@ jobs:
       - name: Database RLS tests (pgTAP)
         run: supabase test db
 
+      - name: Check generated DB types match migrations
+        run: |
+          set -o pipefail
+          supabase gen types typescript --local \
+            | pnpm exec prettier --stdin-filepath lib/database.types.ts \
+            > "$RUNNER_TEMP/database.types.ts"
+          diff -u lib/database.types.ts "$RUNNER_TEMP/database.types.ts" || {
+            echo "::error::lib/database.types.ts is out of date. Run pnpm db:types and commit."
+            exit 1
+          }
+
       - name: Run E2E tests
         run: pnpm test:e2e
 

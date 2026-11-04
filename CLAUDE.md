@@ -10,6 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `AGENTS.md` is the scannable agent quick reference; `GEMINI.md` and `.github/copilot-instructions.md` remain thin discovery pointers. Keep detailed architecture and security guidance canonical here.
 
+`lib/database.types.ts` is generated: never hand-edit it. Domain unions (work-order, intake, member statuses) live in `lib/domain-types.ts`. CI fails when the generated file drifts from the migrations (run `pnpm db:types` and commit).
+
 ## Commands
 
 Package manager is **pnpm** (`packageManager: pnpm@10.34.1`, Node >=24). `pnpm-workspace.yaml` exists only to whitelist `onlyBuiltDependencies` (pnpm 10's allow-builds mechanism) — this is not a multi-package workspace.
@@ -34,7 +36,7 @@ Supabase (local stack via Docker):
 ```bash
 pnpm supabase start            # local Postgres + Auth
 pnpm supabase db push          # apply migrations in supabase/migrations/
-pnpm db:types                  # regenerate lib/database.types.ts from local schema
+pnpm db:types                  # regenerate lib/database.types.ts from local schema (never hand-edit; domain unions live in lib/domain-types.ts; CI fails on drift)
 ```
 
 ## Testing

@@ -4,8 +4,8 @@ import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { archiveIntake, markIntakeReviewed } from "@/lib/actions/intakes";
+import type { IntakeStatus } from "@/lib/domain-types";
 
-type IntakeStatus = "new" | "reviewed" | "archived";
 
 const ACTION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   not_authenticated: "Sign in again before updating this intake.",

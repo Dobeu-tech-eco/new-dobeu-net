@@ -85,7 +85,7 @@ The 66-row map is approved.
 
 | # | section | serves component | files / area | depends on | complexity | status |
 |---|---|---|---|---|---|---|
-| 1 | Database schema and policies | P3/P4/P5 | `supabase/migrations/; lib/database.types.ts` | - | design | blocked |
+| 1 | Database schema and policies | P3/P4/P5 | `supabase/migrations/; lib/database.types.ts` | - | design | done |
 | 2 | Database clients | P3/P4/P5 | `lib/supabase/` | 1 | normal | done |
 | 3 | Authentication and access guards | P3 | `middleware.ts; lib/actions/auth.ts; lib/actions/company-auth.ts; lib/supabase/middleware.ts; app/auth/callback/` | 2 | design | done |
 | 4 | Server actions and ownership checks | P3/P4/P5 | `lib/actions/` | 1,2,3 | design | done |
@@ -193,7 +193,7 @@ Finish the repository harness and plan the closeout of the existing application.
 ### P3 Authentication, company and portal
 - [ ] Each route has source/test evidence for its access boundary; no unauthenticated or cross-owner access introduced.
 - [x] Existing portal/company flows remain compatible; any skipped backend-dependent checks are explicitly recorded.
-- [ ] Generated database types and persisted identifiers are preserved.
+- [x] Generated database types and persisted identifiers are preserved.
 
 ### P4 Admin operations
 - [x] Admin screens/actions retain existing authorization and MFA requirements, backed by relevant tests/source review.

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import type {
   WorkOrderStatus,
   WorkOrderServiceType,
-} from "@/lib/database.types";
+} from "@/lib/domain-types";
 
 export const dynamic = "force-dynamic";
 

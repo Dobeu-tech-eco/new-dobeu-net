@@ -89,3 +89,10 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
 - `rls_files_attachments.test.sql` now 56 assertions (adds disabled member F and a cross-bucket decoy); `supabase test db` 88/88 locally, 15/15 migrations applied. Mutations: restoring owner-only SELECT fails cases 3, 4, 23, 24; recreating the delete policy fails cases 4, 50, 54; a cross-bucket policy fails 3, 23, 38.
 - The run 20261028-064556 mutation note above ("extra storage SELECT policy fails 14 and 23") predates this fix.
 - Production: not applied until `supabase db push` (Deploy action item).
+
+## run 20261103-d11 (types drift CI, row 1 closed)
+
+- Row 1 → done. `lib/database.types.ts` is now generated (`supabase gen types typescript --local` + prettier) from all 20 migrations; it was a hand-written stub. Domain unions moved to `lib/domain-types.ts`.
+- CI E2E job, after pgTAP: "Check generated DB types match migrations" regenerates and `diff -u`s; passed on PR #313 (CLI 2.121.0). Locally a hand-edited copy makes the diff fail.
+- pgTAP in CI: `rls_hardening` (32), `rls_files_attachments` (56), `run2_storage` (42). Repo and prod migration history match 20/20 (#310).
+- P3 types box checked. Evidence is local stack plus CI; production schema matched by history repair and spot checks, not a full schema diff.
