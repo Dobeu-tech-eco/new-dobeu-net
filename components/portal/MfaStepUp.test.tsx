@@ -26,7 +26,7 @@ afterEach(cleanup);
 
 function submitCode(code: string) {
   fireEvent.change(screen.getByLabelText("Authentication code"), { target: { value: code } });
-  fireEvent.click(screen.getByRole("button", { name: /continue to admin/i }));
+  fireEvent.click(screen.getByRole("button", { name: /^continue$/i }));
 }
 
 describe("MfaStepUp", () => {
@@ -77,5 +77,24 @@ describe("MfaStepUp", () => {
     expect(mfa.verify).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["//evil.com"],
+    ["https://evil.com"],
+    ["/\\evil"],
+    ["javascript:alert(1)"],
+    ["/%2F%2Fevil"],
+    ["%2F%2Fevil"],
+  ])("falls back to /portal for unsafe next %s", async (next) => {
+    render(<MfaStepUp next={next} />);
+    submitCode("123456");
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/portal"));
+  });
+
+  it("preserves safe same-origin next paths", async () => {
+    render(<MfaStepUp next="/company/members?company=x" />);
+    submitCode("123456");
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/company/members?company=x"));
   });
 });

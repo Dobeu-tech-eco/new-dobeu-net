@@ -207,6 +207,60 @@ describe("updateSession — /portal and /admin gating", () => {
   });
 });
 
+describe("updateSession — /company gating", () => {
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY = "anon-key";
+    h.getUser.mockReset();
+    h.getAal.mockReset();
+  });
+
+  const run = (path: string) => updateSession(new NextRequest(`https://dobeu.net${path}`));
+
+  it("redirects signed-out /company to /login?next=/company", async () => {
+    h.getUser.mockResolvedValue({ data: { user: null } });
+    const res = await run("/company");
+    expect(res.status).toBe(307);
+    const loc = new URL(res.headers.get("location") as string);
+    expect(loc.pathname).toBe("/login");
+    expect(loc.searchParams.get("next")).toBe("/company");
+  });
+
+  it("keeps the encoded path and query in next, without leaking top-level params", async () => {
+    h.getUser.mockResolvedValue({ data: { user: null } });
+    const res = await run("/company/members?company=abc");
+    const location = res.headers.get("location") as string;
+    expect(location).toContain("next=%2Fcompany%2Fmembers%3Fcompany%3Dabc");
+    const loc = new URL(location);
+    expect(loc.searchParams.get("next")).toBe("/company/members?company=abc");
+    expect(loc.searchParams.has("company")).toBe(false);
+  });
+
+  it("lets a signed-in user through with no MFA lookup", async () => {
+    h.getUser.mockResolvedValue({ data: { user: { id: "u1", email: "a@b.co" } } });
+    const res = await run("/company/members");
+    expect(res.headers.get("location")).toBeNull();
+    expect(h.getAal).not.toHaveBeenCalled();
+  });
+
+  it("does not gate look-alike paths such as /companyfoo", async () => {
+    h.getUser.mockResolvedValue({ data: { user: null } });
+    const res = await run("/companyfoo");
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("redirects /company to /login?error=supabase_not_configured when env vars are unset", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_URL", undefined);
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
+    const res = await run("/company/members");
+    const loc = new URL(res.headers.get("location") as string);
+    expect(loc.pathname).toBe("/login");
+    expect(loc.searchParams.get("error")).toBe("supabase_not_configured");
+    expect(h.getUser).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+});
+
 describe("updateSession — Supabase not configured", () => {
   beforeEach(() => {
     h.getUser.mockReset();

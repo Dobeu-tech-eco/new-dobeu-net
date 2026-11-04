@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { sanitizeNextPath } from "@/lib/utils";
 
 /** Code-only AAL2 challenge against the user's existing verified TOTP factor. */
 export function MfaStepUp({ next }: { next: string }) {
@@ -35,7 +36,7 @@ export function MfaStepUp({ next }: { next: string }) {
       setCode("");
       return;
     }
-    router.replace(next);
+    router.replace(sanitizeNextPath(next, "/portal"));
     router.refresh();
   }
 
@@ -60,7 +61,7 @@ export function MfaStepUp({ next }: { next: string }) {
         disabled={busy || code.length !== 6}
         className="w-full rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
       >
-        {busy ? "Verifying…" : "Continue to admin"}
+        {busy ? "Verifying…" : "Continue"}
       </button>
     </form>
   );

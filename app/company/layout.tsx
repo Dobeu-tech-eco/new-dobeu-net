@@ -11,6 +11,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
 import { COMPANY_ADMIN_RANK } from "@/lib/actions/company-auth";
+import { requiresAal2Stepup, requiresMfaEnrollment, type AssuranceLevel } from "@/lib/utils";
 
 const NAV = [
   { href: "/company", label: "Overview", icon: LayoutDashboard },
@@ -23,6 +24,8 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     data: { user }
   } = await supabase.auth.getUser();
 
+  // Backstop only: middleware is the authoritative redirect (it preserves the
+  // full path + query in `next`).
   if (!user) {
     redirect("/login?next=/company");
   }
@@ -46,6 +49,20 @@ export default async function CompanyLayout({ children }: { children: React.Reac
 
   if (!isCompanyAdmin) {
     redirect("/portal");
+  }
+
+  // MFA is mandatory for company admins too. Fail CLOSED: an assurance lookup
+  // error or throw is treated as indeterminate (null). Only the lookup is wrapped
+  // so Next's NEXT_REDIRECT throw from redirect() is never swallowed.
+  let assurance: AssuranceLevel = null;
+  try {
+    const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    assurance = error ? null : (data ?? null);
+  } catch {
+    assurance = null;
+  }
+  if (requiresMfaEnrollment(assurance, true) || requiresAal2Stepup(assurance)) {
+    redirect("/portal/settings/mfa?next=/company");
   }
 
   return (
