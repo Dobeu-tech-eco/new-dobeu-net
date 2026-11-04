@@ -18,7 +18,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(85);
+select plan(91);
 
 insert into auth.users (id, email, aud, role) values
   ('d4400000-0000-4000-8000-000000000001', 'd44-o@example.test', 'authenticated', 'authenticated'),
@@ -269,6 +269,36 @@ select set_eq(
        ('wo_attachments_storage_insert_own'::text collate "default", 'INSERT'::text collate "default", 'PERMISSIVE'::text collate "default"),
        ('wo_attachments_storage_select_owner_or_company'::text collate "default", 'SELECT'::text collate "default", 'PERMISSIVE'::text collate "default") $$,
   'storage.objects has exactly the expected policy set');
+
+-- Drift guard: the real check (private.d44_assert_read_policy_set, called by
+-- the migration) raises on ANY unlisted permissive SELECT/ALL policy, including
+-- ones that name no bucket. Each probe policy is dropped right after.
+reset role;
+select lives_ok($$ select private.d44_assert_read_policy_set() $$,
+  'drift guard passes on the expected policy set');
+
+create policy d44_probe_true on storage.objects for select to authenticated using (true);
+select throws_like($$ select private.d44_assert_read_policy_set() $$,
+  '%storage.objects.d44_probe_true%',
+  'drift guard catches a using (true) storage policy that names no bucket');
+drop policy d44_probe_true on storage.objects;
+
+create policy d44_probe_like on storage.objects for select to authenticated using (bucket_id like 'project%');
+select throws_like($$ select private.d44_assert_read_policy_set() $$,
+  '%storage.objects.d44_probe_like%',
+  'drift guard catches a LIKE-pattern storage policy');
+drop policy d44_probe_like on storage.objects;
+
+create policy d44_probe_pub on public.projects for select to authenticated using (true);
+select throws_like($$ select private.d44_assert_read_policy_set() $$,
+  '%public.projects.d44_probe_pub%',
+  'drift guard catches a stray permissive policy on a data table');
+drop policy d44_probe_pub on public.projects;
+
+select ok(not has_function_privilege('authenticated', 'private.d44_assert_read_policy_set()', 'execute'),
+  'authenticated cannot execute the drift guard');
+select ok(not has_function_privilege('anon', 'private.d44_assert_read_policy_set()', 'execute'),
+  'anon cannot execute the drift guard');
 
 select * from finish();
 rollback;

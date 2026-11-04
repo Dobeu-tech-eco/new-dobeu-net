@@ -8,7 +8,7 @@ type Tables = NonNullable<Parameters<typeof buildStubClient>[0]["tables"]>;
 
 function client(tables: Tables) {
   const { supabase, recorded } = buildStubClient({ tables });
-  // The shared stub has no .neq(); add a recording one to the companies chain.
+  // The shared stub has no .neq(); add a recording one to the select chain.
   const from = supabase.from;
   supabase.from = vi.fn((table: string) => {
     const q = from(table);
@@ -32,57 +32,56 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("listSuspendedCompanies", () => {
-  it("returns [] without a second read when there are no memberships", async () => {
-    const { supabase, from } = client({ company_members: { selectSingle: { data: [] } } });
-    expect(await listSuspendedCompanies(supabase, "u1")).toEqual([]);
+  it("makes one joined read scoped to the caller's active memberships and non-active companies", async () => {
+    const { supabase, recorded, from } = client({
+      company_members: { selectSingle: { data: [{ companies: { id: "c2", name: "B", status: "suspended" } }] } },
+    });
+    expect(await listSuspendedCompanies(supabase, "u1")).toEqual([{ id: "c2", name: "B" }]);
     expect(from).toHaveBeenCalledTimes(1);
     expect(from).toHaveBeenCalledWith("company_members");
+    expect(recorded).toContainEqual({ table: "company_members", method: "select", args: ["companies!inner(id, name, status)"] });
+    expect(recorded).toContainEqual({ table: "company_members", method: "eq", args: ["user_id", "u1"] });
+    expect(recorded).toContainEqual({ table: "company_members", method: "eq", args: ["status", "active"] });
+    expect(recorded).toContainEqual({ table: "company_members", method: "neq", args: ["companies.status", "active"] });
   });
 
-  it("returns [] when every company is active", async () => {
-    const { supabase } = client({
-      company_members: { selectSingle: { data: [{ company_id: "c1" }] } },
-      companies: { selectSingle: { data: [{ id: "c1", name: "A", status: "active" }] } },
-    });
+  it("returns [] when no membership has a non-active company", async () => {
+    const { supabase } = client({ company_members: { selectSingle: { data: [] } } });
     expect(await listSuspendedCompanies(supabase, "u1")).toEqual([]);
   });
 
-  it("returns only the suspended company among several, scoped to the caller", async () => {
-    const { supabase, recorded } = client({
-      company_members: { selectSingle: { data: [{ company_id: "c1" }, { company_id: "c2" }, { company_id: "c3" }] } },
-      companies: {
+  it("returns every suspended company, mapped to id and name only", async () => {
+    const { supabase } = client({
+      company_members: {
         selectSingle: {
           data: [
-            { id: "c1", name: "A", status: "active" },
-            { id: "c2", name: "B", status: "suspended" },
-            { id: "c3", name: "C", status: "active" },
+            { companies: { id: "c2", name: "B", status: "suspended" } },
+            { companies: { id: "c4", name: "D", status: "suspended" } },
           ],
         },
       },
     });
-    expect(await listSuspendedCompanies(supabase, "u1")).toEqual([{ id: "c2", name: "B" }]);
-    expect(recorded).toContainEqual({ table: "company_members", method: "eq", args: ["user_id", "u1"] });
-    expect(recorded).toContainEqual({ table: "company_members", method: "eq", args: ["status", "active"] });
-    expect(recorded).toContainEqual({ table: "companies", method: "neq", args: ["status", "active"] });
-    expect(recorded).toContainEqual({ table: "companies", method: "in", args: ["id", ["c1", "c2", "c3"]] });
+    expect(await listSuspendedCompanies(supabase, "u1")).toEqual([
+      { id: "c2", name: "B" },
+      { id: "c4", name: "D" },
+    ]);
   });
 
-  it("returns [] and logs only a safe summary when the membership read errors", async () => {
-    const { supabase, from } = client({
+  it("returns [] and logs only a safe summary when the read errors", async () => {
+    const { supabase } = client({
       company_members: { selectSingle: { error: { message: "secret@example.com leaked" } } },
     });
     expect(await listSuspendedCompanies(supabase, "u1")).toEqual([]);
-    expect(from).toHaveBeenCalledTimes(1);
+    expect(console.error).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("secret@example.com");
   });
 
-  it("returns [] and logs only a safe summary when the companies read errors", async () => {
-    const { supabase } = client({
-      company_members: { selectSingle: { data: [{ company_id: "c1" }] } },
-      companies: { selectSingle: { error: { message: "secret@example.com leaked" } } },
-    });
+  it("returns [] when the client throws", async () => {
+    const { supabase } = client({});
+    supabase.from = vi.fn(() => {
+      throw new Error("secret@example.com boom");
+    }) as typeof supabase.from;
     expect(await listSuspendedCompanies(supabase, "u1")).toEqual([]);
-    expect(console.error).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("secret@example.com");
   });
 });

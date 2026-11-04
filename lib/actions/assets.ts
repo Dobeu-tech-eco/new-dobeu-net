@@ -4,9 +4,10 @@
  *
  * Entitlements are the source of truth for "may this caller download X". Both
  * actions run through the cookie-bound client so RLS is the enforcement layer:
- *   - digital_assets:     signed-in users read the ACTIVE catalog.
+ *   - digital_assets:     a row is visible only when it is ACTIVE and the caller
+ *     holds an entitlement to it (F11).
  *   - asset_entitlements: a row is visible only when user_id = caller OR the
- *     caller is an active member of company_id.
+ *     caller is an active member of an ACTIVE company (`is_active_company_member`, 20261105000100) for company_id.
  *
  * So "is the caller entitled" collapses to "does the RLS-scoped query return a
  * row" — we never re-check ownership in application code.
@@ -116,7 +117,7 @@ export async function getAssetDownloadUrl(
   }
 
   // Entitlement gate: RLS returns a row only if the caller is entitled
-  // (direct grant or via an active company membership).
+  // (direct grant, or a company grant to an active member of an ACTIVE company).
   const { data: entRows, error: entErr } = await supabase
     .from("asset_entitlements")
     .select("id")

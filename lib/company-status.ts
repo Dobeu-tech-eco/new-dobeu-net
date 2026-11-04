@@ -9,37 +9,29 @@ export interface SuspendedCompany {
 
 /**
  * Companies the caller actively belongs to whose status is not 'active'.
- * Two plain reads (own memberships, then companies) so each stays readable
- * under RLS for a suspended company. Never throws: any read error yields []
- * and logs a log-safe summary only, so the portal layout is never blocked.
+ * One read: the caller's own active memberships joined to their companies
+ * (`companies!inner`), keeping only non-active companies. Both sides stay
+ * readable under RLS for a suspended company (own membership row, and
+ * companies_select_member is membership-only). Never throws: any read error
+ * yields [] and logs a log-safe summary only, so the portal layout is never
+ * blocked.
  */
 export async function listSuspendedCompanies(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<SuspendedCompany[]> {
   try {
-    const memberships = await supabase
+    const { data, error } = await supabase
       .from("company_members")
-      .select("company_id")
+      .select("companies!inner(id, name, status)")
       .eq("user_id", userId)
-      .eq("status", "active");
-    if (memberships.error) {
-      console.error("company-status: membership read failed", safeErrorFields(memberships.error));
+      .eq("status", "active")
+      .neq("companies.status", "active");
+    if (error) {
+      console.error("company-status: read failed", safeErrorFields(error));
       return [];
     }
-    const ids = (memberships.data ?? []).map((m) => m.company_id);
-    if (ids.length === 0) return [];
-
-    const companies = await supabase.from("companies").select("id, name, status")
-      .in("id", ids)
-      .neq("status", "active");
-    if (companies.error) {
-      console.error("company-status: companies read failed", safeErrorFields(companies.error));
-      return [];
-    }
-    return (companies.data ?? [])
-      .filter((c) => c.status !== "active")
-      .map((c) => ({ id: c.id, name: c.name }));
+    return (data ?? []).map(({ companies }) => ({ id: companies.id, name: companies.name }));
   } catch (error) {
     console.error("company-status: read threw", safeErrorFields(error));
     return [];

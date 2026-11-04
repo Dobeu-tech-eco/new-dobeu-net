@@ -210,44 +210,53 @@ create policy "digital_assets_storage_select_entitled" on storage.objects
 
 -- ---------------------------------------------------------------- drift guard
 -- Permissive policies OR together: a stray permissive SELECT/ALL policy would
--- silently re-grant suspended members access. Fail loudly. For storage.objects
--- the check is scoped to policies that reference the three company buckets
--- (other buckets' policies are none of our business).
-do $$
+-- silently re-grant suspended members access. Fail loudly. Both checks are an
+-- exact name allowlist: on the seven tables and on storage.objects, ANY
+-- permissive SELECT/ALL policy not named here raises, whatever its text (a
+-- `using (true)` or `bucket_id like ...` policy names no bucket, so matching
+-- on bucket names would miss it). The check lives in a function in the
+-- non-API `private` schema so pgTAP can exercise the real check.
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+
+create or replace function private.d44_assert_read_policy_set()
+returns void
+language plpgsql
+stable
+set search_path = pg_catalog, pg_temp
+as $fn$
 declare
   v_stray text;
 begin
-  select string_agg(tablename::text || '.' || policyname::text, ', ')
+  select string_agg(schemaname::text || '.' || tablename::text || '.' || policyname::text, ', '
+                    order by schemaname, tablename, policyname)
     into v_stray
-    from pg_policies
-   where schemaname = 'public'
-     and permissive = 'PERMISSIVE'
+    from pg_catalog.pg_policies
+   where permissive = 'PERMISSIVE'
      and cmd in ('SELECT', 'ALL')
-     and tablename in ('projects', 'project_files', 'invoices', 'work_orders',
-                       'work_order_attachments', 'digital_assets', 'asset_entitlements')
-     and policyname not in (
-       'projects_select_owner_or_company', 'project_files_select_owner_or_company',
-       'invoices_select_owner_or_company', 'wo_select_owner_or_company',
-       'wo_att_select_owner_or_company', 'digital_assets_select_active',
-       'asset_entitlements_select_entitled');
+     and (
+       (schemaname = 'public'
+        and tablename in ('projects', 'project_files', 'invoices', 'work_orders',
+                          'work_order_attachments', 'digital_assets', 'asset_entitlements')
+        and policyname not in (
+          'projects_select_owner_or_company', 'project_files_select_owner_or_company',
+          'invoices_select_owner_or_company', 'wo_select_owner_or_company',
+          'wo_att_select_owner_or_company', 'digital_assets_select_active',
+          'asset_entitlements_select_entitled'))
+       or
+       (schemaname = 'storage'
+        and tablename = 'objects'
+        and policyname not in (
+          'project_files_storage_select_owner_or_company',
+          'wo_attachments_storage_select_owner_or_company',
+          'digital_assets_storage_select_entitled'))
+     );
   if v_stray is not null then
     raise exception 'D44 migration: unexpected permissive SELECT/ALL policy (%)', v_stray;
   end if;
+end
+$fn$;
 
-  select string_agg('storage.objects.' || policyname::text, ', ')
-    into v_stray
-    from pg_policies
-   where schemaname = 'storage'
-     and tablename = 'objects'
-     and permissive = 'PERMISSIVE'
-     and cmd in ('SELECT', 'ALL')
-     and (coalesce(qual, '') ~ '(project-files|work-order-attachments|digital-assets)'
-          or coalesce(with_check, '') ~ '(project-files|work-order-attachments|digital-assets)')
-     and policyname not in (
-       'project_files_storage_select_owner_or_company',
-       'wo_attachments_storage_select_owner_or_company',
-       'digital_assets_storage_select_entitled');
-  if v_stray is not null then
-    raise exception 'D44 migration: unexpected permissive SELECT/ALL storage policy (%)', v_stray;
-  end if;
-end $$;
+revoke execute on function private.d44_assert_read_policy_set() from public, anon, authenticated;
+
+select private.d44_assert_read_policy_set();

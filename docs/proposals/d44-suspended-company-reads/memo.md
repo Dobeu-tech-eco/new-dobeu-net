@@ -2,7 +2,7 @@ Accepted 2026-11-04 (Jeremy W.); implemented in supabase/migrations/202611050001
 
 # D44: members of a suspended company can still read company data
 
-Status: option (b) accepted and implemented. The draft SQL and dry-run output that lived here were removed; the migration and pgTAP suite (85 assertions) are the source of truth.
+Status: option (b) accepted and implemented. The draft SQL and dry-run output that lived here were removed; the migration and pgTAP suite (91 assertions) are the source of truth.
 
 ## Problem and current behaviour
 
@@ -41,7 +41,7 @@ Status: option (b) accepted and implemented. The draft SQL and dry-run output th
 3. `company_members_select_comember` keeps the member's own row via `user_id = auth.uid()` under either option (pgTAP asserts it). Under (a) co-member rows (the other members' names) are hidden from a suspended member; under (b) they remain visible, which is low risk (membership roster, no client data). Not changed by the migration.
 4. Owner branches stay: rows a suspended member owns or created (`owner_user_id`, `created_by`, `invoices.user_id`, direct `asset_entitlements.user_id`) remain readable. The gate only removes the company-shared path. This is intended; pgTAP asserts a member still reads a SUS work order they created.
 5. Storage must change in the same migration or the bytes stay downloadable via signed URLs / storage API after the tables go dark. The migration includes all three storage SELECT policies.
-6. Permissive policies OR together; the migration ends with a raise-if-stray-permissive-SELECT guard on the seven touched public tables and (scoped to the three company buckets) storage.objects, and pgTAP pins the full policy set of all ten tables (including storage.objects) with `set_eq` (L-006 casts, L-024).
+6. Permissive policies OR together; the migration ends with a raise-if-stray-permissive-SELECT guard (`private.d44_assert_read_policy_set()`, an exact name allowlist, so a policy naming no bucket is caught too) on the seven touched public tables and storage.objects, and pgTAP pins the full policy set of all ten tables (including storage.objects) with `set_eq` (L-006 casts, L-024).
 
 ## What a suspended member sees and can do (L-018)
 
@@ -55,7 +55,7 @@ Adopt (b): ship `is_active_company_member` and switch the 10 data-read policies 
 
 ## Follow-up steps
 
-1. Done: migration copied to `supabase/migrations/20261105000100_suspended_company_reads.sql` (guard extended to storage.objects, scoped to the three company buckets).
+1. Done: migration copied to `supabase/migrations/20261105000100_suspended_company_reads.sql` (guard extended to storage.objects; since run 20261104-180247 an exact name allowlist, pgTAP-probed with `using (true)` and `bucket_id like ...` policies).
 2. Done: `pnpm db:types` run; only the new function appears in `Functions`.
 3. Done: applied locally only (production apply is step 5); `pnpm supabase test db` passes for all suites.
 4. Done in this PR: portal suspended banner. Still open (separate decision): decide separately whether `wo_insert_own` should also use `is_active_company_member` (then the portal ticket form needs a suspended message first).

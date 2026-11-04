@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   getUser: vi.fn(),
-  members: { data: [] as Array<{ company_id: string }> | null, error: null as unknown },
-  companies: {
-    data: [] as Array<{ id: string; name: string; status: string }> | null,
+  // One joined read: company_members -> companies!inner, non-active companies only.
+  members: {
+    data: [] as Array<{ companies: { id: string; name: string; status: string } }> | null,
     error: null as unknown,
   },
 }));
@@ -26,11 +26,10 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: h.getUser },
     from: (table: string) => {
-      const result = table === "company_members" ? h.members : h.companies;
+      const result = table === "company_members" ? h.members : { data: null, error: { message: "unexpected table" } };
       const chain: Record<string, unknown> = {
         select: () => chain,
         eq: () => chain,
-        in: () => chain,
         neq: () => chain,
         then: (resolve: (v: unknown) => unknown) => resolve(result),
       };
@@ -50,8 +49,7 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   h.getUser.mockReset();
   h.getUser.mockResolvedValue({ data: { user: { id: "u1", email: "a@b.co" } } });
-  h.members = { data: [{ company_id: "c1" }], error: null };
-  h.companies = { data: [{ id: "c1", name: "Acme", status: "active" }], error: null };
+  h.members = { data: [], error: null };
 });
 
 afterEach(() => {
@@ -61,7 +59,7 @@ afterEach(() => {
 
 describe("PortalLayout suspended-company banner", () => {
   it("shows the banner and children for a suspended membership", async () => {
-    h.companies = { data: [{ id: "c1", name: "Acme", status: "suspended" }], error: null };
+    h.members = { data: [{ companies: { id: "c1", name: "Acme", status: "suspended" } }], error: null };
     render(await PortalLayout({ children: <p>child</p> }));
     expect(screen.getByRole("status")).toHaveTextContent("Acme is suspended.");
     expect(screen.getByText("child")).toBeInTheDocument();
@@ -74,7 +72,7 @@ describe("PortalLayout suspended-company banner", () => {
   });
 
   it("omits the banner but still renders children when a read errors", async () => {
-    h.companies = { data: null, error: { message: "rls" } };
+    h.members = { data: null, error: { message: "rls" } };
     render(await PortalLayout({ children: <p>child</p> }));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByText("child")).toBeInTheDocument();

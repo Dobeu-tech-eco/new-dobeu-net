@@ -122,3 +122,10 @@ token cannot replace stored bytes.
   `work-order-attachments` matches the table SELECT policies (owner or member of an active
   company) since `20261103000100`, so co-members can download (D2 closed); a
   suspended company's members lose the company path since `20261105000100` (D44).
+- **Signed URLs issued before a suspension (accepted risk, D44).** Storage checks a
+  signed URL's token, not RLS, at download time, so a URL issued while the company was
+  active keeps working until it expires: project-files downloads 60s
+  (`app/api/files/[id]/download`), portal ticket attachments 300s
+  (`app/portal/tickets/[id]`), digital assets 600s (`lib/actions/assets.ts`). Every URL is
+  signed by the cookie-bound client after an RLS-checked read, so no new URL is issued
+  once the company is suspended.
