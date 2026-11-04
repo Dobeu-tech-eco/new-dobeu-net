@@ -10,8 +10,9 @@ import {
 /**
  * Customer-side view of work an admin posted for them.
  *
- * Admin AAL2 cannot be run in e2e: TOTP is disabled in supabase/config.toml,
- * the magic-link session is AAL1 only, and CI sets no ADMIN_EMAILS. The admin
+ * This spec does not run admin AAL2: it enrolls no TOTP factor (see
+ * e2e/totp.ts and e2e/company-step-up.spec.ts for a real step-up), the
+ * magic-link session is AAL1 only, and CI sets no ADMIN_EMAILS. The admin
  * actions are covered by vitest. Here the rows are seeded through the service
  * role with the same shape `createWorkOrderForClient` writes (created_by = the
  * client, status 'quoted', quote fields set; invoices with user_id and no
