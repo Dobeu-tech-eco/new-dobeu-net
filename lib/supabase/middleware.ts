@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { COMPANY_PATH_HEADER } from "@/lib/company-path";
 import type { Database } from "@/lib/database.types";
 import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
 
@@ -16,6 +17,13 @@ export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY;
   const path = request.nextUrl.pathname;
+  const isCompanyPath = path === "/company" || path.startsWith("/company/");
+
+  // Never trust an inbound value: drop it, then forward only our own.
+  request.headers.delete(COMPANY_PATH_HEADER);
+  if (isCompanyPath) {
+    request.headers.set(COMPANY_PATH_HEADER, path + request.nextUrl.search);
+  }
 
   // Defensive auth-code rescue: Supabase appends the PKCE `?code=` to its
   // configured Site URL when the requested `redirect_to` isn't in the Redirect
@@ -33,8 +41,6 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/auth/callback";
     return NextResponse.redirect(url);
   }
-
-  const isCompanyPath = path === "/company" || path.startsWith("/company/");
 
   // Bail gracefully if Supabase isn't configured yet
   if (!supabaseUrl || !supabaseAnonKey) {

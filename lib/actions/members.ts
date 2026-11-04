@@ -11,8 +11,9 @@
  * `{ ok: false, error: "forbidden" | "mfa_required" }` when either fails.
  *
  * Mutations run through the guard's COOKIE-BOUND client so RLS
- * (`company_members_admin_*` policies, which require rank >= 100) is the
- * enforcement layer. The service-role client is used ONLY for Supabase Auth
+ * (`company_members_admin_*` policies, which require rank >= 100 plus an
+ * active company and an AAL2 session via public.can_manage_company_members,
+ * migration 20261104000200) is the enforcement layer. The service-role client is used ONLY for Supabase Auth
  * admin calls (`inviteUserByEmail` / `listUsers`) — there is no cookie-scoped
  * equivalent, and an invitee's auth user may not exist yet.
  *

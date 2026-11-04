@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthError, type DBClient } from "@/lib/actions/auth";
+import { COMPANY_PATH_HEADER, companyDeepLink } from "@/lib/company-path";
 import { COMPANY_ADMIN_RANK, requireCompanyAdmin } from "@/lib/actions/company-auth";
 
 export interface AdminCompany {
@@ -58,6 +60,11 @@ export function pickCompany(
 
 export type GuardOutcome = "ok" | "suspended" | "denied";
 
+/** The validated `next` target shared by layout, pages and guards. */
+export async function companyNext(fallback: string): Promise<string> {
+  return companyDeepLink((await headers()).get(COMPANY_PATH_HEADER), fallback);
+}
+
 /**
  * Next renders layout and page in parallel, so a page can never rely on the
  * layout for AAL2 / company status. Every /company page calls this BEFORE any
@@ -72,7 +79,9 @@ export async function guardCompanyPage(
   company: AdminCompany,
   path: string
 ): Promise<GuardOutcome> {
-  const here = `${path}?company=${encodeURIComponent(company.id)}`;
+  // Same validated source as the layout, so whichever redirect wins carries the
+  // identical deep link; falls back to this page's own path + company.
+  const here = await companyNext(`${path}?company=${encodeURIComponent(company.id)}`);
   let outcome: GuardOutcome | "mfa_required" | "not_authenticated" = "ok";
   try {
     await requireCompanyAdmin(company.id);

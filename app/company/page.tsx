@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Users, FolderKanban, Ticket, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
+  companyNext,
   guardCompanyPage,
   pickCompany,
   resolveAdminCompanies,
@@ -24,7 +25,7 @@ export default async function CompanyOverviewPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent("/company")}`);
+    redirect(`/login?next=${encodeURIComponent(await companyNext("/company"))}`);
   }
 
   const { companies } = await resolveAdminCompanies(supabase, user.id);

@@ -6,7 +6,8 @@ const h = vi.hoisted(() => ({
   createAdminClient: vi.fn(),
   fromCalls: [] as string[],
   companies: [] as Array<{ id: string; name: string; status: string }>,
-  user: { id: "u1" } as { id: string } | null
+  user: { id: "u1" } as { id: string } | null,
+  pathname: null as string | null
 }));
 
 class RedirectError extends Error {
@@ -14,6 +15,10 @@ class RedirectError extends Error {
     super(`NEXT_REDIRECT:${url}`);
   }
 }
+
+vi.mock("next/headers", () => ({
+  headers: async () => ({ get: (name: string) => (name === "x-dobeu-pathname" ? h.pathname : null) })
+}));
 
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
@@ -82,6 +87,7 @@ beforeEach(() => {
   });
   h.fromCalls.length = 0;
   h.user = { id: "u1" };
+  h.pathname = null;
   h.companies = [{ id: "c1", name: "Acme", status: "active" }];
 });
 
@@ -128,6 +134,29 @@ describe("CompanyMembersPage guard", () => {
     expect(h.fromCalls).toEqual([]);
     expect(h.createAdminClient).not.toHaveBeenCalled();
   });
+
+  it("uses the identical validated deep link as the layout when the header is set", async () => {
+    h.pathname = "/company/members?company=x&tab=y";
+    h.requireCompanyAdmin.mockRejectedValue(new AuthError("mfa_required"));
+    await expect(CompanyMembersPage(props)).rejects.toMatchObject({
+      url: `/portal/settings/mfa?next=${encodeURIComponent("/company/members?company=x&tab=y")}`
+    });
+    h.user = null;
+    await expect(CompanyMembersPage(props)).rejects.toMatchObject({
+      url: `/login?next=${encodeURIComponent("/company/members?company=x&tab=y")}`
+    });
+  });
+
+  it.each(["/company/../admin", "/company/%2e%2e/admin", "//evil.com", "/portal"])(
+    "falls back to the page's own path for hostile header %j",
+    async (value) => {
+      h.pathname = value;
+      h.requireCompanyAdmin.mockRejectedValue(new AuthError("mfa_required"));
+      await expect(CompanyMembersPage(props)).rejects.toMatchObject({
+        url: `/portal/settings/mfa?next=${encodeURIComponent("/company/members?company=c1")}`
+      });
+    }
+  );
 
   it("rethrows non-auth errors", async () => {
     h.requireCompanyAdmin.mockRejectedValue(new Error("db down"));

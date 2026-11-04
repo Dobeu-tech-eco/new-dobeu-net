@@ -6,7 +6,7 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
 import { needsAal2StepUp } from "@/lib/actions/company-auth";
-import { resolveAdminCompanies, SuspendedNotice } from "./_lib/admin-companies";
+import { companyNext, resolveAdminCompanies, SuspendedNotice } from "./_lib/admin-companies";
 
 // The /company surface is entirely per-request auth/membership-driven, so it
 // must never be statically pre-rendered.
@@ -18,6 +18,7 @@ const NAV = [
 ];
 
 export default async function CompanyLayout({ children }: { children: React.ReactNode }) {
+  const target = await companyNext("/company");
   const supabase = await createClient();
   const {
     data: { user }
@@ -26,7 +27,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
   // Backstop only: middleware is the authoritative redirect (it preserves the
   // full path + query in `next`).
   if (!user) {
-    redirect("/login?next=/company");
+    redirect(`/login?next=${encodeURIComponent(target)}`);
   }
 
   // Gate: the caller must be a company_admin (rank >= 100) of at least one
@@ -47,7 +48,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
 
   // MFA is mandatory for company admins too (fail closed, see needsAal2StepUp).
   if (await needsAal2StepUp(supabase)) {
-    redirect("/portal/settings/mfa?next=/company");
+    redirect(`/portal/settings/mfa?next=${encodeURIComponent(target)}`);
   }
 
   return (
