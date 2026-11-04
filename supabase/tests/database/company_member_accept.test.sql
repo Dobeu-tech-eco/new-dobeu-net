@@ -12,11 +12,14 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(13);
 
 insert into auth.users (id, email, aud, role) values
   ('d1000000-0000-0000-0000-000000000001', 'accept-i@example.test', 'authenticated', 'authenticated'),
   ('d2000000-0000-0000-0000-000000000002', 'accept-j@example.test', 'authenticated', 'authenticated');
+
+insert into auth.users (id, email, aud, role) values
+  ('d6000000-0000-0000-0000-000000000006', 'accept-admin@example.test', 'authenticated', 'authenticated');
 
 insert into public.companies (id, name, status) values
   ('d3000000-0000-0000-0000-000000000003', 'Accept Co', 'active');
@@ -25,7 +28,9 @@ insert into public.company_members (id, company_id, user_id, role, status) value
   ('d4000000-0000-0000-0000-000000000004', 'd3000000-0000-0000-0000-000000000003',
    'd1000000-0000-0000-0000-000000000001', 'employee', 'invited'),
   ('d5000000-0000-0000-0000-000000000005', 'd3000000-0000-0000-0000-000000000003',
-   'd2000000-0000-0000-0000-000000000002', 'employee', 'invited');
+   'd2000000-0000-0000-0000-000000000002', 'employee', 'invited'),
+  ('d7000000-0000-0000-0000-000000000007', 'd3000000-0000-0000-0000-000000000003',
+   'd6000000-0000-0000-0000-000000000006', 'company_admin', 'active');
 
 -- -----------------------------------------------------------------------------
 -- 1. authenticated invitee (own row), at AAL2 and at AAL1
@@ -54,6 +59,40 @@ select is_empty(
   $$ update public.company_members set status = 'active'
       where id = 'd5000000-0000-0000-0000-000000000005' returning id $$,
   'invitee cannot activate another user''s invited row');
+
+-- -----------------------------------------------------------------------------
+-- 1b. the activation trigger itself: an AAL2 admin of the active company passes
+--     RLS on the invited row, so enforce_company_member_activation fires (42501).
+--     anon has no table privilege / policy, so it never reaches the trigger.
+-- -----------------------------------------------------------------------------
+select set_config('request.jwt.claims',
+  '{"sub":"d6000000-0000-0000-0000-000000000006","role":"authenticated","aal":"aal2"}', true);
+
+select throws_ok(
+  $$ update public.company_members set status = 'active'
+      where id = 'd4000000-0000-0000-0000-000000000004' $$,
+  '42501', null, 'AAL2 company admin cannot activate an invited row (trigger)');
+
+reset role;
+select is(
+  (select status::text collate "default" from public.company_members
+    where id = 'd4000000-0000-0000-0000-000000000004'),
+  'invited'::text collate "default",
+  'the row is still invited after the trigger refusal');
+
+set local role anon;
+select set_config('request.jwt.claims', '', true);
+select throws_ok(
+  $$ update public.company_members set status = 'active'
+      where id = 'd4000000-0000-0000-0000-000000000004' $$,
+  '42501', null, 'anon cannot activate an invited row');
+
+reset role;
+select is(
+  (select status::text collate "default" from public.company_members
+    where id = 'd4000000-0000-0000-0000-000000000004'),
+  'invited'::text collate "default",
+  'the row is still invited after the anon attempt');
 
 -- -----------------------------------------------------------------------------
 -- 2. the rows are untouched

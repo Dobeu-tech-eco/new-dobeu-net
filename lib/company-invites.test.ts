@@ -72,7 +72,7 @@ describe("respondToInvite accept", () => {
   function acceptScript(over: Record<string, Res[]> = {}) {
     return {
       "company_members.select": [{ data: { company_id: C, role: "employee" } }],
-      "companies.select": [{ data: { status: "active" } }],
+      "companies.select": [{ data: { status: "active" } }, { data: { status: "active" } }],
       "company_roles.select": [ROLES],
       "company_members.update": [{ data: [{ company_id: C, role: "employee" }] }],
       "admin_audit_log.insert": [{ data: null }],
@@ -134,6 +134,60 @@ describe("respondToInvite accept", () => {
       error: "invite_unavailable",
     });
     expect(calls.some((c) => c.table === "admin_audit_log")).toBe(false);
+  });
+
+  it("isAdminRole comes from the written row when the role changed after the read", async () => {
+    const { admin } = fakeAdmin(
+      acceptScript({
+        "company_members.update": [{ data: [{ company_id: C, role: "company_admin" }] }],
+      }),
+    );
+    expect(await respondToInvite(admin, U, M, "accept")).toEqual({
+      ok: true,
+      companyId: C,
+      isAdminRole: true,
+    });
+  });
+
+  it("a company suspended after the read is reverted to invited, unaudited", async () => {
+    const { admin, calls } = fakeAdmin(
+      acceptScript({
+        "companies.select": [{ data: { status: "active" } }, { data: { status: "suspended" } }],
+        "company_members.update": [
+          { data: [{ company_id: C, role: "employee" }] },
+          { data: null },
+        ],
+      }),
+    );
+    expect(await respondToInvite(admin, U, M, "accept")).toEqual({
+      ok: false,
+      error: "invite_unavailable",
+    });
+    const updates = calls.filter((c) => c.op === "update");
+    expect(updates).toHaveLength(2);
+    expect(updates[1].payload).toEqual({ status: "invited" });
+    expect(updates[1].filters).toEqual([
+      ["eq", ["id", M]],
+      ["eq", ["user_id", U]],
+      ["eq", ["status", "active"]],
+    ]);
+    expect(calls.some((c) => c.table === "admin_audit_log")).toBe(false);
+  });
+
+  it("a failed revert is logged and still reports unavailable", async () => {
+    const { admin } = fakeAdmin(
+      acceptScript({
+        "companies.select": [{ data: { status: "active" } }, { data: { status: "suspended" } }],
+        "company_members.update": [
+          { data: [{ company_id: C, role: "employee" }] },
+          { error: { message: "revert down" } },
+        ],
+      }),
+    );
+    expect(await respondToInvite(admin, U, M, "accept")).toEqual({
+      ok: false,
+      error: "invite_unavailable",
+    });
   });
 
   it("a suspended company cannot be joined", async () => {

@@ -34,8 +34,19 @@ const M = "22222222-2222-4222-8222-222222222222";
 const C = "33333333-3333-4333-8333-333333333333";
 const fd = new FormData();
 
-function signIn(user: Record<string, unknown> | null) {
+function signIn(
+  user: Record<string, unknown> | null,
+  aal: { methods?: string[]; error?: boolean } = {},
+) {
   const { supabase } = buildStubClient({ user: user as never });
+  const methods = (aal.methods ?? ["otp"]).map((method) => ({ method, timestamp: 1 }));
+  (supabase.auth as Record<string, unknown>).mfa = {
+    getAuthenticatorAssuranceLevel: vi.fn(async () =>
+      aal.error
+        ? { data: null, error: { message: "aal down" } }
+        : { data: { currentAuthenticationMethods: methods }, error: null },
+    ),
+  };
   h.client = supabase;
 }
 const confirmed = { id: U, email: "a@example.com", email_confirmed_at: "2026-01-01T00:00:00Z" };
@@ -80,6 +91,32 @@ describe("acceptCompanyInvite / declineCompanyInvite", () => {
     expect(await fn(M)).toEqual({ ok: false, error: "invite_email_unconfirmed" });
     expect(createAdminClient).not.toHaveBeenCalled();
     expect(h.respond).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["accept", acceptCompanyInvite],
+    ["decline", declineCompanyInvite],
+  ])("%s with a password-only (or password + totp) session is refused", async (_n, fn) => {
+    signIn(confirmed, { methods: ["password"] });
+    expect(await fn(M)).toEqual({ ok: false, error: "invite_email_unconfirmed" });
+    signIn(confirmed, { methods: ["password", "totp"] });
+    expect(await fn(M)).toEqual({ ok: false, error: "invite_email_unconfirmed" });
+    expect(createAdminClient).not.toHaveBeenCalled();
+    expect(h.respond).not.toHaveBeenCalled();
+  });
+
+  it.each(["otp", "magiclink", "invite", "email/signup"])(
+    "a %s session proves the mailbox",
+    async (method) => {
+      signIn(confirmed, { methods: ["password", method] });
+      expect((await acceptCompanyInvite(M)).ok).toBe(true);
+    },
+  );
+
+  it("a lookup error is invite_response_failed and creates no admin client", async () => {
+    signIn(confirmed, { error: true });
+    expect(await acceptCompanyInvite(M)).toEqual({ ok: false, error: "invite_response_failed" });
+    expect(createAdminClient).not.toHaveBeenCalled();
   });
 
   it("a malformed member id makes no database call", async () => {

@@ -24,6 +24,14 @@ import {
 import { safeErrorFields } from "@/lib/log-safe";
 import { createAdminClient } from "@/lib/supabase/server";
 
+/** Sign-in methods that prove control of the mailbox (not password or totp). */
+const MAILBOX_PROOF_METHODS: ReadonlySet<string> = new Set([
+  "otp",
+  "magiclink",
+  "invite",
+  "email/signup",
+]);
+
 const uuid = z.guid("invalid id");
 
 export type ActionResult<T> =
@@ -42,10 +50,23 @@ async function respond(
   response: InviteResponse,
 ): Promise<ActionResult<{ companyId: string; isAdminRole: boolean }>> {
   try {
-    const { user } = await requireUser();
-    // An unconfirmed address could be someone else's typo or a squatted
-    // account; only a confirmed email may claim an invite.
+    const { user, supabase } = await requireUser();
+    // email_confirmed_at alone is not mailbox proof (signups may auto-confirm,
+    // so a squatter can register a victim's address). Require a confirmed
+    // email AND a session established through an email link.
     if (!user.email_confirmed_at) {
+      return { ok: false, error: "invite_email_unconfirmed" };
+    }
+    const { data: aal, error: aalError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aalError || !aal) {
+      return { ok: false, error: "invite_response_failed" };
+    }
+    if (
+      !aal.currentAuthenticationMethods.some((m) =>
+        MAILBOX_PROOF_METHODS.has(typeof m === "string" ? m : m.method),
+      )
+    ) {
       return { ok: false, error: "invite_email_unconfirmed" };
     }
     const id = uuid.safeParse(memberId);

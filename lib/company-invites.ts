@@ -109,6 +109,7 @@ export async function respondToInvite(
   try {
     let row: { company_id: string; role: string } | undefined;
     let isAdminRole = false;
+    let roles: Map<string, RoleInfo> | null = null;
 
     if (response === "accept") {
       const { data: current, error } = await admin.from("company_members")
@@ -132,9 +133,8 @@ export async function respondToInvite(
 
       // Resolve the rank before writing so a catalog read failure cannot
       // leave an accepted invite that reports an error.
-      const roles = await loadRoles(admin);
+      roles = await loadRoles(admin);
       if (!roles) throw new Error("role catalog unavailable");
-      isAdminRole = (roles.get(current.role)?.rank ?? 0) >= COMPANY_ADMIN_RANK;
 
       const { data: updated, error: updateError } = await admin.from("company_members")
         .update({ status: "active" })
@@ -144,6 +144,30 @@ export async function respondToInvite(
         .select("company_id, role");
       if (updateError) throw updateError;
       row = updated?.[0];
+      if (row) {
+        // The status read above can go stale: re-check after the write and
+        // undo the activation if the company was suspended meanwhile.
+        const { data: after, error: afterError } = await admin
+          .from("companies")
+          .select("status")
+          .eq("id", row.company_id)
+          .maybeSingle();
+        if (afterError) throw afterError;
+        if (after?.status !== "active") {
+          const { error: revertError } = await admin
+            .from("company_members")
+            .update({ status: "invited" })
+            .eq("id", memberId)
+            .eq("user_id", userId)
+            .eq("status", "active");
+          if (revertError) {
+            console.warn(`[${scope}] revert failed:`, safeErrorFields(revertError));
+          }
+          return { ok: false, error: "invite_unavailable" };
+        }
+        // Rank comes from the row actually written, not the earlier read.
+        isAdminRole = (roles.get(row.role)?.rank ?? 0) >= COMPANY_ADMIN_RANK;
+      }
     } else {
       const { data: deleted, error } = await admin.from("company_members")
         .delete()
