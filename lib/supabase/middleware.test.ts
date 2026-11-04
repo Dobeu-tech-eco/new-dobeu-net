@@ -3,18 +3,23 @@ import { NextRequest } from "next/server";
 const h = vi.hoisted(() => ({
   getUser: vi.fn(),
   getAal: vi.fn(),
+  setAllCookies: null as null | Array<{ name: string; value: string; options: object }>,
 }));
 
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: vi.fn(() => ({
+  createServerClient: vi.fn((_url: string, _key: string, opts: { cookies: { setAll: (c: unknown[]) => void } }) => ({
     auth: {
-      getUser: h.getUser,
+      getUser: async () => {
+        // Simulate a session refresh when requested, like the real client.
+        if (h.setAllCookies) opts.cookies.setAll(h.setAllCookies);
+        return h.getUser();
+      },
       mfa: { getAuthenticatorAssuranceLevel: h.getAal },
     },
   })),
 }));
 
-import { updateSession } from "@/lib/supabase/middleware";
+import { COMPANY_PATH_HEADER, updateSession } from "@/lib/supabase/middleware";
 
 /**
  * These tests exercise the defensive auth-code forwarder, which runs before any
@@ -257,6 +262,60 @@ describe("updateSession — /company gating", () => {
     expect(loc.pathname).toBe("/login");
     expect(loc.searchParams.get("error")).toBe("supabase_not_configured");
     expect(h.getUser).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+});
+
+describe("updateSession — forwarded company path header", () => {
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY = "anon-key";
+    h.getUser.mockReset();
+    h.getUser.mockResolvedValue({ data: { user: { id: "u1", email: "a@b.co" } } });
+    h.setAllCookies = null;
+  });
+
+  afterEach(() => {
+    h.setAllCookies = null;
+  });
+
+  // Next encodes request-header overrides on the response: the names of every
+  // forwarded header in x-middleware-override-headers, each value in
+  // x-middleware-request-<name>.
+  const forwarded = (res: Response, name: string) => {
+    const overrides = (res.headers.get("x-middleware-override-headers") ?? "").split(",");
+    return overrides.includes(name) ? res.headers.get(`x-middleware-request-${name}`) : null;
+  };
+  const run = (path: string, headers: Record<string, string> = {}) =>
+    updateSession(new NextRequest(`https://dobeu.net${path}`, { headers }));
+
+  it("forwards the requested /company path and query to the downstream request", async () => {
+    const res = await run("/company/members?company=x");
+    expect(forwarded(res, COMPANY_PATH_HEADER)).toBe("/company/members?company=x");
+  });
+
+  it("overwrites a spoofed inbound header on /company", async () => {
+    const res = await run("/company", { [COMPANY_PATH_HEADER]: "/company/members?company=evil" });
+    expect(forwarded(res, COMPANY_PATH_HEADER)).toBe("/company");
+  });
+
+  it.each(["/portal", "/"])("strips a spoofed header on non-company path %s", async (path) => {
+    const res = await run(path, { [COMPANY_PATH_HEADER]: "/company/members" });
+    expect(forwarded(res, COMPANY_PATH_HEADER)).toBeNull();
+  });
+
+  it("keeps the header when setAll re-creates the response (session refresh)", async () => {
+    h.setAllCookies = [{ name: "sb-token", value: "v", options: {} }];
+    const res = await run("/company/members?company=x");
+    expect(res.cookies.get("sb-token")?.value).toBe("v");
+    expect(forwarded(res, COMPANY_PATH_HEADER)).toBe("/company/members?company=x");
+  });
+
+  it("strips a spoofed header when Supabase is not configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_URL", undefined);
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
+    const res = await run("/", { [COMPANY_PATH_HEADER]: "/company" });
+    expect(forwarded(res, COMPANY_PATH_HEADER)).toBeNull();
     vi.unstubAllEnvs();
   });
 });

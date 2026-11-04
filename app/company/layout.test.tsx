@@ -6,6 +6,7 @@ const h = vi.hoisted(() => ({
   getAal: vi.fn(),
   members: [] as Array<{ company_id: string; role: string }>,
   membersError: null as unknown,
+  pathname: null as string | null,
   companies: { data: [] as Array<{ id: string; name?: string; status: string }> | null, error: null as unknown },
 }));
 
@@ -14,6 +15,10 @@ class RedirectError extends Error {
     super(`NEXT_REDIRECT:${url}`);
   }
 }
+
+vi.mock("next/headers", () => ({
+  headers: async () => ({ get: (name: string) => (name === "x-dobeu-pathname" ? h.pathname : null) }),
+}));
 
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
@@ -54,6 +59,7 @@ import CompanyLayout from "./layout";
 beforeEach(() => {
   h.getUser.mockReset();
   h.getAal.mockReset();
+  h.pathname = null;
   h.members = [{ company_id: "c1", role: "company_admin" }];
   h.membersError = null;
   h.companies = { data: [{ id: "c1", status: "active" }], error: null };
@@ -72,14 +78,35 @@ async function redirectTarget(): Promise<string> {
   throw new Error("expected a redirect");
 }
 
-const MFA = "/portal/settings/mfa?next=/company";
+const MFA = "/portal/settings/mfa?next=%2Fcompany";
 
 describe("CompanyLayout", () => {
-  it("redirects a signed-out user to /login?next=/company", async () => {
+  it("redirects a signed-out user to /login?next=%2Fcompany", async () => {
     h.getUser.mockResolvedValue({ data: { user: null } });
-    expect(await redirectTarget()).toBe("/login?next=/company");
+    expect(await redirectTarget()).toBe("/login?next=%2Fcompany");
     expect(h.getAal).not.toHaveBeenCalled();
   });
+
+  it("keeps the encoded deep link in the signed-out backstop", async () => {
+    h.getUser.mockResolvedValue({ data: { user: null } });
+    h.pathname = "/company/members?company=x";
+    expect(await redirectTarget()).toBe("/login?next=%2Fcompany%2Fmembers%3Fcompany%3Dx");
+  });
+
+  it("keeps the requested deep link through the MFA step-up", async () => {
+    h.getAal.mockResolvedValue({ data: { currentLevel: "aal1", nextLevel: "aal2" }, error: null });
+    h.pathname = "/company/members?company=x";
+    expect(await redirectTarget()).toBe("/portal/settings/mfa?next=%2Fcompany%2Fmembers%3Fcompany%3Dx");
+  });
+
+  it.each(["//evil.com", "/portal", "https://x.example", "/company/\u0001x", "/company\tx", "/companyfoo"])(
+    "falls back to /company for hostile header %j",
+    async (value) => {
+      h.getAal.mockResolvedValue({ data: { currentLevel: "aal1", nextLevel: "aal2" }, error: null });
+      h.pathname = value;
+      expect(await redirectTarget()).toBe(MFA);
+    },
+  );
 
   it("sends a non-admin member to /portal before any AAL lookup", async () => {
     h.members = [{ company_id: "c1", role: "member" }];

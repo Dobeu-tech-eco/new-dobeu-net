@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LayoutDashboard, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/portal/LogoutButton";
+import { COMPANY_PATH_HEADER } from "@/lib/supabase/middleware";
+import { sanitizeNextPath } from "@/lib/utils";
 import { needsAal2StepUp } from "@/lib/actions/company-auth";
 import { resolveAdminCompanies, SuspendedNotice } from "./_lib/admin-companies";
 
@@ -17,7 +20,16 @@ const NAV = [
   { href: "/company/members", label: "Members", icon: Users }
 ];
 
+// Deep link the middleware forwarded; anything not under /company falls back
+// to the overview.
+function companyTarget(raw: string | null): string {
+  const safe = sanitizeNextPath(raw, "/company");
+  const ok = safe === "/company" || safe.startsWith("/company/") || safe.startsWith("/company?");
+  return ok ? safe : "/company";
+}
+
 export default async function CompanyLayout({ children }: { children: React.ReactNode }) {
+  const target = companyTarget((await headers()).get(COMPANY_PATH_HEADER));
   const supabase = await createClient();
   const {
     data: { user }
@@ -26,7 +38,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
   // Backstop only: middleware is the authoritative redirect (it preserves the
   // full path + query in `next`).
   if (!user) {
-    redirect("/login?next=/company");
+    redirect(`/login?next=${encodeURIComponent(target)}`);
   }
 
   // Gate: the caller must be a company_admin (rank >= 100) of at least one
@@ -47,7 +59,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
 
   // MFA is mandatory for company admins too (fail closed, see needsAal2StepUp).
   if (await needsAal2StepUp(supabase)) {
-    redirect("/portal/settings/mfa?next=/company");
+    redirect(`/portal/settings/mfa?next=${encodeURIComponent(target)}`);
   }
 
   return (
