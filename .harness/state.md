@@ -45,6 +45,7 @@ Append entries as `- <date> <text>`.
 - 2026-11-03 #309 merged (bc803d1); 20261103000100/200 applied to prod (supabase-dobe-net) via Composio SQL. Migration history reconciled: 5 prod-only 20261023* migrations added to repo from c5cc3d6 (byte-identical), prod 20260829202624 relabelled to 20260829010000, 10 repo migrations marked applied after schema evidence check; prod and local 20/20, db push dry-run up to date.
 - 2026-11-03 D10 closed: /writing-for-agents re-run on end-state.md and plan-style.md, approved by Jeremy (form only). Per-run evidence moved verbatim to .harness/evidence-log.md; end-state 317 -> 231 lines; P6 agent-writing box checked.
 - 2026-11-03 D11 closed via #313: real generated DB types, lib/domain-types.ts, CI drift check (green on GitHub). End-state row 1 done; P3 types box checked.
+- 2026-11-03 D12 closed: Jeremy added LEAD_VERIFY_SECRET= and CRON_SECRET= (empty values, commented) to .env.example (protected path, human edit); presence verified. The CRON_SECRET .env.example gap from run 20261027-134130 is closed too.
 - Fallback: reviewer:security copilot -> grok (copilot monthly quota exhausted).
 
 ## Failures and escalations

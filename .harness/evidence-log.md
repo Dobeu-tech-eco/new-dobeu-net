@@ -96,3 +96,7 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
 - CI E2E job, after pgTAP: "Check generated DB types match migrations" regenerates and `diff -u`s; passed on PR #313 (CLI 2.121.0). Locally a hand-edited copy makes the diff fail.
 - pgTAP in CI: `rls_hardening` (32), `rls_files_attachments` (56), `run2_storage` (42). Repo and prod migration history match 20/20 (#310).
 - P3 types box checked. Evidence is local stack plus CI; production schema matched by history repair and spot checks, not a full schema diff.
+
+## 2026-11-03 (D12, .env.example)
+
+- `LEAD_VERIFY_SECRET=` (`.env.example:83`) and `CRON_SECRET=` (`.env.example:87`) added by Jeremy with comments and empty values. This closes the "`.env.example` `CRON_SECRET` line" gap listed under run 20261027-134130.

@@ -146,7 +146,7 @@ Datadog is the single pane: RUM + Session Replay + browser Logs client-side (`li
 | `VERCEL_SUPABASE_SERVICE_ROLE_KEY` | `createAdminClient()` — bypasses RLS. Required for admin pages + `/api/lead/confirm`. Auto-provisioned by the Marketplace integration. |
 | `ADMIN_EMAILS` | Comma-separated. Drives `isAdminEmail()` — the actual admin gate. |
 | `CALENDLY_WEBHOOK_SIGNING_KEY` | HMAC verification for `/api/webhooks/calendly`. Webhook returns 503 if unset. |
-| `LEAD_VERIFY_SECRET` | Secret (>= 32 chars) from which the lead confirm-token AES-256-GCM key is derived (`lib/lead-verification.ts`). **Deploy:** must exist in Vercel Production and Preview, and `.env.example` needs a manual line (protected path). Unset or shorter -> `/api/lead` and `/api/lead/confirm` return 503. |
+| `LEAD_VERIFY_SECRET` | Secret (>= 32 chars) from which the lead confirm-token AES-256-GCM key is derived (`lib/lead-verification.ts`). **Deploy:** must exist in Vercel Production and Preview (documented in `.env.example`). Unset or shorter -> `/api/lead` and `/api/lead/confirm` return 503. |
 | `TYPEFORM_WEBHOOK_SECRET` | HMAC verification for `/api/typeform/webhook`. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe invoicing + `/api/webhooks/stripe` signature verification. |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Production rate limiting (Vercel Marketplace Upstash add-on). Absent → in-memory fallback (per-instance only). |
