@@ -13,12 +13,12 @@ const MEMBER_NOTICES = {
   member_added: {
     tone: "success",
     role: "status",
-    text: "Member added. We've emailed them to sign in at /login with this email address and accept the invite on their portal."
+    text: "Member added. We've emailed them to sign in at /login with this email address using the emailed sign-in link (not a password), then accept the invite on their portal."
   },
   invite_email_failed: {
     tone: "warning",
     role: "alert",
-    text: "Member added, but the invite email didn't send. Ask them to sign in at /login with their email address and accept the invite on their portal."
+    text: "Member added, but the invite email didn't send. Ask them to sign in at /login with their email address using the emailed sign-in link (not a password), then accept the invite on their portal."
   },
   already_member: {
     tone: "warning",

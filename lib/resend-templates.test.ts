@@ -149,8 +149,8 @@ describe("companyMemberInviteEmail", () => {
   it("says invited consistently and does not promise access", () => {
     const out = companyMemberInviteEmail({ loginUrl: "https://a.example/login" });
     expect(out.subject).toBe("You've been invited to a company on Dobeu");
-    expect(out.text).toContain("then accept the invite on your portal.");
-    expect(out.html).toContain("then accept the invite on your portal.");
+    expect(out.text).toContain("using the emailed sign-in link (not a password), then accept the invite on your portal.");
+    expect(out.html).toContain("using the emailed sign-in link (not a password), then accept the invite on your portal.");
     expect(out.subject + out.text + out.html).not.toMatch(/membership is activated/i);
     expect(out.subject + out.text + out.html).not.toMatch(/added|get started/i);
   });

@@ -334,7 +334,7 @@ export function companyMemberInviteEmail(args: { loginUrl: string }): EmailConte
   const text = [
     `Hey there —`,
     ``,
-    `You've been invited to join a company on Dobeu. Sign in at the link below with this email address, then accept the invite on your portal.`,
+    `You've been invited to join a company on Dobeu. Sign in at the link below with this email address using the emailed sign-in link (not a password), then accept the invite on your portal.`,
     ``,
     args.loginUrl,
     ``,
@@ -345,7 +345,7 @@ export function companyMemberInviteEmail(args: { loginUrl: string }): EmailConte
   const html = shell(
     `
 <h1 style="margin:0 0 12px;font-size:22px;font-weight:800;color:${DOBEU_INDIGO};">Hey there —</h1>
-<p style="margin:0 0 12px;">You've been invited to join a company on Dobeu. Sign in at the link below with this email address, then accept the invite on your portal.</p>
+<p style="margin:0 0 12px;">You've been invited to join a company on Dobeu. Sign in at the link below with this email address using the emailed sign-in link (not a password), then accept the invite on your portal.</p>
 ${button(args.loginUrl, "Go to sign in")}
 <p style="margin:12px 0 0;color:${DOBEU_MUTED};font-size:12px;">If you weren&apos;t expecting this, you can ignore this email.</p>`,
     { previewText: "You've been invited to a company on Dobeu" }
