@@ -10,6 +10,11 @@
  * Server-only by transitive import of `@/lib/supabase/server` via `./auth`.
  */
 import type { User } from "@supabase/supabase-js";
+import {
+  requiresAal2Stepup,
+  requiresMfaEnrollment,
+  type AssuranceLevel
+} from "@/lib/utils";
 import { AuthError, requireUser, type DBClient } from "./auth";
 
 /** Rank of the company_admin role seeded in the tenancy migration. */
@@ -68,9 +73,42 @@ export async function requireCompanyMember(
   };
 }
 
-/** Require the caller to be the company's admin (rank >= 100). */
+/**
+ * Require the caller to be the company's admin (rank >= 100) of an ACTIVE
+ * company whose session has reached AAL2. Fails closed, in this order, so a
+ * non-admin always gets "forbidden" and never learns MFA state:
+ *   1. membership + rank (`requireCompanyMember`) -> "forbidden"
+ *   2. companies.status === 'active' (read error / missing row / suspended)
+ *      -> "forbidden"
+ *   3. AAL2 -> "mfa_required"
+ */
 export async function requireCompanyAdmin(
   companyId: string
 ): Promise<CompanyGuardResult> {
-  return requireCompanyMember(companyId, COMPANY_ADMIN_RANK);
+  const result = await requireCompanyMember(companyId, COMPANY_ADMIN_RANK);
+  const { supabase } = result;
+
+  const { data: company, error: companyError } = await supabase
+    .from("companies")
+    .select("status")
+    .eq("id", companyId)
+    .single();
+  if (companyError || company?.status !== "active") {
+    throw new AuthError("forbidden");
+  }
+
+  let assurance: AssuranceLevel = null;
+  try {
+    const { data, error } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    assurance = error ? null : data ?? null;
+  } catch {
+    assurance = null;
+  }
+  // `true` = this role must reach AAL2 (not an ADMIN_EMAILS check).
+  if (requiresMfaEnrollment(assurance, true) || requiresAal2Stepup(assurance)) {
+    throw new AuthError("mfa_required");
+  }
+
+  return result;
 }

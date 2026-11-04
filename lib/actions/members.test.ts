@@ -31,6 +31,7 @@ vi.mock("@/lib/utils", async (importOriginal) => ({
   ),
 }));
 import { buildServerAuthCallbackUrl } from "@/lib/utils";
+import { createAdminClient } from "@/lib/supabase/server";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => h.state.client),
@@ -69,8 +70,16 @@ const ADMIN_MEMBER = {
   user_id: "other_user",
 };
 
+const AAL2 = { currentLevel: "aal2", nextLevel: "aal2" };
+const AAL1 = { currentLevel: "aal1", nextLevel: "aal2" };
+
+// Calls recorded by the most recent makeClient() stub (table + method + args).
+let recorded: ReturnType<typeof buildStubClient>["recorded"] = [];
+
 function makeClient(
   opts: {
+    aal?: { currentLevel: string; nextLevel: string };
+    companyStatus?: string;
     user?: { id: string; email: string } | null;
     member?: Record<string, unknown> | null;
     rank?: number;
@@ -80,6 +89,8 @@ function makeClient(
   } = {},
 ) {
   const {
+    aal = AAL2,
+    companyStatus = "active",
     user = { id: "admin_1", email: "admin@dobeu.net" },
     member = ADMIN_MEMBER,
     rank = 100,
@@ -87,15 +98,40 @@ function makeClient(
     insert = { data: { id: "m_new" } },
     update = { error: null },
   } = opts;
-  return buildStubClient({
+  const stub = buildStubClient({
     user,
     tables: {
       company_members: { selectSingle: { data: member }, insert, update },
       company_roles: {
         selectSingle: { data: roleValid ? { key: "employee", rank } : null },
       },
+      companies: { selectSingle: { data: { status: companyStatus } } },
     },
-  }).supabase;
+  });
+  recorded = stub.recorded;
+  return Object.assign(stub.supabase, {
+    auth: {
+      ...stub.supabase.auth,
+      mfa: {
+        getAuthenticatorAssuranceLevel: vi.fn(async () => ({
+          data: aal,
+          error: null,
+        })),
+      },
+    },
+  });
+}
+
+// Writes the guard must prevent: member-row mutations and service-role access.
+function expectNoWritesOrAdminCalls() {
+  expect(
+    recorded.filter(
+      (r) =>
+        r.table === "company_members" &&
+        (r.method === "insert" || r.method === "update"),
+    ),
+  ).toEqual([]);
+  expect(createAdminClient).not.toHaveBeenCalled();
 }
 
 beforeEach(() => {
@@ -295,5 +331,25 @@ describe("deactivateMember", () => {
     });
     const result = await deactivateMember(COMPANY_ID, MEMBER_ID);
     expect(result).toEqual({ ok: false, error: "rls violation" });
+  });
+});
+
+describe("D28 guard in the action path (AAL2 + active company)", () => {
+  const actions: [string, () => ReturnType<typeof inviteMember | typeof changeMemberRole>][] = [
+    ["inviteMember", () => inviteMember(COMPANY_ID, "client@example.com", "employee")],
+    ["changeMemberRole", () => changeMemberRole(COMPANY_ID, MEMBER_ID, "manager")],
+    ["deactivateMember", () => deactivateMember(COMPANY_ID, MEMBER_ID)],
+  ];
+
+  it.each(actions)("%s: AAL1 admin gets mfa_required, no writes", async (_n, run) => {
+    h.state.client = makeClient({ aal: AAL1 });
+    expect(await run()).toEqual({ ok: false, error: "mfa_required" });
+    expectNoWritesOrAdminCalls();
+  });
+
+  it.each(actions)("%s: suspended company gets forbidden, no writes", async (_n, run) => {
+    h.state.client = makeClient({ companyStatus: "suspended" });
+    expect(await run()).toEqual({ ok: false, error: "forbidden" });
+    expectNoWritesOrAdminCalls();
   });
 });
