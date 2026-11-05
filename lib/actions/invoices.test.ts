@@ -544,7 +544,10 @@ describe("createInvoice (Stripe-wired)", () => {
       workOrder: { ...ACCEPTED_WO, invoice_id: "inv_linked" },
     });
     const { createInvoice } = await import("@/lib/actions/invoices");
-    expectRefusal(await createInvoice(woInput), "inv_linked", "already billed");
+    const refused = await createInvoice(woInput);
+    expectRefusal(refused, "inv_linked", "already billed");
+    // After D35 the 24 h Stripe warning only fits a different case.
+    expect(refused.ok === false && refused.error).not.toContain("24 hours");
     expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
     expect(invoiceInserts()).toEqual([]);
     expectNoAudit();

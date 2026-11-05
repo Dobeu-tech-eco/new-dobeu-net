@@ -50,6 +50,18 @@ export interface CreateInvoiceForUserInput {
   work_order_id?: string;
 }
 
+export const STRIPE_VOID_STEP =
+  "void it in the Stripe dashboard (find that invoice on /admin/invoices; the row's Stripe link or dashboard link opens it)";
+
+/**
+ * Refusal for a work order whose linked (or audited) invoice is not void. One
+ * message for one condition: shared by the admin actions' gate and this
+ * helper's own re-check.
+ */
+export function alreadyInvoicedMessage(invoiceId: string): string {
+  return `Invoice ${invoiceId} is already billed for this work order. To bill again, ${STRIPE_VOID_STEP}; once the webhook marks it void, this work order can be billed again.`;
+}
+
 /**
  * Stripe idempotency key for a work-order invoice. The first bill uses `v1`;
  * a re-bill after a void uses the replaced invoice's id so Stripe sees a new key.
@@ -120,10 +132,7 @@ export async function createInvoiceForUser(
         return { ok: false, error: "Unable to read the work order's current invoice link" };
       }
       if (linked.status !== "void") {
-        return {
-          ok: false,
-          error: `This work order already has an active invoice (${replacedInvoiceId}); refresh the page before billing again`
-        };
+        return { ok: false, error: alreadyInvoicedMessage(replacedInvoiceId) };
       }
     }
   }

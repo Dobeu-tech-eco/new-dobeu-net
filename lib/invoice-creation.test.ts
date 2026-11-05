@@ -57,7 +57,11 @@ vi.mock("@/lib/resend-templates", () => ({
   }))
 }));
 
-import { createInvoiceForUser, workOrderInvoiceIdempotencyKey } from "@/lib/invoice-creation";
+import {
+  alreadyInvoicedMessage,
+  createInvoiceForUser,
+  workOrderInvoiceIdempotencyKey
+} from "@/lib/invoice-creation";
 
 // ---- Fixtures ------------------------------------------------------------
 
@@ -381,8 +385,7 @@ describe("work-order Stripe idempotency key", () => {
 
       expect(res).toEqual({
         ok: false,
-        error:
-          "This work order already has an active invoice (inv_live_1); refresh the page before billing again"
+        error: alreadyInvoicedMessage("inv_live_1")
       });
       expect(getOrCreateStripeCustomer).not.toHaveBeenCalled();
       expect(createHostedInvoice).not.toHaveBeenCalled();

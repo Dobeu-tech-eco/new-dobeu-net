@@ -12,7 +12,9 @@ import { z } from "zod";
 import { requireAdmin, AuthError } from "@/lib/actions/auth";
 import { writeAdminAudit } from "@/lib/admin-audit";
 import {
+  alreadyInvoicedMessage,
   createInvoiceForUser,
+  STRIPE_VOID_STEP,
   type InvoiceCreationResult
 } from "@/lib/invoice-creation";
 
@@ -51,13 +53,6 @@ const BILLING_AUDIT_ACTIONS = [
 const DUPLICATE_CHECK_FAILED = "Unable to check for duplicate invoices";
 
 const createForWorkOrderInput = z.object({ work_order_id: uuid });
-
-const STRIPE_VOID_STEP =
-  "void it in the Stripe dashboard (find that invoice on /admin/invoices; the row's Stripe link or dashboard link opens it)";
-
-function alreadyInvoicedMessage(invoiceId: string): string {
-  return `Invoice ${invoiceId} is already billed for this work order. To bill again, ${STRIPE_VOID_STEP}; once the webhook marks it void, this work order can be billed again (Stripe may still refuse a new invoice for this work order for up to 24 hours after the first one was created).`;
-}
 
 function linkFailedMessage(invoiceId: string): string {
   return `Invoice ${invoiceId} exists for this work order, but its link to the ticket failed. To keep it, link it by setting work_orders.invoice_id = ${invoiceId} in Supabase. To bill again instead, ${STRIPE_VOID_STEP}, and wait for the webhook to mark it void.`;
