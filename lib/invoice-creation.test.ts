@@ -10,7 +10,10 @@ const insertSingle = vi.fn();
 const insertSelect = vi.fn(() => ({ single: insertSingle }));
 const insert = vi.fn(() => ({ select: insertSelect }));
 const existingLimit = vi.fn();
-const existingEq = vi.fn(() => ({ limit: existingLimit }));
+// The invoices table serves two chains: the stripe_invoice_id reuse lookup
+// (`eq().limit()`) and the linked-invoice status read (`eq().single()`).
+const linkedStatusSingle = vi.fn();
+const existingEq = vi.fn(() => ({ limit: existingLimit, single: linkedStatusSingle }));
 const existingSelect = vi.fn(() => ({ eq: existingEq }));
 
 const workOrderSingle = vi.fn();
@@ -83,6 +86,8 @@ beforeEach(() => {
   existingLimit.mockResolvedValue({ data: [], error: null });
   // Default: the work order has never been billed (no linked invoice).
   workOrderSingle.mockResolvedValue({ data: { invoice_id: null }, error: null });
+  // Default: a linked invoice (when a test links one) is void.
+  linkedStatusSingle.mockResolvedValue({ data: { status: "void" }, error: null });
 });
 
 // ---- Tests ---------------------------------------------------------------
@@ -351,6 +356,77 @@ describe("work-order Stripe idempotency key", () => {
     expect(createHostedInvoice).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
     expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("linked void invoice: reads that invoice's status and proceeds with the replaced-id key", async () => {
+    workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_void_1" }, error: null });
+
+    const res = await createInvoiceForUser(WO_INPUT);
+
+    expect(res.ok).toBe(true);
+    expect(existingSelect).toHaveBeenCalledWith("status");
+    expect(existingEq).toHaveBeenCalledWith("id", "inv_void_1");
+    expect(createHostedInvoice).toHaveBeenCalledWith(
+      expect.objectContaining({ idempotencyKey: "work-order-invoice:wo_9:inv_void_1" })
+    );
+  });
+
+  it.each(["open", "paid", "draft"])(
+    "refuses before Stripe when the linked invoice is %s (concurrent billing)",
+    async (status) => {
+      workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_live_1" }, error: null });
+      linkedStatusSingle.mockResolvedValue({ data: { status }, error: null });
+
+      const res = await createInvoiceForUser(WO_INPUT);
+
+      expect(res).toEqual({
+        ok: false,
+        error:
+          "This work order already has an active invoice (inv_live_1); refresh the page before billing again"
+      });
+      expect(getOrCreateStripeCustomer).not.toHaveBeenCalled();
+      expect(createHostedInvoice).not.toHaveBeenCalled();
+      expect(insert).not.toHaveBeenCalled();
+      expect(sendEmail).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    ["errors", { data: null, error: { message: "db down" } }],
+    ["returns no row", { data: null, error: null }]
+  ])("fails closed before Stripe when the linked invoice status read %s", async (_label, row) => {
+    workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_void_1" }, error: null });
+    linkedStatusSingle.mockResolvedValue(row);
+
+    const res = await createInvoiceForUser(WO_INPUT);
+
+    expect(res).toEqual({
+      ok: false,
+      error: "Unable to read the work order's current invoice link"
+    });
+    expect(getOrCreateStripeCustomer).not.toHaveBeenCalled();
+    expect(createHostedInvoice).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("a Stripe failure retry with the same link reuses the same key", async () => {
+    workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_void_1" }, error: null });
+    createHostedInvoice.mockRejectedValueOnce(new Error("api_connection_error"));
+
+    const first = await createInvoiceForUser(WO_INPUT);
+    const second = await createInvoiceForUser(WO_INPUT);
+
+    expect(first.ok).toBe(false);
+    expect(first.ok === false && first.error).toBe("Stripe error: api_connection_error");
+    expect(second.ok).toBe(true);
+    const keys = createHostedInvoice.mock.calls.map(
+      (c) => (c[0] as { idempotencyKey?: string }).idempotencyKey
+    );
+    expect(keys).toEqual([
+      "work-order-invoice:wo_9:inv_void_1",
+      "work-order-invoice:wo_9:inv_void_1"
+    ]);
   });
 
   it("workOrderInvoiceIdempotencyKey: v1 when nothing is replaced, else the replaced id", () => {
