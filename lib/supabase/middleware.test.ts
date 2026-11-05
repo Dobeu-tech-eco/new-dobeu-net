@@ -78,6 +78,17 @@ describe("updateSession — stray ?code= forwarder", () => {
     expect(location.searchParams.get("next")).toBe("/company");
   });
 
+  it("keeps the GET forward Location byte-identical (raw query, no re-encoding)", async () => {
+    const res = await updateSession(
+      new NextRequest("https://dobeu.net/pricing?code=a;b&next=%2Fportal"),
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("x-action-redirect")).toBeNull();
+    expect(res.headers.get("location")).toBe(
+      "https://dobeu.net/auth/callback?code=a;b&next=%2Fportal",
+    );
+  });
+
   it("does NOT forward when the code is already on /auth/callback (no redirect loop)", async () => {
     const res = await updateSession(
       new NextRequest("https://dobeu.net/auth/callback?code=abc"),
@@ -343,6 +354,16 @@ describe("updateSession — Supabase not configured", () => {
     expect(loc.searchParams.get("error")).toBe("supabase_not_configured");
     expect(h.getUser).not.toHaveBeenCalled();
   });
+
+  it("keeps the GET Location byte-identical", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_URL", undefined);
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
+    const res = await updateSession(new NextRequest("https://dobeu.net/portal/projects?a=1"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe(
+      "https://dobeu.net/login?a=1&error=supabase_not_configured",
+    );
+  });
 });
 
 describe("updateSession — signed-out server-action POSTs", () => {
@@ -439,6 +460,74 @@ describe("updateSession — signed-out server-action POSTs", () => {
     const res = await action("/portal");
     expect(res.headers.get("location")).toBeNull();
     expect(res.headers.get("x-action-redirect")).toBeNull();
+  });
+
+  it("answers an action POST carrying a stray code with 303 + x-action-redirect to /auth/callback", async () => {
+    const res = await action("/portal?code=pkce-1&next=%2Fportal%2Ftickets");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBeNull();
+    expect(h.getUser).not.toHaveBeenCalled();
+    const { type, url } = parse(res);
+    expect(type).toBe("push");
+    expect(url.pathname).toBe("/auth/callback");
+    expect(url.searchParams.get("code")).toBe("pkce-1");
+    expect(url.searchParams.get("next")).toBe("/portal/tickets");
+  });
+
+  it("answers an action POST carrying a stray token_hash the same way, ; encoded", async () => {
+    const res = await action("/?token_hash=th;1&type=invite");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBeNull();
+    const header = res.headers.get("x-action-redirect") as string;
+    expect(header.split(";")).toHaveLength(2);
+    const { type, url } = parse(res);
+    expect(type).toBe("push");
+    expect(url.pathname).toBe("/auth/callback");
+    expect(url.searchParams.get("token_hash")).toBe("th;1");
+    expect(url.searchParams.get("type")).toBe("invite");
+  });
+
+  it("leaves a GET with a next-action header on the stray-code forwarder as a 307", async () => {
+    const res = await action("/?code=abc", "GET");
+    expect(res.status).toBe(307);
+    expect(res.headers.get("x-action-redirect")).toBeNull();
+    expect(new URL(res.headers.get("location") as string).pathname).toBe("/auth/callback");
+  });
+
+  it.each(["/portal/tickets/new", "/admin/invoices", "/company/members"])(
+    "answers an action POST on %s with Supabase unconfigured with 303 + x-action-redirect",
+    async (path) => {
+      vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_URL", undefined);
+      vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
+      try {
+        const res = await action(path);
+        expect(res.status).toBe(303);
+        expect(res.headers.get("location")).toBeNull();
+        expect(res.headers.get("x-action-redirect")).toBe(
+          "/login?error=supabase_not_configured;push",
+        );
+        expect(h.getUser).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    },
+  );
+
+  it("leaves a non-action POST with Supabase unconfigured as a 307", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_URL", undefined);
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
+    try {
+      const res = await updateSession(
+        new NextRequest("https://dobeu.net/portal", { method: "POST" }),
+      );
+      expect(res.status).toBe(307);
+      expect(res.headers.get("x-action-redirect")).toBeNull();
+      const loc = new URL(res.headers.get("location") as string);
+      expect(loc.pathname).toBe("/login");
+      expect(loc.searchParams.get("error")).toBe("supabase_not_configured");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("still sends a signed-in non-admin action POST on /admin to /portal?error=not_authorized", async () => {
