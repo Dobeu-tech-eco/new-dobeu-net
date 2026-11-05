@@ -8,6 +8,8 @@ import { DobeuMark } from "@/components/brand/DobeuMark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PortalNav } from "@/components/portal/PortalNav";
 import { AnalyticsIdentify } from "@/components/portal/AnalyticsIdentify";
+import { CompanySuspendedBanner } from "@/components/portal/CompanySuspendedBanner";
+import { listSuspendedCompanies } from "@/lib/company-status";
 import { isAdminEmail } from "@/lib/utils";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +22,7 @@ export default async function PortalLayout({ children }: { children: React.React
     redirect("/login?next=/portal");
   }
 
+  const suspendedCompanies = await listSuspendedCompanies(supabase, user.id);
   const isAdmin = isAdminEmail(user.email);
   const displayName = user.user_metadata?.full_name ?? user.email ?? "Client";
   const initials = displayName
@@ -62,7 +65,10 @@ export default async function PortalLayout({ children }: { children: React.React
 
       {/* ── Main ───────────────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0">
-        <main className="p-5 md:p-8 max-w-5xl">{children}</main>
+        <main className="p-5 md:p-8 max-w-5xl">
+          <CompanySuspendedBanner companies={suspendedCompanies} />
+          {children}
+        </main>
       </div>
     </div>
   );

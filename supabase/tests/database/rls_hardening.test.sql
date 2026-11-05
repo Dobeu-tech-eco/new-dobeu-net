@@ -80,7 +80,7 @@ select is(
     where n.nspname = 'public'
       and p.proname in (
         'set_updated_at', 'handle_new_user', 'is_company_member', 'company_role_rank',
-        'can_manage_company_members',
+        'can_manage_company_members', 'is_active_company_member',
         'enforce_typeform_budget_intake_state', 'audit_typeform_budget_intake_review'
       )
       and not exists (
