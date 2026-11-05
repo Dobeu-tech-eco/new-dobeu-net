@@ -72,37 +72,65 @@ const csp = {
   ]
 };
 
-const isProduction = process.env.NODE_ENV === "production";
+type HeaderEnv = {
+  NODE_ENV?: string;
+  NEXT_PUBLIC_VERCEL_SUPABASE_URL?: string;
+  VERCEL_SUPABASE_URL?: string;
+};
 
-const ContentSecurityPolicy = [
-  `default-src ${csp.default.join(" ")}`,
-  `script-src ${csp.script.join(" ")}`,
-  `connect-src ${csp.connect.join(" ")}`,
-  `img-src ${csp.img.join(" ")}`,
-  `font-src ${csp.font.join(" ")}`,
-  `style-src ${csp.style.join(" ")}`,
-  `frame-src ${csp.frame.join(" ")}`,
-  "media-src 'self'",
-  "worker-src 'self' blob:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  ...(isProduction ? ["frame-ancestors 'none'", "upgrade-insecure-requests"] : [])
-].join("; ");
+// `pnpm dev` talks to a local Supabase stack (http://127.0.0.1:54321), which
+// the browser CSP would otherwise block. Development only; production never
+// gets these sources.
+export function localSupabaseConnectSources(env: HeaderEnv): string[] {
+  if (env.NODE_ENV !== "development") return [];
+  const raw = env.NEXT_PUBLIC_VERCEL_SUPABASE_URL || env.VERCEL_SUPABASE_URL;
+  if (!raw) return [];
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return [];
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return [];
+  if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return [];
+  const wsProtocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return [url.origin, `${wsProtocol}//${url.host}`];
+}
 
-const securityHeaders = [
-  { key: "Content-Security-Policy", value: ContentSecurityPolicy },
-  ...(isProduction
-    ? [
-        { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-        { key: "X-Frame-Options", value: "DENY" }
-      ]
-    : []),
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-  { key: "X-DNS-Prefetch-Control", value: "on" }
-];
+export function buildSecurityHeaders(env: HeaderEnv): { key: string; value: string }[] {
+  const isProduction = env.NODE_ENV === "production";
+  const connect = [...csp.connect, ...localSupabaseConnectSources(env)];
+
+  const ContentSecurityPolicy = [
+    `default-src ${csp.default.join(" ")}`,
+    `script-src ${csp.script.join(" ")}`,
+    `connect-src ${connect.join(" ")}`,
+    `img-src ${csp.img.join(" ")}`,
+    `font-src ${csp.font.join(" ")}`,
+    `style-src ${csp.style.join(" ")}`,
+    `frame-src ${csp.frame.join(" ")}`,
+    "media-src 'self'",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    ...(isProduction ? ["frame-ancestors 'none'", "upgrade-insecure-requests"] : [])
+  ].join("; ");
+
+  return [
+    { key: "Content-Security-Policy", value: ContentSecurityPolicy },
+    ...(isProduction
+      ? [
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "X-Frame-Options", value: "DENY" }
+        ]
+      : []),
+    { key: "X-Content-Type-Options", value: "nosniff" },
+    { key: "Referrer-Policy", value: "origin-when-cross-origin" },
+    { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+    { key: "X-DNS-Prefetch-Control", value: "on" }
+  ];
+}
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -139,7 +167,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/(.*)",
-        headers: securityHeaders
+        headers: buildSecurityHeaders(process.env)
       }
     ];
   },
