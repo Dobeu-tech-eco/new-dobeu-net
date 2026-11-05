@@ -127,6 +127,7 @@ export async function createInvoiceForUser(
   // which callers read as "a local row exists".
   let replacedInvoiceId: string | null = null;
   let keyInvoiceId: string | null = null;
+  let linkedCreatedAt: string | null = null;
   if (input.work_order_id) {
     const { data: wo, error: woErr } = await admin
       .from("work_orders")
@@ -140,7 +141,7 @@ export async function createInvoiceForUser(
     if (replacedInvoiceId) {
       const { data: linked, error: linkedErr } = await admin
         .from("invoices")
-        .select("status")
+        .select("status,created_at")
         .eq("id", replacedInvoiceId)
         .single();
       if (linkedErr || !linked) {
@@ -149,15 +150,19 @@ export async function createInvoiceForUser(
       if (linked.status !== "void") {
         return { ok: false, error: alreadyInvoicedMessage(replacedInvoiceId) };
       }
+      linkedCreatedAt = linked.created_at ?? null;
     }
 
-    // Newest billed invoice for this work order. After an `invoice.link_failed`
-    // `work_orders.invoice_id` still points at an OLDER invoice, so the key is
-    // built from the newest audited bill instead; a re-bill after voiding it
-    // then gets a fresh key (a reused key with a new amount is rejected by
-    // Stripe). Falls back to the link when no audit row exists (the audit write
-    // is non-fatal). A retry with nothing changed sees the same newest invoice
-    // and so keeps the same key; Stripe-failed attempts are not "billed".
+    // Newest actual bill for this work order decides the key. After an
+    // `invoice.link_failed`, `work_orders.invoice_id` still points at an OLDER
+    // invoice than the newest audited one, so the audited invoice wins; but a
+    // linked invoice whose own audit write failed (non-fatal) is NEWER than the
+    // audit history, so the link wins. The two are told apart by comparing the
+    // linked invoice's created_at with the newest audit row's created_at (an
+    // audit row is written after its invoice, so an older invoice's row cannot
+    // postdate a later invoice). A re-bill therefore gets a fresh key (a reused
+    // key with a new amount is rejected by Stripe), while a retry with nothing
+    // newly billed keeps the same key; Stripe-failed attempts are not "billed".
     const { data: billed, error: billedErr } = await admin
       .from("admin_audit_log")
       .select("target_id,created_at")
@@ -185,7 +190,16 @@ export async function createInvoiceForUser(
           return { ok: false, error: alreadyInvoicedMessage(newest.target_id) };
         }
       }
-      keyInvoiceId = newest.target_id;
+      if (!replacedInvoiceId || newest.target_id === replacedInvoiceId) {
+        keyInvoiceId = newest.target_id;
+      } else {
+        const linkedAt = Date.parse(linkedCreatedAt ?? "");
+        const auditedAt = Date.parse(newest.created_at ?? "");
+        if (Number.isNaN(linkedAt) || Number.isNaN(auditedAt)) {
+          return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
+        }
+        keyInvoiceId = auditedAt > linkedAt ? newest.target_id : replacedInvoiceId;
+      }
     } else {
       keyInvoiceId = replacedInvoiceId;
     }

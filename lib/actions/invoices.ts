@@ -62,7 +62,7 @@ const UNKNOWN_INVOICE_MESSAGE =
   "An earlier billing record for this work order has no invoice id, so it is treated as invoiced (unknown invoice). Review the admin_audit_log rows for this work order in Supabase before billing again.";
 
 function unsentWorkOrderInvoiceMessage(invoiceId: string): string {
-  return `An earlier attempt to bill this work order failed at Stripe and left unsent invoice ${invoiceId} (no Stripe invoice exists for it). To bill this work order again, set that invoice's status to void in Supabase, then retry with the amount you want.`;
+  return `An earlier attempt to bill this work order failed at Stripe and left unsent invoice ${invoiceId} (no Stripe invoice exists for it). To bill this work order again, set that invoice's status to void in Supabase, then retry. A retry with a different amount may be refused by Stripe for up to 24 hours after the failed attempt.`;
 }
 
 const UNSENT_DUPLICATE_MESSAGE =

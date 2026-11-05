@@ -54,6 +54,9 @@ function arrange(
     recipientName?: string | null;
     profileName?: string | null;
     invoiceStatus?: string | null;
+    // created_at of the invoice row read by status (the helper compares it
+    // with the newest audit row); omitted by default.
+    invoiceCreatedAt?: string;
     invoiceReadError?: { message: string };
     insert?: { data?: unknown; error?: { message: string } | null };
     updateError?: { message: string };
@@ -126,7 +129,12 @@ function arrange(
             options.invoiceStatus === undefined
               ? { status: "open" }
               : options.invoiceStatus
-                ? { status: options.invoiceStatus }
+                ? {
+                    status: options.invoiceStatus,
+                    ...(options.invoiceCreatedAt
+                      ? { created_at: options.invoiceCreatedAt }
+                      : {}),
+                  }
                 : null,
           error: options.invoiceReadError,
         },
@@ -359,7 +367,13 @@ const LINK_FAILED_PARTS = [
   "work_orders.invoice_id = inv_prior",
 ];
 const UNKNOWN_INVOICE_PARTS = ["no invoice id", "unknown invoice"];
-const UNSENT_WO_PARTS = ["failed at Stripe", "inv_prior", "void", "Supabase"];
+const UNSENT_WO_PARTS = [
+  "failed at Stripe",
+  "inv_prior",
+  "void",
+  "Supabase",
+  "up to 24 hours",
+];
 const UNSENT_PARTS = ["unsent invoice", "last 24 hours", "void"];
 
 describe("createInvoice (Stripe-wired)", () => {
@@ -882,6 +896,8 @@ describe("createInvoice (Stripe-wired)", () => {
     it("after link_failed: the key uses the newest billed invoice, not the stale link", async () => {
       admin = arrange({
         invoiceStatus: "void",
+        // Linked A is older than the newest audited bill B.
+        invoiceCreatedAt: "2026-11-01T00:00:00Z",
         priorInvoices: [
           { id: "inv_A", status: "void", stripe_invoice_id: "in_a" },
           { id: "inv_B", status: "void", stripe_invoice_id: "in_b" },

@@ -112,7 +112,10 @@ beforeEach(() => {
   workOrderSingle.mockResolvedValue({ data: { invoice_id: null }, error: null });
   auditResult = { data: [], error: null };
   // Default: a linked invoice (when a test links one) is void.
-  linkedStatusSingle.mockResolvedValue({ data: { status: "void" }, error: null });
+  linkedStatusSingle.mockResolvedValue({
+    data: { status: "void", created_at: "2026-11-01T00:00:00Z" },
+    error: null
+  });
 });
 
 // ---- Tests ---------------------------------------------------------------
@@ -389,7 +392,7 @@ describe("work-order Stripe idempotency key", () => {
     const res = await createInvoiceForUser(WO_INPUT);
 
     expect(res.ok).toBe(true);
-    expect(existingSelect).toHaveBeenCalledWith("status");
+    expect(existingSelect).toHaveBeenCalledWith("status,created_at");
     expect(existingEq).toHaveBeenCalledWith("id", "inv_void_1");
     expect(createHostedInvoice).toHaveBeenCalledWith(
       expect.objectContaining({ idempotencyKey: "work-order-invoice:wo_9:inv_void_1" })
@@ -554,6 +557,61 @@ describe("work-order Stripe idempotency key", () => {
       ok: false,
       error: "Unable to read the work order's billing history"
     });
+    expect(createHostedInvoice).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("linked B newer than audited A (B's own audit write failed): the key uses the link", async () => {
+    workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_B" }, error: null });
+    auditResult = { data: [{ target_id: "inv_A", created_at: "2026-11-02T00:00:00Z" }], error: null };
+    linkedStatusSingle
+      .mockResolvedValueOnce({
+        data: { status: "void", created_at: "2026-11-03T00:00:00Z" },
+        error: null
+      })
+      .mockResolvedValueOnce({ data: { status: "void" }, error: null });
+
+    const res = await createInvoiceForUser({ ...WO_INPUT, amount_cents: 30000 });
+
+    expect(res.ok).toBe(true);
+    expect(createHostedInvoice).toHaveBeenCalledWith(
+      expect.objectContaining({ idempotencyKey: "work-order-invoice:wo_9:inv_B" })
+    );
+  });
+
+  it("a retry after the linked-B case keeps the same key", async () => {
+    workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_B" }, error: null });
+    auditResult = { data: [{ target_id: "inv_A", created_at: "2026-11-02T00:00:00Z" }], error: null };
+    linkedStatusSingle.mockImplementation(async () => ({
+      data: { status: "void", created_at: "2026-11-03T00:00:00Z" },
+      error: null
+    }));
+    createHostedInvoice.mockRejectedValueOnce(new Error("api_connection_error"));
+
+    await createInvoiceForUser(WO_INPUT);
+    await createInvoiceForUser(WO_INPUT);
+
+    const keys = createHostedInvoice.mock.calls.map(
+      (c) => (c[0] as { idempotencyKey?: string }).idempotencyKey
+    );
+    expect(keys).toEqual(["work-order-invoice:wo_9:inv_B", "work-order-invoice:wo_9:inv_B"]);
+  });
+
+  it("fails closed before Stripe when the linked and audited invoices cannot be ordered", async () => {
+    workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_B" }, error: null });
+    auditResult = { data: [{ target_id: "inv_A", created_at: "2026-11-02T00:00:00Z" }], error: null };
+    linkedStatusSingle.mockImplementation(async () => ({
+      data: { status: "void" },
+      error: null
+    }));
+
+    const res = await createInvoiceForUser(WO_INPUT);
+
+    expect(res).toEqual({
+      ok: false,
+      error: "Unable to read the work order's billing history"
+    });
+    expect(getOrCreateStripeCustomer).not.toHaveBeenCalled();
     expect(createHostedInvoice).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
   });
