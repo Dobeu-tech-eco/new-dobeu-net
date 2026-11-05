@@ -27,6 +27,7 @@ export default async function AdminInvoicesPage({
     { data: projects, error: projectsError },
     { data: unbilledWorkOrders, error: workOrdersError },
     { data: voidedWorkOrders, error: voidedWorkOrdersError },
+    { users: authUsers, failed: authError, truncated },
   ] = await Promise.all([
     supabase
       .from("invoices")
@@ -58,11 +59,10 @@ export default async function AdminInvoicesPage({
       .eq("invoices.status", "void")
       .order("created_at", { ascending: false })
       .limit(WORK_ORDER_PICKER_LIMIT),
+    // Resolve auth emails for the picker — bulk via auth admin.
+    listAllUsers(supabase),
   ]);
 
-  // Resolve auth emails for the picker — bulk via auth admin.
-  const { users: authUsers, failed: authError, truncated } =
-    await listAllUsers(supabase);
   const profilesById = new Map((profilesData ?? []).map((p) => [p.id, p]));
   const usersForPicker: Array<{ id: string; label: string }> = authUsers.map(
     (u) => {
@@ -148,8 +148,8 @@ export default async function AdminInvoicesPage({
           role="status"
           className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
         >
-          The client list is truncated; some clients may not appear in the New
-          Invoice picker.
+          The client list may be truncated; some clients may not appear in the
+          New Invoice picker.
         </p>
       )}
 

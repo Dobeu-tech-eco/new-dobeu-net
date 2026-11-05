@@ -118,7 +118,7 @@ describe("admin users page degradation", () => {
       render(await AdminUsersPage(params));
       expect(listUsers).toHaveBeenCalledTimes(50);
       expect(screen.getByRole("status")).toHaveTextContent(
-        /Admin badges is truncated/,
+        /Admin badges may be truncated/,
       );
     });
   });

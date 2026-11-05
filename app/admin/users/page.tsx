@@ -15,15 +15,17 @@ export default async function AdminUsersPage({
 }) {
   const params = await searchParams;
   const supabase = createAdminClient();
-  const { data: profiles, error } = await supabase
-    .from("profiles")
-    .select("id,full_name,company,created_at")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const [{ data: profiles, error }, { users: authUsers, failed: authError, truncated }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id,full_name,company,created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      listAllUsers(supabase),
+    ]);
 
   const adminIds = new Set<string>();
-  const { users: authUsers, failed: authError, truncated } =
-    await listAllUsers(supabase);
   for (const user of authUsers) {
     if (isAdminEmail(user.email)) adminIds.add(user.id);
   }
@@ -56,7 +58,7 @@ export default async function AdminUsersPage({
           role="status"
           className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
         >
-          The user list used for Admin badges is truncated; some admin badges
+          The user list used for Admin badges may be truncated; some Admin badges
           may be missing.
         </p>
       )}

@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import type { createAdminClient } from "@/lib/supabase/server";
+import { safeErrorFields } from "@/lib/log-safe";
 
 export const USERS_PER_PAGE = 200;
 export const USERS_MAX_PAGES = 50;
@@ -27,15 +28,24 @@ export async function listAllUsers(
         page,
         perPage: USERS_PER_PAGE,
       });
-      if (error) return { users: [], failed: true, truncated: false };
+      if (error) {
+        console.warn(
+          "[admin-user-list] auth.admin.listUsers failed:",
+          safeErrorFields(error),
+        );
+        return { users: [], failed: true, truncated: false };
+      }
       const batch = data?.users ?? [];
       users.push(...batch);
       if (batch.length < USERS_PER_PAGE) {
         return { users, failed: false, truncated: false };
       }
     }
-  } catch {
-    console.warn("[admin-user-list] auth.admin.listUsers failed");
+  } catch (error) {
+    console.warn(
+      "[admin-user-list] auth.admin.listUsers failed:",
+      safeErrorFields(error),
+    );
     return { users: [], failed: true, truncated: false };
   }
   return { users, failed: false, truncated: true };

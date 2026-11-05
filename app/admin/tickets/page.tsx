@@ -141,8 +141,8 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
           role="status"
           className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
         >
-          The client list is truncated; some clients may not appear in the Post
-          work picker.
+          The client list may be truncated; some clients may not appear in the
+          Post work picker.
         </p>
       )}
 

@@ -306,9 +306,29 @@ describe("admin invoices page degradation", () => {
       render(await AdminInvoicesPage(params));
       expect(listUsers).toHaveBeenCalledTimes(50);
       expect(screen.getByRole("status")).toHaveTextContent(
-        /client list is truncated/,
+        /client list may be truncated/,
       );
     });
+  });
+
+  it("shows only the failure notice when users are truncated and another picker read fails", async () => {
+    const listUsers = vi
+      .fn()
+      .mockImplementation(async () =>
+        ok({
+          users: Array.from({ length: 200 }, (_, i) => ({
+            id: `a${i}`,
+            email: `a${i}@example.com`,
+          })),
+        }),
+      );
+    stubPage({ invoices: ok([invoice]), profiles: ok([]), projects: fail }, listUsers);
+    render(await AdminInvoicesPage(params));
+    expect(listUsers).toHaveBeenCalledTimes(50);
+    const statuses = screen.getAllByRole("status");
+    expect(statuses).toHaveLength(1);
+    expect(statuses[0]).toHaveTextContent(/could not be fully loaded/);
+    expect(screen.queryByText(/truncated/)).not.toBeInTheDocument();
   });
 
   it("shows em dashes and hides the table when the invoices read fails", async () => {

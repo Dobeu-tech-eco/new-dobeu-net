@@ -8,8 +8,10 @@ const rows = (n: number, prefix = "u") =>
     email: `${prefix}${i}@example.com`,
   }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const admin = (listUsers: unknown) => ({ auth: { admin: { listUsers } } }) as any;
+const admin = (listUsers: unknown) =>
+  ({ auth: { admin: { listUsers } } }) as unknown as Parameters<
+    typeof listAllUsers
+  >[0];
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -42,18 +44,26 @@ describe("listAllUsers", () => {
       .fn()
       .mockResolvedValueOnce({ data: { users: rows(USERS_PER_PAGE) }, error: null })
       .mockResolvedValueOnce({ data: null, error: { message: "boom" } });
-    const r = await listAllUsers(admin(listUsers));
-    expect(r).toEqual({ users: [], failed: true, truncated: false });
-  });
-
-  it("fails when listUsers throws, without logging the error", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const listUsers = vi.fn().mockRejectedValue(new Error("private text"));
     const r = await listAllUsers(admin(listUsers));
     expect(r).toEqual({ users: [], failed: true, truncated: false });
     expect(warn).toHaveBeenCalledWith(
-      "[admin-user-list] auth.admin.listUsers failed",
+      "[admin-user-list] auth.admin.listUsers failed:",
+      { kind: "UnknownError" },
     );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("boom");
+  });
+
+  it("fails when listUsers throws, logging only safe fields", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const listUsers = vi.fn().mockRejectedValue(new Error("private text user@example.com"));
+    const r = await listAllUsers(admin(listUsers));
+    expect(r).toEqual({ users: [], failed: true, truncated: false });
+    expect(warn).toHaveBeenCalledWith(
+      "[admin-user-list] auth.admin.listUsers failed:",
+      { kind: "Error" },
+    );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("private text");
   });
 
   it("reports truncated after 50 full pages", async () => {
