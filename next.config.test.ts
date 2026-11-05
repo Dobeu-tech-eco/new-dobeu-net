@@ -86,6 +86,8 @@ describe("buildSecurityHeaders", () => {
   it.each([
     ["http://127.0.0.1:54321", ["http://127.0.0.1:54321", "ws://127.0.0.1:54321"]],
     ["http://localhost:54321", ["http://localhost:54321", "ws://localhost:54321"]],
+    ["http://localhost", ["http://localhost", "ws://localhost"]],
+    ["http://[::1]:54321", ["http://[::1]:54321", "ws://[::1]:54321"]],
     ["https://localhost:8443", ["https://localhost:8443", "wss://localhost:8443"]],
     ["http://127.0.0.1:54321/rest/v1", ["http://127.0.0.1:54321", "ws://127.0.0.1:54321"]]
   ])("adds local sources to dev connect-src for %s", (url, tokens) => {
@@ -100,7 +102,7 @@ describe("buildSecurityHeaders", () => {
     const tokens = ["http://127.0.0.1:54321", "ws://127.0.0.1:54321"];
     const headers = buildSecurityHeaders({ NODE_ENV: "development", VERCEL_SUPABASE_URL: "http://127.0.0.1:54321" });
     expect(withoutTokens(headers, tokens)).toEqual(DEVELOPMENT_BASELINE);
-    expect(connectSrc(headers)).toContain("ws://127.0.0.1:54321");
+    expect(connectSrc(headers).split(" ").slice(-2)).toEqual(tokens);
   });
 
   it("prefers NEXT_PUBLIC_VERCEL_SUPABASE_URL when both are set", () => {
