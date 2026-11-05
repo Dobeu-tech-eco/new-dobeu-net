@@ -410,6 +410,12 @@ describe("updateSession — signed-out server-action POSTs", () => {
     expect(url.searchParams.get("next")).toBe("/portal/tickets?a=1;b=2&c=3");
   });
 
+  it("falls back to the gate root when next fails sanitizeNextPath", async () => {
+    const res = await action("/company/members?x=%0A%5C");
+    expect(res.status).toBe(303);
+    expect(parse(res).url.searchParams.get("next")).toBe("/company");
+  });
+
   it("leaves a POST without next-action as a 307", async () => {
     const res = await updateSession(
       new NextRequest("https://dobeu.net/portal", { method: "POST" }),
