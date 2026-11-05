@@ -25,11 +25,6 @@ const projectSlug = (name: string) => name.replace(/[^a-z0-9]+/gi, "-").toLowerC
 
 test.skip(!canRunSupabaseE2E(), skipReason());
 
-// The step-up form talks to Supabase from the browser. next.config.ts'
-// connect-src only allows https://*.supabase.co, so against the local stack
-// (http://127.0.0.1:54321) the CSP would block those calls.
-test.use({ bypassCSP: true });
-
 test.describe("company admin MFA step-up", () => {
   test.describe.configure({ mode: "serial" });
 

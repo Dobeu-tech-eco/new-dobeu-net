@@ -92,7 +92,7 @@ export function localSupabaseConnectSources(env: HeaderEnv): string[] {
     return [];
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") return [];
-  if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return [];
+  if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return [];
   const wsProtocol = url.protocol === "https:" ? "wss:" : "ws:";
   return [url.origin, `${wsProtocol}//${url.host}`];
 }
