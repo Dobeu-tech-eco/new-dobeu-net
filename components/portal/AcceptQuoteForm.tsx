@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { acceptWorkOrderQuote } from "@/lib/actions/work-orders";
+
+const STATUS_CONFLICT_COPY =
+  "This quote changed while you were viewing it. The page has been refreshed; check the latest status and try again.";
 
 export function AcceptQuoteForm({
   ticketId,
@@ -15,13 +19,19 @@ export function AcceptQuoteForm({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   function onAccept() {
     setError(null);
     startTransition(async () => {
       const result = await acceptWorkOrderQuote({ id: ticketId });
       if (!result.ok) {
-        setError(result.error);
+        if (result.error === "status_conflict") {
+          setError(STATUS_CONFLICT_COPY);
+          router.refresh();
+        } else {
+          setError(result.error);
+        }
       }
       // On success, revalidatePath inside the action refreshes this page.
     });

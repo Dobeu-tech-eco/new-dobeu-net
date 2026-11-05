@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { updateWorkOrderStatus } from "@/lib/actions/work-orders";
 
@@ -20,6 +21,9 @@ const NEXT_OPTIONS: Record<string, Array<{ value: Status; label: string; variant
   ]
 };
 
+const STATUS_CONFLICT_COPY =
+  "This ticket changed while you were viewing it. The page has been refreshed; check its current status and try again.";
+
 export function AdminStatusButtons({
   ticketId,
   currentStatus
@@ -29,13 +33,21 @@ export function AdminStatusButtons({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   const options = NEXT_OPTIONS[currentStatus] ?? [];
 
   function onClick(next: Status) {
     setError(null);
     startTransition(async () => {
       const result = await updateWorkOrderStatus({ id: ticketId, status: next });
-      if (!result.ok) setError(result.error);
+      if (!result.ok) {
+        if (result.error === "status_conflict") {
+          setError(STATUS_CONFLICT_COPY);
+          router.refresh();
+        } else {
+          setError(result.error);
+        }
+      }
     });
   }
 
