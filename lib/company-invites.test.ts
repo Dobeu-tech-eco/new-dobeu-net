@@ -28,7 +28,7 @@ type Call = {
  * Service-role fake. `script` maps `table.op` (op = select|update|delete|insert)
  * to a queue of results; every call and filter is recorded for assertions.
  * Like PostgREST, an update/delete resolves no rows unless `.select()` was
- * chained after it (L-036): `data` is forced to null in that case, so a write
+ * chained after it (L-038): `data` is forced to null in that case, so a write
  * that forgets `.select()` can never look like it matched a row.
  */
 function fakeAdmin(script: Record<string, Res[]>) {
@@ -407,7 +407,7 @@ describe("respondToInvite accept", () => {
     });
   });
 
-  it("the fake resolves no rows when .select() is not chained (L-036 guard)", async () => {
+  it("the fake resolves no rows when .select() is not chained (L-038 guard)", async () => {
     const { admin } = fakeAdmin({ "company_members.update": [written()] });
     const res = await admin
       .from("company_members")

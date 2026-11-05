@@ -74,6 +74,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | Legacy accounts that signed in before the email_link_signin marker existed must sign in once by emailed link before inviteMember will attach them (invitee_needs_link_signin); provisionCompanyAdmin has no such guard yet (fold into D49) |  | open |  | 2026-11-04 |
 | recordEmailLinkSignIn awaits a service-role updateUserById before the auth redirect on every email-link sign-in; consider next/server after() (PR #329 fix round 2 review LOW) |  | open |  | 2026-11-04 |
 | Before deploying PR #329: confirm the existing inviteMember-created invitees that are still unconfirmed with an invited company_members row (admin API email_confirm true, one-off script, no migration), or verify hosted Confirm email is ON — until then the public signUp can open a session on them and plant a password that survives accept (PR #329 re-check MEDIUM-1) |  | open |  | 2026-11-04 |
+| install gitleaks locally so the pre-commit scan runs (.githooks/pre-commit only runs gitleaks; without it the hook prints a warning and allows the commit; CI secret-scan still enforces) — Jeremy W., 2026-11-04 (run 20261104-180247) |  | open |  | 2026-11-04 |
 
 ## Handoff
 
