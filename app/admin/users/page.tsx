@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/utils";
+import { listAllUsers } from "@/lib/admin-user-list";
 import { InviteUserForm } from "@/components/admin/InviteUserForm";
 import {
   AdminStatusBanner,
@@ -21,17 +22,10 @@ export default async function AdminUsersPage({
     .limit(500);
 
   const adminIds = new Set<string>();
-  let authError = false;
-  try {
-    const { data: usersList, error: usersError } =
-      await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
-    authError = Boolean(usersError);
-    for (const user of usersList?.users ?? []) {
-      if (isAdminEmail(user.email)) adminIds.add(user.id);
-    }
-  } catch (e) {
-    authError = true;
-    console.warn("[admin users] auth.admin.listUsers failed:", e);
+  const { users: authUsers, failed: authError, truncated } =
+    await listAllUsers(supabase);
+  for (const user of authUsers) {
+    if (isAdminEmail(user.email)) adminIds.add(user.id);
   }
 
   return (
@@ -55,6 +49,15 @@ export default async function AdminUsersPage({
           className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
         >
           Admin badges could not be loaded. The user list is still shown.
+        </p>
+      )}
+      {!authError && truncated && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          The user list used for Admin badges is truncated; some admin badges
+          may be missing.
         </p>
       )}
 

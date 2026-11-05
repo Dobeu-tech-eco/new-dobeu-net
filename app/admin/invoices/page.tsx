@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { listAllUsers } from "@/lib/admin-user-list";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { NewInvoiceDialog } from "@/components/admin/NewInvoiceDialog";
@@ -60,25 +61,18 @@ export default async function AdminInvoicesPage({
   ]);
 
   // Resolve auth emails for the picker — bulk via auth admin.
-  let usersForPicker: Array<{ id: string; label: string }> = [];
-  let authError = false;
-  try {
-    const { data: usersList, error: usersError } =
-      await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
-    authError = Boolean(usersError);
-    const profilesById = new Map((profilesData ?? []).map((p) => [p.id, p]));
-    usersForPicker = (usersList?.users ?? []).map((u) => {
+  const { users: authUsers, failed: authError, truncated } =
+    await listAllUsers(supabase);
+  const profilesById = new Map((profilesData ?? []).map((p) => [p.id, p]));
+  const usersForPicker: Array<{ id: string; label: string }> = authUsers.map(
+    (u) => {
       const prof = profilesById.get(u.id);
       const label = prof?.full_name
         ? `${prof.full_name} <${u.email ?? "?"}>`
         : (u.email ?? u.id);
       return { id: u.id, label };
-    });
-  } catch (e) {
-    authError = true;
-    // Picker will fall back to empty -- "no users yet" message.
-    console.warn("[admin invoices] auth.admin.listUsers failed:", e);
-  }
+    },
+  );
 
   const projectOptions = (projects ?? []).map((p) => ({
     id: p.id,
@@ -147,6 +141,15 @@ export default async function AdminInvoicesPage({
         >
           The New Invoice picker could not be fully loaded. Existing invoices
           are shown below.
+        </p>
+      )}
+      {!pickerError && truncated && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          The client list is truncated; some clients may not appear in the New
+          Invoice picker.
         </p>
       )}
 

@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { AdminStatusBanner } from "@/components/admin/AdminStatusBanner";
 import { createAdminClient } from "@/lib/supabase/server";
+import { listAllUsers } from "@/lib/admin-user-list";
 import { formatCurrency, cn } from "@/lib/utils";
 import { NewWorkOrderForClientDialog } from "@/components/admin/NewWorkOrderForClientDialog";
 import { Badge } from "@/components/ui/badge";
@@ -50,29 +51,6 @@ function statusTone(status: string): "indigo" | "amber" | "neutral" {
     default:
       return "neutral";
   }
-}
-
-const USERS_PER_PAGE = 200;
-const USERS_MAX_PAGES = 50;
-
-type AdminClient = ReturnType<typeof createAdminClient>;
-
-/** Pages through every auth user (200 per page, hard cap of 50 pages). */
-async function listAllUsers(admin: AdminClient) {
-  const users: { id: string; email?: string }[] = [];
-  for (let page = 1; page <= USERS_MAX_PAGES; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({
-      page,
-      perPage: USERS_PER_PAGE,
-    });
-    if (error) return { users: [], failed: true, truncated: false };
-    const batch = data?.users ?? [];
-    users.push(...batch);
-    if (batch.length < USERS_PER_PAGE) {
-      return { users, failed: false, truncated: false };
-    }
-  }
-  return { users, failed: false, truncated: true };
 }
 
 interface PageProps {
