@@ -79,6 +79,11 @@ function arrange(
     linkError?: { message: string };
     workOrder?: Record<string, unknown> | null;
     workOrderError?: { message: string };
+    // The helper's own re-read of the work order (select "invoice_id"), a
+    // fake separate from the caller's read above. Default: the caller row's
+    // invoice_id. Pass a different link to emulate a concurrent bill.
+    helperWorkOrder?: Record<string, unknown> | null;
+    helperWorkOrderError?: { message: string };
     project?: Record<string, unknown> | null;
     projectError?: { message: string };
     membership?: Record<string, unknown> | null;
@@ -223,6 +228,26 @@ function arrange(
                       error: options.unsentError ?? null,
                     },
               );
+          }
+          if (
+            key === "select" &&
+            table === "work_orders" &&
+            a[0] === "invoice_id"
+          ) {
+            const callerRow = options.workOrder as
+              | { invoice_id?: unknown }
+              | null
+              | undefined;
+            chain.single = vi.fn(async () => {
+              stub.recorded.push({ table, method: "single", args: ["helper"] });
+              return {
+                data:
+                  options.helperWorkOrder !== undefined
+                    ? options.helperWorkOrder
+                    : { invoice_id: callerRow?.invoice_id ?? null },
+                error: options.helperWorkOrderError ?? null,
+              };
+            });
           }
           if (key === "select" && table === "admin_audit_log") {
             const isKeyRead = a[0] === "target_id,created_at";
@@ -827,6 +852,117 @@ describe("createInvoice (Stripe-wired)", () => {
       });
       const { createInvoice } = await import("@/lib/actions/invoices");
       expectRefusal(await createInvoice(woInput), ...LINK_FAILED_PARTS);
+    });
+  });
+
+  describe("D67: caller read and helper re-read are separate fakes", () => {
+    const keyOf = () =>
+      (
+        stripeMocks.createHostedInvoice.mock.calls.at(-1) as unknown as [
+          { idempotencyKey?: string },
+        ]
+      )[0].idempotencyKey;
+
+    it("void replace: the Stripe key carries the replaced invoice id", async () => {
+      admin = arrange({
+        invoiceStatus: "void",
+        workOrder: { ...ACCEPTED_WO, invoice_id: "inv_voided" },
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect((await createInvoice(woInput)).ok).toBe(true);
+      expect(keyOf()).toBe(`work-order-invoice:${VALID_WO}:inv_voided`);
+    });
+
+    it("unbilled work order: the Stripe key is v1", async () => {
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect((await createInvoice(woInput)).ok).toBe(true);
+      expect(keyOf()).toBe(`work-order-invoice:${VALID_WO}:v1`);
+    });
+
+    it("after link_failed: the key uses the newest billed invoice, not the stale link", async () => {
+      admin = arrange({
+        invoiceStatus: "void",
+        priorInvoices: [
+          { id: "inv_A", status: "void", stripe_invoice_id: "in_a" },
+          { id: "inv_B", status: "void", stripe_invoice_id: "in_b" },
+        ],
+        auditHits: [
+          { target_id: "inv_A", action: "invoice.create" },
+          { target_id: "inv_B", action: "invoice.link_failed" },
+        ],
+        keyAudit: [{ target_id: "inv_B", created_at: "2026-11-05T00:00:00Z" }],
+        workOrder: { ...ACCEPTED_WO, invoice_id: "inv_A" },
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect((await createInvoice({ ...woInput, amount_cents: 30000 })).ok).toBe(true);
+      expect(keyOf()).toBe(`work-order-invoice:${VALID_WO}:inv_B`);
+    });
+
+    it.each([
+      ["createInvoice", "createInvoice"],
+      ["createInvoiceForWorkOrder", "createInvoiceForWorkOrder"],
+    ] as const)(
+      "%s race: a bill lands between the caller read and the helper re-read; the helper refuses before Stripe",
+      async (_label, fn) => {
+        admin = arrange({
+          invoiceStatus: "open",
+          workOrder: { ...ACCEPTED_WO, invoice_id: null },
+          helperWorkOrder: { invoice_id: "inv_raced" },
+        });
+        const mod = await import("@/lib/actions/invoices");
+        const result =
+          fn === "createInvoice"
+            ? await mod.createInvoice(woInput)
+            : await mod.createInvoiceForWorkOrder({ work_order_id: VALID_WO });
+        expectRefusal(result, "inv_raced", "already billed");
+        expect(stripeMocks.getOrCreateStripeCustomer).not.toHaveBeenCalled();
+        expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+        expect(invoiceInserts()).toEqual([]);
+        expectNoAudit();
+      },
+    );
+
+    it("race with a void raced link: Stripe is called with the raced key and the stale back-link is flagged", async () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        admin = arrange({
+          invoiceStatus: "void",
+          workOrder: { ...ACCEPTED_WO, invoice_id: null },
+          helperWorkOrder: { invoice_id: "inv_raced" },
+          // The caller back-links with .is(invoice_id, null): no row matches.
+          linkRows: [],
+        });
+        const { createInvoice } = await import("@/lib/actions/invoices");
+        const result = await createInvoice(woInput);
+        expect(keyOf()).toBe(`work-order-invoice:${VALID_WO}:inv_raced`);
+        expect(result.ok && result.data.linkFailed).toBe(true);
+        expect(admin.recorded).toContainEqual({
+          table: "work_orders",
+          method: "is",
+          args: ["invoice_id", null],
+        });
+        expect(auditInserts()[0].args).toEqual([
+          expect.objectContaining({ action: "invoice.link_failed" }),
+        ]);
+      } finally {
+        consoleError.mockRestore();
+      }
+    });
+
+    it("fails closed before Stripe when the helper's work_orders re-read errors", async () => {
+      admin = arrange({
+        workOrder: { ...ACCEPTED_WO, invoice_id: null },
+        helperWorkOrder: null,
+        helperWorkOrderError: { message: "db down" },
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect(await createInvoice(woInput)).toEqual({
+        ok: false,
+        error: "Unable to read the work order's current invoice link",
+      });
+      expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+      expect(invoiceInserts()).toEqual([]);
+      expectNoAudit();
     });
   });
 
