@@ -7,7 +7,9 @@
  *     └──────┴──────────┴───────────┴────────────┴──→ cancelled
  * `closed` and `cancelled` are terminal. `cancelled` is reachable from any
  * non-terminal state. Both `quoteWorkOrder` and `updateWorkOrderStatus`
- * read current status first and reject illegal transitions.
+ * read current status first and reject illegal transitions. Every status
+ * write is conditional on the status it read (`.eq("status", <read status>)`);
+ * a zero-row match means a concurrent writer won and returns `status_conflict`.
  *
  * Notifications go through `lib/resend.ts` + `lib/resend-templates.ts`. Every
  * email send is wrapped so a Resend / DKIM failure cannot break the underlying
@@ -62,6 +64,9 @@ const TRANSITIONS: Record<WorkOrderStatus, readonly WorkOrderStatus[]> = {
 function canTransition(from: WorkOrderStatus, to: WorkOrderStatus): boolean {
   return TRANSITIONS[from]?.includes(to) ?? false;
 }
+
+/** Returned when a conditional status write matched zero rows (lost a race). */
+const STATUS_CONFLICT = "status_conflict";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 
@@ -488,6 +493,8 @@ export async function quoteWorkOrder(
     return { ok: false, error: `cannot quote from status "${current.status}"` };
   }
 
+  // Conditional on the status we read: a zero-row match means a concurrent
+  // writer changed it first, so return status_conflict (no audit/email).
   const { data, error } = await admin
     .from("work_orders")
     .update({
@@ -496,10 +503,12 @@ export async function quoteWorkOrder(
       quoted_at: new Date().toISOString()
     })
     .eq("id", id)
+    .eq("status", current.status)
     .select("id,title,service_type,created_by")
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return { ok: false, error: error?.message ?? "update failed" };
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: false, error: STATUS_CONFLICT };
 
   await writeAdminAudit(admin, {
     actorUserId: user.id,
@@ -574,12 +583,17 @@ export async function acceptWorkOrderQuote(
   // 20260717064702_rls_hardening_wo_and_anon_insert.sql), matching the same
   // defense-in-depth pattern quoteWorkOrder/updateWorkOrderStatus already use.
   const admin = createAdminClient();
-  const { error: flipErr } = await admin
+  // Conditional on the status we read; zero rows matched => status_conflict.
+  const { data: flipped, error: flipErr } = await admin
     .from("work_orders")
     .update({ status: "accepted", accepted_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("status", existing.status)
+    .select("id")
+    .maybeSingle();
 
   if (flipErr) return { ok: false, error: flipErr.message };
+  if (!flipped) return { ok: false, error: STATUS_CONFLICT };
 
   // Email admin that the quote was accepted (non-fatal). This is the cue for
   // the admin to issue the Stripe invoice from /admin/tickets/[id].
@@ -648,14 +662,17 @@ export async function updateWorkOrderStatus(
   else if (status === "closed") stamp.closed_at = now;
   else if (status === "cancelled") stamp.cancelled_at = now;
 
+  // Conditional on the status we read; zero rows matched => status_conflict.
   const { data, error } = await admin
     .from("work_orders")
     .update(stamp)
     .eq("id", id)
+    .eq("status", current.status)
     .select("id,title,service_type,created_by")
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return { ok: false, error: error?.message ?? "update failed" };
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: false, error: STATUS_CONFLICT };
 
   await writeAdminAudit(admin, {
     actorUserId: user.id,
