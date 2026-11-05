@@ -50,6 +50,17 @@ export interface CreateInvoiceForUserInput {
   work_order_id?: string;
 }
 
+/**
+ * Stripe idempotency key for a work-order invoice. The first bill uses `v1`;
+ * a re-bill after a void uses the replaced invoice's id so Stripe sees a new key.
+ */
+export function workOrderInvoiceIdempotencyKey(
+  workOrderId: string,
+  replacedInvoiceId: string | null
+): string {
+  return `work-order-invoice:${workOrderId}:${replacedInvoiceId ?? "v1"}`;
+}
+
 export async function createInvoiceForUser(
   input: CreateInvoiceForUserInput
 ): Promise<InvoiceCreationResult> {
@@ -81,6 +92,24 @@ export async function createInvoiceForUser(
     recipientName = profile?.full_name ?? null;
   }
 
+  // For a work-order invoice, read the work order's current invoice link
+  // BEFORE any Stripe call. Callers have already checked that a linked invoice,
+  // if any, is void, so `work_orders.invoice_id` is the invoice being replaced.
+  // Fail closed: this error deliberately does not start with "Stripe error:",
+  // which callers read as "a local row exists".
+  let replacedInvoiceId: string | null = null;
+  if (input.work_order_id) {
+    const { data: wo, error: woErr } = await admin
+      .from("work_orders")
+      .select("invoice_id")
+      .eq("id", input.work_order_id)
+      .single();
+    if (woErr || !wo) {
+      return { ok: false, error: "Unable to read the work order's current invoice link" };
+    }
+    replacedInvoiceId = wo.invoice_id ?? null;
+  }
+
   // Stripe-hosted invoice flow.
   let stripeInvoiceId: string | null = null;
   let hostedInvoiceUrl: string | null = null;
@@ -93,9 +122,20 @@ export async function createInvoiceForUser(
     });
     const result = await createHostedInvoice({
       customerId,
-      // Stripe retains keys for a limited window; durable reservation is still
-      // required to protect retries after that window or after local failures.
-      idempotencyKey: input.work_order_id ? `work-order-invoice:${input.work_order_id}:v1` : undefined,
+      // Stripe retains keys for ~24h and rejects a reused key whose parameters
+      // differ. The key includes the invoice being replaced so a re-bill after
+      // a void (possibly with a new amount) gets a fresh key, while a retry of
+      // the same attempt (link unchanged) reuses the same key. Durable
+      // reservation is still required to protect retries after that window or
+      // after local failures.
+      //
+      // Known gap: if a back-link failed (`invoice.link_failed`),
+      // `work_orders.invoice_id` was not re-pointed, so a later re-bill after
+      // voiding that invoice reuses the earlier key. The "Stripe returned a
+      // voided invoice" branch below still covers the same-params replay.
+      idempotencyKey: input.work_order_id
+        ? workOrderInvoiceIdempotencyKey(input.work_order_id, replacedInvoiceId)
+        : undefined,
       amountCents: input.amount_cents,
       currency: input.currency.toLowerCase(),
       description: input.description ?? undefined,
