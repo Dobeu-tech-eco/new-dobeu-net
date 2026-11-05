@@ -13,6 +13,7 @@ import { requireAdmin, AuthError } from "@/lib/actions/auth";
 import { writeAdminAudit } from "@/lib/admin-audit";
 import {
   alreadyInvoicedMessage,
+  BILLED_AUDIT_ACTIONS,
   createInvoiceForUser,
   STRIPE_VOID_STEP,
   type InvoiceCreationResult
@@ -48,12 +49,7 @@ const UNSENT_DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 const STRIPE_FAILED_ACTION = "invoice.create_stripe_failed";
 // Audit actions that mean a work order was billed (or attempted): the
 // stripe-failed row is included so an unsent invoice also blocks a re-bill.
-const BILLING_AUDIT_ACTIONS = [
-  "invoice.create",
-  "invoice.create_for_work_order",
-  "invoice.link_failed",
-  STRIPE_FAILED_ACTION
-] as const;
+const BILLING_AUDIT_ACTIONS = [...BILLED_AUDIT_ACTIONS, STRIPE_FAILED_ACTION] as const;
 const DUPLICATE_CHECK_FAILED = "Unable to check for duplicate invoices";
 
 const createForWorkOrderInput = z.object({ work_order_id: uuid });

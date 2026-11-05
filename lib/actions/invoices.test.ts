@@ -65,6 +65,10 @@ function arrange(
     // order (default none) / the read error of that lookup.
     auditHits?: unknown[];
     auditReadError?: { message: string };
+    // Rows / error of the helper's own newest-billed-invoice audit read
+    // (select "target_id,created_at"; default none). Separate from auditHits.
+    keyAudit?: unknown[];
+    keyAuditError?: { message: string };
     // Status rows of the invoices those audit rows point at (default: active).
     priorInvoices?: unknown[];
     priorInvoicesError?: { message: string };
@@ -221,11 +225,19 @@ function arrange(
               );
           }
           if (key === "select" && table === "admin_audit_log") {
+            const isKeyRead = a[0] === "target_id,created_at";
             chain.then = (resolve: (v: unknown) => void) =>
-              resolve({
-                data: options.auditHits ?? [],
-                error: options.auditReadError ?? null,
-              });
+              resolve(
+                isKeyRead
+                  ? {
+                      data: options.keyAudit ?? [],
+                      error: options.keyAuditError ?? null,
+                    }
+                  : {
+                      data: options.auditHits ?? [],
+                      error: options.auditReadError ?? null,
+                    },
+              );
           }
           if (key === "update" && typeof chain.then === "function") {
             const origThen = chain.then as (
