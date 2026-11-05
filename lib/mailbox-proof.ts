@@ -29,7 +29,6 @@ export const EMAIL_CHANGE_WINDOW_SECONDS =
  * An identity whose `updated_at` is within this many seconds of its
  * `created_at` is treated as a pure creation, not a change.
  */
-const IDENTITY_CREATION_SLACK_SECONDS = 2;
 
 /**
  * Sign-in methods that prove control of the mailbox (not password or totp).
@@ -79,8 +78,12 @@ export function latestLinkTimestamp(
  * The email identity's `updated_at` as a change signal, in whole seconds:
  * `{ created, updated }` when both parse, else null (missing identity or an
  * unparseable value, which callers treat as fail closed). `changedAt` is
- * `updated` when it is more than 2 s after `created` (the identity was
- * modified after creation), otherwise null (a pure creation).
+ * `updated` when `updated_at` differs from `created_at` at all (millisecond
+ * compare), otherwise null. Every GoTrue creation path (admin createUser,
+ * generateLink, OTP sign-up, password sign-up) writes identical created_at and
+ * updated_at, and a sign-in does not touch either (measured locally), so any
+ * difference is a modification; there is no creation slack an attacker could
+ * fit a scripted email change into.
  */
 export function identityEmailChangedAt(
   identities: ReadonlyArray<ProofIdentity> | null | undefined,
@@ -91,7 +94,10 @@ export function identityEmailChangedAt(
   if (created === null || updated === null) return "invalid";
   return {
     updated,
-    changedAt: updated > created + IDENTITY_CREATION_SLACK_SECONDS ? updated : null,
+    changedAt:
+      Date.parse(identity!.updated_at as string) !== Date.parse(identity!.created_at as string)
+        ? updated
+        : null,
   };
 }
 

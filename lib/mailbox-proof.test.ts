@@ -48,10 +48,16 @@ describe("latestLinkTimestamp", () => {
 });
 
 describe("identityEmailChangedAt", () => {
-  it("is a change only when updated_at is more than 2 s after created_at", () => {
+  it("is a change whenever updated_at differs from created_at (no creation slack)", () => {
     expect(identityEmailChangedAt(identityAt(LINK))).toEqual({ updated: LINK, changedAt: null });
-    expect(identityEmailChangedAt(identityChanged(LINK, LINK - 2))).toEqual({ updated: LINK, changedAt: null });
+    expect(identityEmailChangedAt(identityChanged(LINK, LINK - 1))).toEqual({ updated: LINK, changedAt: LINK });
     expect(identityEmailChangedAt(identityChanged(LINK, LINK - 3))).toEqual({ updated: LINK, changedAt: LINK });
+    // A scripted change within the same second as creation still counts.
+    expect(
+      identityEmailChangedAt([
+        { provider: "email", created_at: "2026-01-01T00:00:00.100Z", updated_at: "2026-01-01T00:00:00.900Z" },
+      ]),
+    ).toEqual({ updated: Math.floor(Date.parse("2026-01-01T00:00:00Z") / 1000), changedAt: Math.floor(Date.parse("2026-01-01T00:00:00Z") / 1000) });
   });
   it("is invalid for a missing identity or a missing / unparseable timestamp", () => {
     expect(identityEmailChangedAt(null)).toBe("invalid");
@@ -59,11 +65,11 @@ describe("identityEmailChangedAt", () => {
     expect(identityEmailChangedAt([{ provider: "email", updated_at: iso(LINK) }])).toBe("invalid");
     expect(identityEmailChangedAt([{ provider: "email", created_at: "x", updated_at: iso(LINK) }])).toBe("invalid");
   });
-  it("does not throw when updated_at precedes created_at", () => {
+  it("treats updated_at before created_at as a change (fail closed) without throwing", () => {
     expect(() => identityEmailChangedAt(identityChanged(LINK - 100, LINK))).not.toThrow();
     expect(identityEmailChangedAt(identityChanged(LINK - 100, LINK))).toEqual({
       updated: LINK - 100,
-      changedAt: null,
+      changedAt: LINK - 100,
     });
   });
 });
@@ -98,11 +104,11 @@ describe("emailChangeQuiet", () => {
     ).toBe(false);
   });
 
-  it("a creation-only identity (updated == created, or within 2 s) with no change request is quiet", () => {
+  it("a creation-only identity (updated == created) with no change request is quiet; a change 2 s after creation is not", () => {
     expect(emailChangeQuiet({ emailChangeSentAt: null, identities: identityAt(LINK - 10), linkTs: LINK })).toBe(true);
     expect(
       emailChangeQuiet({ emailChangeSentAt: null, identities: identityChanged(LINK - 8, LINK - 10), linkTs: LINK }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("an identity change exactly at the window boundary is quiet; one second later is not", () => {
@@ -124,13 +130,13 @@ describe("emailChangeQuiet", () => {
     ).toBe(false);
   });
 
-  it("a garbage identity (updated before created) does not throw and counts as a creation", () => {
+  it("a garbage identity (updated before created) does not throw and fails closed", () => {
     expect(() =>
       emailChangeQuiet({ emailChangeSentAt: null, identities: identityChanged(LINK - 100, LINK - 50), linkTs: LINK }),
     ).not.toThrow();
     expect(
       emailChangeQuiet({ emailChangeSentAt: null, identities: identityChanged(LINK - 100, LINK - 50), linkTs: LINK }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("a change 2 h before the link is not quiet", () => {
