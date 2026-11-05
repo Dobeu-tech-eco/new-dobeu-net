@@ -9,8 +9,8 @@
  * invoke directly. Callers are responsible for their own authorization:
  *
  *   - `createInvoice` (lib/actions/invoices.ts) calls this after `requireAdmin()`.
- *   - `acceptWorkOrderQuote` (lib/actions/work-orders.ts) calls this after
- *     verifying the caller owns the quoted work order.
+ *   - `createInvoiceForWorkOrder` (lib/actions/invoices.ts) calls this after
+ *     its own admin and linked-invoice checks.
  *
  * Phase 3 locked decisions: Stripe-hosted invoices; lazy-create the Stripe
  * customer on first invoice and stash on profile; mirror the Stripe state
@@ -50,6 +50,17 @@ export interface CreateInvoiceForUserInput {
   work_order_id?: string;
 }
 
+/**
+ * Stripe idempotency key for a work-order invoice. The first bill uses `v1`;
+ * a re-bill after a void uses the replaced invoice's id so Stripe sees a new key.
+ */
+export function workOrderInvoiceIdempotencyKey(
+  workOrderId: string,
+  replacedInvoiceId: string | null
+): string {
+  return `work-order-invoice:${workOrderId}:${replacedInvoiceId ?? "v1"}`;
+}
+
 export async function createInvoiceForUser(
   input: CreateInvoiceForUserInput
 ): Promise<InvoiceCreationResult> {
@@ -81,6 +92,42 @@ export async function createInvoiceForUser(
     recipientName = profile?.full_name ?? null;
   }
 
+  // For a work-order invoice, read the work order's current invoice link
+  // BEFORE any Stripe call. Callers check the linked invoice too, but those
+  // checks can be stale under concurrent billing (another request may have
+  // finished and back-linked a new invoice since), so this helper re-checks:
+  // a linked invoice must be void, and it is then the invoice being replaced.
+  // Fail closed: these errors deliberately do not start with "Stripe error:",
+  // which callers read as "a local row exists".
+  let replacedInvoiceId: string | null = null;
+  if (input.work_order_id) {
+    const { data: wo, error: woErr } = await admin
+      .from("work_orders")
+      .select("invoice_id")
+      .eq("id", input.work_order_id)
+      .single();
+    if (woErr || !wo) {
+      return { ok: false, error: "Unable to read the work order's current invoice link" };
+    }
+    replacedInvoiceId = wo.invoice_id ?? null;
+    if (replacedInvoiceId) {
+      const { data: linked, error: linkedErr } = await admin
+        .from("invoices")
+        .select("status")
+        .eq("id", replacedInvoiceId)
+        .single();
+      if (linkedErr || !linked) {
+        return { ok: false, error: "Unable to read the work order's current invoice link" };
+      }
+      if (linked.status !== "void") {
+        return {
+          ok: false,
+          error: `This work order already has an active invoice (${replacedInvoiceId}); refresh the page before billing again`
+        };
+      }
+    }
+  }
+
   // Stripe-hosted invoice flow.
   let stripeInvoiceId: string | null = null;
   let hostedInvoiceUrl: string | null = null;
@@ -93,9 +140,22 @@ export async function createInvoiceForUser(
     });
     const result = await createHostedInvoice({
       customerId,
-      // Stripe retains keys for a limited window; durable reservation is still
-      // required to protect retries after that window or after local failures.
-      idempotencyKey: input.work_order_id ? `work-order-invoice:${input.work_order_id}:v1` : undefined,
+      // Stripe retains keys for ~24h and rejects a reused key whose parameters
+      // differ. The key includes the invoice being replaced so a re-bill after
+      // a void (possibly with a new amount) gets a fresh key, while a retry of
+      // the same attempt (link unchanged) reuses the same key. Durable
+      // reservation is still required to protect retries after that window or
+      // after local failures.
+      //
+      // Known gap: after an `invoice.link_failed`, `work_orders.invoice_id`
+      // still points at the OLDER invoice, so a re-bill after voiding the
+      // newer invoice reuses the older key. With the same amount, Stripe
+      // replays the voided invoice and the "Stripe returned a voided invoice"
+      // branch below refuses. With a different amount, Stripe rejects the
+      // reused key ("Stripe error:", unsent row) and this case is NOT covered.
+      idempotencyKey: input.work_order_id
+        ? workOrderInvoiceIdempotencyKey(input.work_order_id, replacedInvoiceId)
+        : undefined,
       amountCents: input.amount_cents,
       currency: input.currency.toLowerCase(),
       description: input.description ?? undefined,
