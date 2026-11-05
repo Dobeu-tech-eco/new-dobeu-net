@@ -5,7 +5,6 @@ const h = vi.hoisted(() => ({
   createAdminClient: vi.fn(),
   dialog: vi.fn(),
 }));
-vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: h.createAdminClient,
 }));

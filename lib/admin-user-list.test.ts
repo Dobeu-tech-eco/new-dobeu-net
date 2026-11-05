@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
 import { listAllUsers, USERS_PER_PAGE, USERS_MAX_PAGES } from "./admin-user-list";
 
 const rows = (n: number, prefix = "u") =>

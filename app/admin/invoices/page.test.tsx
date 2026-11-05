@@ -9,7 +9,6 @@ const h = vi.hoisted(() => ({
     workOrders: unknown[];
   } | null,
 }));
-vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: h.createAdminClient,
 }));

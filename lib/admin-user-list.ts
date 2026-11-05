@@ -1,4 +1,3 @@
-import "server-only";
 import type { User } from "@supabase/supabase-js";
 import type { createAdminClient } from "@/lib/supabase/server";
 
@@ -16,6 +15,7 @@ type AdminAuthClient = Pick<ReturnType<typeof createAdminClient>, "auth">;
 /**
  * Pages through every auth user (200 per page, hard cap of 50 pages).
  * Any error result or thrown exception returns `failed: true` with no users.
+ * Server-side only: callers pass the service-role admin client.
  */
 export async function listAllUsers(
   admin: AdminAuthClient,
