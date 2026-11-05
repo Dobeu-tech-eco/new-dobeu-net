@@ -371,7 +371,7 @@ describe("work-order Stripe idempotency key", () => {
     );
   });
 
-  it.each(["open", "paid", "draft"])(
+  it.each(["open", "paid", "overdue"])(
     "refuses before Stripe when the linked invoice is %s (concurrent billing)",
     async (status) => {
       workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_live_1" }, error: null });
