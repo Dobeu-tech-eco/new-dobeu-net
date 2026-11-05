@@ -20,6 +20,7 @@ const h = vi.hoisted(() => {
       error: { message: string } | null;
     };
     updateError: { message: string } | null;
+    updateMatchesNoRows: boolean;
     attachmentInsertError: { message: string } | null;
     updateSelectData: {
       id: string;
@@ -42,6 +43,7 @@ const h = vi.hoisted(() => {
       error: null
     },
     updateError: null,
+    updateMatchesNoRows: false,
     attachmentInsertError: null,
     updateSelectData: { id: "wo_1", title: "Logo", service_type: "logo", created_by: "user_owner" }
   };
@@ -129,6 +131,12 @@ vi.mock("@/lib/supabase/server", async () => {
             data: h.state.updateError ? null : h.state.updateSelectData,
             error: h.state.updateError,
           }));
+          // Conditional writes use maybeSingle: zero matched rows => null data, no error.
+          chain.maybeSingle = vi.fn(async () => {
+            if (h.state.updateError) return { data: null, error: h.state.updateError };
+            if (h.state.updateMatchesNoRows) return { data: null, error: null };
+            return { data: h.state.updateSelectData, error: null };
+          });
           return chain;
         });
       }
@@ -172,6 +180,7 @@ beforeEach(() => {
     error: null
   };
   h.state.updateError = null;
+  h.state.updateMatchesNoRows = false;
   h.state.attachmentInsertError = null;
   h.state.updateSelectData = {
     id: "wo_1",
@@ -683,5 +692,56 @@ describe("existing work-order transition audit rows", () => {
     if (action === "quote") await quoteWorkOrder({ id: CLIENT_ID, amount_cents: 5000 });
     else await updateWorkOrderStatus({ id: CLIENT_ID, status: "in_progress" });
     expect(writes("admin_audit_log")).toEqual([]);
+  });
+});
+
+describe("conditional status writes (optimistic concurrency)", () => {
+  const ID = "00000000-0000-0000-0000-000000000001";
+  const cases = () => [
+    { name: "quote", read: "open", run: async () => (await import("./work-orders")).quoteWorkOrder({ id: ID, amount_cents: 5000 }) },
+    { name: "status", read: "accepted", run: async () => (await import("./work-orders")).updateWorkOrderStatus({ id: ID, status: "in_progress" }) },
+    { name: "accept", read: "quoted", run: async () => (await import("./work-orders")).acceptWorkOrderQuote({ id: ID }) },
+  ];
+
+  beforeEach(() => {
+    h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
+  });
+
+  function setup(name: string, read: string) {
+    if (name === "accept") h.state.user = { id: "user_owner", email: "owner@example.com" };
+    h.state.selectResult.data!.status = read;
+  }
+
+  it.each(cases())("$name update is conditional on the read status", async ({ name, read, run }) => {
+    setup(name, read);
+    const result = await run();
+    expect(result.ok).toBe(true);
+    expect(h.recorded).toContainEqual({ table: "work_orders", method: "eq", args: ["status", read] });
+  });
+
+  it.each(cases())("$name returns status_conflict with no audit/email when zero rows match", async ({ name, read, run }) => {
+    setup(name, read);
+    h.state.updateMatchesNoRows = true;
+    const { revalidatePath } = await import("next/cache");
+    expect(await run()).toEqual({ ok: false, error: "status_conflict" });
+    expect(h.sendEmailMock).not.toHaveBeenCalled();
+    expect(writes("admin_audit_log")).toEqual([]);
+    expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
+  });
+
+  it.each(cases().filter((c) => c.name !== "accept"))("$name surfaces a DB error on update without auditing", async ({ name, read, run }) => {
+    setup(name, read);
+    h.state.updateError = { message: "db down" };
+    expect(await run()).toEqual({ ok: false, error: "db down" });
+    expect(h.sendEmailMock).not.toHaveBeenCalled();
+    expect(writes("admin_audit_log")).toEqual([]);
+  });
+
+  it("accept surfaces a DB error on update without emailing", async () => {
+    setup("accept", "quoted");
+    h.state.updateError = { message: "db down" };
+    const { acceptWorkOrderQuote } = await import("./work-orders");
+    expect(await acceptWorkOrderQuote({ id: ID })).toEqual({ ok: false, error: "db down" });
+    expect(h.sendEmailMock).not.toHaveBeenCalled();
   });
 });
