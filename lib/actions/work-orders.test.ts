@@ -716,7 +716,12 @@ describe("conditional status writes (optimistic concurrency)", () => {
     setup(name, read);
     const result = await run();
     expect(result.ok).toBe(true);
-    expect(h.recorded).toContainEqual({ table: "work_orders", method: "eq", args: ["status", read] });
+    // The status filter must sit on the UPDATE chain, not the earlier read.
+    const calls = h.recorded.filter((c) => c.table === "work_orders");
+    const updateAt = calls.findIndex((c) => c.method === "update");
+    expect(updateAt).toBeGreaterThanOrEqual(0);
+    expect(calls.slice(updateAt)).toContainEqual({ table: "work_orders", method: "eq", args: ["status", read] });
+    expect(calls.slice(0, updateAt)).not.toContainEqual({ table: "work_orders", method: "eq", args: ["status", read] });
   });
 
   it.each(cases())("$name returns status_conflict with no audit/email when zero rows match", async ({ name, read, run }) => {
@@ -732,9 +737,11 @@ describe("conditional status writes (optimistic concurrency)", () => {
   it.each(cases().filter((c) => c.name !== "accept"))("$name surfaces a DB error on update without auditing", async ({ name, read, run }) => {
     setup(name, read);
     h.state.updateError = { message: "db down" };
+    const { revalidatePath } = await import("next/cache");
     expect(await run()).toEqual({ ok: false, error: "db down" });
     expect(h.sendEmailMock).not.toHaveBeenCalled();
     expect(writes("admin_audit_log")).toEqual([]);
+    expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
   });
 
   it("accept surfaces a DB error on update without emailing", async () => {
