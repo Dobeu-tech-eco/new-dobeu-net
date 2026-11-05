@@ -79,3 +79,7 @@ roster:
   - name: muse
     auth: subscription
     included: true
+
+# Jeremy W., 2026-11-05: raised for fullauto run 20261105-011156 (its clock counted the pause)
+budget:
+  max_wall_minutes: 240
