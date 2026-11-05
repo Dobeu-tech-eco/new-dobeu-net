@@ -60,6 +60,69 @@ describe("admin users page degradation", () => {
     expect(container.textContent).not.toContain("private provider");
   });
 
+  describe("paged auth users", () => {
+    const filler = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        id: `f${i}`,
+        email: `f${i}@example.com`,
+      }));
+    const okPage = (users: unknown[]) => ({ data: { users }, error: null });
+    const withProfiles = (listUsers: () => Promise<unknown>) =>
+      h.createAdminClient.mockReturnValue(
+        client({ data: profiles, error: null }, listUsers),
+      );
+    let prevAdmins: string | undefined;
+    beforeEach(() => {
+      prevAdmins = process.env.ADMIN_EMAILS;
+      process.env.ADMIN_EMAILS = "boss@example.com";
+    });
+    afterEach(() => {
+      if (prevAdmins === undefined) delete process.env.ADMIN_EMAILS;
+      else process.env.ADMIN_EMAILS = prevAdmins;
+    });
+
+    it("badges a page-2 admin", async () => {
+      const listUsers = vi
+        .fn()
+        .mockResolvedValueOnce(okPage(filler(200)))
+        .mockResolvedValueOnce(
+          okPage([{ id: "u1", email: "boss@example.com" }]),
+        );
+      withProfiles(listUsers);
+      render(await AdminUsersPage(params));
+      expect(listUsers).toHaveBeenNthCalledWith(2, { page: 2, perPage: 200 });
+      expect(screen.getByText("Admin")).toBeInTheDocument();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+
+    it("shows the failure notice when a later page fails", async () => {
+      const listUsers = vi
+        .fn()
+        .mockResolvedValueOnce(okPage(filler(200)))
+        .mockResolvedValueOnce({
+          data: null,
+          error: { message: "private provider text" },
+        });
+      withProfiles(listUsers);
+      const { container } = render(await AdminUsersPage(params));
+      expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+      expect(
+        screen.getByText(/Admin badges could not be loaded/),
+      ).toBeInTheDocument();
+      expect(container.textContent).not.toContain("private provider");
+    });
+
+    it("shows the truncation notice at the 50-page cap", async () => {
+      const listUsers = vi.fn().mockImplementation(async () => okPage(filler(200)));
+      withProfiles(listUsers);
+      render(await AdminUsersPage(params));
+      expect(listUsers).toHaveBeenCalledTimes(50);
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /Admin badges may be truncated/,
+      );
+    });
+  });
+
   it("hides the list when the profiles read fails", async () => {
     h.createAdminClient.mockReturnValue(
       client(
