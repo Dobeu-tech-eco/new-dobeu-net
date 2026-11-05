@@ -201,7 +201,7 @@ function arrange(
           // The duplicate guard awaits `invoices.select()` as a list (the
           // mark-paid read uses `.single()`, which is unaffected).
           if (key === "select" && table === "invoices") {
-            const isPriorLookup = a[0] === "id,status";
+            const isPriorLookup = a[0] === "id,status,stripe_invoice_id";
             const isReuseLookup = a[0] === "id,hosted_invoice_url,status";
             chain.then = (resolve: (v: unknown) => void) =>
               resolve(
@@ -322,6 +322,7 @@ const LINK_FAILED_PARTS = [
   "work_orders.invoice_id = inv_prior",
 ];
 const UNKNOWN_INVOICE_PARTS = ["no invoice id", "unknown invoice"];
+const UNSENT_WO_PARTS = ["failed at Stripe", "inv_prior", "void", "Supabase"];
 const UNSENT_PARTS = ["unsent invoice", "last 24 hours", "void"];
 
 describe("createInvoice (Stripe-wired)", () => {
@@ -630,7 +631,12 @@ describe("createInvoice (Stripe-wired)", () => {
       method: "in",
       args: [
         "action",
-        ["invoice.create", "invoice.create_for_work_order", "invoice.link_failed"],
+        [
+          "invoice.create",
+          "invoice.create_for_work_order",
+          "invoice.link_failed",
+          "invoice.create_stripe_failed",
+        ],
       ],
     });
     expect(admin.recorded).toContainEqual({
@@ -742,6 +748,74 @@ describe("createInvoice (Stripe-wired)", () => {
     const { createInvoice } = await import("@/lib/actions/invoices");
     expectRefusal(await createInvoice(woInput), ...ALREADY_PARTS);
     expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+  });
+
+  describe("D37: unsent Stripe-failed invoice blocks a re-bill", () => {
+    const STRIPE_FAILED = [
+      { target_id: "inv_prior", action: "invoice.create_stripe_failed" },
+    ];
+    const unsentRow = (status: string) => [
+      { id: "inv_prior", status, stripe_invoice_id: null },
+    ];
+
+    it("createInvoice blocks a different-amount re-bill while the unsent row is open", async () => {
+      admin = arrange({
+        auditHits: STRIPE_FAILED,
+        priorInvoices: unsentRow("open"),
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      const result = await createInvoice({ ...woInput, amount_cents: 99999 });
+      expectRefusal(result, ...UNSENT_WO_PARTS);
+      expect(result.ok === false && result.error).not.toContain("already billed");
+      expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+      expect(invoiceInserts()).toEqual([]);
+      expectNoAudit();
+    });
+
+    it("createInvoiceForWorkOrder blocks while the unsent row is open", async () => {
+      admin = arrange({
+        auditHits: STRIPE_FAILED,
+        priorInvoices: unsentRow("open"),
+      });
+      const { createInvoiceForWorkOrder } = await import("@/lib/actions/invoices");
+      expectRefusal(
+        await createInvoiceForWorkOrder({ work_order_id: VALID_WO }),
+        ...UNSENT_WO_PARTS,
+      );
+      expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+      expectNoAudit();
+    });
+
+    it("allows a re-bill once the unsent row is void", async () => {
+      admin = arrange({
+        auditHits: STRIPE_FAILED,
+        priorInvoices: unsentRow("void"),
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect((await createInvoice({ ...woInput, amount_cents: 99999 })).ok).toBe(true);
+      expect(stripeMocks.createHostedInvoice).toHaveBeenCalled();
+    });
+
+    it("treats a stripe-failed row that has a Stripe invoice id as already billed", async () => {
+      admin = arrange({
+        auditHits: STRIPE_FAILED,
+        priorInvoices: [{ id: "inv_prior", status: "open", stripe_invoice_id: "in_x" }],
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expectRefusal(await createInvoice(woInput), ...ALREADY_PARTS);
+    });
+
+    it("keeps the link-failed message when a link-failed row sits beside an unsent row", async () => {
+      admin = arrange({
+        auditHits: [
+          ...STRIPE_FAILED,
+          { target_id: "inv_prior", action: "invoice.link_failed" },
+        ],
+        priorInvoices: [{ id: "inv_prior", status: "open", stripe_invoice_id: "in_x" }],
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expectRefusal(await createInvoice(woInput), ...LINK_FAILED_PARTS);
+    });
   });
 
   it("rejects an invalid currency code in Zod", async () => {

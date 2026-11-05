@@ -45,10 +45,14 @@ const createInput = z.object({
 // (`draft` is not in the invoices.status enum, so only `open` rows can exist.)
 const UNSENT_DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+const STRIPE_FAILED_ACTION = "invoice.create_stripe_failed";
+// Audit actions that mean a work order was billed (or attempted): the
+// stripe-failed row is included so an unsent invoice also blocks a re-bill.
 const BILLING_AUDIT_ACTIONS = [
   "invoice.create",
   "invoice.create_for_work_order",
-  "invoice.link_failed"
+  "invoice.link_failed",
+  STRIPE_FAILED_ACTION
 ] as const;
 const DUPLICATE_CHECK_FAILED = "Unable to check for duplicate invoices";
 
@@ -61,6 +65,10 @@ function linkFailedMessage(invoiceId: string): string {
 const UNKNOWN_INVOICE_MESSAGE =
   "An earlier billing record for this work order has no invoice id, so it is treated as invoiced (unknown invoice). Review the admin_audit_log rows for this work order in Supabase before billing again.";
 
+function unsentWorkOrderInvoiceMessage(invoiceId: string): string {
+  return `An earlier attempt to bill this work order failed at Stripe and left unsent invoice ${invoiceId} (no Stripe invoice exists for it). To bill this work order again, set that invoice's status to void in Supabase, then retry with the amount you want.`;
+}
+
 const UNSENT_DUPLICATE_MESSAGE =
   "An unsent invoice for this client and amount already exists from the last 24 hours (the Stripe call failed). The unsent invoice has no Stripe invoice; set its status to void in Supabase before creating another.";
 
@@ -70,8 +78,10 @@ type AdminClient = Awaited<ReturnType<typeof requireAdmin>>["admin"];
  * `work_orders.invoice_id` stays null when a back-link fails, and invoices has
  * no work-order column, so the audit trail is the durable record that a work
  * order was billed. Blocks only while at least one matched invoice exists and
- * is not void (a voided invoice must allow re-invoicing). An audit row with no
- * target id cannot be checked, so it blocks (fail safe). Fails closed on any
+ * is not void (a voided invoice must allow re-invoicing). A Stripe-failed row
+ * (no Stripe invoice, not void) blocks too, whatever the retry amount, with a
+ * message pointing at voiding it. An audit row with no target id cannot be
+ * checked, so it blocks (fail safe). Fails closed on any
  * read error. Used by BOTH billing paths.
  */
 async function workOrderAlreadyInvoiced(
@@ -94,7 +104,7 @@ async function workOrderAlreadyInvoiced(
 
   const { data: invoices, error: invErr } = await admin
     .from("invoices")
-    .select("id,status")
+    .select("id,status,stripe_invoice_id")
     .in("id", ids);
   if (invErr) return DUPLICATE_CHECK_FAILED;
   const active = (invoices ?? []).filter((i) => i.status !== "void");
@@ -104,9 +114,19 @@ async function workOrderAlreadyInvoiced(
     (a) =>
       a.action === "invoice.link_failed" && a.target_id && activeIds.has(a.target_id)
   );
-  return failed?.target_id
-    ? linkFailedMessage(failed.target_id)
-    : alreadyInvoicedMessage(active[0].id);
+  if (failed?.target_id) return linkFailedMessage(failed.target_id);
+  // An active row is "billed" when it has a Stripe invoice or any non-failed
+  // billing audit row; otherwise it is only an unsent Stripe-failed attempt.
+  const billed = active.find(
+    (i) =>
+      !!i.stripe_invoice_id ||
+      (audits ?? []).some(
+        (a) => a.target_id === i.id && a.action !== STRIPE_FAILED_ACTION
+      )
+  );
+  return billed
+    ? alreadyInvoicedMessage(billed.id)
+    : unsentWorkOrderInvoiceMessage(active[0].id);
 }
 
 type WorkOrderLink =
