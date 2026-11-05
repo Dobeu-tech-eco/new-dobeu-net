@@ -72,6 +72,8 @@ function arrange(
     // (select "target_id,created_at"; default none). Separate from auditHits.
     keyAudit?: unknown[];
     keyAuditError?: { message: string };
+    // Invoice rows (id,status,created_at) behind keyAudit's target ids.
+    keyInvoices?: unknown[];
     // Status rows of the invoices those audit rows point at (default: active).
     priorInvoices?: unknown[];
     priorInvoicesError?: { message: string };
@@ -219,10 +221,13 @@ function arrange(
           // mark-paid read uses `.single()`, which is unaffected).
           if (key === "select" && table === "invoices") {
             const isPriorLookup = a[0] === "id,status,stripe_invoice_id";
+            const isKeyInvoices = a[0] === "id,status,created_at";
             const isReuseLookup = a[0] === "id,hosted_invoice_url,status";
             chain.then = (resolve: (v: unknown) => void) =>
               resolve(
-                isReuseLookup
+                isKeyInvoices
+                  ? { data: options.keyInvoices ?? [], error: null }
+                  : isReuseLookup
                   ? { data: options.reuseRows ?? [], error: null }
                   : isPriorLookup
                   ? {
@@ -258,7 +263,7 @@ function arrange(
             });
           }
           if (key === "select" && table === "admin_audit_log") {
-            const isKeyRead = a[0] === "target_id,created_at";
+            const isKeyRead = a[0] === "target_id";
             chain.then = (resolve: (v: unknown) => void) =>
               resolve(
                 isKeyRead
@@ -906,7 +911,10 @@ describe("createInvoice (Stripe-wired)", () => {
           { target_id: "inv_A", action: "invoice.create" },
           { target_id: "inv_B", action: "invoice.link_failed" },
         ],
-        keyAudit: [{ target_id: "inv_B", created_at: "2026-11-05T00:00:00Z" }],
+        keyAudit: [{ target_id: "inv_B" }],
+        keyInvoices: [
+          { id: "inv_B", status: "void", created_at: "2026-11-04T00:00:00Z" },
+        ],
         workOrder: { ...ACCEPTED_WO, invoice_id: "inv_A" },
       });
       const { createInvoice } = await import("@/lib/actions/invoices");

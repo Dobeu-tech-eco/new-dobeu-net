@@ -61,6 +61,9 @@ export const BILLED_AUDIT_ACTIONS = [
   "invoice.link_failed"
 ] as const;
 
+// How many recent audited bills are considered when picking the newest invoice.
+const RECENT_BILLED_AUDITS = 10;
+
 const WORK_ORDER_HISTORY_READ_FAILED =
   "Unable to read the work order's billing history";
 
@@ -153,56 +156,62 @@ export async function createInvoiceForUser(
       linkedCreatedAt = linked.created_at ?? null;
     }
 
-    // Newest actual bill for this work order decides the key. After an
-    // `invoice.link_failed`, `work_orders.invoice_id` still points at an OLDER
-    // invoice than the newest audited one, so the audited invoice wins; but a
-    // linked invoice whose own audit write failed (non-fatal) is NEWER than the
-    // audit history, so the link wins. The two are told apart by comparing the
-    // linked invoice's created_at with the newest audit row's created_at (an
-    // audit row is written after its invoice, so an older invoice's row cannot
-    // postdate a later invoice). A re-bill therefore gets a fresh key (a reused
-    // key with a new amount is rejected by Stripe), while a retry with nothing
-    // newly billed keeps the same key; Stripe-failed attempts are not "billed".
+    // The newest actual bill for this work order decides the key. Recency is
+    // the INVOICE's created_at on every side, never an audit row's time (an
+    // audit write is non-fatal and can be delayed, so audit order need not
+    // match invoice order). Candidates: the linked invoice plus the invoices
+    // behind the most recent audited bills. After an `invoice.link_failed` the
+    // link is older than an audited invoice, so the audited one wins; a linked
+    // invoice whose audit write failed or lagged is newer than an audited
+    // one, so the link wins; a tie goes to the link. Every candidate must be
+    // void. A re-bill therefore gets a fresh key (a reused key with a new
+    // amount is rejected by Stripe), while a retry with nothing newly billed
+    // keeps the same key; Stripe-failed attempts are not "billed".
     const { data: billed, error: billedErr } = await admin
       .from("admin_audit_log")
-      .select("target_id,created_at")
+      .select("target_id")
       .in("action", [...BILLED_AUDIT_ACTIONS])
       .eq("data->>work_order_id", input.work_order_id)
       .order("created_at", { ascending: false })
-      .limit(1);
+      .limit(RECENT_BILLED_AUDITS);
     if (billedErr) return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
-    const newest = billed?.[0];
-    if (newest) {
-      if (!newest.target_id) {
-        return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
-      }
-      if (newest.target_id !== replacedInvoiceId) {
-        // The newest bill is not the linked one: it must be void too.
-        const { data: newestInv, error: newestErr } = await admin
-          .from("invoices")
-          .select("status")
-          .eq("id", newest.target_id)
-          .single();
-        if (newestErr || !newestInv) {
-          return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
-        }
-        if (newestInv.status !== "void") {
-          return { ok: false, error: alreadyInvoicedMessage(newest.target_id) };
-        }
-      }
-      if (!replacedInvoiceId || newest.target_id === replacedInvoiceId) {
-        keyInvoiceId = newest.target_id;
-      } else {
-        const linkedAt = Date.parse(linkedCreatedAt ?? "");
-        const auditedAt = Date.parse(newest.created_at ?? "");
-        if (Number.isNaN(linkedAt) || Number.isNaN(auditedAt)) {
-          return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
-        }
-        keyInvoiceId = auditedAt > linkedAt ? newest.target_id : replacedInvoiceId;
-      }
-    } else {
-      keyInvoiceId = replacedInvoiceId;
+    const billedRows = billed ?? [];
+    if (billedRows.some((r) => !r.target_id)) {
+      return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
     }
+    const auditedIds = [
+      ...new Set(
+        billedRows
+          .map((r) => r.target_id)
+          .filter((id): id is string => !!id && id !== replacedInvoiceId)
+      )
+    ];
+
+    // Linked invoice first so a created_at tie keeps the link.
+    const candidates: { id: string; createdAt: string | null }[] = replacedInvoiceId
+      ? [{ id: replacedInvoiceId, createdAt: linkedCreatedAt }]
+      : [];
+    if (auditedIds.length) {
+      const { data: audited, error: auditedErr } = await admin
+        .from("invoices")
+        .select("id,status,created_at")
+        .in("id", auditedIds);
+      if (auditedErr) return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
+      for (const inv of audited ?? []) {
+        if (inv.status !== "void") {
+          return { ok: false, error: alreadyInvoicedMessage(inv.id) };
+        }
+        candidates.push({ id: inv.id, createdAt: inv.created_at ?? null });
+      }
+    }
+    let newest: { id: string; at: number } | null = null;
+    // A lone candidate needs no ordering (so no timestamp); two or more do.
+    for (const c of candidates.length > 1 ? candidates : []) {
+      const at = Date.parse(c.createdAt ?? "");
+      if (Number.isNaN(at)) return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
+      if (!newest || at > newest.at) newest = { id: c.id, at };
+    }
+    keyInvoiceId = candidates.length === 1 ? candidates[0].id : (newest?.id ?? null);
   }
 
   // Stripe-hosted invoice flow.
