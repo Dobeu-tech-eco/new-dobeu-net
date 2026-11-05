@@ -130,3 +130,8 @@ Follow-up run for the buildable reconciliation gaps (tests and docs only, no pro
 - New: lib/company-invites.ts (listPendingInvites, respondToInvite → acceptInvite/declineInvite, requireMailboxProof, isCompanyActive), lib/actions/invites.ts (accept/decline + form wrappers), components/portal/PendingInvites.tsx, app/portal/invite-notices.ts; invite email → /login?next=/portal.
 - Evidence (local stack, 6c54016): `pnpm verify` 1473/1473 + strict build; pgTAP 198/198 (company_member_accept: invitee self-activate/delete filtered, AAL2 admin and anon activation 42501 from the trigger, service role accept/decline); walkthrough 8/8 incl. real magic link via /auth/callback?code (amr magiclink) and a refused password session (amr password). Post-step-up landing NOT WALKED (TOTP off locally).
 - Receipt: `runs/20261104-124711/receipt.md`. Follow-ups D53, D54 (renumbered from D52, D53 in fix run 20261104-180420); D48-D50 held.
+
+## 2026-11-04 PR #329 fix run 20261104-180420
+- Rounds 1-4. Verifier: r1 VERIFIED on the named repros, then a review found H-A/H-B; r2 NOT VERIFIED (H-B3); r3 NOT VERIFIED (H-B4: a password change clears email_change_sent_at); r4 VERIFIED on 421003f (verifier-r4.md: H-B4 x3, creation-slack, B5g, G1a, G1b, H-B, H-B3, R1.2, R2a, R2b and a double-click Accept all refused or correct; L1, L2, L5 and L6 pass).
+- Gate on the rebased head: pnpm verify 1627/1627 plus strict build; supabase test db 289/289 (8 files, including #328's).
+- Lesson candidate: GoTrue fields that look like history (email_change_sent_at, recovery_sent_at) are mutable state that other user calls reset; prove mailbox ownership from signals the user cannot rewrite (email identity created_at/updated_at) and measure every creation path before choosing a tolerance.

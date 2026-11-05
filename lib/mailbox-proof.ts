@@ -26,11 +26,6 @@ export const EMAIL_CHANGE_WINDOW_SECONDS =
   EMAIL_CHANGE_QUIET_SECONDS + LINK_EXCHANGE_GRACE_SECONDS;
 
 /**
- * An identity whose `updated_at` is within this many seconds of its
- * `created_at` is treated as a pure creation, not a change.
- */
-
-/**
  * Sign-in methods that prove control of the mailbox (not password or totp).
  * NOTE: `otp` is also emitted by phone/SMS OTP; the gate assumes phone
  * sign-in stays disabled (supabase/config.toml [auth.sms] enable_signup =
