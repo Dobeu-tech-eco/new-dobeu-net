@@ -86,9 +86,11 @@ export type MailboxProofFailure =
  *  2. that link sign-in must not predate the invite, else
  *     `invite_signin_stale`;
  *  3. accept only: `emailChangeQuiet` (no email change requested within
- *     EMAIL_CHANGE_QUIET_SECONDS before the link sign-in, identity untouched
- *     since), else `invite_email_changed`. A code's sign-in time is the
- *     exchange time, not the send time, so send-time ordering cannot work;
+ *     EMAIL_CHANGE_WINDOW_SECONDS before the link sign-in, the email identity
+ *     not updated since and not changed inside that window), else
+ *     `invite_email_changed`. A code's sign-in time is the exchange time, not
+ *     the send time, so send-time ordering cannot work; the identity signal
+ *     survives a password change, which clears `email_change_sent_at`;
  *  4. accept only: no email change may have been REQUESTED since the invite
  *     was created (`emailChangeSentAt` >= the invite's second), else
  *     `invite_email_changed`.

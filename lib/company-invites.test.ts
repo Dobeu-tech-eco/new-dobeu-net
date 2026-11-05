@@ -94,11 +94,18 @@ const readFilters = [
 ];
 
 const CREATED = "2026-01-01T00:00:10Z";
+/** Email identity; default is a pure creation (created_at == updated_at). */
+const eid = (updated: string | null, created: string | null = updated) => ({
+  provider: "email",
+  created_at: created,
+  updated_at: updated,
+});
+const isoAt = (secs: number) => new Date(secs * 1000).toISOString();
 const sec = (iso: string) => Math.floor(Date.parse(iso) / 1000);
 const LINK_AT = sec("2026-01-01T00:01:00Z");
 const proof = (over: Partial<SessionProof> = {}): SessionProof => ({
   methods: [{ method: "otp", timestamp: LINK_AT }],
-  identities: [{ provider: "email", updated_at: "2026-01-01T00:00:00Z" }],
+  identities: [eid("2026-01-01T00:00:00Z")],
   ...over,
 });
 
@@ -109,7 +116,7 @@ beforeEach(() => {
 describe("checkMailboxProof", () => {
   const base = {
     methods: [{ method: "otp", timestamp: LINK_AT }],
-    identities: [{ provider: "email", updated_at: "2026-01-01T00:00:00Z" }],
+    identities: [eid("2026-01-01T00:00:00Z")],
     inviteCreatedAt: CREATED,
   };
 
@@ -174,7 +181,7 @@ describe("checkMailboxProof", () => {
     expect(
       checkMailboxProof({
         ...base,
-        identities: [{ provider: "email", updated_at: "2026-01-01T00:01:01Z" }],
+        identities: [eid("2026-01-01T00:01:01Z")],
       }),
     ).toBe("invite_email_changed");
   });
@@ -213,7 +220,7 @@ describe("checkMailboxProof", () => {
       checkMailboxProof({
         ...base,
         emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(),
-        identities: [{ provider: "email", updated_at: new Date((LINK_AT - 1) * 1000).toISOString() }],
+        identities: [eid(new Date((LINK_AT - 1) * 1000).toISOString())],
       }),
     ).toBe("invite_email_changed");
   });
@@ -227,19 +234,19 @@ describe("checkMailboxProof", () => {
     ).toBe("invite_email_changed");
   });
 
-  it("a change 25 h before the link and exactly 86400 s before it are allowed (from a pre-invite change)", () => {
+  it("a change 25 h before the link and exactly 86700 s before it are allowed (from a pre-invite change)", () => {
     // Invite created after the change so only the quiet period is in play.
     const linkTs = sec("2026-01-12T12:00:00Z");
     const methods = [{ method: "otp", timestamp: linkTs }];
     const at = (secs: number) => new Date((linkTs - secs) * 1000).toISOString();
     const inviteCreatedAt = "2026-01-11T12:30:00Z";
-    for (const secs of [25 * 3_600, 86_400]) {
+    for (const secs of [25 * 3_600, 86_700]) {
       expect(
         checkMailboxProof({ ...base, methods, inviteCreatedAt, emailChangeSentAt: at(secs) }),
       ).toBeNull();
     }
     expect(
-      checkMailboxProof({ ...base, methods, inviteCreatedAt, emailChangeSentAt: at(86_399) }),
+      checkMailboxProof({ ...base, methods, inviteCreatedAt, emailChangeSentAt: at(86_699) }),
     ).toBe("invite_email_changed");
   });
 
@@ -247,17 +254,37 @@ describe("checkMailboxProof", () => {
     expect(
       checkMailboxProof({
         ...base,
-        identities: [{ provider: "email", updated_at: new Date((LINK_AT - 30) * 1000).toISOString() }],
+        identities: [eid(new Date((LINK_AT - 30) * 1000).toISOString())],
         emailChangeSentAt: null,
       }),
     ).toBeNull();
+  });
+
+  it("H-B4: password change cleared email_change_sent_at but the identity change signal still refuses", () => {
+    const held = {
+      ...base,
+      emailChangeSentAt: null,
+      identities: [eid(isoAt(LINK_AT - 10), isoAt(LINK_AT - 30 * 86_400))],
+    };
+    expect(checkMailboxProof(held)).toBe("invite_email_changed");
+    // The change is outside the window: allowed.
+    expect(
+      checkMailboxProof({
+        ...held,
+        identities: [eid(isoAt(LINK_AT - 86_700), isoAt(LINK_AT - 30 * 86_400))],
+      }),
+    ).toBeNull();
+    // A missing created_at fails closed.
+    expect(
+      checkMailboxProof({ ...base, identities: [eid("2026-01-01T00:00:00Z", null)] }),
+    ).toBe("invite_email_changed");
   });
 
   it("decline needs only a link sign-in made after the invite", () => {
     const changed = {
       ...base,
       emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(),
-      identities: [{ provider: "email", updated_at: new Date((LINK_AT + 5) * 1000).toISOString() }],
+      identities: [eid(new Date((LINK_AT + 5) * 1000).toISOString())],
     };
     expect(checkMailboxProof(changed)).toBe("invite_email_changed");
     expect(checkMailboxProof({ ...changed, response: "decline" })).toBeNull();
@@ -283,14 +310,14 @@ describe("checkMailboxProof", () => {
       checkMailboxProof({
         ...base,
         methods: [{ method: "otp", timestamp: sec(CREATED) }],
-        identities: [{ provider: "email", updated_at: "2026-01-01T00:00:10.900Z" }],
+        identities: [eid("2026-01-01T00:00:10.900Z")],
       }),
     ).toBeNull();
     // email identity touched in the same second as the link sign-in
     expect(
       checkMailboxProof({
         ...base,
-        identities: [{ provider: "email", updated_at: "2026-01-01T00:01:00.999Z" }],
+        identities: [eid("2026-01-01T00:01:00.999Z")],
       }),
     ).toBeNull();
   });
@@ -302,13 +329,13 @@ describe("checkMailboxProof", () => {
   });
 
   it("an email identity with no usable updated_at fails closed", () => {
-    expect(checkMailboxProof({ ...base, identities: [{ provider: "email", updated_at: null }] })).toBe(
+    expect(checkMailboxProof({ ...base, identities: [eid(null)] })).toBe(
       "invite_email_changed",
     );
   });
 
   it("checks run in order: unconfirmed, then stale, then changed", () => {
-    const changed = [{ provider: "email", updated_at: "2026-01-01T09:00:00Z" }];
+    const changed = [eid("2026-01-01T09:00:00Z")];
     const old = [{ method: "otp", timestamp: sec(CREATED) - 5 }];
     expect(checkMailboxProof({ ...base, methods: old, identities: changed })).toBe(
       "invite_signin_stale",
@@ -471,9 +498,10 @@ describe("respondToInvite accept", () => {
   });
 
   it.each([
-    ["email changed", proof({ identities: [{ provider: "email", updated_at: "2026-01-02T00:00:00Z" }] }), "invite_email_changed"],
+    ["email changed", proof({ identities: [eid("2026-01-02T00:00:00Z")] }), "invite_email_changed"],
     ["email change requested after the invite", proof({ emailChangeSentAt: "2026-01-01T00:00:30Z" }), "invite_email_changed"],
-    ["H-B3 change 5 s before the link", proof({ emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(), identities: [{ provider: "email", updated_at: new Date((LINK_AT - 1) * 1000).toISOString() }] }), "invite_email_changed"],
+    ["H-B3 change 5 s before the link", proof({ emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(), identities: [eid(new Date((LINK_AT - 1) * 1000).toISOString())] }), "invite_email_changed"],
+    ["H-B4 password change cleared email_change_sent_at, identity changed 10 s before the link", proof({ emailChangeSentAt: null, identities: [eid(isoAt(LINK_AT - 10), isoAt(LINK_AT - 30 * 86_400))] }), "invite_email_changed"],
     ["sign-in older than the invite", proof({ methods: [{ method: "otp", timestamp: sec(CREATED) - 1 }] }), "invite_signin_stale"],
     ["password session", proof({ methods: [{ method: "password", timestamp: LINK_AT }] }), "invite_email_unconfirmed"],
   ] as const)("%s is refused with %s and nothing is written", async (_n, p, code) => {
@@ -784,7 +812,7 @@ describe("respondToInvite decline", () => {
   it("decline succeeds after an email change that accept refuses", async () => {
     const changed = proof({
       emailChangeSentAt: new Date((LINK_AT - 5) * 1000).toISOString(),
-      identities: [{ provider: "email", updated_at: new Date((LINK_AT - 1) * 1000).toISOString() }],
+      identities: [eid(new Date((LINK_AT - 1) * 1000).toISOString())],
     });
     const declined = fakeAdmin(declineScript());
     expect((await respondToInvite(declined.admin, U, M, "decline", changed)).ok).toBe(true);

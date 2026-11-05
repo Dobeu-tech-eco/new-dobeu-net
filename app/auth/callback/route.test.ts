@@ -28,7 +28,7 @@ beforeEach(() => {
         email: "me@example.com",
         recovery_sent_at: "2026-11-01T10:00:00.000Z",
         email_change_sent_at: null,
-        identities: [{ provider: "email", updated_at: "2026-10-01T00:00:00.000Z" }],
+        identities: [{ provider: "email", created_at: "2026-10-01T00:00:00.000Z", updated_at: "2026-10-01T00:00:00.000Z" }],
       },
     },
   });

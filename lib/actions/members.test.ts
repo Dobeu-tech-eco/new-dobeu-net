@@ -342,7 +342,7 @@ describe("inviteMember", () => {
       id: "existing_9",
       email: "client@example.com",
       last_sign_in_at: SIGNED,
-      identities: [{ provider: "email", updated_at: "2026-10-31T00:00:00.000Z" }],
+      identities: [{ provider: "email", created_at: "2026-10-31T00:00:00.000Z", updated_at: "2026-10-31T00:00:00.000Z" }],
       app_metadata: {},
       ...over,
     });
@@ -383,7 +383,7 @@ describe("inviteMember", () => {
     it("refuses when the email identity changed after the marker", async () => {
       setup(
         emailUser({
-          identities: [{ provider: "email", updated_at: "2026-11-02T00:00:00.000Z" }],
+          identities: [{ provider: "email", created_at: "2026-11-02T00:00:00.000Z", updated_at: "2026-11-02T00:00:00.000Z" }],
           app_metadata: { email_link_signin: { at: SIGNED, email: "client@example.com" } },
         }),
       );

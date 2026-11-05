@@ -11,10 +11,10 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { safeErrorFields } from "@/lib/log-safe";
 import {
-  EMAIL_CHANGE_QUIET_SECONDS,
   emailChangeQuiet,
   latestLinkTimestamp,
   toSeconds,
+  type ProofIdentity,
   type SessionMethod,
 } from "@/lib/mailbox-proof";
 
@@ -27,7 +27,7 @@ export interface EmailLinkMarker {
 export interface MarkerUser {
   email?: string | null;
   app_metadata?: Record<string, unknown> | null;
-  identities?: ReadonlyArray<{ provider?: string; updated_at?: string | null }> | null;
+  identities?: ReadonlyArray<ProofIdentity> | null;
   email_change_sent_at?: string | null;
 }
 
@@ -57,8 +57,9 @@ type AuthClient = {
  * The marker is written only when an email change cannot have redirected the
  * link (`emailChangeQuiet`): a code's sign-in timestamp is the exchange time,
  * not the send time, so instead of ordering against send timestamps we require
- * that no change was requested in the 24 h before the sign-in (GoTrue's
- * maximum link lifetime) and the email identity was not touched after it.
+ * that no change was requested in the 24 h (plus exchange grace) before the
+ * sign-in and the email identity was neither updated after it nor changed
+ * inside that window.
  * `at` is the link method's own amr timestamp, not the wall clock.
  */
 export async function recordEmailLinkSignIn(supabase: unknown): Promise<void> {
@@ -79,7 +80,7 @@ export async function recordEmailLinkSignIn(supabase: unknown): Promise<void> {
         linkTs,
       })
     ) {
-      console.warn("[email-link-signin] marker skipped: recent email change");
+      console.warn("[email-link-signin] marker skipped: email-change quiet check failed");
       return;
     }
 
@@ -101,10 +102,10 @@ export async function recordEmailLinkSignIn(supabase: unknown): Promise<void> {
 
 /**
  * True iff the account's current email was proven by an email-link sign-in: the
- * marker's email equals the current email (case-insensitive) and the email
- * identity was not updated after the marker (second precision, `<=`), and no
- * email change was requested within the quiet period before the marker
- * (`email_change_sent_at` null, or at least EMAIL_CHANGE_QUIET_SECONDS earlier).
+ * marker's email equals the current email (case-insensitive) and
+ * `emailChangeQuiet` holds against the marker's time (no change requested in
+ * the window before it, identity not updated after it, and any identity change
+ * older than the window; a password change cannot clear the identity signal).
  */
 export function hasCurrentEmailLinkSignIn(user: MarkerUser): boolean {
   const raw = user.app_metadata?.email_link_signin;
@@ -114,13 +115,9 @@ export function hasCurrentEmailLinkSignIn(user: MarkerUser): boolean {
   if (email.toLowerCase() !== user.email.toLowerCase()) return false;
   const markerAt = toSeconds(at);
   if (markerAt === null) return false;
-  const identity = user.identities?.find((i) => i.provider === "email");
-  const identityAt = toSeconds(identity?.updated_at);
-  if (identityAt === null) return false;
-  if (user.email_change_sent_at) {
-    const changeSentAt = toSeconds(user.email_change_sent_at);
-    if (changeSentAt === null) return false;
-    if (changeSentAt > markerAt - EMAIL_CHANGE_QUIET_SECONDS) return false;
-  }
-  return identityAt <= markerAt;
+  return emailChangeQuiet({
+    emailChangeSentAt: user.email_change_sent_at,
+    identities: user.identities,
+    linkTs: markerAt,
+  });
 }

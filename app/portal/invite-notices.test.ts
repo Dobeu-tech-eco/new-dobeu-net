@@ -10,7 +10,7 @@ describe("inviteNoticeMessage", () => {
     ["invite_company_inactive", "warning", "status", "This company is suspended right now, so the invite can't be accepted yet. It is still pending: you can accept it once the company is active again, or decline it."],
     ["invite_already_accepted", "success", "status", "You already accepted this invite."],
     ["invite_signin_stale", "warning", "alert", "To answer this invite, sign out and sign in again with the emailed sign-in link. Your current sign-in started before the invite was sent."],
-    ["invite_email_changed", "warning", "alert", "Your account email changed recently, so this invite can't be accepted from this account yet. You can decline it now, or accept it 24 hours after the change. If the invite was sent to a different address, ask a company admin to invite your current address."],
+    ["invite_email_changed", "warning", "alert", "Your account email changed after this invite was sent, or within the last 24 hours, so this invite can't be accepted from this account. A change made after the invite blocks it until the invite is sent again: decline it here, then ask a company admin to send a new invite."],
     ["invite_email_unconfirmed", "warning", "alert", "To answer this invite, sign out and sign in again using the email link option on the login page, with the link sent to your email address. Then accept or decline here."],
     ["invite_response_failed", "error", "alert", "Couldn't save your answer. Try again."],
   ] as const)("maps %s to exact tone, role and copy", (code, tone, role, text) => {

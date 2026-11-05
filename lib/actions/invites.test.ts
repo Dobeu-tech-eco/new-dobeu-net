@@ -60,7 +60,9 @@ function signIn(
   h.client = supabase;
   return { signOut };
 }
-const identities = [{ provider: "email", updated_at: "2026-01-01T00:00:00Z" }];
+const identities = [
+  { provider: "email", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+];
 const confirmed = {
   id: U,
   email: "a@example.com",

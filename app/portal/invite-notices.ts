@@ -50,7 +50,7 @@ const INVITE_NOTICES = {
   invite_email_changed: {
     tone: "warning",
     role: "alert",
-    text: "Your account email changed recently, so this invite can't be accepted from this account yet. You can decline it now, or accept it 24 hours after the change. If the invite was sent to a different address, ask a company admin to invite your current address.",
+    text: "Your account email changed after this invite was sent, or within the last 24 hours, so this invite can't be accepted from this account. A change made after the invite blocks it until the invite is sent again: decline it here, then ask a company admin to send a new invite.",
   },
   invite_email_unconfirmed: {
     tone: "warning",
