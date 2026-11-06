@@ -41,6 +41,7 @@ function client(
   return {
     auth: {
       getUser: vi.fn(async () => ({ data: { user } })),
+      getSession: vi.fn(async () => ({ data: { session: { access_token: "tok" } } })),
       mfa: {
         getAuthenticatorAssuranceLevel: vi.fn(async () =>
           opts.aalError
@@ -72,6 +73,12 @@ describe("recordEmailLinkSignIn", () => {
     expect(updateUserById).not.toHaveBeenCalled();
     await Promise.all(scheduled.queue.splice(0));
     expect(updateUserById).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the session access token to the AAL lookup", async () => {
+    const c = client([m("otp")]);
+    await record(c);
+    expect(c.auth.mfa.getAuthenticatorAssuranceLevel).toHaveBeenCalledWith("tok");
   });
 
   it("does not throw when after() cannot be scheduled", () => {

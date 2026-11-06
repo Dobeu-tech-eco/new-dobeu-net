@@ -17,7 +17,7 @@ const flushAfter = () => Promise.all(scheduled.queue.splice(0));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
-    auth: { exchangeCodeForSession, verifyOtp, getUser, mfa: { getAuthenticatorAssuranceLevel: getAal } }
+    auth: { exchangeCodeForSession, verifyOtp, getUser, getSession: async () => ({ data: { session: { access_token: "tok" } } }), mfa: { getAuthenticatorAssuranceLevel: getAal } }
   })),
   createAdminClient: vi.fn(() => ({ auth: { admin: { updateUserById } } }))
 }));

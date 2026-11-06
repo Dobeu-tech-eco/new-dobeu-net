@@ -34,13 +34,16 @@ export interface MarkerUser {
 
 type AuthClient = {
   auth: {
+    getSession: () => Promise<{
+      data: { session: { access_token: string } | null };
+    }>;
     getUser: () => Promise<{
       data: {
         user: (MarkerUser & { id: string }) | null;
       };
     }>;
     mfa: {
-      getAuthenticatorAssuranceLevel: () => Promise<{
+      getAuthenticatorAssuranceLevel: (jwt?: string) => Promise<{
         data: {
           currentAuthenticationMethods: ReadonlyArray<SessionMethod>;
         } | null;
@@ -85,7 +88,13 @@ async function writeEmailLinkMarker(supabase: unknown): Promise<void> {
     const { data: userData } = await client.auth.getUser();
     const user = userData?.user;
     if (!user?.email) return;
-    const { data, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    // Same client, same request: getUser() above validated this token.
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+    const jwt = session?.access_token;
+    if (!jwt) return;
+    const { data, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel(jwt);
     if (error || !data) return;
 
     const linkTs = latestLinkTimestamp(data.currentAuthenticationMethods);

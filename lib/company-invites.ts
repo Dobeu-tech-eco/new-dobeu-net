@@ -137,10 +137,10 @@ export function checkMailboxProof(input: {
 export async function loadSessionMethods(
   supabase: DBClient,
 ): Promise<SessionMethod[] | null> {
-  // Hand the AAL lookup the session's access token explicitly instead of
-  // letting it resolve one implicitly. Callers verify the user with
-  // `getUser()` (server round trip, which also refreshes the token) first, so
-  // the token read here is the one that was just verified.
+  // Hand the AAL lookup the session's access token explicitly. Passing a jwt
+  // does NOT verify it: the amr claims are trustworthy only because callers
+  // call `getUser()` (a server round trip that validates the token) on this
+  // same client/request first. `getUser()` does not refresh the token.
   const {
     data: { session },
   } = await supabase.auth.getSession();

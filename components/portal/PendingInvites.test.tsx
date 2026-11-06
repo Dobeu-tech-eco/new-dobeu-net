@@ -17,6 +17,7 @@ const invites = vi.hoisted(() => ({
   },
   calls: [] as string[],
   methods: null as unknown,
+  authUser: { id: "u1" } as { id: string } | null,
   methodsSeen: [] as unknown[],
 }));
 
@@ -28,7 +29,10 @@ vi.mock("@/lib/company-invites", () => ({
   },
   loadSessionMethods: async () => invites.methods,
 }));
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({}) }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
+    auth: { getUser: async () => ({ data: { user: invites.authUser } }) },
+  }),
+}));
 vi.mock("@/lib/actions/invites", () => ({
   acceptCompanyInviteForm: async () => {},
   declineCompanyInviteForm: async () => {},
@@ -51,6 +55,7 @@ afterEach(() => {
   invites.result = { invites: [], withheld: 0, error: false };
   invites.calls = [];
   invites.methods = null;
+  invites.authUser = { id: "u1" };
   invites.methodsSeen = [];
 });
 
@@ -167,5 +172,19 @@ describe("PendingInvites", () => {
     render(await PendingInvites({ userId: "u1" }));
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     expect(screen.getByRole("status").textContent).toContain("1 pending invite more");
+  });
+
+  it("withholds everything when getUser returns no user", async () => {
+    invites.methods = [{ method: "otp", timestamp: 1 }];
+    invites.authUser = null;
+    render(await PendingInvites({ userId: "u1" }));
+    expect(invites.methodsSeen).toEqual([null]);
+  });
+
+  it("withholds everything when the verified user is not the userId prop", async () => {
+    invites.methods = [{ method: "otp", timestamp: 1 }];
+    invites.authUser = { id: "someone-else" };
+    render(await PendingInvites({ userId: "u1" }));
+    expect(invites.methodsSeen).toEqual([null]);
   });
 });

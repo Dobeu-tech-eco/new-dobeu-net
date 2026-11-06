@@ -17,7 +17,15 @@ export async function PendingInvites({ userId }: { userId: string }) {
   // the mailbox (D56); a lookup failure yields null, which withholds all.
   let methods = null;
   try {
-    methods = await loadSessionMethods(await createClient());
+    const supabase = await createClient();
+    // Verify the session on this client first: the amr is trusted only for a
+    // token getUser() validated, and only for the user this page renders for.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user && user.id === userId) {
+      methods = await loadSessionMethods(supabase);
+    }
   } catch {
     methods = null;
   }
