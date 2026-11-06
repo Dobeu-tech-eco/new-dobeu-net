@@ -297,11 +297,14 @@ describe("submitWorkOrder", () => {
     );
   });
 
-  it("surfaces a Supabase insert error", async () => {
+  it("returns a fixed code on a Supabase insert error, never the raw message", async () => {
     h.state.insertResult = { data: null, error: { message: "db down" } };
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { submitWorkOrder } = await import("@/lib/actions/work-orders");
     const result = await submitWorkOrder({ service_type: "logo", title: "Logo" });
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({ ok: false, error: "submit failed" });
+    expect(JSON.stringify(errSpy.mock.calls)).not.toContain("db down");
+    errSpy.mockRestore();
   });
 });
 
