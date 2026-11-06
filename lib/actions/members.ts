@@ -37,6 +37,7 @@ import { companyMemberInviteEmail } from "@/lib/resend-templates";
 import { safeErrorFields } from "@/lib/log-safe";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { findUserIdByEmail, isAlreadyRegistered } from "@/lib/auth-admin";
+import { hasCurrentEmailLinkSignIn } from "@/lib/email-link-signin";
 import type { DBClient } from "@/lib/actions/auth";
 
 const uuid = z.guid("invalid id");
@@ -79,6 +80,7 @@ export type InviteNoticeCode =
   | "rate_limited"
   | "daily_limit"
   | "already_member"
+  | "invitee_needs_link_signin"
   | "invite_failed";
 
 /** Returns the limiter that tripped, or null. Fails closed if the limiter throws. */
@@ -122,9 +124,13 @@ async function resolveInviteeUserId(
   admin: ReturnType<typeof createAdminClient>,
   email: string,
 ): Promise<{ id: string; createdByUs: boolean } | null> {
+  // Created CONFIRMED: an unconfirmed user lets anyone call the public signUp
+  // for this address and get a session on it (auto-confirm config), then set
+  // a password that survives the invitee's accept. Confirmed, signUp returns no
+  // session. The invitee still proves the mailbox with an emailed link.
   const { data, error } = await admin.auth.admin.createUser({
     email,
-    email_confirm: false,
+    email_confirm: true,
   });
   if (error && isAlreadyRegistered(error)) {
     // Some shapes return a user id alongside the error; prefer it over paging.
@@ -172,7 +178,7 @@ async function sendInviteEmail(to: string): Promise<boolean> {
     return false;
   }
   try {
-    const loginUrl = `${getSiteUrl().replace(/\/$/, "")}/login?next=/company`;
+    const loginUrl = `${getSiteUrl().replace(/\/$/, "")}/login?next=/portal`;
     const tpl = companyMemberInviteEmail({ loginUrl });
     const result = await sendEmail({
       to,
@@ -197,8 +203,16 @@ async function sendInviteEmail(to: string): Promise<boolean> {
  * Order matters: the membership row is inserted BEFORE the invite email is
  * sent, so an invitee is never told about a membership that does not exist.
  * The email is fixed copy with no token; the invitee requests their own
- * sign-in link on /login. A failed send leaves the membership in place and
- * returns `ok: true` with `emailSent: false` and `partial`.
+ * sign-in link on /login (next=/portal), then accepts the invite from the
+ * "Pending company invites" list on their portal. A failed send leaves the
+ * membership in place and returns `ok: true` with `emailSent: false` and
+ * `partial`.
+ *
+ * Attach-time squatter guard: an EXISTING account (one this call did not
+ * create) is attached only if its current email was proven by an email-link
+ * sign-in (`hasCurrentEmailLinkSignIn`), whether or not it has ever signed in
+ * or is confirmed; otherwise `invitee_needs_link_signin`, with no insert and
+ * no email.
  */
 export async function inviteMember(
   companyId: string,
@@ -238,6 +252,21 @@ export async function inviteMember(
   const invitee = await resolveInviteeUserId(admin, input.email);
   if (!invitee) return { ok: false, error: "invite failed" };
   const invitedUserId = invitee.id;
+
+  if (!invitee.createdByUs) {
+    const { data: existing, error: lookupErr } =
+      await admin.auth.admin.getUserById(invitedUserId);
+    if (lookupErr || !existing?.user) {
+      console.warn("[inviteMember] user lookup failed:", safeErrorFields(lookupErr));
+      return { ok: false, error: "invite failed" };
+    }
+    // Every existing account needs the marker, whatever last_sign_in_at says:
+    // with hosted Confirm email ON, a public signUp leaves an unconfirmed
+    // account with a planted password and no session (D64).
+    if (!hasCurrentEmailLinkSignIn(existing.user)) {
+      return { ok: false, error: "invitee_needs_link_signin" };
+    }
+  }
 
   const { data: member, error: insertErr } = await supabase
     .from("company_members")
@@ -401,6 +430,7 @@ function inviteNotice(
     case "rate_limited":
     case "daily_limit":
     case "already_member":
+    case "invitee_needs_link_signin":
       return result.error;
     case "forbidden":
     case "not_authenticated":

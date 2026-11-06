@@ -13,12 +13,12 @@ const MEMBER_NOTICES = {
   member_added: {
     tone: "success",
     role: "status",
-    text: "Member added. We've emailed them to sign in at /login with this email address."
+    text: "Member added. We've emailed them to sign in at /login with this email address using the emailed sign-in link (not a password), then accept the invite on their portal."
   },
   invite_email_failed: {
     tone: "warning",
     role: "alert",
-    text: "Member added, but the invite email didn't send. Ask them to sign in at /login with their email address."
+    text: "Member added, but the invite email didn't send. Ask them to sign in at /login with their email address using the emailed sign-in link (not a password), then accept the invite on their portal."
   },
   already_member: {
     tone: "warning",
@@ -29,6 +29,11 @@ const MEMBER_NOTICES = {
     tone: "error",
     role: "alert",
     text: "Couldn't add that member. Check the email address and role, then try again."
+  },
+  invitee_needs_link_signin: {
+    tone: "error",
+    role: "alert",
+    text: "This address already has an account whose current email has not been confirmed by an emailed sign-in link since it last changed. Ask them to sign in once at the login page using the emailed link, then invite them again."
   },
   daily_limit: {
     tone: "warning",

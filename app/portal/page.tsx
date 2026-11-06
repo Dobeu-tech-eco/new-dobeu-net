@@ -1,9 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { FolderKanban, Receipt, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { PendingInvites } from "@/components/portal/PendingInvites";
 import { QueryError } from "./QueryError";
+import { INVITE_NOTICE_STYLES, inviteNoticeMessage } from "./invite-notices";
 
-export default async function PortalDashboard() {
+export default async function PortalDashboard({
+  searchParams,
+}: {
+  searchParams?: Promise<{ notice?: string | string[] }>;
+} = {}) {
+  const notice = inviteNoticeMessage((await searchParams)?.notice);
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,6 +44,17 @@ export default async function PortalDashboard() {
           Here&apos;s what&apos;s open.
         </p>
       </header>
+
+      {notice && (
+        <p
+          role={notice.role}
+          className={`rounded-lg border p-3 text-sm ${INVITE_NOTICE_STYLES[notice.tone]}`}
+        >
+          {notice.text}
+        </p>
+      )}
+
+      {user?.id && <PendingInvites userId={user.id} />}
 
       {/* Stat tiles */}
       <div className="grid sm:grid-cols-2 gap-4">

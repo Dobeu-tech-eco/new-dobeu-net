@@ -129,7 +129,7 @@ Supabase is provisioned through the Vercel Marketplace integration, which auto-i
    > `https://dobeu.net`, producing a malformed `https://dobeu.net&token_hash=...` link that the
    > middleware rescue cannot fix.
 
-   **Email templates (required for admin invites, only after the warning above is satisfied):** this applies only to `inviteUser` in `lib/actions/users.ts` and `provisionCompanyAdmin` in `lib/actions/companies.ts`. Company-member invites (`inviteMember` in `lib/actions/members.ts`) do not use the Supabase invite template: they send a fixed-copy Resend email with no token that links to `/login?next=/company`, so they need `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and `NEXT_PUBLIC_SITE_URL`. Server-side `inviteUserByEmail` cannot use
+   **Email templates (required for admin invites, only after the warning above is satisfied):** this applies only to `inviteUser` in `lib/actions/users.ts` and `provisionCompanyAdmin` in `lib/actions/companies.ts`. Company-member invites (`inviteMember` in `lib/actions/members.ts`) do not use the Supabase invite template: they send a fixed-copy Resend email with no token that links to `/login?next=/portal` (the invitee then accepts the invite on `/portal`), so they need `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and `NEXT_PUBLIC_SITE_URL`. Server-side `inviteUserByEmail` cannot use
    PKCE, so the default `{{ .ConfirmationURL }}` link returns the session in the URL *fragment*,
    which `/auth/callback` (a server route) never sees. In Supabase → Authentication → Email
    Templates, set the **Invite user** and **Magic Link** links to the token-hash form:
