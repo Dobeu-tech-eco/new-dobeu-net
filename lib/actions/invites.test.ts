@@ -291,10 +291,23 @@ describe("acceptCompanyInvite / declineCompanyInvite", () => {
 });
 
 describe("form wrappers", () => {
-  it("accept as a non-admin goes to /portal with the accepted notice", async () => {
+  it("accept as a non-admin with a rotated password goes to /portal with the password-reset notice", async () => {
+    expect(await redirectOf(acceptCompanyInviteForm(M, fd))).toBe(
+      "/portal?notice=invite_accepted_password_reset",
+    );
+  });
+
+  it("accept as a non-admin whose rotation failed keeps the plain accepted notice", async () => {
+    h.update.mockResolvedValue({ error: { message: "x" } });
     expect(await redirectOf(acceptCompanyInviteForm(M, fd))).toBe(
       "/portal?notice=invite_accepted",
     );
+  });
+
+  it("accept as an admin whose rotation failed still goes to /company", async () => {
+    h.respond.mockResolvedValue({ ok: true, companyId: C, isAdminRole: true });
+    h.update.mockResolvedValue({ error: { message: "x" } });
+    expect(await redirectOf(acceptCompanyInviteForm(M, fd))).toBe(`/company?company=${C}`);
   });
 
   it("accept as an admin goes to that company's dashboard", async () => {

@@ -55,6 +55,7 @@ export type ActionResult<T> =
 export type InviteResponseNoticeCode =
   | "invite_accepted"
   | "invite_accepted_company_inactive"
+  | "invite_accepted_password_reset"
   | "invite_declined"
   | "invite_unavailable"
   | "invite_email_unconfirmed"
@@ -199,10 +200,14 @@ export async function acceptCompanyInviteForm(
   if (result.data.companyInactive) {
     redirect("/portal?notice=invite_accepted_company_inactive");
   }
+  if (result.data.isAdminRole) {
+    redirect(`/company?company=${encodeURIComponent(result.data.companyId)}`);
+  }
+  // The password was cleared unless the rotation step reported a failure.
   redirect(
-    result.data.isAdminRole
-      ? `/company?company=${encodeURIComponent(result.data.companyId)}`
-      : "/portal?notice=invite_accepted",
+    result.data.passwordRotationFailed
+      ? "/portal?notice=invite_accepted"
+      : "/portal?notice=invite_accepted_password_reset",
   );
 }
 
