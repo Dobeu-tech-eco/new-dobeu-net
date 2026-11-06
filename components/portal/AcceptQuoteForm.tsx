@@ -10,6 +10,11 @@ import { acceptWorkOrderQuote } from "@/lib/actions/work-orders";
 const STATUS_CONFLICT_COPY =
   "This quote changed while you were viewing it. The page has been refreshed; check the latest status and try again.";
 
+const COMPANY_SUSPENDED_COPY =
+  "This company is suspended; the quote can't be accepted right now.";
+const COMPANY_CHECK_FAILED_COPY =
+  "We couldn't confirm the company status. Please try again shortly.";
+
 export function AcceptQuoteForm({
   ticketId,
   amountCents
@@ -29,6 +34,10 @@ export function AcceptQuoteForm({
         if (result.error === "status_conflict") {
           setError(STATUS_CONFLICT_COPY);
           router.refresh();
+        } else if (result.error === "company_suspended") {
+          setError(COMPANY_SUSPENDED_COPY);
+        } else if (result.error === "company_check_failed") {
+          setError(COMPANY_CHECK_FAILED_COPY);
         } else {
           setError(result.error);
         }

@@ -565,7 +565,7 @@ export async function acceptWorkOrderQuote(
 
   const { data: existing, error: readErr } = await supabase
     .from("work_orders")
-    .select("id,created_by,status,quoted_amount_cents,title")
+    .select("id,created_by,status,quoted_amount_cents,title,company_id")
     .eq("id", id)
     .single();
 
@@ -584,6 +584,19 @@ export async function acceptWorkOrderQuote(
   // 20260717064702_rls_hardening_wo_and_anon_insert.sql), matching the same
   // defense-in-depth pattern quoteWorkOrder/updateWorkOrderStatus already use.
   const admin = createAdminClient();
+
+  // D87: a company work order cannot be accepted while its company is not
+  // active. Checked before any status flip; an unreadable company fails closed.
+  // Personal work orders (company_id null) skip this check.
+  if (existing.company_id) {
+    const { data: company, error: companyErr } = await admin
+      .from("companies")
+      .select("id,status")
+      .eq("id", existing.company_id)
+      .single();
+    if (companyErr || !company) return { ok: false, error: "company_check_failed" };
+    if (company.status !== "active") return { ok: false, error: "company_suspended" };
+  }
   // Conditional on the status we read; zero rows matched => status_conflict.
   const { data: flipped, error: flipErr } = await admin
     .from("work_orders")
