@@ -280,6 +280,22 @@ describe("company action feedback", () => {
     },
   );
 
+  it.each([
+    ["invitee_needs_link_signin", "admin_invitee_needs_link_signin"],
+    ["already_member", "admin_already_member"],
+    ["member_disabled", "admin_member_disabled"],
+  ])("redirects provisioning error %s to %s", async (error, code) => {
+    h.provisionCompanyAdmin.mockResolvedValue({ ok: false, error });
+    const tree = await AdminCompaniesPage({
+      searchParams: Promise.resolve({}),
+    });
+    const data = new FormData();
+    data.set("companyId", "active-company");
+    data.set("email", "admin@example.com");
+    await expect(formActions(tree)[2](data)).rejects.toThrow("REDIRECT:");
+    expect(h.redirect).toHaveBeenCalledWith(`/admin/companies?error=${code}`);
+  });
+
   it.each(wrappers)(
     "redirects successful $name actions with ok=1",
     async ({ index }) => {

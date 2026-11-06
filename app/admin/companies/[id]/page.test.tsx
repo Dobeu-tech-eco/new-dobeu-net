@@ -159,6 +159,26 @@ describe("company detail action feedback", () => {
   );
 });
 
+describe("provisioning specific errors", () => {
+  it.each([
+    ["invitee_needs_link_signin", "admin_invitee_needs_link_signin"],
+    ["already_member", "admin_already_member"],
+    ["member_disabled", "admin_member_disabled"],
+  ])("redirects %s to %s", async (error, code) => {
+    h.provisionCompanyAdmin.mockResolvedValue({ ok: false, error });
+    const tree = await AdminCompanyDetailPage({
+      params: Promise.resolve({ id: "company-id" }),
+      searchParams: Promise.resolve({}),
+    });
+    const data = new FormData();
+    data.set("email", "admin@example.com");
+    await expect(provisionForm(tree)!(data)).rejects.toThrow("REDIRECT:");
+    expect(h.redirect).toHaveBeenCalledWith(
+      `/admin/companies/company-id?error=${code}`,
+    );
+  });
+});
+
 describe("company detail read states", () => {
   it.each([
     { table: "company_members", empty: "No members yet." },

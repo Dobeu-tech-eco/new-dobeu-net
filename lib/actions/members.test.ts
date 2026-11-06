@@ -103,6 +103,19 @@ vi.mock("@/lib/supabase/server", () => ({
         },
       }),
     })),
+    // Already-registered lookup goes through the direct rpc (D48). The event
+    // keeps the legacy "listUsers" name so existing ordering assertions hold.
+    rpc: vi.fn(async (_fn: string, args: { p_email: string }) => {
+      h.state.events.push("listUsers");
+      if (h.state.listError) return { data: null, error: h.state.listError };
+      const pool = h.state.userSequence.length
+        ? (h.state.userSequence.shift() ?? [])
+        : h.state.users;
+      const match = pool.find(
+        (u) => u.email.toLowerCase() === args.p_email.toLowerCase(),
+      );
+      return { data: match?.id ?? null, error: null };
+    }),
     auth: {
       admin: {
         createUser: h.createUser,
