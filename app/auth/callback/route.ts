@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      await recordEmailLinkSignIn(supabase);
+      recordEmailLinkSignIn(supabase);
       return NextResponse.redirect(new URL(next, url.origin));
     }
   } else if (url.searchParams.has("token_hash")) {

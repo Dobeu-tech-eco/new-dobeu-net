@@ -6,6 +6,15 @@ const getUser = vi.fn();
 const getAal = vi.fn();
 const updateUserById = vi.fn();
 
+const scheduled = vi.hoisted(() => ({ queue: [] as Promise<unknown>[] }));
+vi.mock("next/server", async (orig) => ({
+  ...(await orig<typeof import("next/server")>()),
+  after: (fn: () => unknown) => {
+    scheduled.queue.splice(scheduled.queue.length, 0, Promise.resolve().then(fn));
+  },
+}));
+const flushAfter = () => Promise.all(scheduled.queue.splice(0));
+
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     auth: { exchangeCodeForSession, verifyOtp, getUser, mfa: { getAuthenticatorAssuranceLevel: getAal } }
@@ -119,9 +128,17 @@ describe("GET /auth/callback", () => {
   it("records the email-link sign-in after a successful exchange", async () => {
     exchangeCodeForSession.mockResolvedValue({ error: null });
     await GET(new Request("http://localhost/auth/callback?code=abc"));
+    await flushAfter();
     expect(updateUserById).toHaveBeenCalledWith("u1", {
       app_metadata: { email_link_signin: { at: "2026-11-01T10:00:05.000Z", email: "me@example.com" } }
     });
+  });
+
+  it("redirects without waiting for the marker write", async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null });
+    updateUserById.mockReturnValue(new Promise(() => {}));
+    const res = await GET(new Request("http://localhost/auth/callback?code=abc"));
+    expect(res.headers.get("location")).toBe("http://localhost/portal");
   });
 
   it("does not record when the exchange fails", async () => {

@@ -73,6 +73,6 @@ export async function POST(request: Request) {
 
   const { error } = await supabase.auth.verifyOtp(parsed.data);
   if (error) return fail(origin);
-  await recordEmailLinkSignIn(supabase);
+  recordEmailLinkSignIn(supabase);
   return clear(NextResponse.redirect(new URL(next, origin), 303));
 }

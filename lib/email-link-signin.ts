@@ -8,6 +8,7 @@
  * the marker. GoTrue merges top-level `app_metadata` keys on admin update, so
  * only the one key is sent (no read-modify-write of the whole object).
  */
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { safeErrorFields } from "@/lib/log-safe";
 import {
@@ -52,7 +53,13 @@ type AuthClient = {
 /**
  * After a SUCCESSFUL code exchange or OTP verify: if the session was created by
  * an email-link method, stamp the account. Never throws and never affects the
- * caller's redirect.
+ * caller's redirect: the work (an admin API write) is scheduled with
+ * `after()` so it runs once the redirect response is sent, not before it.
+ * The marker can therefore land a moment after the redirect. That is
+ * acceptable: it is read only by `inviteMember`'s attach guard (an admin
+ * action, never in the same request as the sign-in), and invite accept/decline
+ * read the session's own amr claims, not the marker. A failed write just
+ * means the marker is absent, which fails closed (attach refused).
  *
  * The marker is written only when an email change cannot have redirected the
  * link (`emailChangeQuiet`): a code's sign-in timestamp is the exchange time,
@@ -62,7 +69,17 @@ type AuthClient = {
  * inside that window.
  * `at` is the link method's own amr timestamp, not the wall clock.
  */
-export async function recordEmailLinkSignIn(supabase: unknown): Promise<void> {
+export function recordEmailLinkSignIn(supabase: unknown): void {
+  try {
+    after(() => writeEmailLinkMarker(supabase));
+  } catch (e) {
+    // `after` unavailable outside a request scope: skip rather than delay or
+    // fail the sign-in redirect.
+    console.warn("[email-link-signin] schedule failed:", safeErrorFields(e));
+  }
+}
+
+async function writeEmailLinkMarker(supabase: unknown): Promise<void> {
   try {
     const client = supabase as AuthClient;
     const { data: userData } = await client.auth.getUser();
