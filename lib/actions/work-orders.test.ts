@@ -15,6 +15,7 @@ const h = vi.hoisted(() => {
             project_id?: string | null;
             quoted_amount_cents?: number | null;
             title?: string | null;
+            company_id?: string | null;
           }
         | null;
       error: { message: string } | null;
@@ -59,6 +60,7 @@ const h = vi.hoisted(() => {
     get recorded() { return recordings.flat(); },
     level: "aal2",
     client: { email: "owner@example.com" } as { email: string } | null,
+    companyError: null as { message: string } | null,
     company: { id: "company_1", status: "active" } as { id: string; status: string } | null,
     membership: { id: "member_1" } as { id: string } | null,
     project: { owner_user_id: "00000000-0000-0000-0000-000000000002", company_id: null } as { owner_user_id: string; company_id: string | null } | null,
@@ -113,7 +115,7 @@ vi.mock("@/lib/supabase/server", async () => {
           update: { error: h.state.updateError },
         },
         work_order_attachments: { insert: { error: h.state.attachmentInsertError } },
-        companies: { selectSingle: { data: h.company } },
+        companies: { selectSingle: { data: h.company, error: h.companyError } },
         company_members: { selectSingle: { data: h.membership } },
         projects: { selectSingle: { data: h.project } },
         admin_audit_log: { insert: { error: h.auditError } },
@@ -162,6 +164,7 @@ beforeEach(() => {
   h.level = "aal2";
   h.client = { email: "owner@example.com" };
   h.company = { id: "company_1", status: "active" };
+  h.companyError = null;
   h.membership = { id: "member_1" };
   h.project = { owner_user_id: "00000000-0000-0000-0000-000000000002", company_id: null };
   h.auditError = null;
@@ -438,6 +441,54 @@ describe("acceptWorkOrderQuote (client)", () => {
     const result = await acceptWorkOrderQuote({ id: "00000000-0000-0000-0000-000000000001" });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/quote amount/);
+  });
+
+  describe("company status (D87)", () => {
+    const ID = "00000000-0000-0000-0000-000000000001";
+    function companyOrder() {
+      h.state.selectResult = {
+        data: {
+          id: "wo_1",
+          created_by: "user_owner",
+          status: "quoted",
+          quoted_amount_cents: 50000,
+          title: "Logo",
+          company_id: "company_1"
+        },
+        error: null
+      };
+    }
+
+    it("refuses a suspended company with no status flip or email", async () => {
+      companyOrder();
+      h.company = { id: "company_1", status: "suspended" };
+      const { acceptWorkOrderQuote } = await import("@/lib/actions/work-orders");
+      expect(await acceptWorkOrderQuote({ id: ID })).toEqual({ ok: false, error: "company_suspended" });
+      expect(h.recorded.filter((c) => c.table === "work_orders" && c.method === "update")).toEqual([]);
+      expect(h.sendEmailMock).not.toHaveBeenCalled();
+    });
+
+    it("proceeds for an active company", async () => {
+      companyOrder();
+      const { acceptWorkOrderQuote } = await import("@/lib/actions/work-orders");
+      expect((await acceptWorkOrderQuote({ id: ID })).ok).toBe(true);
+      expect(h.recorded.filter((c) => c.table === "work_orders" && c.method === "update")).not.toEqual([]);
+    });
+
+    it("leaves personal work orders unchanged (no company read)", async () => {
+      h.company = { id: "company_1", status: "suspended" };
+      const { acceptWorkOrderQuote } = await import("@/lib/actions/work-orders");
+      expect((await acceptWorkOrderQuote({ id: ID })).ok).toBe(true);
+      expect(h.recorded.filter((c) => c.table === "companies")).toEqual([]);
+    });
+
+    it("fails closed with a fixed code when the company read errors", async () => {
+      companyOrder();
+      h.companyError = { message: "connection to db.internal:5432 refused" };
+      const { acceptWorkOrderQuote } = await import("@/lib/actions/work-orders");
+      expect(await acceptWorkOrderQuote({ id: ID })).toEqual({ ok: false, error: "company_check_failed" });
+      expect(h.recorded.filter((c) => c.table === "work_orders" && c.method === "update")).toEqual([]);
+    });
   });
 
   it("returns not_authenticated when no user", async () => {

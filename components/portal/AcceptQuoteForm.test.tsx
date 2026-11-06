@@ -37,4 +37,16 @@ describe("AcceptQuoteForm", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("forbidden"));
     expect(refresh).not.toHaveBeenCalled();
   });
+
+  it("shows plain copy for company_suspended without the raw code", async () => {
+    action.mockResolvedValue({ ok: false, error: "company_suspended" });
+    render(<AcceptQuoteForm ticketId="t1" amountCents={50000} />);
+    submit();
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "This company is suspended; the quote can't be accepted right now."
+      )
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent("company_suspended");
+  });
 });
