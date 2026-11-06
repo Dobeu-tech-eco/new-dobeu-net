@@ -4,7 +4,8 @@ import {
   acceptCompanyInviteForm,
   declineCompanyInviteForm,
 } from "@/lib/actions/invites";
-import { listPendingInvites } from "@/lib/company-invites";
+import { listPendingInvites, loadSessionMethods } from "@/lib/company-invites";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * "Pending company invites" for the signed-in user. Takes only the user id
@@ -12,7 +13,23 @@ import { listPendingInvites } from "@/lib/company-invites";
  * and never blocks the rest of the dashboard.
  */
 export async function PendingInvites({ userId }: { userId: string }) {
-  const { invites, error } = await listPendingInvites(userId);
+  // Details are shown only once an email-link sign-in after the invite proves
+  // the mailbox (D56); a lookup failure yields null, which withholds all.
+  let methods = null;
+  try {
+    const supabase = await createClient();
+    // Verify the session on this client first: the amr is trusted only for a
+    // token getUser() validated, and only for the user this page renders for.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user && user.id === userId) {
+      methods = await loadSessionMethods(supabase);
+    }
+  } catch {
+    methods = null;
+  }
+  const { invites, withheld, error } = await listPendingInvites(userId, methods);
 
   if (error) {
     return (
@@ -24,7 +41,21 @@ export async function PendingInvites({ userId }: { userId: string }) {
       </p>
     );
   }
-  if (invites.length === 0) return null;
+  if (invites.length === 0 && withheld === 0) return null;
+
+  const withheldNotice =
+    withheld > 0 ? (
+      <p
+        role="status"
+        className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm"
+      >
+        You have {withheld} pending {withheld === 1 ? "invite" : "invites"}
+        {invites.length > 0 ? " more" : ""}. Sign in with an emailed link to
+        view {withheld === 1 ? "it" : "them"}.
+      </p>
+    ) : null;
+
+  if (invites.length === 0) return withheldNotice;
 
   return (
     <section aria-labelledby="pending-invites-heading" className="space-y-3">
@@ -98,6 +129,7 @@ export async function PendingInvites({ userId }: { userId: string }) {
           );
         })}
       </ul>
+      {withheldNotice}
     </section>
   );
 }

@@ -137,7 +137,16 @@ export function checkMailboxProof(input: {
 export async function loadSessionMethods(
   supabase: DBClient,
 ): Promise<SessionMethod[] | null> {
-  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  // Hand the AAL lookup the session's access token explicitly. Passing a jwt
+  // does NOT verify it: the amr claims are trustworthy only because callers
+  // call `getUser()` (a server round trip that validates the token) on this
+  // same client/request first. `getUser()` does not refresh the token.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const jwt = session?.access_token;
+  if (!jwt) return null;
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel(jwt);
   if (error || !data) return null;
   return data.currentAuthenticationMethods as SessionMethod[];
 }
@@ -156,32 +165,52 @@ async function loadRoles(
 /**
  * The invitee's pending invites, including those of suspended companies
  * (`companyActive: false`: decline only). Read errors fail soft.
+ *
+ * Mailbox gate (D56): details (company name, role) are returned only for
+ * invites whose decline-level proof passes for `methods` (an email-link
+ * sign-in made after the invite was created). The rest are counted in
+ * `withheld` and not described, so a password-only session learns nothing but
+ * a number. A missing `methods` (lookup failure) withholds everything.
  */
 export async function listPendingInvites(
   userId: string,
-): Promise<{ invites: PendingInvite[]; error: boolean }> {
-  const failed = { invites: [], error: true };
+  methods?: SessionMethod[] | null,
+): Promise<{ invites: PendingInvite[]; withheld: number; error: boolean }> {
+  const failed = { invites: [], withheld: 0, error: true };
   try {
     const admin = createAdminClient() as DBClient;
 
     const { data: rows, error } = await admin
       .from("company_members")
-      .select("id, company_id, role")
+      .select("id, company_id, role, created_at")
       .eq("user_id", userId)
       .eq("status", "invited");
     if (error || !rows) return failed;
-    if (rows.length === 0) return { invites: [], error: false };
+    if (rows.length === 0) return { invites: [], withheld: 0, error: false };
+
+    const visibleRows = rows.filter(
+      (r) =>
+        methods != null &&
+        checkMailboxProof({
+          methods,
+          identities: null,
+          inviteCreatedAt: r.created_at,
+          response: "decline",
+        }) === null,
+    );
+    const withheld = rows.length - visibleRows.length;
+    if (visibleRows.length === 0) return { invites: [], withheld, error: false };
 
     const { data: companies, error: companiesError } = await admin
       .from("companies")
       .select("id, name, status")
-      .in("id", [...new Set(rows.map((r) => r.company_id))]);
+      .in("id", [...new Set(visibleRows.map((r) => r.company_id))]);
     if (companiesError || !companies) return failed;
     const roles = await loadRoles(admin);
     if (!roles) return failed;
 
     const companyById = new Map(companies.map((c) => [c.id, c]));
-    const invites = rows.flatMap((r) => {
+    const invites = visibleRows.flatMap((r) => {
       const company = companyById.get(r.company_id);
       if (company === undefined) return [];
       const info = roles.get(r.role);
@@ -197,7 +226,7 @@ export async function listPendingInvites(
         },
       ];
     });
-    return { invites, error: false };
+    return { invites, withheld, error: false };
   } catch (e) {
     console.warn("[listPendingInvites] read failed:", safeErrorFields(e));
     return failed;
@@ -348,6 +377,14 @@ async function acceptInvite(
 
   // Committed. The status read above can be stale: re-check, and undo the
   // activation if the company was suspended meanwhile.
+  //
+  // Residual window (D59): a suspension that lands AFTER this re-check leaves
+  // an `active` member row on a suspended company. That is tolerable because
+  // membership alone grants nothing: company-shared data reads go through
+  // `public.is_active_company_member` (RLS, `companies.status = 'active'`),
+  // the /company surface through `guardCompanyPage` / `requireCompanyAdmin`
+  // (active company required), and the portal shows the suspended banner via
+  // `lib/company-status.ts`. Keep every new company access path on one of those.
   let stillActive = true; // a failed re-check keeps the accept (pre-check passed)
   try {
     stillActive = await isCompanyActive(admin, row.company_id);

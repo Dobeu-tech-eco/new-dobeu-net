@@ -50,6 +50,7 @@ function signIn(
   const signOut = vi.fn(aal.signOut ?? (async () => ({ error: null })));
   const auth = supabase.auth as Record<string, unknown>;
   auth.signOut = signOut;
+  auth.getSession = vi.fn(async () => ({ data: { session: { access_token: "tok" } } }));
   auth.mfa = {
     getAuthenticatorAssuranceLevel: vi.fn(async () =>
       aal.error
@@ -58,7 +59,7 @@ function signIn(
     ),
   };
   h.client = supabase;
-  return { signOut };
+  return { signOut, getAal: (auth.mfa as { getAuthenticatorAssuranceLevel: ReturnType<typeof vi.fn> }).getAuthenticatorAssuranceLevel };
 }
 const identities = [
   { provider: "email", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
@@ -94,6 +95,12 @@ describe("acceptCompanyInvite / declineCompanyInvite", () => {
     expect(h.respond).toHaveBeenLastCalledWith({ admin: true }, U, M, "decline", proofArg);
     expect(h.revalidate).toHaveBeenCalledWith("/portal");
     expect(h.revalidate).toHaveBeenCalledWith("/company");
+  });
+
+  it("reads the session methods with the session's access token", async () => {
+    const { getAal } = signIn(confirmed);
+    await acceptCompanyInvite(M);
+    expect(getAal).toHaveBeenCalledWith("tok");
   });
 
   it("not authenticated: no admin client, no core call", async () => {

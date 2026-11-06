@@ -158,6 +158,13 @@ describe("POST /auth/confirm/submit", () => {
     expect(record).toHaveBeenCalledTimes(1);
   });
 
+  it("redirects without waiting for the recorder", async () => {
+    verifyOtp.mockResolvedValue({ error: null });
+    record.mockReturnValueOnce(new Promise(() => {}));
+    const res = await post({ cookie: pending() });
+    expect(res.status).toBe(303);
+  });
+
   it("does not record when blocked by Origin or an existing session", async () => {
     await post({ cookie: pending(), origin: "https://evil.example" });
     getUser.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });

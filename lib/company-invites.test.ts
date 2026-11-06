@@ -347,10 +347,33 @@ describe("checkMailboxProof", () => {
 });
 
 describe("loadSessionMethods", () => {
-  const client = (res: unknown) =>
-    ({
-      auth: { mfa: { getAuthenticatorAssuranceLevel: vi.fn(async () => res) } },
-    }) as unknown as DBClient;
+  const aal = vi.fn();
+  const client = (res: unknown, token: string | null = "tok") => {
+    aal.mockReset();
+    aal.mockImplementation(async () => res);
+    return {
+      auth: {
+        getSession: vi.fn(async () => ({
+          data: { session: token ? { access_token: token } : null },
+        })),
+        mfa: { getAuthenticatorAssuranceLevel: aal },
+      },
+    } as unknown as DBClient;
+  };
+
+  it("passes the session's access token to the AAL lookup", async () => {
+    await loadSessionMethods(client({ data: { currentAuthenticationMethods: [] }, error: null }));
+    expect(aal).toHaveBeenCalledWith("tok");
+  });
+
+  it("returns null without calling the AAL lookup when there is no session token", async () => {
+    expect(
+      await loadSessionMethods(
+        client({ data: { currentAuthenticationMethods: [] }, error: null }, null),
+      ),
+    ).toBeNull();
+    expect(aal).not.toHaveBeenCalled();
+  });
 
   it("returns the session's methods", async () => {
     const methods = [{ method: "otp", timestamp: 1 }];
@@ -866,6 +889,10 @@ describe("respondToInvite decline", () => {
 });
 
 describe("listPendingInvites", () => {
+  const LINK = Math.floor(Date.parse("2026-11-01T10:00:00.000Z") / 1000);
+  const PROVEN = [{ method: "otp", timestamp: LINK }];
+  const BEFORE = "2026-10-31T10:00:00.000Z";
+  const AFTER = "2026-11-02T10:00:00.000Z";
   const C2 = "44444444-4444-4444-8444-444444444444";
 
   it("returns the user's invited rows with labels, including suspended companies", async () => {
@@ -873,8 +900,8 @@ describe("listPendingInvites", () => {
       "company_members.select": [
         {
           data: [
-            { id: M, company_id: C, role: "company_admin" },
-            { id: "m2", company_id: C2, role: "employee" },
+            { id: M, company_id: C, role: "company_admin", created_at: BEFORE },
+            { id: "m2", company_id: C2, role: "employee", created_at: BEFORE },
           ],
         },
       ],
@@ -889,7 +916,7 @@ describe("listPendingInvites", () => {
       "company_roles.select": [ROLES],
     });
     h.admin = admin;
-    expect(await listPendingInvites(U)).toEqual({
+    expect(await listPendingInvites(U, PROVEN)).toEqual({
       invites: [
         {
           memberId: M,
@@ -910,6 +937,7 @@ describe("listPendingInvites", () => {
           companyActive: false,
         },
       ],
+      withheld: 0,
       error: false,
     });
     expect(calls[0].filters).toEqual([
@@ -921,18 +949,18 @@ describe("listPendingInvites", () => {
 
   it("drops an invite whose company no longer exists", async () => {
     const { admin } = fakeAdmin({
-      "company_members.select": [{ data: [{ id: M, company_id: C, role: "employee" }] }],
+      "company_members.select": [{ data: [{ id: M, company_id: C, role: "employee", created_at: BEFORE }] }],
       "companies.select": [{ data: [] }],
       "company_roles.select": [ROLES],
     });
     h.admin = admin;
-    expect(await listPendingInvites(U)).toEqual({ invites: [], error: false });
+    expect(await listPendingInvites(U, PROVEN)).toEqual({ invites: [], withheld: 0, error: false });
   });
 
   it("returns an empty, non-error list when there are no invites", async () => {
     const { admin, calls } = fakeAdmin({ "company_members.select": [{ data: [] }] });
     h.admin = admin;
-    expect(await listPendingInvites(U)).toEqual({ invites: [], error: false });
+    expect(await listPendingInvites(U, PROVEN)).toEqual({ invites: [], withheld: 0, error: false });
     expect(calls).toHaveLength(1);
   });
 
@@ -941,16 +969,54 @@ describe("listPendingInvites", () => {
       "company_members.select": [{ error: { message: "boom" } }],
     });
     h.admin = admin;
-    expect(await listPendingInvites(U)).toEqual({ invites: [], error: true });
+    expect(await listPendingInvites(U, PROVEN)).toEqual({ invites: [], withheld: 0, error: true });
   });
 
   it("fails soft when the role catalog read fails", async () => {
     const { admin } = fakeAdmin({
-      "company_members.select": [{ data: [{ id: M, company_id: C, role: "employee" }] }],
+      "company_members.select": [{ data: [{ id: M, company_id: C, role: "employee", created_at: BEFORE }] }],
       "companies.select": [{ data: [{ id: C, name: "Acme", status: "active" }] }],
       "company_roles.select": [{ error: { message: "boom" } }],
     });
     h.admin = admin;
-    expect(await listPendingInvites(U)).toEqual({ invites: [], error: true });
+    expect(await listPendingInvites(U, PROVEN)).toEqual({ invites: [], withheld: 0, error: true });
+  });
+  it("withholds details of invites created after the email-link sign-in (count only)", async () => {
+    const { admin, calls } = fakeAdmin({
+      "company_members.select": [
+        {
+          data: [
+            { id: M, company_id: C, role: "employee", created_at: BEFORE },
+            { id: "m2", company_id: C2, role: "employee", created_at: AFTER },
+          ],
+        },
+      ],
+      "companies.select": [{ data: [{ id: C, name: "Acme", status: "active" }] }],
+      "company_roles.select": [ROLES],
+    });
+    h.admin = admin;
+    const res = await listPendingInvites(U, PROVEN);
+    expect(res.withheld).toBe(1);
+    expect(res.invites.map((i) => i.memberId)).toEqual([M]);
+    // the withheld company is not even looked up
+    expect(JSON.stringify(calls[1])).not.toContain(C2);
+  });
+
+  it.each([
+    ["a password-only session (no link method)", [{ method: "password", timestamp: LINK }]],
+    ["no methods", []],
+    ["a failed methods lookup (null)", null],
+    ["methods not provided", undefined],
+  ])("withholds everything for %s", async (_label, methods) => {
+    const { admin, calls } = fakeAdmin({
+      "company_members.select": [
+        { data: [{ id: M, company_id: C, role: "company_admin", created_at: BEFORE }] },
+      ],
+    });
+    h.admin = admin;
+    expect(
+      await listPendingInvites(U, methods as Parameters<typeof listPendingInvites>[1]),
+    ).toEqual({ invites: [], withheld: 1, error: false });
+    expect(calls).toHaveLength(1);
   });
 });

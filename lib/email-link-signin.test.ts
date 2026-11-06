@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const updateUserById = vi.fn();
+const scheduled = vi.hoisted(() => ({ queue: [] as Promise<unknown>[], throws: false }));
+vi.mock("next/server", () => ({
+  after: (fn: () => unknown) => {
+    if (scheduled.throws) throw new Error("outside request scope");
+    scheduled.queue.splice(scheduled.queue.length, 0, Promise.resolve().then(fn));
+  },
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: vi.fn(() => ({ auth: { admin: { updateUserById } } })),
 }));
@@ -34,6 +41,7 @@ function client(
   return {
     auth: {
       getUser: vi.fn(async () => ({ data: { user } })),
+      getSession: vi.fn(async () => ({ data: { session: { access_token: "tok" } } })),
       mfa: {
         getAuthenticatorAssuranceLevel: vi.fn(async () =>
           opts.aalError
@@ -44,6 +52,11 @@ function client(
     },
   };
 }
+/** Schedules the marker write (as the route does) and waits for after() work. */
+async function record(c: unknown): Promise<void> {
+  recordEmailLinkSignIn(c);
+  await Promise.all(scheduled.queue.splice(0));
+}
 const m = (method: string) => ({ method, timestamp: LINK_TS });
 
 beforeEach(() => {
@@ -53,8 +66,33 @@ beforeEach(() => {
 });
 
 describe("recordEmailLinkSignIn", () => {
+  it("defers the write to after(): nothing runs synchronously", async () => {
+    const c = client([m("otp")]);
+    recordEmailLinkSignIn(c);
+    expect(c.auth.getUser).not.toHaveBeenCalled();
+    expect(updateUserById).not.toHaveBeenCalled();
+    await Promise.all(scheduled.queue.splice(0));
+    expect(updateUserById).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the session access token to the AAL lookup", async () => {
+    const c = client([m("otp")]);
+    await record(c);
+    expect(c.auth.mfa.getAuthenticatorAssuranceLevel).toHaveBeenCalledWith("tok");
+  });
+
+  it("does not throw when after() cannot be scheduled", () => {
+    scheduled.throws = true;
+    try {
+      expect(() => recordEmailLinkSignIn(client([m("otp")]))).not.toThrow();
+    } finally {
+      scheduled.throws = false;
+    }
+    expect(updateUserById).not.toHaveBeenCalled();
+  });
+
   it.each(["otp", "magiclink", "invite", "email/signup"])("writes the marker for %s, stamped with the amr timestamp", async (method) => {
-    await recordEmailLinkSignIn(client([m(method)]));
+    await record(client([m(method)]));
     expect(updateUserById).toHaveBeenCalledTimes(1);
     expect(updateUserById).toHaveBeenCalledWith("u1", {
       app_metadata: {
@@ -64,7 +102,7 @@ describe("recordEmailLinkSignIn", () => {
   });
 
   it("uses the newest link entry's timestamp, not the wall clock", async () => {
-    await recordEmailLinkSignIn(
+    await record(
       client([{ method: "otp", timestamp: LINK_TS - 100 }, m("magiclink"), { method: "password", timestamp: LINK_TS + 50 }]),
     );
     const at = updateUserById.mock.calls[0][1].app_metadata.email_link_signin.at;
@@ -72,24 +110,24 @@ describe("recordEmailLinkSignIn", () => {
   });
 
   it("fails closed for string-shaped or timestamp-less entries", async () => {
-    await recordEmailLinkSignIn(client(["magiclink", { method: "otp" }]));
+    await record(client(["magiclink", { method: "otp" }]));
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
   it.each([["password"], ["totp"], ["password", "totp"]])("does not write for %s", async (...methods) => {
-    await recordEmailLinkSignIn(client(methods.map(m)));
+    await record(client(methods.map(m)));
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
   it("does not write when the assurance lookup errors", async () => {
-    await recordEmailLinkSignIn(client([], { aalError: true }));
+    await record(client([], { aalError: true }));
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
   const iso = (secs: number) => new Date(secs * 1000).toISOString();
 
   it("H-B3: change requested 5 s before the link, identity updated 1 s before: no marker", async () => {
-    await recordEmailLinkSignIn(
+    await record(
       client([m("magiclink")], {
         user: {
           email: "victim@example.com",
@@ -103,7 +141,7 @@ describe("recordEmailLinkSignIn", () => {
   });
 
   it("H-B4: password change cleared email_change_sent_at; identity change signal still refuses", async () => {
-    await recordEmailLinkSignIn(
+    await record(
       client([m("magiclink")], {
         user: {
           email: "victim@example.com",
@@ -119,7 +157,7 @@ describe("recordEmailLinkSignIn", () => {
   });
 
   it("an identity changed long before the link (outside the window) still writes the marker", async () => {
-    await recordEmailLinkSignIn(
+    await record(
       client([m("magiclink")], {
         user: { identities: [eid(iso(LINK_TS - 86_700), iso(LINK_TS - 30 * 86_400))] },
       }),
@@ -128,14 +166,14 @@ describe("recordEmailLinkSignIn", () => {
   });
 
   it("a change requested 2 h before the link (inside the quiet period) skips the marker", async () => {
-    await recordEmailLinkSignIn(
+    await record(
       client([m("magiclink")], { user: { email_change_sent_at: iso(LINK_TS - 7_200) } }),
     );
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
   it("an identity confirmed after the sign-in skips the marker even without email_change_sent_at", async () => {
-    await recordEmailLinkSignIn(
+    await record(
       client([m("magiclink")], {
         user: { identities: [eid(iso(LINK_TS + 1))] },
       }),
@@ -146,7 +184,7 @@ describe("recordEmailLinkSignIn", () => {
   it("a change 25 h before and exactly 86700 s before the link write the marker; 86699 s does not", async () => {
     for (const secs of [25 * 3_600, 86_700]) {
       updateUserById.mockClear();
-      await recordEmailLinkSignIn(
+      await record(
         client([m("magiclink")], {
           user: {
             email_change_sent_at: iso(LINK_TS - secs),
@@ -157,14 +195,14 @@ describe("recordEmailLinkSignIn", () => {
       expect(updateUserById).toHaveBeenCalledTimes(1);
     }
     updateUserById.mockClear();
-    await recordEmailLinkSignIn(
+    await record(
       client([m("magiclink")], { user: { email_change_sent_at: iso(LINK_TS - 86_699) } }),
     );
     expect(updateUserById).not.toHaveBeenCalled();
   });
 
   it("a first-time confirmed invitee (identity created before the link) writes the marker", async () => {
-    await recordEmailLinkSignIn(
+    await record(
       client([m("email/signup")], {
         user: { identities: [eid(iso(LINK_TS - 4))] },
       }),
@@ -173,9 +211,9 @@ describe("recordEmailLinkSignIn", () => {
   });
 
   it("fails closed on an unparseable email_change_sent_at, a missing identity or an unparseable updated_at", async () => {
-    await recordEmailLinkSignIn(client([m("otp")], { user: { email_change_sent_at: "garbage" } }));
-    await recordEmailLinkSignIn(client([m("otp")], { user: { identities: [] } }));
-    await recordEmailLinkSignIn(
+    await record(client([m("otp")], { user: { email_change_sent_at: "garbage" } }));
+    await record(client([m("otp")], { user: { identities: [] } }));
+    await record(
       client([m("otp")], { user: { identities: [eid("nope")] } }),
     );
     expect(updateUserById).not.toHaveBeenCalled();
@@ -183,11 +221,11 @@ describe("recordEmailLinkSignIn", () => {
 
   it("swallows an admin update error, a thrown update and a broken client", async () => {
     updateUserById.mockResolvedValueOnce({ error: new Error("db") });
-    await expect(recordEmailLinkSignIn(client([m("otp")]))).resolves.toBeUndefined();
+    await expect(record(client([m("otp")]))).resolves.toBeUndefined();
     updateUserById.mockRejectedValueOnce(new Error("boom"));
-    await expect(recordEmailLinkSignIn(client([m("otp")]))).resolves.toBeUndefined();
-    await expect(recordEmailLinkSignIn({})).resolves.toBeUndefined();
-    await expect(recordEmailLinkSignIn(null)).resolves.toBeUndefined();
+    await expect(record(client([m("otp")]))).resolves.toBeUndefined();
+    await expect(record({})).resolves.toBeUndefined();
+    await expect(record(null)).resolves.toBeUndefined();
   });
 });
 
