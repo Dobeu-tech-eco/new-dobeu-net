@@ -95,6 +95,8 @@ function arrange(
     projectError?: { message: string };
     membership?: Record<string, unknown> | null;
     membershipError?: { message: string };
+    company?: Record<string, unknown> | null;
+    companyError?: { message: string };
   } = {},
 ) {
   const cookie = buildStubClient({
@@ -175,6 +177,13 @@ function arrange(
                 }
               : options.project,
           error: options.projectError,
+        },
+      },
+      companies: {
+        selectSingle: {
+          data:
+            options.company === undefined ? { status: "active" } : options.company,
+          error: options.companyError,
         },
       },
       company_members: {
@@ -1095,6 +1104,50 @@ describe("createInvoice (Stripe-wired)", () => {
     });
     expect(result.ok).toBe(true);
     expect(auditInserts()).toHaveLength(1);
+  });
+
+  it("refuses a member of a suspended company with no Stripe call or insert", async () => {
+    admin = arrange({
+      project: {
+        id: VALID_PROJ,
+        owner_user_id: "00000000-0000-0000-0000-000000000099",
+        company_id: "00000000-0000-0000-0000-000000000020",
+      },
+      membership: { id: "member_1" },
+      company: { status: "suspended" },
+    });
+    const { createInvoice } = await import("@/lib/actions/invoices");
+    expect(
+      await createInvoice({
+        user_id: VALID_USER,
+        project_id: VALID_PROJ,
+        amount_cents: 10000,
+      }),
+    ).toEqual({ ok: false, error: "company_suspended" });
+    expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+    expectNoAudit();
+  });
+
+  it("fails closed when the company status read fails", async () => {
+    admin = arrange({
+      project: {
+        id: VALID_PROJ,
+        owner_user_id: "00000000-0000-0000-0000-000000000099",
+        company_id: "00000000-0000-0000-0000-000000000020",
+      },
+      membership: { id: "member_1" },
+      companyError: { message: "boom" },
+    });
+    const { createInvoice } = await import("@/lib/actions/invoices");
+    expect(
+      await createInvoice({
+        user_id: VALID_USER,
+        project_id: VALID_PROJ,
+        amount_cents: 10000,
+      }),
+    ).toEqual({ ok: false, error: "company_check_failed" });
+    expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+    expectNoAudit();
   });
 
   it("rejects a project when the company membership is inactive", async () => {

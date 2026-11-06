@@ -14,6 +14,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { createInvoice } from "@/lib/actions/invoices";
+import { adminErrorMessage } from "@/lib/admin-status";
 import { linkFailedNotice } from "@/components/admin/AdminInvoiceNotices";
 
 interface UserOption {
@@ -156,7 +157,12 @@ export function NewInvoiceDialog({
               ...(submittedWorkOrderId ? [`wo:${submittedWorkOrderId}`] : []),
             ]);
           } else {
-            setError(result.error);
+            setError(
+              result.error === "company_suspended" ||
+                result.error === "company_check_failed"
+                ? adminErrorMessage(result.error)
+                : result.error
+            );
           }
           return;
         }
