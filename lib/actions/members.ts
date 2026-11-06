@@ -208,10 +208,11 @@ async function sendInviteEmail(to: string): Promise<boolean> {
  * membership in place and returns `ok: true` with `emailSent: false` and
  * `partial`.
  *
- * Attach-time squatter guard: an EXISTING account that has ever signed in is
- * attached only if its current email was proven by an email-link sign-in
- * (`hasCurrentEmailLinkSignIn`); otherwise `invitee_needs_link_signin`, with no
- * insert and no email. A never-signed-in account may be attached.
+ * Attach-time squatter guard: an EXISTING account (one this call did not
+ * create) is attached only if its current email was proven by an email-link
+ * sign-in (`hasCurrentEmailLinkSignIn`), whether or not it has ever signed in
+ * or is confirmed; otherwise `invitee_needs_link_signin`, with no insert and
+ * no email.
  */
 export async function inviteMember(
   companyId: string,
@@ -259,7 +260,10 @@ export async function inviteMember(
       console.warn("[inviteMember] user lookup failed:", safeErrorFields(lookupErr));
       return { ok: false, error: "invite failed" };
     }
-    if (existing.user.last_sign_in_at && !hasCurrentEmailLinkSignIn(existing.user)) {
+    // Every existing account needs the marker, whatever last_sign_in_at says:
+    // with hosted Confirm email ON, a public signUp leaves an unconfirmed
+    // account with a planted password and no session (D64).
+    if (!hasCurrentEmailLinkSignIn(existing.user)) {
       return { ok: false, error: "invitee_needs_link_signin" };
     }
   }

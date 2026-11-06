@@ -4,6 +4,17 @@ import { buildStubClient } from "./__test-helpers";
 // Mutable holder: each test swaps in a differently-configured cookie client and
 // tunes the service-role auth-admin responses.
 const h = vi.hoisted(() => {
+  // Existing account whose current email was proven by an email-link sign-in,
+  // so the attach-time guard (D64) lets unrelated tests attach it.
+  const markedUser = {
+    id: "existing",
+    email: "client@example.com",
+    last_sign_in_at: null,
+    identities: [
+      { provider: "email", created_at: "2026-10-31T00:00:00.000Z", updated_at: "2026-10-31T00:00:00.000Z" },
+    ],
+    app_metadata: { email_link_signin: { at: "2026-11-01T10:00:00.000Z", email: "client@example.com" } },
+  };
   const state: {
     client: unknown;
     createResult: {
@@ -39,11 +50,12 @@ const h = vi.hoisted(() => {
     counts: new Map(),
     membershipCount: 0,
     membershipError: null,
-    existingUser: { id: "existing", last_sign_in_at: null },
+    existingUser: markedUser,
     getUserError: null,
   };
   return {
     state,
+    markedUser,
     createUser: vi.fn(),
     deleteUser: vi.fn(),
     sendEmail: vi.fn(),
@@ -94,11 +106,12 @@ vi.mock("@/lib/supabase/server", () => ({
       admin: {
         createUser: h.createUser,
         deleteUser: h.deleteUser,
-        getUserById: vi.fn(async () =>
-          h.state.getUserError
+        getUserById: vi.fn(async (id: string) => {
+          h.state.events.push(`getUserById:${id}`);
+          return h.state.getUserError
             ? { data: { user: null }, error: h.state.getUserError }
-            : { data: { user: h.state.existingUser }, error: null },
-        ),
+            : { data: { user: h.state.existingUser }, error: null };
+        }),
         listUsers: vi.fn(async () => {
           h.state.events.push("listUsers");
           if (h.state.listError) {
@@ -231,7 +244,7 @@ beforeEach(() => {
   h.state.counts = new Map();
   h.state.membershipCount = 0;
   h.state.membershipError = null;
-  h.state.existingUser = { id: "existing", last_sign_in_at: null };
+  h.state.existingUser = h.markedUser;
   h.state.getUserError = null;
   h.createUser.mockImplementation(async () => {
     h.state.events.push("createUser");
@@ -254,7 +267,7 @@ describe("inviteMember", () => {
   const invite = (emailAddr = "client@example.com") =>
     inviteMember(COMPANY_ID, emailAddr, "employee");
 
-  it("creates an unconfirmed user, inserts the member, then sends the invite", async () => {
+  it("creates a confirmed user, inserts the member, then sends the invite", async () => {
     h.state.client = makeClient({ user: { id: "inv_new", email: "a@d.net" } });
     const result = await invite();
     expect(result).toEqual({
@@ -308,6 +321,7 @@ describe("inviteMember", () => {
     expect(h.state.events).toEqual([
       "createUser",
       "listUsers",
+      "getUserById:existing_9",
       "insert",
       "sendEmail",
     ]);
@@ -329,6 +343,7 @@ describe("inviteMember", () => {
     expect(h.state.events).toEqual([
       "createUser",
       "listUsers",
+      "getUserById:raced_7",
       "insert",
       "sendEmail",
     ]);
@@ -363,8 +378,26 @@ describe("inviteMember", () => {
       refused();
     });
 
-    it("attaches a never-signed-in existing user", async () => {
+    it("refuses a never-signed-in existing user with no marker (D64)", async () => {
       setup(emailUser({ last_sign_in_at: null }));
+      expect(await invite()).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+      refused();
+    });
+
+    it("refuses an unconfirmed, never-signed-in sign-up squatter (D64)", async () => {
+      setup(emailUser({ last_sign_in_at: null, email_confirmed_at: null }));
+      expect(await invite()).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+      expect(h.state.events).toContain("getUserById:existing_9");
+      refused();
+    });
+
+    it("attaches a never-signed-in existing user that has a current marker", async () => {
+      setup(
+        emailUser({
+          last_sign_in_at: null,
+          app_metadata: { email_link_signin: { at: SIGNED, email: "client@example.com" } },
+        }),
+      );
       expect(await invite()).toMatchObject({ ok: true, data: { user_id: "existing_9" } });
       expect(h.state.events).toContain("insert");
     });
