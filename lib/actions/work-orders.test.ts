@@ -744,11 +744,13 @@ describe("conditional status writes (optimistic concurrency)", () => {
     expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
   });
 
-  it("accept surfaces a DB error on update without emailing", async () => {
+  it("accept surfaces a DB error on update without emailing or revalidating", async () => {
     setup("accept", "quoted");
     h.state.updateError = { message: "db down" };
+    const { revalidatePath } = await import("next/cache");
     const { acceptWorkOrderQuote } = await import("./work-orders");
     expect(await acceptWorkOrderQuote({ id: ID })).toEqual({ ok: false, error: "db down" });
     expect(h.sendEmailMock).not.toHaveBeenCalled();
+    expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
   });
 });
