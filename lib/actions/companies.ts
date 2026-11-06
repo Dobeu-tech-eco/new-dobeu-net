@@ -15,15 +15,24 @@
  * action — mirrors the "side effects never break the primary op" discipline in
  * `lib/actions/work-orders.ts`.
  *
- * `provisionCompanyAdmin` invites the target user (`inviteUserByEmail`); if the
- * address is already registered it resolves the existing user via `listUsers`
- * and grants `company_admin` with status 'active' instead of 're-inviting'.
+ * `provisionCompanyAdmin` follows the `inviteMember` pattern (lib/actions/
+ * members.ts): resolve or create the user (confirmed, no Supabase email), insert
+ * the 'invited' company_admin membership FIRST, then send the fixed-copy invite
+ * email. The invitee signs in with an emailed link and accepts on /portal.
  */
 import { revalidatePath } from "next/cache";
-import { buildServerAuthCallbackUrl } from "@/lib/utils";
+import { getSiteUrl } from "@/lib/utils";
 import { z } from "zod";
-import { requireAdmin, AuthError, type DBClient } from "@/lib/actions/auth";
+import { requireAdmin, AuthError } from "@/lib/actions/auth";
 import { writeAdminAudit } from "@/lib/admin-audit";
+import { findUserIdByEmail, isAlreadyRegistered } from "@/lib/auth-admin";
+import { hasCurrentEmailLinkSignIn } from "@/lib/email-link-signin";
+import { isResendConfigured, sendEmail } from "@/lib/resend";
+import { companyMemberInviteEmail } from "@/lib/resend-templates";
+import { safeErrorFields } from "@/lib/log-safe";
+import type { createAdminClient } from "@/lib/supabase/server";
+
+type AdminClient = ReturnType<typeof createAdminClient>;
 
 const uuid = z.guid("invalid id");
 
@@ -142,58 +151,98 @@ export async function reactivateCompany(
 }
 
 /**
- * Detect Supabase's "already registered" signal from an invite error, across
- * the shapes it has shipped (message text, `email_exists` code, 422 status).
+ * Resolve the invitee's auth user. createUser goes FIRST; only an "already
+ * registered" answer falls back to the direct email lookup. `createdByUs` is
+ * true only for a user this call created, so the compensating delete can never
+ * remove a pre-existing account. New users are created CONFIRMED so the public
+ * signUp cannot plant a password on them (see inviteMember).
  */
-function isAlreadyRegistered(error: {
-  message?: string;
-  code?: string;
-  status?: number;
-}): boolean {
-  const msg = (error.message ?? "").toLowerCase();
-  return (
-    msg.includes("already registered") ||
-    msg.includes("already been registered") ||
-    error.code === "email_exists" ||
-    error.status === 422
-  );
-}
-
-/**
- * Resolve an existing auth user by email via paginated `listUsers`. Returns
- * null (never throws) so the caller can surface a clean error.
- */
-async function findUserByEmail(
-  admin: DBClient,
+async function resolveInviteeUserId(
+  admin: AdminClient,
   email: string,
-): Promise<{ id: string } | null> {
-  const target = email.toLowerCase();
-  const perPage = 200;
-  for (let page = 1; page <= 20; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-    if (error) return null;
-    const users = data?.users ?? [];
-    const match = users.find((u) => (u.email ?? "").toLowerCase() === target);
-    if (match) return { id: match.id };
-    if (users.length < perPage) break;
+): Promise<{ id: string; createdByUs: boolean } | null> {
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
+  if (error && isAlreadyRegistered(error)) {
+    const returned = (data as { user?: { id?: string } | null } | null)?.user?.id;
+    const id = returned ?? (await findUserIdByEmail(admin, email));
+    return id ? { id, createdByUs: false } : null;
   }
-  return null;
+  if (error || !data?.user?.id) {
+    console.warn("[companies] createUser failed:", safeErrorFields(error));
+    return null;
+  }
+  return { id: data.user.id, createdByUs: true };
+}
+
+/** True if the user has any membership (or the check fails: fail safe, keep). */
+async function userHasMembership(
+  admin: AdminClient,
+  userId: string,
+): Promise<boolean> {
+  const { count, error } = await admin
+    .from("company_members")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (error) {
+    console.warn("[companies] membership check failed:", safeErrorFields(error));
+    return true;
+  }
+  return (count ?? 0) > 0;
+}
+
+/** Send the fixed-copy invite email. Never throws; false means not delivered. */
+async function sendProvisionEmail(to: string): Promise<boolean> {
+  if (!isResendConfigured()) {
+    console.warn("[companies] invite email not sent: resend not configured");
+    return false;
+  }
+  try {
+    const loginUrl = `${getSiteUrl().replace(/\/$/, "")}/login?next=/portal`;
+    const tpl = companyMemberInviteEmail({ loginUrl });
+    const result = await sendEmail({
+      to,
+      subject: tpl.subject,
+      text: tpl.text,
+      html: tpl.html,
+    });
+    if (!result.ok) {
+      console.warn("[companies] invite email failed:", safeErrorFields(result.error));
+    }
+    return result.ok;
+  } catch (e) {
+    console.warn("[companies] invite email failed:", safeErrorFields(e));
+    return false;
+  }
 }
 
 /**
- * Invite (or link an existing) user as this company's admin.
+ * Provision a user as this company's admin.
  *
- * New address  → `inviteUserByEmail` sends a sign-up link; membership lands
- *                as status 'invited'.
- * Known address → resolved via `listUsers`; membership lands as 'active'.
+ * Order matters: the 'invited' membership row is written BEFORE the invite
+ * email, so nobody is told about a membership that does not exist. No Supabase
+ * invite link is sent; the invitee requests their own sign-in link on /login and
+ * accepts from "Pending company invites" on /portal.
  *
- * The membership is check-then-write (the `unique (company_id, user_id)`
- * constraint is the ultimate guard): an existing row is promoted to
- * `company_admin`; otherwise a new row is inserted.
+ * Attach-time guard: an EXISTING account (one this call did not create) is
+ * attached only if its current email was proven by an email-link sign-in
+ * (`hasCurrentEmailLinkSignIn`); otherwise `invitee_needs_link_signin`, with no
+ * insert and no email.
+ *
+ * An existing membership row is promoted to `company_admin` (an active row stays
+ * active, an invited row stays invited, a disabled row is refused with
+ * `member_disabled`). A 23505 on insert means a
+ * concurrent request added the row: never delete the user then (the FK cascades).
  */
-export async function provisionCompanyAdmin(
-  raw: unknown,
-): Promise<ActionResult<{ userId: string; status: "invited" | "active" }>> {
+export async function provisionCompanyAdmin(raw: unknown): Promise<
+  ActionResult<{
+    userId: string;
+    status: "invited" | "active";
+    emailSent: boolean;
+  }>
+> {
   const parsed = provisionInput.safeParse(raw);
   if (!parsed.success) {
     return {
@@ -219,41 +268,44 @@ export async function provisionCompanyAdmin(
     .single();
   if (companyErr || !company) return { ok: false, error: "company not found" };
 
-  // Invite the user; fall back to lookup if already registered.
-  let userId: string;
-  let memberStatus: "invited" | "active";
+  const invitee = await resolveInviteeUserId(admin, email);
+  if (!invitee) return { ok: false, error: "invite failed" };
+  const userId = invitee.id;
 
-  const { data: invited, error: inviteErr } =
-    await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: buildServerAuthCallbackUrl("/company"),
-    });
-
-  if (invited?.user) {
-    userId = invited.user.id;
-    memberStatus = "invited";
-  } else if (inviteErr && isAlreadyRegistered(inviteErr)) {
-    const existing = await findUserByEmail(admin, email);
-    if (!existing) {
-      return {
-        ok: false,
-        error: "user already registered but could not be resolved",
-      };
+  if (!invitee.createdByUs) {
+    const { data: existing, error: lookupErr } =
+      await admin.auth.admin.getUserById(userId);
+    if (lookupErr || !existing?.user) {
+      console.warn("[companies] user lookup failed:", safeErrorFields(lookupErr));
+      return { ok: false, error: "invite failed" };
     }
-    userId = existing.id;
-    memberStatus = "active";
-  } else {
-    return { ok: false, error: inviteErr?.message ?? "invite failed" };
+    if (!hasCurrentEmailLinkSignIn(existing.user)) {
+      return { ok: false, error: "invitee_needs_link_signin" };
+    }
   }
 
   // Promote an existing membership, or insert a fresh company_admin row.
-  const { data: existingMember } = await admin
+  const { data: existingMember, error: readErr } = await admin
     .from("company_members")
-    .select("id")
+    .select("id, status")
     .eq("company_id", companyId)
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
+  if (readErr) {
+    console.warn("[companies] membership read failed:", safeErrorFields(readErr));
+    return { ok: false, error: "invite failed" };
+  }
+
+  let memberStatus: "invited" | "active" = "invited";
+  const previousStatus: string | null = existingMember?.status ?? null;
 
   if (existingMember) {
+    // A company that disabled this person must re-enable them itself; a super
+    // admin provisioning must not silently undo that. No write, no email.
+    if (existingMember.status === "disabled") {
+      return { ok: false, error: "member_disabled" };
+    }
+    if (existingMember.status === "active") memberStatus = "active";
     const { error } = await admin
       .from("company_members")
       .update({
@@ -262,7 +314,7 @@ export async function provisionCompanyAdmin(
         invited_by: user.id,
       })
       .eq("id", existingMember.id);
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: "invite failed" };
   } else {
     const { error } = await admin.from("company_members").insert({
       company_id: companyId,
@@ -271,7 +323,23 @@ export async function provisionCompanyAdmin(
       status: memberStatus,
       invited_by: user.id,
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      const duplicate = error.code === "23505";
+      if (
+        !duplicate &&
+        invitee.createdByUs &&
+        !(await userHasMembership(admin, userId))
+      ) {
+        const { error: delErr } = await admin.auth.admin.deleteUser(userId);
+        if (delErr) {
+          console.warn("[companies] deleteUser failed:", safeErrorFields(delErr));
+        }
+      }
+      return {
+        ok: false,
+        error: duplicate ? "already_member" : "invite failed",
+      };
+    }
   }
 
   await writeAdminAudit(admin, {
@@ -279,11 +347,18 @@ export async function provisionCompanyAdmin(
     action: "company.provision_admin",
     targetType: "company",
     targetId: companyId,
-    data: { user_id: userId, status: memberStatus },
+    data: {
+      user_id: userId,
+      status: memberStatus,
+      ...(existingMember ? { previous_status: previousStatus } : {}),
+    },
     logScope: "companies",
   });
 
   revalidatePath("/admin/companies");
   revalidatePath(`/admin/companies/${companyId}`);
-  return { ok: true, data: { userId, status: memberStatus } };
+
+  const emailSent =
+    memberStatus === "invited" ? await sendProvisionEmail(email) : false;
+  return { ok: true, data: { userId, status: memberStatus, emailSent } };
 }

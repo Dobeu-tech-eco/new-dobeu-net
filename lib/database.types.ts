@@ -791,6 +791,10 @@ export type Database = {
     Functions: {
       can_manage_company_members: { Args: { cid: string }; Returns: boolean };
       company_role_rank: { Args: { cid: string }; Returns: number };
+      find_auth_user_id_by_email: {
+        Args: { p_email: string };
+        Returns: string;
+      };
       is_active_company_member: { Args: { cid: string }; Returns: boolean };
       is_company_member: { Args: { cid: string }; Returns: boolean };
     };

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { buildStubClient } from "./__test-helpers";
+import { safeErrorFields } from "@/lib/log-safe";
 
 // Mutable holder: each test swaps in a differently-configured cookie client and
 // tunes the service-role auth-admin responses.
@@ -102,6 +103,19 @@ vi.mock("@/lib/supabase/server", () => ({
         },
       }),
     })),
+    // Already-registered lookup goes through the direct rpc (D48). The event
+    // keeps the legacy "listUsers" name so existing ordering assertions hold.
+    rpc: vi.fn(async (_fn: string, args: { p_email: string }) => {
+      h.state.events.push("listUsers");
+      if (h.state.listError) return { data: null, error: h.state.listError };
+      const pool = h.state.userSequence.length
+        ? (h.state.userSequence.shift() ?? [])
+        : h.state.users;
+      const match = pool.find(
+        (u) => u.email.toLowerCase() === args.p_email.toLowerCase(),
+      );
+      return { data: match?.id ?? null, error: null };
+    }),
     auth: {
       admin: {
         createUser: h.createUser,
@@ -134,6 +148,8 @@ vi.mock("@/lib/supabase/server", () => ({
 import {
   inviteMember,
   inviteMemberForm,
+  changeMemberRoleForm,
+  deactivateMemberForm,
   changeMemberRole,
   deactivateMember,
 } from "@/lib/actions/members";
@@ -170,6 +186,11 @@ function makeClient(
       error?: { message: string; code?: string } | null;
     };
     update?: { error?: { message: string } | null };
+    /** Rows returned by update().select("id"); default one row. */
+    updateRows?: unknown[] | null;
+    /** Result of the deactivate target read (select "id, user_id"). */
+    roleMissing?: boolean;
+    targetRead?: { data?: unknown; error?: { message: string; code?: string } | null };
   } = {},
 ) {
   const {
@@ -181,6 +202,9 @@ function makeClient(
     roleValid = true,
     insert = { data: { id: "m_new" } },
     update = { error: null },
+    updateRows = [{ id: "m1" }],
+    targetRead,
+    roleMissing = false,
   } = opts;
   const stub = buildStubClient({
     user,
@@ -201,6 +225,41 @@ function makeClient(
       if (table === "company_members") h.state.events.push("insert");
       return insert(...args);
     };
+    if (table === "company_roles" && roleMissing) {
+      // Guard rank lookup still works; only the roleExists(select "key") misses.
+      const loose = q as unknown as Record<string, (...a: unknown[]) => unknown>;
+      const origSelect = loose.select.bind(q);
+      loose.select = (...args: unknown[]) => {
+        if (args[0] !== "key") return origSelect(...args);
+        const b: Record<string, unknown> = {};
+        b.eq = () => b;
+        b.single = () => Promise.resolve({ data: null, error: { message: "none" } });
+        return b;
+      };
+    }
+    if (table === "company_members") {
+      const thenable = (res: { data: unknown; error: unknown }) => {
+        const b: Record<string, unknown> = {};
+        b.eq = () => b;
+        b.select = () => b;
+        b.single = () => Promise.resolve(res);
+        b.then = (r: (v: unknown) => unknown) => r(res);
+        return b;
+      };
+      const loose = q as unknown as Record<string, (...a: unknown[]) => unknown>;
+      const origUpdate = loose.update.bind(q);
+      loose.update = (...args: unknown[]) => {
+        origUpdate(...args); // keep recording
+        return thenable({ data: updateRows, error: update.error ?? null });
+      };
+      if (targetRead) {
+        const origSelect = loose.select.bind(q);
+        loose.select = (...args: unknown[]) =>
+          args[0] === "id, user_id"
+            ? thenable({ data: targetRead.data ?? null, error: targetRead.error ?? null })
+            : origSelect(...args);
+      }
+    }
     return q;
   }) as typeof stub.supabase.from;
   return Object.assign(stub.supabase, {
@@ -818,8 +877,39 @@ describe("changeMemberRole", () => {
     h.state.client = makeClient({
       update: { error: { message: "rls violation" } },
     });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const result = await changeMemberRole(COMPANY_ID, MEMBER_ID, "employee");
-    expect(result).toEqual({ ok: false, error: "rls violation" });
+    expect(result).toEqual({ ok: false, error: "role change failed" });
+    expect(JSON.stringify(result)).not.toContain("rls violation");
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("rls violation");
+    warn.mockRestore();
+  });
+});
+
+describe("changeMemberRole row checks", () => {
+  it("inviteMember returns unknown_role for a role not in the catalog", async () => {
+    h.state.client = makeClient({ roleMissing: true });
+    expect(await inviteMember(COMPANY_ID, "client@example.com", "nope")).toEqual({
+      ok: false,
+      error: "unknown_role",
+    });
+    expectNoWritesOrAdminCalls();
+  });
+
+  it("maps an empty update result to not_found", async () => {
+    h.state.client = makeClient({ updateRows: [] });
+    expect(await changeMemberRole(COMPANY_ID, MEMBER_ID, "employee")).toEqual({
+      ok: false,
+      error: "not_found",
+    });
+  });
+
+  it("returns unknown_role for a role not in the catalog", async () => {
+    h.state.client = makeClient({ roleMissing: true });
+    expect(await changeMemberRole(COMPANY_ID, MEMBER_ID, "nope")).toEqual({
+      ok: false,
+      error: "unknown_role",
+    });
   });
 });
 
@@ -856,8 +946,43 @@ describe("deactivateMember", () => {
     h.state.client = makeClient({
       update: { error: { message: "rls violation" } },
     });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const result = await deactivateMember(COMPANY_ID, MEMBER_ID);
-    expect(result).toEqual({ ok: false, error: "rls violation" });
+    expect(result).toEqual({ ok: false, error: "deactivate failed" });
+    expect(JSON.stringify(result)).not.toContain("rls violation");
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("rls violation");
+    warn.mockRestore();
+  });
+
+  it("PGRST116 read gives not_found with no warn and no update", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.state.client = makeClient({
+      targetRead: { error: { message: "no rows", code: "PGRST116" } },
+    });
+    expect(await deactivateMember(COMPANY_ID, MEMBER_ID)).toEqual({ ok: false, error: "not_found" });
+    expect(warn).not.toHaveBeenCalled();
+    expect(recorded.filter((r) => r.method === "update")).toEqual([]);
+    warn.mockRestore();
+  });
+
+  it("other read error gives deactivate failed; message stays out of result and log", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const err = { message: "denied for victim@example.com", code: "42501" };
+    h.state.client = makeClient({ targetRead: { error: err } });
+    const result = await deactivateMember(COMPANY_ID, MEMBER_ID);
+    expect(result).toEqual({ ok: false, error: "deactivate failed" });
+    expect(JSON.stringify(result)).not.toContain("victim@example.com");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("victim@example.com");
+    expect(warn.mock.calls[0][1]).toEqual(safeErrorFields(err));
+    expect(recorded.filter((r) => r.method === "update")).toEqual([]);
+    warn.mockRestore();
+  });
+
+  it("null target with no error gives not_found", async () => {
+    h.state.client = makeClient({ targetRead: { data: null, error: null } });
+    expect(await deactivateMember(COMPANY_ID, MEMBER_ID)).toEqual({ ok: false, error: "not_found" });
+    expect(recorded.filter((r) => r.method === "update")).toEqual([]);
   });
 });
 
@@ -878,5 +1003,76 @@ describe("D28 guard in the action path (AAL2 + active company)", () => {
     h.state.client = makeClient({ companyStatus: "suspended" });
     expect(await run()).toEqual({ ok: false, error: "forbidden" });
     expectNoWritesOrAdminCalls();
+  });
+});
+
+describe("changeMemberRoleForm / deactivateMemberForm notices", () => {
+  const base = `/company/members?company=${COMPANY_ID}`;
+  const lastRedirect = () =>
+    h.redirect.mock.calls[h.redirect.mock.calls.length - 1][0] as string;
+  const role = async (roleKey = "employee") => {
+    const fd = new FormData();
+    fd.set("roleKey", roleKey);
+    await expect(changeMemberRoleForm(COMPANY_ID, MEMBER_ID, fd)).rejects.toThrow(
+      /NEXT_REDIRECT/,
+    );
+    return lastRedirect();
+  };
+  const deactivate = async () => {
+    await expect(
+      deactivateMemberForm(COMPANY_ID, MEMBER_ID, new FormData()),
+    ).rejects.toThrow(/NEXT_REDIRECT/);
+    return lastRedirect();
+  };
+
+  it("role change success redirects role_changed", async () => {
+    expect(await role()).toBe(`${base}&notice=role_changed`);
+  });
+  it("role change unknown role redirects unknown_role", async () => {
+    h.state.client = makeClient({ roleMissing: true });
+    expect(await role()).toBe(`${base}&notice=unknown_role`);
+  });
+  it("role change empty update redirects not_found", async () => {
+    h.state.client = makeClient({ updateRows: [] });
+    expect(await role()).toBe(`${base}&notice=not_found`);
+  });
+  it("role change DB error redirects role_change_failed without raw text", async () => {
+    h.state.client = makeClient({ update: { error: { message: "secret detail" } } });
+    const url = await role();
+    expect(url).toBe(`${base}&notice=role_change_failed`);
+    expect(url).not.toContain("secret");
+  });
+  it("role change validation failure redirects role_change_failed", async () => {
+    expect(await role("")).toBe(`${base}&notice=role_change_failed`);
+  });
+  it("role change AAL1 redirects with no notice", async () => {
+    h.state.client = makeClient({ aal: AAL1 });
+    expect(await role()).toBe(base);
+  });
+
+  it("deactivate success redirects member_deactivated", async () => {
+    h.state.client = makeClient({ targetRead: { data: ADMIN_MEMBER } });
+    expect(await deactivate()).toBe(`${base}&notice=member_deactivated`);
+  });
+  it("deactivate missing target redirects not_found", async () => {
+    h.state.client = makeClient({ targetRead: { data: null } });
+    expect(await deactivate()).toBe(`${base}&notice=not_found`);
+  });
+  it("deactivate self redirects cannot_disable_self", async () => {
+    h.state.client = makeClient({
+      targetRead: { data: { id: MEMBER_ID, user_id: "admin_1" } },
+    });
+    expect(await deactivate()).toBe(`${base}&notice=cannot_disable_self`);
+  });
+  it("deactivate DB error redirects deactivate_failed", async () => {
+    h.state.client = makeClient({
+      targetRead: { data: ADMIN_MEMBER },
+      update: { error: { message: "secret detail" } },
+    });
+    expect(await deactivate()).toBe(`${base}&notice=deactivate_failed`);
+  });
+  it("deactivate AAL1 redirects with no notice", async () => {
+    h.state.client = makeClient({ aal: AAL1 });
+    expect(await deactivate()).toBe(base);
   });
 });

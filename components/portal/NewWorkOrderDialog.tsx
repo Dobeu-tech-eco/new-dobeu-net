@@ -43,7 +43,11 @@ const ALLOWED_MIME = new Set<string>([
   "text/csv"
 ]);
 
-export function NewWorkOrderDialog() {
+export function NewWorkOrderDialog({
+  suspendedCompanyNames = []
+}: {
+  suspendedCompanyNames?: string[];
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -150,6 +154,16 @@ export function NewWorkOrderDialog() {
             Tell me what you need. I&apos;ll review, quote, and reply within one business day.
           </DialogDescription>
         </DialogHeader>
+        {suspendedCompanyNames.length > 0 && (
+          <p
+            role="note"
+            data-testid="wo-company-suspended"
+            className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm"
+          >
+            {suspendedCompanyNames.join(", ")} {suspendedCompanyNames.length === 1 ? "is" : "are"} suspended, so tickets
+            can&apos;t be submitted for {suspendedCompanyNames.length === 1 ? "it" : "them"} right now. Contact us to restore access.
+          </p>
+        )}
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="service_type">Service type</Label>

@@ -22,6 +22,11 @@ vi.mock("@/components/admin/NewInvoiceDialog", () => ({
     return null;
   },
 }));
+vi.mock("@/components/admin/AdminVoidUnsentInvoiceButton", () => ({
+  AdminVoidUnsentInvoiceButton: ({ invoiceId }: { invoiceId: string }) => (
+    <span data-testid={`void-unsent-${invoiceId}`}>void unsent</span>
+  ),
+}));
 vi.mock("@/components/admin/AdminMarkPaidButton", () => ({
   AdminMarkPaidButton: ({ invoiceId }: { invoiceId: string }) => (
     <span data-testid={`mark-paid-${invoiceId}`}>mark paid</span>
@@ -260,6 +265,64 @@ describe("admin invoices page degradation", () => {
     expect(
       container.querySelector('[data-testid="mark-paid-void-id-12345678"]'),
     ).not.toBeInTheDocument();
+  });
+
+  describe("each picker read failing alone", () => {
+    const okWo = ok([
+      { id: "wo-1", title: "Fix logo", created_by: "user-1", created_at: "2026-10-01T00:00:00Z" },
+    ]);
+    const cases: Array<[string, Record<string, TableRes>]> = [
+      ["profiles", { profiles: fail, projects: ok([]), work_orders: [okWo, ok([])] }],
+      ["projects", { profiles: ok([]), projects: fail, work_orders: [okWo, ok([])] }],
+      ["unbilled work orders", { profiles: ok([]), projects: ok([]), work_orders: [fail, ok([])] }],
+      ["void-linked work orders", { profiles: ok([]), projects: ok([]), work_orders: [okWo, fail] }],
+    ];
+    it.each(cases)("%s: notice shown, invoice rows kept, no raw error text", async (_name, tables) => {
+      stubPage({ invoices: ok([invoice]), ...tables });
+      const { container } = render(await AdminInvoicesPage(params));
+      expect(screen.getByText("inv-1234…")).toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveTextContent(/New Invoice picker could not/);
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(container.textContent).not.toContain("private provider");
+    });
+
+    it("auth listing: notice shown, invoice rows kept", async () => {
+      stubPage(
+        { invoices: ok([invoice]), profiles: ok([]), projects: ok([]) },
+        async () => fail,
+      );
+      render(await AdminInvoicesPage(params));
+      expect(screen.getByText("inv-1234…")).toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveTextContent(/New Invoice picker could not/);
+    });
+
+    it("no read failing: no notice", async () => {
+      stubPage({ invoices: ok([invoice]), profiles: ok([]), projects: ok([]) });
+      render(await AdminInvoicesPage(params));
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+  });
+
+  it("offers Void unsent only for open invoices with no Stripe id", async () => {
+    const row = (id: string, status: string, stripe: string | null) => ({
+      ...invoice,
+      id,
+      status,
+      stripe_invoice_id: stripe,
+    });
+    stubPage({
+      invoices: ok([
+        row("unsent-open-12345", "open", null),
+        row("sent-open-123456", "open", "in_1"),
+        row("unsent-void-12345", "void", null),
+        row("unsent-paid-12345", "paid", null),
+      ]),
+    });
+    const { container } = render(await AdminInvoicesPage(params));
+    expect(
+      container.querySelector('[data-testid="void-unsent-unsent-open-12345"]'),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-testid^="void-unsent-"]')).toHaveLength(1);
   });
 
   describe("paged auth users", () => {

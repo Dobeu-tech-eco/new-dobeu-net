@@ -18,6 +18,7 @@
 - [ ] `lib/actions/*.test.ts` uses `buildStubClient()` from `__test-helpers.ts`
 - [ ] `pnpm test:ci` passes
 - [ ] E2E smoke (`pnpm test:e2e`) not broken
+- [ ] After an async submit, a button's label or disabled state is asserted inside `waitFor`; an intermittent focus assertion is first checked for a disabled or unmounted focus target before the test is loosened (L-021)
 
 ## Security
 - [ ] API inputs validated with Zod
@@ -27,6 +28,7 @@
 - [ ] `middleware.ts` matcher updated if adding new top-level bypass paths
 - [ ] No secrets in client-exposed `NEXT_PUBLIC_*` vars
 - [ ] Rate limiting on new public POST endpoints
+- [ ] An RLS change that replaces policies by name pins the table's full policy set in pgTAP (`set_eq` over `pg_policies`) and the migration raises if any other permissive policy for the gated command exists, in every schema it touches (`storage.objects` included), using an exact name allowlist in a non-API function (L-024)
 
 ## Conventions
 - [ ] Conventional Commits format: `<type>(<scope>): <summary>`
@@ -44,6 +46,7 @@
 - [ ] A branch whose base was squash-merged is rebased with `git rebase --onto origin/main <old-base>` before pushing (L-010)
 - [ ] Closing a documented gap, adding a classification list, or changing a mechanism the docs name (e.g. a validator moved to a new helper) re-checks CLAUDE.md, SECURITY.md, docs/security/, docs/DEPLOYMENT.md and .harness/ for the old name and for sentences it contradicts, in the same commit (L-012)
 - [ ] Every builder worktree got a real pinned `pnpm install --frozen-lockfile --offline` from the lead before dispatch (`node_modules/next/package.json` present, `node_modules` not a symlink); a symlinked node_modules passes tsc/eslint/vitest but breaks `next build` (L-027)
+- [ ] The receipt records provider fallback, reduced review independence and the execution-model identity; builder lanes that edit files or run tests go to a seat that can (agy/gemini are plan-only), and a CLI agent that skipped the repo rules file is noted (L-004)
 
 ## Scope
 - [ ] PR is focused — no unrelated cleanup bundled

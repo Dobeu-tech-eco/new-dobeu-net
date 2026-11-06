@@ -6,23 +6,28 @@ const h = vi.hoisted(() => {
   const state: {
     user: { id: string; email: string } | null;
     adminClient: unknown;
+    events: string[];
+    marked: boolean;
   } = {
     user: { id: "admin_id", email: "admin@dobeu.net" },
     adminClient: null,
+    events: [],
+    marked: true,
   };
   return { state };
 });
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-vi.mock("@/lib/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/utils")>()),
-  buildServerAuthCallbackUrl: vi.fn(
-    (next: string) =>
-      `https://admin-test.example/auth/callback?next=${encodeURIComponent(next)}`,
-  ),
+const sendEmailMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/resend", () => ({
+  isResendConfigured: vi.fn(() => true),
+  sendEmail: sendEmailMock,
 }));
-import { buildServerAuthCallbackUrl } from "@/lib/utils";
+
+vi.mock("@/lib/email-link-signin", () => ({
+  hasCurrentEmailLinkSignIn: vi.fn(() => h.state.marked),
+}));
 
 vi.mock("@/lib/supabase/server", () => ({
   // Cookie-bound client: only needs auth.getUser for the requireAdmin gate.
@@ -44,8 +49,6 @@ vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: vi.fn(() => h.state.adminClient),
 }));
 
-type AuthUser = { id: string; email: string };
-
 /**
  * Build a service-role stub: buildStubClient for the table surface, plus the
  * auth.admin methods buildStubClient does not provide (per task guidance —
@@ -53,34 +56,49 @@ type AuthUser = { id: string; email: string };
  */
 function buildAdmin(opts: {
   tables?: Parameters<typeof buildStubClient>[0]["tables"];
-  invite?: {
+  create?: {
     data: { user: { id: string } | null };
     error: { message?: string; code?: string; status?: number } | null;
   };
-  listUsers?: {
-    data: { users: AuthUser[] };
-    error: { message: string } | null;
-  };
+  /** Result of the find_auth_user_id_by_email rpc (null = no match). */
+  rpcId?: string | null;
 }) {
   const base = buildStubClient({
     user: h.state.user,
     tables: opts.tables ?? {},
   });
-  const inviteResult = opts.invite ?? {
+  const createResult = opts.create ?? {
     data: { user: { id: "new_user" } },
     error: null,
   };
-  const listUsersResult = opts.listUsers ?? {
-    data: { users: [] as AuthUser[] },
-    error: null,
-  };
+  // buildStubClient only models .single(); alias maybeSingle onto it.
+  const baseFrom = base.supabase.from;
+  const from = ((table: string) => {
+    const chain = baseFrom(table);
+    const origSelect = chain.select;
+    chain.select = ((...a: unknown[]) => {
+      const q = (origSelect as (...x: unknown[]) => Record<string, unknown>)(
+        ...a,
+      );
+      q.maybeSingle = q.single;
+      return q;
+    }) as typeof chain.select;
+    return chain;
+  }) as typeof baseFrom;
   const client = {
     ...base.supabase,
+    from,
+    rpc: vi.fn(async () => ({ data: opts.rpcId ?? null, error: null })),
     auth: {
       ...base.supabase.auth,
       admin: {
-        inviteUserByEmail: vi.fn(async () => inviteResult),
-        listUsers: vi.fn(async () => listUsersResult),
+        createUser: vi.fn(async () => createResult),
+        getUserById: vi.fn(async (id: string) => ({
+          data: { user: { id, email: "known@example.com" } },
+          error: null,
+        })),
+        deleteUser: vi.fn(async () => ({ error: null })),
+        listUsers: vi.fn(async () => ({ data: { users: [] }, error: null })),
       },
     },
   };
@@ -95,6 +113,9 @@ function auditWritten(recorded: { table: string; method: string }[]): boolean {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  h.state.events = [];
+  h.state.marked = true;
+  sendEmailMock.mockResolvedValue({ ok: true });
   vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://admin-test.example");
   h.state.user = { id: "admin_id", email: "admin@dobeu.net" };
   h.state.adminClient = null;
@@ -234,99 +255,283 @@ describe("suspendCompany / reactivateCompany", () => {
 });
 
 describe("provisionCompanyAdmin", () => {
-  it("invites a new user and inserts an 'invited' membership", async () => {
-    const admin = buildAdmin({
-      tables: {
-        companies: { selectSingle: { data: { id: COMPANY_ID } } },
-        company_members: {
-          selectSingle: { data: null, error: { message: "0 rows" } },
-          insert: { data: { id: MEMBER_ROW_ID } },
-        },
-        admin_audit_log: { insert: { data: { id: "log_1" } } },
-      },
-      invite: { data: { user: { id: "new_user" } }, error: null },
-    });
-    h.state.adminClient = admin.client;
-
+  const baseTables = (
+    member: Record<string, unknown> = {
+      selectSingle: { data: null, error: null },
+      insert: { data: { id: MEMBER_ROW_ID } },
+    },
+  ) => ({
+    companies: { selectSingle: { data: { id: COMPANY_ID } } },
+    company_members: member,
+    admin_audit_log: { insert: { data: { id: "log_1" } } },
+  });
+  const run = async (email = "new@example.com") => {
     const { provisionCompanyAdmin } = await import("@/lib/actions/companies");
-    const result = await provisionCompanyAdmin({
-      companyId: COMPANY_ID,
-      email: "new@example.com",
+    return provisionCompanyAdmin({ companyId: COMPANY_ID, email });
+  };
+  const insertIndex = (events: string[]) => events.indexOf("insert");
+
+  it("creates a confirmed user, inserts 'invited' first, then sends the email", async () => {
+    const admin = buildAdmin({ tables: baseTables() });
+    h.state.adminClient = admin.client;
+    sendEmailMock.mockImplementation(async () => {
+      h.state.events.push("send");
+      return { ok: true };
     });
+    const originalFrom = admin.client.from;
+    admin.client.from = ((t: string) => {
+      const chain = originalFrom(t);
+      if (t === "company_members") {
+        const orig = chain.insert;
+        chain.insert = ((...a: unknown[]) => {
+          h.state.events.push("insert");
+          return orig(...a);
+        }) as typeof chain.insert;
+      }
+      return chain;
+    }) as typeof admin.client.from;
+
+    const result = await run();
 
     expect(result).toEqual({
       ok: true,
-      data: { userId: "new_user", status: "invited" },
+      data: { userId: "new_user", status: "invited", emailSent: true },
     });
-    expect(admin.client.auth.admin.inviteUserByEmail).toHaveBeenCalledWith(
-      "new@example.com",
-      {
-        redirectTo: "https://admin-test.example/auth/callback?next=%2Fcompany",
-      },
+    expect(admin.client.auth.admin.createUser).toHaveBeenCalledWith({
+      email: "new@example.com",
+      email_confirm: true,
+    });
+    expect(h.state.events).toEqual(["insert", "send"]);
+    expect(insertIndex(h.state.events)).toBeLessThan(
+      h.state.events.indexOf("send"),
     );
-    expect(buildServerAuthCallbackUrl).toHaveBeenCalledWith("/company");
     expect(auditWritten(admin.recorded)).toBe(true);
+    expect(admin.client.auth.admin.listUsers).not.toHaveBeenCalled();
   });
 
-  it("links an already-registered user as an 'active' membership", async () => {
+  it("attaches an existing marked account as an 'invited' membership (rpc lookup)", async () => {
     const admin = buildAdmin({
-      tables: {
-        companies: { selectSingle: { data: { id: COMPANY_ID } } },
-        company_members: {
-          selectSingle: { data: null, error: { message: "0 rows" } },
-          insert: { data: { id: MEMBER_ROW_ID } },
-        },
-        admin_audit_log: { insert: { data: { id: "log_1" } } },
-      },
-      invite: {
+      tables: baseTables(),
+      create: {
         data: { user: null },
-        error: {
-          message: "A user with this email address has already been registered",
-          status: 422,
-        },
+        error: { message: "already been registered", code: "email_exists" },
       },
-      listUsers: {
-        data: { users: [{ id: "existing_user", email: "known@example.com" }] },
-        error: null,
-      },
+      rpcId: "existing_user",
     });
     h.state.adminClient = admin.client;
+    h.state.marked = true;
 
-    const { provisionCompanyAdmin } = await import("@/lib/actions/companies");
-    const result = await provisionCompanyAdmin({
-      companyId: COMPANY_ID,
-      email: "known@example.com",
-    });
+    const result = await run("known@example.com");
 
     expect(result).toEqual({
       ok: true,
-      data: { userId: "existing_user", status: "active" },
+      data: { userId: "existing_user", status: "invited", emailSent: true },
+    });
+    expect(admin.client.rpc).toHaveBeenCalledWith(
+      "find_auth_user_id_by_email",
+      { p_email: "known@example.com" },
+    );
+    expect(admin.client.auth.admin.listUsers).not.toHaveBeenCalled();
+    expect(admin.client.auth.admin.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("refuses an existing account without a current link sign-in: no insert, no email", async () => {
+    const admin = buildAdmin({
+      tables: baseTables(),
+      create: {
+        data: { user: null },
+        error: { message: "already registered", code: "email_exists" },
+      },
+      rpcId: "existing_user",
+    });
+    h.state.adminClient = admin.client;
+    h.state.marked = false;
+
+    const result = await run("known@example.com");
+
+    expect(result).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+    expect(admin.recorded.some((r) => r.method === "insert")).toBe(false);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(admin.client.auth.admin.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the already-registered user cannot be resolved", async () => {
+    h.state.adminClient = buildAdmin({
+      tables: baseTables(),
+      create: {
+        data: { user: null },
+        error: { message: "already registered", code: "email_exists" },
+      },
+      rpcId: null,
+    }).client;
+    expect(await run()).toEqual({ ok: false, error: "invite failed" });
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("promotes an existing membership row, keeping an active row active", async () => {
+    const admin = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: { id: MEMBER_ROW_ID, status: "active" } },
+        update: { error: null },
+      }),
+      create: {
+        data: { user: null },
+        error: { message: "already registered", code: "email_exists" },
+      },
+      rpcId: "existing_user",
+    });
+    h.state.adminClient = admin.client;
+    h.state.marked = true;
+
+    const result = await run("known@example.com");
+
+    expect(result).toEqual({
+      ok: true,
+      data: { userId: "existing_user", status: "active", emailSent: false },
+    });
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("promotes an existing 'invited' row to company_admin, still invited", async () => {
+    h.state.adminClient = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: { id: MEMBER_ROW_ID, status: "invited" } },
+        update: { error: null },
+      }),
+    }).client;
+    expect(await run()).toEqual({
+      ok: true,
+      data: { userId: "new_user", status: "invited", emailSent: true },
     });
   });
 
-  it("promotes an existing membership row", async () => {
+  const auditData = (
+    recorded: { table: string; method: string; args: unknown[] }[],
+  ) =>
+    (
+      recorded.find(
+        (r) => r.table === "admin_audit_log" && r.method === "insert",
+      )?.args[0] as { data: Record<string, unknown> } | undefined
+    )?.data;
+
+  it("refuses a disabled membership: no write, no email, no audit", async () => {
     const admin = buildAdmin({
-      tables: {
-        companies: { selectSingle: { data: { id: COMPANY_ID } } },
-        company_members: {
-          selectSingle: { data: { id: MEMBER_ROW_ID } },
-          update: { error: null },
-        },
-        admin_audit_log: { insert: { data: { id: "log_1" } } },
-      },
-      invite: { data: { user: { id: "new_user" } }, error: null },
+      tables: baseTables({
+        selectSingle: { data: { id: MEMBER_ROW_ID, status: "disabled" } },
+        update: { error: null },
+      }),
     });
     h.state.adminClient = admin.client;
 
-    const { provisionCompanyAdmin } = await import("@/lib/actions/companies");
-    const result = await provisionCompanyAdmin({
-      companyId: COMPANY_ID,
-      email: "new@example.com",
-    });
+    expect(await run()).toEqual({ ok: false, error: "member_disabled" });
+    expect(
+      admin.recorded.some(
+        (r) =>
+          r.table === "company_members" &&
+          r.method !== "select" &&
+          r.method !== "eq" &&
+          r.method !== "single",
+      ),
+    ).toBe(false);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(auditWritten(admin.recorded)).toBe(false);
+  });
 
-    expect(result).toEqual({
+  it("records previous_status in the audit data for an existing-row update", async () => {
+    const admin = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: { id: MEMBER_ROW_ID, status: "invited" } },
+        update: { error: null },
+      }),
+    });
+    h.state.adminClient = admin.client;
+
+    await run();
+    expect(auditData(admin.recorded)).toMatchObject({
+      status: "invited",
+      previous_status: "invited",
+    });
+  });
+
+  it("omits previous_status for a fresh insert", async () => {
+    const admin = buildAdmin({ tables: baseTables() });
+    h.state.adminClient = admin.client;
+    await run();
+    expect(auditData(admin.recorded)).not.toHaveProperty("previous_status");
+  });
+
+  it("a real membership read error fails with invite failed: no insert, no email", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const admin = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: null, error: { message: "db down" } },
+        insert: { data: { id: MEMBER_ROW_ID } },
+      }),
+    });
+    h.state.adminClient = admin.client;
+    try {
+      expect(await run()).toEqual({ ok: false, error: "invite failed" });
+      expect(admin.recorded.some((r) => r.method === "insert")).toBe(false);
+      expect(sendEmailMock).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("23505 on insert: already_member, never deletes the user", async () => {
+    const admin = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: null, error: null },
+        insert: {
+          data: null,
+          error: { message: "dup", code: "23505" } as { message: string },
+        },
+      }),
+    });
+    h.state.adminClient = admin.client;
+
+    expect(await run()).toEqual({ ok: false, error: "already_member" });
+    expect(admin.client.auth.admin.deleteUser).not.toHaveBeenCalled();
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("other insert failure: deletes only a user it created with no memberships, no email", async () => {
+    const admin = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: null, error: null },
+        insert: {
+          data: null,
+          error: { message: "boom", code: "XX000" } as { message: string },
+        },
+      }),
+    });
+    h.state.adminClient = admin.client;
+    // The head-count membership check sees no memberships for the new user.
+    const baseFrom = admin.client.from;
+    admin.client.from = ((t: string) => {
+      const chain = baseFrom(t);
+      if (t === "company_members") {
+        const origSelect = chain.select;
+        chain.select = ((cols: string, o?: { head?: boolean }) =>
+          o?.head
+            ? { eq: () => Promise.resolve({ count: 0, error: null }) }
+            : origSelect(cols)) as typeof chain.select;
+      }
+      return chain;
+    }) as typeof admin.client.from;
+
+    expect(await run()).toEqual({ ok: false, error: "invite failed" });
+    expect(admin.client.auth.admin.deleteUser).toHaveBeenCalledWith("new_user");
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the membership and reports emailSent false when the send fails", async () => {
+    h.state.adminClient = buildAdmin({ tables: baseTables() }).client;
+    sendEmailMock.mockResolvedValue({ ok: false, error: new Error("x") });
+    expect(await run()).toEqual({
       ok: true,
-      data: { userId: "new_user", status: "invited" },
+      data: { userId: "new_user", status: "invited", emailSent: false },
     });
   });
 
@@ -334,49 +539,29 @@ describe("provisionCompanyAdmin", () => {
     h.state.adminClient = buildAdmin({
       tables: {
         companies: {
-          selectSingle: { data: null, error: { message: "0 rows" } },
+          selectSingle: { data: null, error: null },
         },
       },
     }).client;
-    const { provisionCompanyAdmin } = await import("@/lib/actions/companies");
-    const result = await provisionCompanyAdmin({
-      companyId: COMPANY_ID,
-      email: "new@example.com",
-    });
-    expect(result).toEqual({ ok: false, error: "company not found" });
+    expect(await run()).toEqual({ ok: false, error: "company not found" });
   });
 
-  it("surfaces a non-registration invite failure", async () => {
+  it("returns a fixed error when createUser fails for another reason", async () => {
     h.state.adminClient = buildAdmin({
-      tables: { companies: { selectSingle: { data: { id: COMPANY_ID } } } },
-      invite: { data: { user: null }, error: { message: "smtp unavailable" } },
+      tables: baseTables(),
+      create: { data: { user: null }, error: { message: "smtp unavailable" } },
     }).client;
-    const { provisionCompanyAdmin } = await import("@/lib/actions/companies");
-    const result = await provisionCompanyAdmin({
-      companyId: COMPANY_ID,
-      email: "new@example.com",
-    });
-    expect(result).toEqual({ ok: false, error: "smtp unavailable" });
+    expect(await run()).toEqual({ ok: false, error: "invite failed" });
   });
 
   it("blocks non-admin", async () => {
     h.state.user = { id: "u", email: "x@x.com" };
     h.state.adminClient = buildAdmin({}).client;
-    const { provisionCompanyAdmin } = await import("@/lib/actions/companies");
-    const result = await provisionCompanyAdmin({
-      companyId: COMPANY_ID,
-      email: "new@example.com",
-    });
-    expect(result).toEqual({ ok: false, error: "forbidden" });
+    expect(await run()).toEqual({ ok: false, error: "forbidden" });
   });
 
   it("rejects an invalid email", async () => {
     h.state.adminClient = buildAdmin({}).client;
-    const { provisionCompanyAdmin } = await import("@/lib/actions/companies");
-    const result = await provisionCompanyAdmin({
-      companyId: COMPANY_ID,
-      email: "not-an-email",
-    });
-    expect(result.ok).toBe(false);
+    expect((await run("not-an-email")).ok).toBe(false);
   });
 });
