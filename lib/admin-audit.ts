@@ -42,5 +42,6 @@ export async function writeAdminAuditStrict(
       `[${entry.logScope}] audit log insert failed (non-fatal):`,
       safeErrorFields(error).code,
     );
-  }  return false;
+  }
+  return false;
 }

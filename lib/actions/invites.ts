@@ -40,8 +40,10 @@ type RespondData = {
   isAdminRole: boolean;
   /** Accepted, but the company is suspended and the activation was not undone. */
   companyInactive?: boolean;
-  /** Committed, but the audit row could not be written (D58). */
+  /** Committed, but the accept/decline audit row could not be written (D58). */
   auditFailed?: boolean;
+  /** The password-rotation audit row could not be written. */
+  passwordAuditFailed?: boolean;
   /** Accepted, but the earlier password could not be cleared (D55). */
   passwordRotationFailed?: boolean;
 };
@@ -102,8 +104,9 @@ async function respond(
     );
     if (!result.ok) return result;
 
-    let auditFailed = result.auditFailed === true;
+    const auditFailed = result.auditFailed === true;
     let passwordRotationFailed = false;
+    let passwordAuditFailed = false;
     if (response === "accept") {
       // The accepted address now carries membership: end any session an earlier
       // squatter may hold. Non-fatal; the accept already committed.
@@ -139,7 +142,7 @@ async function respond(
         data: { member_id: id.data, user_id: user.id },
         logScope: "company-invite-accept",
       });
-      if (!audited) auditFailed = true;
+      if (!audited) passwordAuditFailed = true;
     }
 
     revalidatePath("/portal");
@@ -151,6 +154,7 @@ async function respond(
         isAdminRole: result.isAdminRole,
         ...(result.companyInactive ? { companyInactive: true } : {}),
         ...(auditFailed ? { auditFailed: true } : {}),
+        ...(passwordAuditFailed ? { passwordAuditFailed: true } : {}),
         ...(passwordRotationFailed ? { passwordRotationFailed: true } : {}),
       },
     };

@@ -116,7 +116,9 @@ describe("D55 password rotation and D58 audit result", () => {
     ["throw", () => h.update.mockRejectedValue(new Error("secret"))],
   ])("a rotation %s is flagged, audited and does not undo the accept", async (_n, arrange) => {
     arrange();
+    const warn = vi.spyOn(console, "warn");
     const r = await acceptCompanyInvite(M);
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("secret");
     expect(r).toEqual({
       ok: true,
       data: { companyId: C, isAdminRole: false, passwordRotationFailed: true },
@@ -132,12 +134,23 @@ describe("D55 password rotation and D58 audit result", () => {
     });
   });
 
-  it("flags auditFailed when the rotation audit cannot be written", async () => {
+  it("flags passwordAuditFailed (not auditFailed) when the rotation audit cannot be written", async () => {
     h.audit.mockResolvedValue(false);
     expect(await acceptCompanyInvite(M)).toEqual({
       ok: true,
-      data: { companyId: C, isAdminRole: false, auditFailed: true },
+      data: { companyId: C, isAdminRole: false, passwordAuditFailed: true },
     });
+  });
+
+  it("does not rotate for a refused accept", async () => {
+    h.respond.mockResolvedValue({ ok: false, error: "invite_company_inactive" });
+    expect(await acceptCompanyInvite(M)).toEqual({ ok: false, error: "invite_company_inactive" });
+    expect(h.update).not.toHaveBeenCalled();
+  });
+
+  it("does not rotate for a bad member id", async () => {
+    expect(await acceptCompanyInvite("not-a-uuid")).toEqual({ ok: false, error: "invite_unavailable" });
+    expect(h.update).not.toHaveBeenCalled();
   });
 });
 
