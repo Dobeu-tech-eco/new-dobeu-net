@@ -284,6 +284,17 @@ export async function createInvoice(raw: unknown): Promise<CreateInvoiceResult> 
         .single();
       if (memberErr || !membership)
         return { ok: false, error: "Project must belong to the recipient" };
+      // Membership alone is not enough: a suspended company's members must
+      // not be invoiced (D85). A failed read fails closed.
+      const { data: company, error: companyErr } = await admin
+        .from("companies")
+        .select("status")
+        .eq("id", project.company_id)
+        .single();
+      if (companyErr || !company)
+        return { ok: false, error: "company_check_failed" };
+      if (company.status !== "active")
+        return { ok: false, error: "company_suspended" };
     }
   }
 

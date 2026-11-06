@@ -9,6 +9,7 @@ export const ADMIN_ERROR_MESSAGES = {
   overview_load_failed: "Unable to load some overview data. Try again.",
   activity_partial: "Some recent activity could not be loaded.",
   totals_truncated: "Totals truncated; too many rows to sum here.",
+  company_suspended: "This client's company is suspended; it can't be invoiced.",
   unknown: "Something went wrong. Try again.",
 } as const;
 
