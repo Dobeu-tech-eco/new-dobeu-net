@@ -543,6 +543,49 @@ describe("work-order Stripe idempotency key", () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
+  it("refuses an unlinked work order whose only audited invoice row no longer exists", async () => {
+    workOrderSingle.mockResolvedValue({ data: { invoice_id: null }, error: null });
+    auditResult = auditTargets("inv_B");
+    auditedInvoices = { data: [], error: null };
+
+    const res = await createInvoiceForUser(WO_INPUT);
+
+    expect(res).toEqual({ ok: false, error: AUDITED_INVOICE_MISSING });
+    expect(getOrCreateStripeCustomer).not.toHaveBeenCalled();
+    expect(createHostedInvoice).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("dedupes repeated audit target ids before the invoices read", async () => {
+    auditResult = auditTargets("inv_B", "inv_B", "inv_C", "inv_B");
+    auditedInvoices = {
+      data: [
+        { id: "inv_B", status: "void", created_at: "2026-11-02T00:00:00Z" },
+        { id: "inv_C", status: "void", created_at: "2026-11-03T00:00:00Z" }
+      ],
+      error: null
+    };
+
+    const res = await createInvoiceForUser(WO_INPUT);
+
+    expect(res.ok).toBe(true);
+    expect(existingIn).toHaveBeenCalledWith("id", ["inv_B", "inv_C"]);
+  });
+
+  it("fails closed before Stripe when the audit read hits the 1000-row cap", async () => {
+    auditResult = auditTargets(...Array.from({ length: 1000 }, (_, i) => `inv_${i}`));
+
+    const res = await createInvoiceForUser(WO_INPUT);
+
+    expect(res).toEqual({
+      ok: false,
+      error: "Unable to read the work order's billing history"
+    });
+    expect(getOrCreateStripeCustomer).not.toHaveBeenCalled();
+    expect(createHostedInvoice).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
   it("a plain retry with nothing newly billed keeps the same key", async () => {
     workOrderSingle.mockResolvedValue({ data: { invoice_id: "inv_A" }, error: null });
     auditResult = auditTargets("inv_B");
