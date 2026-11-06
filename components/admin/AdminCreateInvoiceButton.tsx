@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { createInvoiceForWorkOrder } from "@/lib/actions/invoices";
 import { formatCurrency } from "@/lib/utils";
+import { linkFailedNotice } from "@/components/admin/AdminInvoiceNotices";
 
 /**
  * Admin "Create Stripe Invoice" action for an accepted work order.
@@ -64,15 +65,17 @@ export function AdminCreateInvoiceButton({
           {error}
         </p>
       )}
-      {linkFailedInvoiceId && (
-        <p
-          id={`create-invoice-link-failed-${workOrderId}`}
-          role="status"
-          className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-sm"
-        >
-          {`Invoice ${linkFailedInvoiceId} was created but could not be linked to the work order. To link it, set work_orders.invoice_id = ${linkFailedInvoiceId} in Supabase. To bill again instead, void it in the Stripe dashboard (find it on /admin/invoices) and wait for the webhook to mark it void.`}
-        </p>
-      )}
+      <p
+        id={`create-invoice-link-failed-${workOrderId}`}
+        role="status"
+        className={
+          linkFailedInvoiceId
+            ? "rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-sm"
+            : undefined
+        }
+      >
+        {linkFailedInvoiceId ? linkFailedNotice(linkFailedInvoiceId) : null}
+      </p>
     </div>
   );
 }

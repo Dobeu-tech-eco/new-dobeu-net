@@ -62,11 +62,11 @@ const UNKNOWN_INVOICE_MESSAGE =
   "An earlier billing record for this work order has no invoice id, so it is treated as invoiced (unknown invoice). Review the admin_audit_log rows for this work order in Supabase before billing again.";
 
 function unsentWorkOrderInvoiceMessage(invoiceId: string): string {
-  return `An earlier attempt to bill this work order failed at Stripe and left unsent invoice ${invoiceId} (no Stripe invoice exists for it). To bill this work order again, set that invoice's status to void in Supabase, then retry. A retry with a different amount may be refused by Stripe for up to 24 hours after the failed attempt.`;
+  return `An earlier attempt to bill this work order failed at Stripe and left unsent invoice ${invoiceId} (no Stripe invoice exists for it). To bill this work order again, use the Void unsent button on that invoice's row in /admin/invoices, then retry. A retry with a different amount may be refused by Stripe for up to 24 hours after the failed attempt.`;
 }
 
 const UNSENT_DUPLICATE_MESSAGE =
-  "An unsent invoice for this client and amount already exists from the last 24 hours (the Stripe call failed). The unsent invoice has no Stripe invoice; set its status to void in Supabase before creating another.";
+  "An unsent invoice for this client and amount already exists from the last 24 hours (the Stripe call failed). The unsent invoice has no Stripe invoice; use the Void unsent button on its row in /admin/invoices before creating another.";
 
 type AdminClient = Awaited<ReturnType<typeof requireAdmin>>["admin"];
 
@@ -478,10 +478,7 @@ export async function createInvoiceForWorkOrder(
     });
   }
 
-  revalidatePath("/admin/invoices");
-  revalidatePath("/portal/invoices");
-  revalidatePath("/admin/tickets");
-  revalidatePath("/portal/tickets");
+  revalidateInvoicePaths();
   revalidatePath(`/admin/tickets/${work_order_id}`);
   revalidatePath(`/portal/tickets/${work_order_id}`);
   if (result.ok && linkFailed) {
@@ -544,7 +541,71 @@ export async function markInvoicePaidManually(
     logScope: "invoices",
   });
 
-  revalidatePath("/admin/invoices");
-  revalidatePath("/portal/invoices");
+  revalidateInvoicePaths();
+  return { ok: true, data: { id } };
+}
+
+/**
+ * Admin remedy for an unsent invoice: the Stripe call failed after the local
+ * row was inserted, so the row is `open` with no stripe_invoice_id and no
+ * Stripe invoice exists to void. Refuses anything with a Stripe invoice (that
+ * one is voided in Stripe and the webhook flips it) or anything not `open`.
+ * The write is conditional on the state that was read. To retry billing, void
+ * first and then create again through the existing create path.
+ */
+export async function voidUnsentInvoice(
+  raw: unknown
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = markPaidInput.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
+  }
+  const { id } = parsed.data;
+
+  let user, admin;
+  try {
+    ({ user, admin } = await requireAdmin());
+  } catch (e) {
+    if (e instanceof AuthError) return { ok: false, error: e.code };
+    throw e;
+  }
+
+  const { data: existing, error: readErr } = await admin
+    .from("invoices")
+    .select("status,stripe_invoice_id")
+    .eq("id", id)
+    .single();
+  if (readErr || !existing) return { ok: false, error: "invoice not found" };
+  if (existing.stripe_invoice_id) {
+    return {
+      ok: false,
+      error:
+        "invoice has a Stripe invoice; void it in the Stripe dashboard and wait for the webhook"
+    };
+  }
+  if (existing.status !== "open") {
+    return { ok: false, error: `only an open unsent invoice can be voided (status="${existing.status}")` };
+  }
+
+  const { data: updated, error } = await admin
+    .from("invoices")
+    .update({ status: "void" })
+    .eq("id", id)
+    .eq("status", "open")
+    .is("stripe_invoice_id", null)
+    .select("id");
+  if (error) return { ok: false, error: "Unable to void the invoice" };
+  if (!updated?.length) return { ok: false, error: "invoice is no longer an open unsent invoice" };
+
+  await writeAdminAudit(admin, {
+    actorUserId: user.id,
+    action: "invoice.void_unsent",
+    targetType: "invoice",
+    targetId: id,
+    data: { previous_status: "open", status: "void" },
+    logScope: "invoices",
+  });
+
+  revalidateInvoicePaths();
   return { ok: true, data: { id } };
 }

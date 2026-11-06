@@ -54,6 +54,8 @@ function arrange(
     recipientName?: string | null;
     profileName?: string | null;
     invoiceStatus?: string | null;
+    // stripe_invoice_id on the invoice row read by status (default none).
+    invoiceStripeId?: string | null;
     // created_at of the invoice row read by status (the helper compares it
     // with the newest audit row); omitted by default.
     invoiceCreatedAt?: string;
@@ -133,6 +135,7 @@ function arrange(
               : options.invoiceStatus
                 ? {
                     status: options.invoiceStatus,
+                    stripe_invoice_id: options.invoiceStripeId ?? null,
                     ...(options.invoiceCreatedAt
                       ? { created_at: options.invoiceCreatedAt }
                       : {}),
@@ -375,11 +378,11 @@ const UNKNOWN_INVOICE_PARTS = ["no invoice id", "unknown invoice"];
 const UNSENT_WO_PARTS = [
   "failed at Stripe",
   "inv_prior",
-  "void",
-  "Supabase",
+  "Void unsent",
+  "/admin/invoices",
   "up to 24 hours",
 ];
-const UNSENT_PARTS = ["unsent invoice", "last 24 hours", "void"];
+const UNSENT_PARTS = ["unsent invoice", "last 24 hours", "Void unsent", "/admin/invoices"];
 
 describe("createInvoice (Stripe-wired)", () => {
   it("creates a Stripe invoice, persists, emails, and audits invoice.create", async () => {
@@ -1706,5 +1709,121 @@ describe("markInvoicePaidManually", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+});
+
+describe("voidUnsentInvoice (D32)", () => {
+  async function run() {
+    const { voidUnsentInvoice } = await import("@/lib/actions/invoices");
+    return voidUnsentInvoice({ id: VALID_INV });
+  }
+  const invoiceUpdates = () =>
+    admin.recorded.filter(
+      (entry) => entry.table === "invoices" && entry.method === "update",
+    );
+
+  it("voids an open invoice with no Stripe id, audits it and revalidates", async () => {
+    admin = arrange({ invoiceStatus: "open" });
+    expect(await run()).toEqual({ ok: true, data: { id: VALID_INV } });
+    expect(invoiceUpdates()).toEqual([
+      { table: "invoices", method: "update", args: [{ status: "void" }] },
+    ]);
+    expect(admin.recorded).toContainEqual({
+      table: "invoices",
+      method: "eq",
+      args: ["status", "open"],
+    });
+    expect(admin.recorded).toContainEqual({
+      table: "invoices",
+      method: "is",
+      args: ["stripe_invoice_id", null],
+    });
+    expect(auditInserts()[0].args).toEqual([
+      expect.objectContaining({
+        actor_user_id: ADMIN.id,
+        action: "invoice.void_unsent",
+        target_type: "invoice",
+        target_id: VALID_INV,
+        data: { previous_status: "open", status: "void" },
+      }),
+    ]);
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/invoices");
+    expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+  });
+
+  it("refuses an invoice that has a Stripe invoice", async () => {
+    admin = arrange({ invoiceStatus: "open", invoiceStripeId: "in_real" });
+    const result = await run();
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.error).toContain("Stripe dashboard");
+    expect(invoiceUpdates()).toEqual([]);
+    expectNoAudit();
+  });
+
+  it.each(["paid", "void", "overdue"])("refuses a %s invoice", async (status) => {
+    admin = arrange({ invoiceStatus: status });
+    const result = await run();
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.error).toContain("only an open unsent invoice");
+    expect(invoiceUpdates()).toEqual([]);
+    expectNoAudit();
+  });
+
+  it("reports a missing invoice", async () => {
+    admin = arrange({ invoiceStatus: null });
+    expect(await run()).toEqual({ ok: false, error: "invoice not found" });
+    expectNoAudit();
+  });
+
+  it("treats zero updated rows as a conflict without auditing", async () => {
+    admin = arrange({ invoiceStatus: "open" });
+    type Updater = (...args: unknown[]) => {
+      then: (resolve: (value: unknown) => void) => void;
+    };
+    const innerFrom = (h.admin as { from: (table: string) => { update: Updater } })
+      .from;
+    (h.admin as { from: unknown }).from = vi.fn((table: string) => {
+      const query = innerFrom(table);
+      if (table === "invoices") {
+        const origUpdate = query.update;
+        query.update = (...args: unknown[]) => {
+          const chain = origUpdate(...args);
+          chain.then = (resolve) => resolve({ data: [], error: null });
+          return chain;
+        };
+      }
+      return query;
+    });
+    expect(await run()).toEqual({
+      ok: false,
+      error: "invoice is no longer an open unsent invoice",
+    });
+    expectNoAudit();
+  });
+
+  it("returns a fixed message on an update error without auditing", async () => {
+    admin = arrange({ invoiceStatus: "open", updateError: { message: "private db text" } });
+    expect(await run()).toEqual({ ok: false, error: "Unable to void the invoice" });
+    expectNoAudit();
+  });
+
+  it("blocks a non-admin caller", async () => {
+    admin = arrange({ user: { id: "u", email: "client@example.com" } });
+    expect(await run()).toEqual({ ok: false, error: "forbidden" });
+    expect(invoiceUpdates()).toEqual([]);
+    expectNoAudit();
+  });
+
+  it("propagates mfa_required", async () => {
+    admin = arrange({ level: "aal1" });
+    expect(await run()).toEqual({ ok: false, error: "mfa_required" });
+    expect(invoiceUpdates()).toEqual([]);
+    expectNoAudit();
+  });
+
+  it("rejects an invalid id before touching the database", async () => {
+    const { voidUnsentInvoice } = await import("@/lib/actions/invoices");
+    expect((await voidUnsentInvoice({ id: "bad" })).ok).toBe(false);
+    expect(createAdminClient).not.toHaveBeenCalled();
   });
 });
