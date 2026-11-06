@@ -61,8 +61,16 @@ export const BILLED_AUDIT_ACTIONS = [
   "invoice.link_failed"
 ] as const;
 
-// How many recent audited bills are considered when picking the newest invoice.
-const RECENT_BILLED_AUDITS = 10;
+/** Audit action for a Stripe failure: an attempt (local unsent row), not a bill. */
+export const STRIPE_FAILED_ACTION = "invoice.create_stripe_failed";
+
+/**
+ * Fixed refusal when an audited bill's invoice row no longer exists (e.g.
+ * deleteProject cascades invoices). The newest bill cannot be determined, so
+ * the re-bill is refused rather than keyed from an incomplete history.
+ */
+export const AUDITED_INVOICE_MISSING =
+  "A billed invoice recorded for this work order no longer exists, so its billing history is incomplete. Re-billing is blocked: check the work order's invoices on /admin/invoices and the Stripe dashboard, void any open invoice there, then contact an engineer to repair the history.";
 
 const WORK_ORDER_HISTORY_READ_FAILED =
   "Unable to read the work order's billing history";
@@ -167,13 +175,16 @@ export async function createInvoiceForUser(
     // void. A re-bill therefore gets a fresh key (a reused key with a new
     // amount is rejected by Stripe), while a retry with nothing newly billed
     // keeps the same key; Stripe-failed attempts are not "billed".
+    // No row limit: every billed audit for this work order is read, so an
+    // older bill can never be missed. The set is bounded by the work order's
+    // bill count (one row per bill, filtered by work_order_id), far below
+    // PostgREST's default 1000-row cap.
     const { data: billed, error: billedErr } = await admin
       .from("admin_audit_log")
       .select("target_id")
       .in("action", [...BILLED_AUDIT_ACTIONS])
       .eq("data->>work_order_id", input.work_order_id)
-      .order("created_at", { ascending: false })
-      .limit(RECENT_BILLED_AUDITS);
+      .order("created_at", { ascending: false });
     if (billedErr) return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
     const billedRows = billed ?? [];
     if (billedRows.some((r) => !r.target_id)) {
@@ -197,6 +208,12 @@ export async function createInvoiceForUser(
         .select("id,status,created_at")
         .in("id", auditedIds);
       if (auditedErr) return { ok: false, error: WORK_ORDER_HISTORY_READ_FAILED };
+      // An audited invoice absent from the read was deleted (project cascade);
+      // dropping it silently could hide the newest bill, so refuse.
+      const found = new Set((audited ?? []).map((inv) => inv.id));
+      if (auditedIds.some((id) => !found.has(id))) {
+        return { ok: false, error: AUDITED_INVOICE_MISSING };
+      }
       for (const inv of audited ?? []) {
         if (inv.status !== "void") {
           return { ok: false, error: alreadyInvoicedMessage(inv.id) };

@@ -15,6 +15,7 @@ import {
   alreadyInvoicedMessage,
   BILLED_AUDIT_ACTIONS,
   createInvoiceForUser,
+  STRIPE_FAILED_ACTION,
   STRIPE_VOID_STEP,
   type InvoiceCreationResult
 } from "@/lib/invoice-creation";
@@ -46,7 +47,6 @@ const createInput = z.object({
 // (`draft` is not in the invoices.status enum, so only `open` rows can exist.)
 const UNSENT_DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-const STRIPE_FAILED_ACTION = "invoice.create_stripe_failed";
 // Audit actions that mean a work order was billed (or attempted): the
 // stripe-failed row is included so an unsent invoice also blocks a re-bill.
 const BILLING_AUDIT_ACTIONS = [...BILLED_AUDIT_ACTIONS, STRIPE_FAILED_ACTION] as const;
@@ -334,7 +334,7 @@ export async function createInvoice(raw: unknown): Promise<CreateInvoiceResult> 
     if (result.error.startsWith("Stripe error:")) {
       await writeAdminAudit(admin, {
         actorUserId: user.id,
-        action: "invoice.create_stripe_failed",
+        action: STRIPE_FAILED_ACTION,
         targetType: "invoice",
         targetId: result.localInvoiceId ?? null,
         data: {
@@ -466,7 +466,7 @@ export async function createInvoiceForWorkOrder(
     // The local (unsent) row exists; audit it like createInvoice does.
     await writeAdminAudit(admin, {
       actorUserId: user.id,
-      action: "invoice.create_stripe_failed",
+      action: STRIPE_FAILED_ACTION,
       targetType: "invoice",
       targetId: result.localInvoiceId ?? null,
       data: {
