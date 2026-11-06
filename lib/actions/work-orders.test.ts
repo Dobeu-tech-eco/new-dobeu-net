@@ -204,6 +204,29 @@ describe("submitWorkOrder", () => {
     expect(result).toEqual({ ok: true, data: { id: "wo_1", uploadPaths: [], uploadTargets: [] } });
   });
 
+  it("returns company_suspended before inserting when the company is suspended (D52)", async () => {
+    h.company = { id: "company_1", status: "suspended" };
+    const { submitWorkOrder } = await import("@/lib/actions/work-orders");
+    const result = await submitWorkOrder({
+      service_type: "logo",
+      title: "Need a new logo",
+      company_id: "11111111-1111-4111-8111-111111111111"
+    });
+    expect(result).toEqual({ ok: false, error: "company_suspended" });
+    expect(h.recorded.some((r) => r.table === "work_orders" && r.method === "insert")).toBe(false);
+  });
+
+  it("inserts with company_id when the company is active (D52)", async () => {
+    const { submitWorkOrder } = await import("@/lib/actions/work-orders");
+    const result = await submitWorkOrder({
+      service_type: "logo",
+      title: "Need a new logo",
+      company_id: "11111111-1111-4111-8111-111111111111"
+    });
+    expect(result.ok).toBe(true);
+    expect(h.recorded.some((r) => r.table === "work_orders" && r.method === "insert")).toBe(true);
+  });
+
   it("fires an admin notification email on submit (non-fatal)", async () => {
     const { submitWorkOrder } = await import("@/lib/actions/work-orders");
     await submitWorkOrder({
