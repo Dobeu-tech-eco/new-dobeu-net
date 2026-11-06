@@ -4,6 +4,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { NewInvoiceDialog } from "@/components/admin/NewInvoiceDialog";
 import { AdminMarkPaidButton } from "@/components/admin/AdminMarkPaidButton";
+import { AdminVoidUnsentInvoiceButton } from "@/components/admin/AdminVoidUnsentInvoiceButton";
 import {
   AdminStatusBanner,
   type AdminStatusParams,
@@ -225,6 +226,9 @@ export default async function AdminInvoicesPage({
                   <td className="p-3 text-right">
                     {inv.status !== "paid" && inv.status !== "void" && (
                       <AdminMarkPaidButton invoiceId={inv.id} />
+                    )}
+                    {inv.status === "open" && !inv.stripe_invoice_id && (
+                      <AdminVoidUnsentInvoiceButton invoiceId={inv.id} />
                     )}
                   </td>
                 </tr>

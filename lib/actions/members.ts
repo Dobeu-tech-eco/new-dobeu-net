@@ -241,7 +241,7 @@ export async function inviteMember(
   }
 
   if (!(await roleExists(supabase, input.roleKey))) {
-    return { ok: false, error: `unknown role "${input.roleKey}"` };
+    return { ok: false, error: "unknown_role" };
   }
 
   const limit = await inviteLimitHit(user.id, input.companyId);
@@ -349,16 +349,21 @@ export async function changeMemberRole(
   }
 
   if (!(await roleExists(supabase, input.roleKey))) {
-    return { ok: false, error: `unknown role "${input.roleKey}"` };
+    return { ok: false, error: "unknown_role" };
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("company_members")
     .update({ role: input.roleKey })
     .eq("id", input.memberId)
-    .eq("company_id", input.companyId);
+    .eq("company_id", input.companyId)
+    .select("id");
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.warn("[changeMemberRole] update failed:", safeErrorFields(error));
+    return { ok: false, error: "role change failed" };
+  }
+  if (!updated || updated.length === 0) return { ok: false, error: "not_found" };
 
   revalidatePath("/company/members");
   return { ok: true, data: { id: input.memberId } };
@@ -393,8 +398,13 @@ export async function deactivateMember(
     .eq("company_id", input.companyId)
     .single();
 
-  if (readErr || !target)
-    return { ok: false, error: readErr?.message ?? "member not found" };
+  if (readErr || !target) {
+    if (readErr && readErr.code !== "PGRST116") {
+      console.warn("[deactivateMember] read failed:", safeErrorFields(readErr));
+      return { ok: false, error: "deactivate failed" };
+    }
+    return { ok: false, error: "not_found" };
+  }
   if (target.user_id === user.id) {
     return { ok: false, error: "cannot disable yourself" };
   }
@@ -405,7 +415,10 @@ export async function deactivateMember(
     .eq("id", input.memberId)
     .eq("company_id", input.companyId);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.warn("[deactivateMember] update failed:", safeErrorFields(error));
+    return { ok: false, error: "deactivate failed" };
+  }
 
   revalidatePath("/company/members");
   return { ok: true, data: { id: input.memberId } };

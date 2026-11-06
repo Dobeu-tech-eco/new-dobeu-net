@@ -10,6 +10,7 @@ export const ADMIN_ERROR_MESSAGES = {
     "This person was disabled by the company; re-enable them from the company's members page first.",
   admin_already_member: "That user is already a member of this company.",
   project_save_failed: "Unable to save the project. Try again.",
+  project_has_invoices: "This project has invoices; it can't be deleted.",
   load_failed: "Unable to load admin data. Try again.",
   overview_load_failed: "Unable to load some overview data. Try again.",
   activity_partial: "Some recent activity could not be loaded.",
