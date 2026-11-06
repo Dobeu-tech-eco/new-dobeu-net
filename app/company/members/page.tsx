@@ -36,11 +36,17 @@ async function resolveEmails(userIds: string[]): Promise<Map<string, string>> {
   const byId = new Map<string, string>();
   if (wanted.size === 0) return byId;
   try {
-    const { users } = await listAllUsers(createAdminClient());
+    const { users, failed, truncated } = await listAllUsers(createAdminClient());
+    if (failed) {
+      console.warn("[company members] user list failed; showing ids");
+    } else if (truncated) {
+      console.warn("[company members] user list truncated; some emails may show as ids");
+    }
     for (const u of users) {
       if (wanted.has(u.id) && u.email) byId.set(u.id, u.email);
     }
   } catch (e) {
+    // listAllUsers never throws, but createAdminClient() throws when the service key is missing.
     console.warn("[company members] email resolution failed:", safeErrorFields(e));
   }
   return byId;

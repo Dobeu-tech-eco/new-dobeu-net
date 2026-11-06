@@ -189,6 +189,18 @@ describe("CompanyMembersPage guard", () => {
     expect(screen.getByText("late@b.co")).toBeInTheDocument();
   });
 
+  it("renders user ids and logs a fixed warning when listUsers errors", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const listUsers = vi.fn(async () => ({ data: null, error: { message: "boom victim@x.co" } }));
+    h.createAdminClient.mockReturnValue({ auth: { admin: { listUsers } } });
+    h.requireCompanyAdmin.mockResolvedValue({});
+    render(await CompanyMembersPage(props));
+    expect(screen.queryByText("a@b.co")).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith("[company members] user list failed; showing ids");
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("victim@x.co");
+    warn.mockRestore();
+  });
+
   describe("invite notices", () => {
     it.each([
       ["member_added", "status"],
