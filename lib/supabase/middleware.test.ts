@@ -78,6 +78,17 @@ describe("updateSession — stray ?code= forwarder", () => {
     expect(location.searchParams.get("next")).toBe("/company");
   });
 
+  it("keeps the GET forward Location byte-identical (raw query, no re-encoding)", async () => {
+    const res = await updateSession(
+      new NextRequest("https://dobeu.net/pricing?code=a;b&next=%2Fportal"),
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("x-action-redirect")).toBeNull();
+    expect(res.headers.get("location")).toBe(
+      "https://dobeu.net/auth/callback?code=a;b&next=%2Fportal",
+    );
+  });
+
   it("does NOT forward when the code is already on /auth/callback (no redirect loop)", async () => {
     const res = await updateSession(
       new NextRequest("https://dobeu.net/auth/callback?code=abc"),
@@ -342,5 +353,189 @@ describe("updateSession — Supabase not configured", () => {
     expect(loc.pathname).toBe("/login");
     expect(loc.searchParams.get("error")).toBe("supabase_not_configured");
     expect(h.getUser).not.toHaveBeenCalled();
+  });
+
+  it("keeps the GET Location byte-identical", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_URL", undefined);
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
+    const res = await updateSession(new NextRequest("https://dobeu.net/portal/projects?a=1"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe(
+      "https://dobeu.net/login?a=1&error=supabase_not_configured",
+    );
+  });
+});
+
+describe("updateSession — signed-out server-action POSTs", () => {
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_VERCEL_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY = "anon-key";
+    process.env.ADMIN_EMAILS = "admin@dobeu.net";
+    h.getUser.mockReset();
+    h.getAal.mockReset();
+    h.getUser.mockResolvedValue({ data: { user: null } });
+  });
+
+  afterEach(() => {
+    delete process.env.ADMIN_EMAILS;
+  });
+
+  const action = (path: string, method = "POST") =>
+    updateSession(
+      new NextRequest(`https://dobeu.net${path}`, {
+        method,
+        headers: { "next-action": "abc" },
+      }),
+    );
+  const parse = (res: Response) => {
+    const header = res.headers.get("x-action-redirect") as string;
+    const i = header.lastIndexOf(";");
+    return {
+      type: header.slice(i + 1),
+      url: new URL(header.slice(0, i), "https://dobeu.net"),
+    };
+  };
+
+  it("answers a /portal action POST with 303 + x-action-redirect and no location", async () => {
+    const res = await action("/portal/tickets/new");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-action-redirect")).toBe(
+      "/login?next=%2Fportal%2Ftickets%2Fnew;push",
+    );
+  });
+
+  it("does the same for /admin without checking AAL", async () => {
+    const res = await action("/admin/invoices");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-action-redirect")).toBe("/login?next=%2Fadmin%2Finvoices;push");
+    expect(h.getAal).not.toHaveBeenCalled();
+  });
+
+  it("keeps the /company query in next", async () => {
+    const res = await action("/company/members?company=x");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBeNull();
+    const { type, url } = parse(res);
+    expect(type).toBe("push");
+    expect(url.pathname).toBe("/login");
+    expect(url.searchParams.get("next")).toBe("/company/members?company=x");
+  });
+
+  it("keeps the header parseable when the query carries ; or &", async () => {
+    const res = await action("/portal/tickets?a=1;b=2&c=3");
+    expect(res.status).toBe(303);
+    const { type, url } = parse(res);
+    expect(type).toBe("push");
+    expect(url.searchParams.get("next")).toBe("/portal/tickets?a=1;b=2&c=3");
+  });
+
+  it("falls back to the gate root when next fails sanitizeNextPath", async () => {
+    const res = await action("/company/members?x=%0A%5C");
+    expect(res.status).toBe(303);
+    expect(parse(res).url.searchParams.get("next")).toBe("/company");
+  });
+
+  it("leaves a POST without next-action as a 307", async () => {
+    const res = await updateSession(
+      new NextRequest("https://dobeu.net/portal", { method: "POST" }),
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("x-action-redirect")).toBeNull();
+    const loc = new URL(res.headers.get("location") as string);
+    expect(loc.pathname).toBe("/login");
+    expect(loc.searchParams.get("next")).toBe("/portal");
+  });
+
+  it("leaves a GET with a next-action header as a 307", async () => {
+    const res = await action("/portal", "GET");
+    expect(res.status).toBe(307);
+    expect(res.headers.get("x-action-redirect")).toBeNull();
+    expect(res.headers.get("location")).not.toBeNull();
+  });
+
+  it("passes a signed-in action POST through", async () => {
+    h.getUser.mockResolvedValue({ data: { user: { id: "u1", email: "a@b.co" } } });
+    const res = await action("/portal");
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-action-redirect")).toBeNull();
+  });
+
+  it("answers an action POST carrying a stray code with 303 + x-action-redirect to /auth/callback", async () => {
+    const res = await action("/portal?code=pkce-1&next=%2Fportal%2Ftickets");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBeNull();
+    expect(h.getUser).not.toHaveBeenCalled();
+    const { type, url } = parse(res);
+    expect(type).toBe("push");
+    expect(url.pathname).toBe("/auth/callback");
+    expect(url.searchParams.get("code")).toBe("pkce-1");
+    expect(url.searchParams.get("next")).toBe("/portal/tickets");
+  });
+
+  it("answers an action POST carrying a stray token_hash the same way, ; encoded", async () => {
+    const res = await action("/?token_hash=th;1&type=invite");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBeNull();
+    const header = res.headers.get("x-action-redirect") as string;
+    expect(header.split(";")).toHaveLength(2);
+    const { type, url } = parse(res);
+    expect(type).toBe("push");
+    expect(url.pathname).toBe("/auth/callback");
+    expect(url.searchParams.get("token_hash")).toBe("th;1");
+    expect(url.searchParams.get("type")).toBe("invite");
+  });
+
+  it("leaves a GET with a next-action header on the stray-code forwarder as a 307", async () => {
+    const res = await action("/?code=abc", "GET");
+    expect(res.status).toBe(307);
+    expect(res.headers.get("x-action-redirect")).toBeNull();
+    expect(new URL(res.headers.get("location") as string).pathname).toBe("/auth/callback");
+  });
+
+  it.each(["/portal/tickets/new", "/admin/invoices", "/company/members"])(
+    "answers an action POST on %s with Supabase unconfigured with 303 + x-action-redirect",
+    async (path) => {
+      vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_URL", undefined);
+      vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
+      try {
+        const res = await action(path);
+        expect(res.status).toBe(303);
+        expect(res.headers.get("location")).toBeNull();
+        expect(res.headers.get("x-action-redirect")).toBe(
+          "/login?error=supabase_not_configured;push",
+        );
+        expect(h.getUser).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    },
+  );
+
+  it("leaves a non-action POST with Supabase unconfigured as a 307", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_URL", undefined);
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_SUPABASE_ANON_KEY", undefined);
+    try {
+      const res = await updateSession(
+        new NextRequest("https://dobeu.net/portal", { method: "POST" }),
+      );
+      expect(res.status).toBe(307);
+      expect(res.headers.get("x-action-redirect")).toBeNull();
+      const loc = new URL(res.headers.get("location") as string);
+      expect(loc.pathname).toBe("/login");
+      expect(loc.searchParams.get("error")).toBe("supabase_not_configured");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("still sends a signed-in non-admin action POST on /admin to /portal?error=not_authorized", async () => {
+    h.getUser.mockResolvedValue({ data: { user: { id: "u1", email: "a@b.co" } } });
+    const res = await action("/admin");
+    expect(res.status).toBe(307);
+    const loc = new URL(res.headers.get("location") as string);
+    expect(loc.pathname).toBe("/portal");
+    expect(loc.searchParams.get("error")).toBe("not_authorized");
   });
 });

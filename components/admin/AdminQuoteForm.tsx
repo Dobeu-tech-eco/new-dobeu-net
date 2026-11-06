@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { quoteWorkOrder } from "@/lib/actions/work-orders";
 
+const STATUS_CONFLICT_COPY =
+  "This ticket changed while you were viewing it. The page has been refreshed; check its status and try again.";
+
 export function AdminQuoteForm({ ticketId }: { ticketId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -21,7 +26,14 @@ export function AdminQuoteForm({ ticketId }: { ticketId: string }) {
     const amount_cents = Math.round(dollars * 100);
     startTransition(async () => {
       const result = await quoteWorkOrder({ id: ticketId, amount_cents });
-      if (!result.ok) setError(result.error);
+      if (!result.ok) {
+        if (result.error === "status_conflict") {
+          setError(STATUS_CONFLICT_COPY);
+          router.refresh();
+        } else {
+          setError(result.error);
+        }
+      }
     });
   }
 

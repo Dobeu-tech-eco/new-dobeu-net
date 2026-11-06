@@ -115,6 +115,11 @@ Coverage and dependency audit currently report results but do not enforce thresh
 - For GitHub repository/API access, use the connected Composio GitHub account `github_big-lain` (`dobeutech`) for `Dobeu-tech-eco/new-dobeu-net`.
 - `lib/agent/` uses `COMPOSIO_API_KEY` and `ANTHROPIC_API_KEY`. Its standalone `scripts/agent.ts` entry point also needs the optional agent SDK packages and a TypeScript runner; those are not installed by the current `package.json`.
 
+## Cursor Cloud specific instructions
+
+- Open the dev server at `http://localhost:3000`. Next.js 16 blocks dev assets, including client hydration, when that server is opened as `http://127.0.0.1:3000`, so buttons such as Explore a collaboration do not run there.
+- Public pages and the lead-form spam acknowledgement work without `.env.local`. `/portal`, `/admin`, and `/company` redirect to `/login?error=supabase_not_configured` until Supabase variables are set.
+
 ## Learned workflow preferences
 
 - When the user attaches a plan from `.cursor/plans/` and says to implement it as specified, do not edit or recreate the plan. Mark its existing todos `in_progress` as work proceeds.

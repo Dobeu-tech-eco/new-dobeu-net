@@ -262,6 +262,75 @@ describe("admin invoices page degradation", () => {
     ).not.toBeInTheDocument();
   });
 
+  describe("paged auth users", () => {
+    const authUsers = (prefix: string, n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        id: `${prefix}${i}`,
+        email: `${prefix}${i}@example.com`,
+      }));
+    const base = { invoices: ok([invoice]), profiles: ok([]), projects: ok([]) };
+
+    it("includes page-2 users in the picker", async () => {
+      const listUsers = vi
+        .fn()
+        .mockResolvedValueOnce(ok({ users: authUsers("a", 200) }))
+        .mockResolvedValueOnce(ok({ users: authUsers("b", 2) }));
+      stubPage(base, listUsers);
+      render(await AdminInvoicesPage(params));
+      expect(listUsers).toHaveBeenNthCalledWith(2, { page: 2, perPage: 200 });
+      const users = h.dialogProps?.users as { id: string }[];
+      expect(users).toHaveLength(202);
+      expect(users.map((u) => u.id)).toContain("b1");
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+
+    it("shows the picker failure notice when a later page fails", async () => {
+      const listUsers = vi
+        .fn()
+        .mockResolvedValueOnce(ok({ users: authUsers("a", 200) }))
+        .mockResolvedValueOnce(fail);
+      stubPage(base, listUsers);
+      const { container } = render(await AdminInvoicesPage(params));
+      expect(h.dialogProps?.users).toEqual([]);
+      expect(
+        screen.getByText(/New Invoice picker could not/),
+      ).toBeInTheDocument();
+      expect(container.textContent).not.toContain("private provider");
+    });
+
+    it("shows the truncation notice at the 50-page cap", async () => {
+      const listUsers = vi
+        .fn()
+        .mockImplementation(async () => ok({ users: authUsers("a", 200) }));
+      stubPage(base, listUsers);
+      render(await AdminInvoicesPage(params));
+      expect(listUsers).toHaveBeenCalledTimes(50);
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /client list may be truncated/,
+      );
+    });
+  });
+
+  it("shows only the failure notice when users are truncated and another picker read fails", async () => {
+    const listUsers = vi
+      .fn()
+      .mockImplementation(async () =>
+        ok({
+          users: Array.from({ length: 200 }, (_, i) => ({
+            id: `a${i}`,
+            email: `a${i}@example.com`,
+          })),
+        }),
+      );
+    stubPage({ invoices: ok([invoice]), profiles: ok([]), projects: fail }, listUsers);
+    render(await AdminInvoicesPage(params));
+    expect(listUsers).toHaveBeenCalledTimes(50);
+    const statuses = screen.getAllByRole("status");
+    expect(statuses).toHaveLength(1);
+    expect(statuses[0]).toHaveTextContent(/could not be fully loaded/);
+    expect(screen.queryByText(/truncated/)).not.toBeInTheDocument();
+  });
+
   it("shows em dashes and hides the table when the invoices read fails", async () => {
     stubPage({ invoices: fail });
     const { container } = render(await AdminInvoicesPage(params));

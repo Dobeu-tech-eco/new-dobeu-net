@@ -2,13 +2,75 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { COMPANY_PATH_HEADER } from "@/lib/company-path";
 import type { Database } from "@/lib/database.types";
-import { isAdminEmail, requiresAal2Stepup, requiresMfaEnrollment } from "@/lib/utils";
+import {
+  isAdminEmail,
+  requiresAal2Stepup,
+  requiresMfaEnrollment,
+  sanitizeNextPath,
+} from "@/lib/utils";
+
+/**
+ * A server-action POST (method POST plus a `next-action` header) must not get a
+ * plain 307: the client would follow it to HTML and surface an error boundary.
+ * It gets a 303 carrying `x-action-redirect` and no `Location` instead, which the
+ * Next client turns into a navigation.
+ */
+function isServerAction(request: NextRequest) {
+  return request.method === "POST" && request.headers.has("next-action");
+}
+
+/**
+ * `target` must be a same-origin path whose query is form-encoded, so a `;` in
+ * it is `%3B` and cannot split the `<url>;<type>` header value.
+ */
+function actionRedirect(target: string) {
+  return new NextResponse(null, {
+    status: 303,
+    headers: { "x-action-redirect": `${target};push` },
+  });
+}
+
+/** Redirect to `url`: action-aware for a server-action POST, a 307 otherwise. */
+function redirectTo(request: NextRequest, url: NextRequest["nextUrl"]) {
+  if (isServerAction(request)) {
+    const query = url.searchParams.toString();
+    return actionRedirect(url.pathname + (query ? `?${query}` : ""));
+  }
+  return NextResponse.redirect(url);
+}
+
+/**
+ * Signed-out redirect to /login. A server-action POST gets the action-aware
+ * 303 with a sanitized `next`; everything else keeps the plain 307 redirect.
+ */
+function signedOutRedirect(
+  request: NextRequest,
+  path: string,
+  fallback: string,
+  keepSearch: boolean,
+) {
+  if (isServerAction(request)) {
+    const next = sanitizeNextPath(path + request.nextUrl.search, fallback);
+    return actionRedirect(`/login?${new URLSearchParams({ next }).toString()}`);
+  }
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  if (keepSearch) {
+    url.search = "";
+    url.searchParams.set("next", path + request.nextUrl.search);
+  } else {
+    url.searchParams.set("next", path);
+  }
+  return NextResponse.redirect(url);
+}
 
 /**
  * Refresh the Supabase session on every request so server components see fresh auth.
  * Also enforces /portal, /admin and /company gating in one place. /company is
  * sign-in only here; company-admin rank, active company and AAL2 are enforced by
- * the /company layout, each /company page, and requireCompanyAdmin().
+ * the /company layout, each /company page, and requireCompanyAdmin(). Signed-out,
+ * not-configured and stray code/token_hash redirects of a server-action POST get
+ * a 303 with `x-action-redirect` instead of a 307.
  *
  * If Supabase env vars are missing (e.g., before the project is provisioned),
  * fall through without crashing so the marketing landing still renders.
@@ -39,7 +101,7 @@ export async function updateSession(request: NextRequest) {
   if ((strayCode || strayToken) && path !== "/auth/callback") {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/callback";
-    return NextResponse.redirect(url);
+    return redirectTo(request, url);
   }
 
   // Bail gracefully if Supabase isn't configured yet
@@ -48,7 +110,7 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("error", "supabase_not_configured");
-      return NextResponse.redirect(url);
+      return redirectTo(request, url);
     }
     return NextResponse.next({ request });
   }
@@ -78,22 +140,14 @@ export async function updateSession(request: NextRequest) {
 
   // Gate /portal — must be authenticated
   if (path.startsWith("/portal") && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
+    return signedOutRedirect(request, path, "/portal", false);
   }
 
   // Gate /company — authentication only. Membership (company-admin rank) and
   // AAL2 are enforced authoritatively in app/company/layout.tsx; middleware
   // does no AAL or membership lookups here. `next` keeps the full path + query.
   if (isCompanyPath && !user) {
-    const url = request.nextUrl.clone();
-    const next = path + request.nextUrl.search;
-    url.pathname = "/login";
-    url.search = "";
-    url.searchParams.set("next", next);
-    return NextResponse.redirect(url);
+    return signedOutRedirect(request, path, "/company", true);
   }
 
   // Gate /admin — must be authenticated AND email in ADMIN_EMAILS AND MFA-satisfied.
@@ -109,10 +163,7 @@ export async function updateSession(request: NextRequest) {
   // request never re-enters this `/admin` block. `/portal` MUST stay non-MFA-gated.
   if (path.startsWith("/admin")) {
     if (!user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("next", path);
-      return NextResponse.redirect(url);
+      return signedOutRedirect(request, path, "/admin", false);
     }
     if (!isAdminEmail(user.email)) {
       const url = request.nextUrl.clone();

@@ -101,7 +101,7 @@ Append entries as `- <date> <text>`.
 
 ## Open items
 
-- None.
+- PR #329 (branch dts2/20261104-124711, head 6baee14) waits on Jeremy for D64 (Cursor Security HIGH: unconfirmed planted-password account attached by inviteMember). Resume: read .harness/runs/20261104-180420/state.md (RESUME HERE line), then act only on Jeremy's D64 answer. Never merge; Jeremy merges on green real CI.
 
 ### Commit and PR authorization — 2026-10-23
 
@@ -109,3 +109,7 @@ Jeremy requested "Commit and create PR on main": commit the approved rebrand and
 - 2026-10-27 S1 closed via a local Supabase stack in CI E2E. pgTAP added to the E2E job. Ticket E2E login fixed. Rows 37/38/42/43/63 done. Receipt: .harness/runs/20261027-151152/receipt.md
 - Ruling: builders shared the run branch tree on disjoint files instead of worktrees, because both needed the running local Docker stack and node_modules. Cost if wrong: file collision (none occurred).
 - 2026-10-27 Contact-form spam fix shipped: verify-first lead flow plus silent bot filters. Receipt: .harness/runs/20261027-172221/receipt.md
+- 2026-11-05 fullauto run 20261105-011156 resumed and ended at the wall cap (raised 90 to 240 min by Jeremy W.). PRs #332 D30 c40e37d, #333 D35 1a1007a, #330 D36 1ef285d, #331 D54 da34747 and #334 D51 d2c84ee are in main and live on dobeu.net. Each production walkthrough passed signed-out; the signed-in walks are H6. Gate: claude and codex approved; gemini failed and its replacement grok was invalid, so it fell back to Jeremy's checkpoint (D73). New items D65-D73 and H6. Next: a new fullauto run for D37, then D65-D72. PR #329 still waits on D64. Report: .harness/runs/20261105-011156/dpp-report.md, ledger: .harness/runs/20261105-011156/task-ledger.md (0 open PRs).
+- Ruling (autopilot run 20261105-045300): every son spawned under dts2 3.11.0 parked before building. There were three causes: the son guard denies the absolute plugin-script path because it contains .claude/; CLAUDE_PLUGIN_ROOT is unset in the son env; and pnpm's store lock is outside the sandbox's writable paths, which also breaks the pre-commit hook. The build moved to head-dispatched builder agents (autopilot section 2) in the same lane worktrees, with the same leases and manifest. Cost if wrong: less isolation between builders and the host, with no change to scope, gate or merge rules.
+- 2026-11-05 autopilot run 20261105-045300 STOPPED by the context guard (hard stop). PRs #336 d65, #337 d71 and #338 d72 passed the build vote 3-0 (claude, codex, muse) and are at pr-open. #335 billing is at round 2 (2-1 approve; codex HIGH on the D66 key, which compares audit time with invoice time); fix round 2 was dispatched before the stop. Nothing is merged. Scope split at plan time: D79 (D65 revalidatePath assertion) and D80 (D71 Playwright test). Resume: .harness/autopilot/latest.md, `Next on resume`. (Superseded by the entry below.)
+- 2026-11-05 autopilot run 20261105-045300 complete: #335 billing (D37, D66-D69) 5ae621a, #336 D65 20b2ae0, #337 D71 c46ddc6, #338 D72 57e63d5 are in main and live; each signed-out production walk PASS 15/15. Billing passed r3 on a Fable tiebreak (2-1; reusing an older Stripe key cannot double-bill). New: D81-D83, H7. PR #329 untouched (D64). Report: .harness/runs/20261105-045300/report.md

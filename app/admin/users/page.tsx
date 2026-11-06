@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/utils";
+import { listAllUsers } from "@/lib/admin-user-list";
 import { InviteUserForm } from "@/components/admin/InviteUserForm";
 import {
   AdminStatusBanner,
@@ -14,24 +15,19 @@ export default async function AdminUsersPage({
 }) {
   const params = await searchParams;
   const supabase = createAdminClient();
-  const { data: profiles, error } = await supabase
-    .from("profiles")
-    .select("id,full_name,company,created_at")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const [{ data: profiles, error }, { users: authUsers, failed: authError, truncated }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id,full_name,company,created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      listAllUsers(supabase),
+    ]);
 
   const adminIds = new Set<string>();
-  let authError = false;
-  try {
-    const { data: usersList, error: usersError } =
-      await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
-    authError = Boolean(usersError);
-    for (const user of usersList?.users ?? []) {
-      if (isAdminEmail(user.email)) adminIds.add(user.id);
-    }
-  } catch (e) {
-    authError = true;
-    console.warn("[admin users] auth.admin.listUsers failed:", e);
+  for (const user of authUsers) {
+    if (isAdminEmail(user.email)) adminIds.add(user.id);
   }
 
   return (
@@ -55,6 +51,15 @@ export default async function AdminUsersPage({
           className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
         >
           Admin badges could not be loaded. The user list is still shown.
+        </p>
+      )}
+      {!authError && truncated && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          The user list used for Admin badges may be truncated; some Admin badges
+          may be missing.
         </p>
       )}
 

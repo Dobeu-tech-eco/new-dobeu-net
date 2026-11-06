@@ -45,6 +45,7 @@ like any other; nothing in it lands without a merge.
 - Workflow and script code that parses manual inputs such as repo lists must handle newlines, whitespace and letter case. It must validate the `owner/name` format before the value reaches shell or a matrix. Pass values through `env`, not `${{ }}` interpolation inside `run:`. (PR #278)
 - Citation validation in `.github/scripts/review-learning.mjs` must check every number in a `PR #x, #y` evidence phrase and must not treat unrelated `#` values (such as `#333`) as citations. (PR #278)
 - When a landing-page redesign changes how many items a section renders (for example FAQ entries), check the Playwright assertions in `e2e/smoke.spec.ts` that count them. CI runs that suite as a merge gate. (PR #280)
+- When a PR removes or renames a published slug (case studies in `SHIPPED_WORK`, service pillars such as `/services/ai-agents`), check that the old URL gets a permanent redirect to the new page or to the parent index. Otherwise indexed and external links turn into 404s. (PR #296)
 
 ### Stop flagging
 

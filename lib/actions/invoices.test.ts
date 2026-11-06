@@ -54,6 +54,9 @@ function arrange(
     recipientName?: string | null;
     profileName?: string | null;
     invoiceStatus?: string | null;
+    // created_at of the invoice row read by status (the helper compares it
+    // with the newest audit row); omitted by default.
+    invoiceCreatedAt?: string;
     invoiceReadError?: { message: string };
     insert?: { data?: unknown; error?: { message: string } | null };
     updateError?: { message: string };
@@ -65,6 +68,12 @@ function arrange(
     // order (default none) / the read error of that lookup.
     auditHits?: unknown[];
     auditReadError?: { message: string };
+    // Rows / error of the helper's own newest-billed-invoice audit read
+    // (select "target_id,created_at"; default none). Separate from auditHits.
+    keyAudit?: unknown[];
+    keyAuditError?: { message: string };
+    // Invoice rows (id,status,created_at) behind keyAudit's target ids.
+    keyInvoices?: unknown[];
     // Status rows of the invoices those audit rows point at (default: active).
     priorInvoices?: unknown[];
     priorInvoicesError?: { message: string };
@@ -75,6 +84,11 @@ function arrange(
     linkError?: { message: string };
     workOrder?: Record<string, unknown> | null;
     workOrderError?: { message: string };
+    // The helper's own re-read of the work order (select "invoice_id"), a
+    // fake separate from the caller's read above. Default: the caller row's
+    // invoice_id. Pass a different link to emulate a concurrent bill.
+    helperWorkOrder?: Record<string, unknown> | null;
+    helperWorkOrderError?: { message: string };
     project?: Record<string, unknown> | null;
     projectError?: { message: string };
     membership?: Record<string, unknown> | null;
@@ -117,7 +131,12 @@ function arrange(
             options.invoiceStatus === undefined
               ? { status: "open" }
               : options.invoiceStatus
-                ? { status: options.invoiceStatus }
+                ? {
+                    status: options.invoiceStatus,
+                    ...(options.invoiceCreatedAt
+                      ? { created_at: options.invoiceCreatedAt }
+                      : {}),
+                  }
                 : null,
           error: options.invoiceReadError,
         },
@@ -201,11 +220,14 @@ function arrange(
           // The duplicate guard awaits `invoices.select()` as a list (the
           // mark-paid read uses `.single()`, which is unaffected).
           if (key === "select" && table === "invoices") {
-            const isPriorLookup = a[0] === "id,status";
+            const isPriorLookup = a[0] === "id,status,stripe_invoice_id";
+            const isKeyInvoices = a[0] === "id,status,created_at";
             const isReuseLookup = a[0] === "id,hosted_invoice_url,status";
             chain.then = (resolve: (v: unknown) => void) =>
               resolve(
-                isReuseLookup
+                isKeyInvoices
+                  ? { data: options.keyInvoices ?? [], error: null }
+                  : isReuseLookup
                   ? { data: options.reuseRows ?? [], error: null }
                   : isPriorLookup
                   ? {
@@ -220,12 +242,40 @@ function arrange(
                     },
               );
           }
+          if (
+            key === "select" &&
+            table === "work_orders" &&
+            a[0] === "invoice_id"
+          ) {
+            const callerRow = options.workOrder as
+              | { invoice_id?: unknown }
+              | null
+              | undefined;
+            chain.single = vi.fn(async () => {
+              stub.recorded.push({ table, method: "single", args: ["helper"] });
+              return {
+                data:
+                  options.helperWorkOrder !== undefined
+                    ? options.helperWorkOrder
+                    : { invoice_id: callerRow?.invoice_id ?? null },
+                error: options.helperWorkOrderError ?? null,
+              };
+            });
+          }
           if (key === "select" && table === "admin_audit_log") {
+            const isKeyRead = a[0] === "target_id";
             chain.then = (resolve: (v: unknown) => void) =>
-              resolve({
-                data: options.auditHits ?? [],
-                error: options.auditReadError ?? null,
-              });
+              resolve(
+                isKeyRead
+                  ? {
+                      data: options.keyAudit ?? [],
+                      error: options.keyAuditError ?? null,
+                    }
+                  : {
+                      data: options.auditHits ?? [],
+                      error: options.auditReadError ?? null,
+                    },
+              );
           }
           if (key === "update" && typeof chain.then === "function") {
             const origThen = chain.then as (
@@ -322,6 +372,13 @@ const LINK_FAILED_PARTS = [
   "work_orders.invoice_id = inv_prior",
 ];
 const UNKNOWN_INVOICE_PARTS = ["no invoice id", "unknown invoice"];
+const UNSENT_WO_PARTS = [
+  "failed at Stripe",
+  "inv_prior",
+  "void",
+  "Supabase",
+  "up to 24 hours",
+];
 const UNSENT_PARTS = ["unsent invoice", "last 24 hours", "void"];
 
 describe("createInvoice (Stripe-wired)", () => {
@@ -544,7 +601,10 @@ describe("createInvoice (Stripe-wired)", () => {
       workOrder: { ...ACCEPTED_WO, invoice_id: "inv_linked" },
     });
     const { createInvoice } = await import("@/lib/actions/invoices");
-    expectRefusal(await createInvoice(woInput), "inv_linked", "already billed");
+    const refused = await createInvoice(woInput);
+    expectRefusal(refused, "inv_linked", "already billed");
+    // After D35 the 24 h Stripe warning only fits a different case.
+    expect(refused.ok === false && refused.error).not.toContain("24 hours");
     expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
     expect(invoiceInserts()).toEqual([]);
     expectNoAudit();
@@ -627,7 +687,12 @@ describe("createInvoice (Stripe-wired)", () => {
       method: "in",
       args: [
         "action",
-        ["invoice.create", "invoice.create_for_work_order", "invoice.link_failed"],
+        [
+          "invoice.create",
+          "invoice.create_for_work_order",
+          "invoice.link_failed",
+          "invoice.create_stripe_failed",
+        ],
       ],
     });
     expect(admin.recorded).toContainEqual({
@@ -739,6 +804,190 @@ describe("createInvoice (Stripe-wired)", () => {
     const { createInvoice } = await import("@/lib/actions/invoices");
     expectRefusal(await createInvoice(woInput), ...ALREADY_PARTS);
     expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+  });
+
+  describe("D37: unsent Stripe-failed invoice blocks a re-bill", () => {
+    const STRIPE_FAILED = [
+      { target_id: "inv_prior", action: "invoice.create_stripe_failed" },
+    ];
+    const unsentRow = (status: string) => [
+      { id: "inv_prior", status, stripe_invoice_id: null },
+    ];
+
+    it("createInvoice blocks a different-amount re-bill while the unsent row is open", async () => {
+      admin = arrange({
+        auditHits: STRIPE_FAILED,
+        priorInvoices: unsentRow("open"),
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      const result = await createInvoice({ ...woInput, amount_cents: 99999 });
+      expectRefusal(result, ...UNSENT_WO_PARTS);
+      expect(result.ok === false && result.error).not.toContain("already billed");
+      expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+      expect(invoiceInserts()).toEqual([]);
+      expectNoAudit();
+    });
+
+    it("createInvoiceForWorkOrder blocks while the unsent row is open", async () => {
+      admin = arrange({
+        auditHits: STRIPE_FAILED,
+        priorInvoices: unsentRow("open"),
+      });
+      const { createInvoiceForWorkOrder } = await import("@/lib/actions/invoices");
+      expectRefusal(
+        await createInvoiceForWorkOrder({ work_order_id: VALID_WO }),
+        ...UNSENT_WO_PARTS,
+      );
+      expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+      expectNoAudit();
+    });
+
+    it("allows a re-bill once the unsent row is void", async () => {
+      admin = arrange({
+        auditHits: STRIPE_FAILED,
+        priorInvoices: unsentRow("void"),
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect((await createInvoice({ ...woInput, amount_cents: 99999 })).ok).toBe(true);
+      expect(stripeMocks.createHostedInvoice).toHaveBeenCalled();
+    });
+
+    it("treats a stripe-failed row that has a Stripe invoice id as already billed", async () => {
+      admin = arrange({
+        auditHits: STRIPE_FAILED,
+        priorInvoices: [{ id: "inv_prior", status: "open", stripe_invoice_id: "in_x" }],
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expectRefusal(await createInvoice(woInput), ...ALREADY_PARTS);
+    });
+
+    it("keeps the link-failed message when a link-failed row sits beside an unsent row", async () => {
+      admin = arrange({
+        auditHits: [
+          ...STRIPE_FAILED,
+          { target_id: "inv_prior", action: "invoice.link_failed" },
+        ],
+        priorInvoices: [{ id: "inv_prior", status: "open", stripe_invoice_id: "in_x" }],
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expectRefusal(await createInvoice(woInput), ...LINK_FAILED_PARTS);
+    });
+  });
+
+  describe("D67: caller read and helper re-read are separate fakes", () => {
+    const keyOf = () =>
+      (
+        stripeMocks.createHostedInvoice.mock.calls.at(-1) as unknown as [
+          { idempotencyKey?: string },
+        ]
+      )[0].idempotencyKey;
+
+    it("void replace: the Stripe key carries the replaced invoice id", async () => {
+      admin = arrange({
+        invoiceStatus: "void",
+        workOrder: { ...ACCEPTED_WO, invoice_id: "inv_voided" },
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect((await createInvoice(woInput)).ok).toBe(true);
+      expect(keyOf()).toBe(`work-order-invoice:${VALID_WO}:inv_voided`);
+    });
+
+    it("unbilled work order: the Stripe key is v1", async () => {
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect((await createInvoice(woInput)).ok).toBe(true);
+      expect(keyOf()).toBe(`work-order-invoice:${VALID_WO}:v1`);
+    });
+
+    it("after link_failed: the key uses the newest billed invoice, not the stale link", async () => {
+      admin = arrange({
+        invoiceStatus: "void",
+        // Linked A is older than the newest audited bill B.
+        invoiceCreatedAt: "2026-11-01T00:00:00Z",
+        priorInvoices: [
+          { id: "inv_A", status: "void", stripe_invoice_id: "in_a" },
+          { id: "inv_B", status: "void", stripe_invoice_id: "in_b" },
+        ],
+        auditHits: [
+          { target_id: "inv_A", action: "invoice.create" },
+          { target_id: "inv_B", action: "invoice.link_failed" },
+        ],
+        keyAudit: [{ target_id: "inv_B" }],
+        keyInvoices: [
+          { id: "inv_B", status: "void", created_at: "2026-11-04T00:00:00Z" },
+        ],
+        workOrder: { ...ACCEPTED_WO, invoice_id: "inv_A" },
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect((await createInvoice({ ...woInput, amount_cents: 30000 })).ok).toBe(true);
+      expect(keyOf()).toBe(`work-order-invoice:${VALID_WO}:inv_B`);
+    });
+
+    it.each([
+      ["createInvoice", "createInvoice"],
+      ["createInvoiceForWorkOrder", "createInvoiceForWorkOrder"],
+    ] as const)(
+      "%s race: a bill lands between the caller read and the helper re-read; the helper refuses before Stripe",
+      async (_label, fn) => {
+        admin = arrange({
+          invoiceStatus: "open",
+          workOrder: { ...ACCEPTED_WO, invoice_id: null },
+          helperWorkOrder: { invoice_id: "inv_raced" },
+        });
+        const mod = await import("@/lib/actions/invoices");
+        const result =
+          fn === "createInvoice"
+            ? await mod.createInvoice(woInput)
+            : await mod.createInvoiceForWorkOrder({ work_order_id: VALID_WO });
+        expectRefusal(result, "inv_raced", "already billed");
+        expect(stripeMocks.getOrCreateStripeCustomer).not.toHaveBeenCalled();
+        expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+        expect(invoiceInserts()).toEqual([]);
+        expectNoAudit();
+      },
+    );
+
+    it("race with a void raced link: Stripe is called with the raced key and the stale back-link is flagged", async () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        admin = arrange({
+          invoiceStatus: "void",
+          workOrder: { ...ACCEPTED_WO, invoice_id: null },
+          helperWorkOrder: { invoice_id: "inv_raced" },
+          // The caller back-links with .is(invoice_id, null): no row matches.
+          linkRows: [],
+        });
+        const { createInvoice } = await import("@/lib/actions/invoices");
+        const result = await createInvoice(woInput);
+        expect(keyOf()).toBe(`work-order-invoice:${VALID_WO}:inv_raced`);
+        expect(result.ok && result.data.linkFailed).toBe(true);
+        expect(admin.recorded).toContainEqual({
+          table: "work_orders",
+          method: "is",
+          args: ["invoice_id", null],
+        });
+        expect(auditInserts()[0].args).toEqual([
+          expect.objectContaining({ action: "invoice.link_failed" }),
+        ]);
+      } finally {
+        consoleError.mockRestore();
+      }
+    });
+
+    it("fails closed before Stripe when the helper's work_orders re-read errors", async () => {
+      admin = arrange({
+        workOrder: { ...ACCEPTED_WO, invoice_id: null },
+        helperWorkOrder: null,
+        helperWorkOrderError: { message: "db down" },
+      });
+      const { createInvoice } = await import("@/lib/actions/invoices");
+      expect(await createInvoice(woInput)).toEqual({
+        ok: false,
+        error: "Unable to read the work order's current invoice link",
+      });
+      expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
+      expect(invoiceInserts()).toEqual([]);
+      expectNoAudit();
+    });
   });
 
   it("rejects an invalid currency code in Zod", async () => {

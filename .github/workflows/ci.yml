@@ -95,7 +95,7 @@ jobs:
       # No GitHub secrets: the stack uses Supabase's fixed local demo keys
       # (printed by `supabase start`), masked below for later steps.
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v3
         with:
           version: 2.121.0
 
