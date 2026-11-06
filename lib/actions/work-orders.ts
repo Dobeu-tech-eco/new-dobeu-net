@@ -162,7 +162,8 @@ export async function submitWorkOrder(
     .single();
 
   if (insertErr || !inserted) {
-    return { ok: false, error: insertErr?.message ?? "insert failed" };
+    if (insertErr) console.error("[submitWorkOrder] insert failed", safeErrorFields(insertErr));
+    return { ok: false, error: "submit failed" };
   }
 
   const workOrderId = inserted.id;

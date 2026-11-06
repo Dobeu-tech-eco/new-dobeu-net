@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { deleteProject } from "@/lib/actions/projects";
+import { adminErrorMessage } from "@/lib/admin-status";
 
 /**
  * Two-step confirm: first click arms the button, second click within ~5s deletes.
@@ -25,7 +26,13 @@ export function DeleteProjectButton({ id, title }: { id: string; title: string }
     startTransition(async () => {
       const result = await deleteProject({ id });
       if (!result.ok) {
-        setError(result.error);
+        setError(
+          result.error === "project_has_invoices"
+            ? adminErrorMessage(result.error)
+            : result.error === "project_delete_failed"
+              ? "Unable to delete the project. Try again."
+              : result.error,
+        );
         setArmed(false);
         return;
       }

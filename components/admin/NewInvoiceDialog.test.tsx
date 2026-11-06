@@ -185,7 +185,7 @@ describe("NewInvoiceDialog", () => {
     });
     submit();
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Invoice saved, but Stripe failed. It is listed with no Stripe link. Do not submit again; fix the Stripe configuration and set the unsent invoice's status to void in Supabase if it should not stand (it has no Stripe invoice).",
+      "Invoice saved, but Stripe failed. It is listed with no Stripe link. Do not submit again; fix the Stripe configuration and use the Void unsent button on its row in /admin/invoices if it should not stand (it has no Stripe invoice).",
     );
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await waitFor(() =>
@@ -219,7 +219,7 @@ describe("NewInvoiceDialog", () => {
       target: { value: "10" },
     });
     submit();
-    const notice = await screen.findByRole("status");
+    const notice = screen.getByRole("status");
     await waitFor(() => {
       expect(notice).toHaveTextContent(
         "Invoice inv_link_failed_9 was created but could not be linked to the work order.",
@@ -228,6 +228,7 @@ describe("NewInvoiceDialog", () => {
         "work_orders.invoice_id = inv_link_failed_9",
       );
       expect(notice).toHaveTextContent("/admin/invoices");
+      expect(notice).toHaveTextContent("then reload this page");
     });
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await waitFor(() =>
@@ -262,7 +263,7 @@ describe("NewInvoiceDialog", () => {
       target: { value: "10" },
     });
     submit();
-    expect(await screen.findByRole("status")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("status")).not.toBeEmptyDOMElement());
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
@@ -297,7 +298,7 @@ describe("NewInvoiceDialog", () => {
         screen.getByRole("button", { name: "Create Stripe invoice" }),
       ).toBeEnabled(),
     );
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
   it("names each work order's own invoice in the link-failed notice", async () => {
@@ -335,7 +336,7 @@ describe("NewInvoiceDialog", () => {
     fireEvent.change(screen.getByLabelText("Work order (optional)"), {
       target: { value: WO_C },
     });
-    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("status")).toBeEmptyDOMElement());
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: "Create Stripe invoice" }),
@@ -392,7 +393,7 @@ describe("NewInvoiceDialog", () => {
 
   it("shows the server-side unsent-duplicate rejection and stays editable", async () => {
     const message =
-      "An unsent invoice for this client and amount already exists from the last 24 hours (the Stripe call failed). The unsent invoice has no Stripe invoice; set its status to void in Supabase before creating another.";
+      "An unsent invoice for this client and amount already exists from the last 24 hours (the Stripe call failed). The unsent invoice has no Stripe invoice; use the Void unsent button on its row in /admin/invoices before creating another.";
     h.create.mockResolvedValue({ ok: false, error: message });
     render(<NewInvoiceDialog {...props} />);
     openAndPickClient();

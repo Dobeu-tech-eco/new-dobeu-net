@@ -169,10 +169,11 @@ select is((select count(*) from public.companies where id = 'd4400000-0000-4000-
 select is((select status from public.companies where id = 'd4400000-0000-4000-8000-0000000000a2'), 'suspended', 'suspended member sees status = suspended');
 select is((select count(*) from public.company_members where user_id = 'd4400000-0000-4000-8000-000000000003' and company_id = 'd4400000-0000-4000-8000-0000000000a2')::int, 1, 'suspended member still reads their own company_members row');
 select is((select count(*) from public.company_members where company_id = 'd4400000-0000-4000-8000-0000000000a2')::int, 1, 'suspended member reads their own membership row (SUS has no other members; co-member visibility is unchanged by D44, memo trap 3)');
-select lives_ok(
+select throws_ok(
   $$ insert into public.work_orders (created_by, service_type, title, company_id)
      values ('d4400000-0000-4000-8000-000000000003', 'logo', 'D44 insert while suspended', 'd4400000-0000-4000-8000-0000000000a2') $$,
-  'wo_insert_own is unchanged: a suspended member can still insert a work order for their company (separate decision, see memo)');
+  '42501', null,
+  'D52 supersedes the D44 carve-out: a suspended member can no longer insert a work order for their company');
 
 -- 6. helper behaviour (as MS / MA)
 select is(public.is_active_company_member('d4400000-0000-4000-8000-0000000000a2'), false, 'is_active_company_member false for suspended company');

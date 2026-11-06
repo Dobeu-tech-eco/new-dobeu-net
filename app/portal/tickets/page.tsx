@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { NewWorkOrderDialog } from "@/components/portal/NewWorkOrderDialog";
 import type { WorkOrderStatus } from "@/lib/domain-types";
+import { listSuspendedCompanies } from "@/lib/company-status";
 import { QueryError } from "../QueryError";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +57,8 @@ export default async function TicketsPage() {
     )
     .order("created_at", { ascending: false });
 
+  const suspended = await listSuspendedCompanies(supabase, user.id);
+
   return (
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-4">
@@ -65,7 +68,7 @@ export default async function TicketsPage() {
             Open a ticket for a new design, build, or business system.
           </p>
         </div>
-        <NewWorkOrderDialog />
+        <NewWorkOrderDialog suspendedCompanyNames={suspended.map((c) => c.name)} />
       </header>
 
       {error ? (
