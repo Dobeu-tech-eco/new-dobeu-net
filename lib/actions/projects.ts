@@ -206,8 +206,21 @@ export async function deleteProject(
     throw e;
   }
 
+  // D84: refuse while any invoice (any status, void included) references the
+  // project. Deleting it would cascade the audited invoice away and strand
+  // work-order re-billing (AUDITED_INVOICE_MISSING). Fail closed on read error.
+  const { data: invoices, error: invoiceError } = await admin
+    .from("invoices")
+    .select("id")
+    .eq("project_id", id)
+    .limit(1);
+  if (invoiceError || !Array.isArray(invoices)) {
+    return { ok: false, error: "project_delete_failed" };
+  }
+  if (invoices.length > 0) return { ok: false, error: "project_has_invoices" };
+
   const { error } = await admin.from("projects").delete().eq("id", id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: "project_delete_failed" };
 
   await writeAdminAudit(admin, {
     actorUserId: user.id,

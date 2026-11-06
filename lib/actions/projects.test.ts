@@ -43,6 +43,7 @@ function arrange(
     insert?: { data?: unknown; error?: { message: string } | null };
     updateError?: { message: string };
     deleteError?: { message: string };
+    invoices?: { data?: unknown; error?: { message: string } };
     auditError?: { message: string };
   } = {},
 ) {
@@ -77,6 +78,12 @@ function arrange(
         insert: options.insert ?? { data: { id: PROJECT_ID } },
         update: { error: options.updateError },
         delete: { error: options.deleteError },
+      },
+      invoices: {
+        selectSingle: {
+          data: options.invoices ? options.invoices.data : [],
+          error: options.invoices?.error,
+        },
       },
       companies: {
         selectSingle: {
@@ -411,9 +418,32 @@ describe("deleteProject", () => {
     admin = arrange({ deleteError: { message: "FK violation" } });
     expect(await deleteProject({ id: PROJECT_ID })).toEqual({
       ok: false,
-      error: "FK violation",
+      error: "project_delete_failed",
     });
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("refuses while any invoice references the project", async () => {
+    admin = arrange({ invoices: { data: [{ id: "inv_1" }] } });
+    expect(await deleteProject({ id: PROJECT_ID })).toEqual({
+      ok: false,
+      error: "project_has_invoices",
+    });
+    expect(admin.recorded).toContainEqual({
+      table: "invoices",
+      method: "eq",
+      args: ["project_id", PROJECT_ID],
+    });
+    expectNoMutation();
+  });
+
+  it("fails closed when the invoice read errors", async () => {
+    admin = arrange({ invoices: { error: { message: "secret detail" } } });
+    expect(await deleteProject({ id: PROJECT_ID })).toEqual({
+      ok: false,
+      error: "project_delete_failed",
+    });
+    expectNoMutation();
   });
 });
 
