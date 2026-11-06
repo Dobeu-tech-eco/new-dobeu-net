@@ -1751,6 +1751,35 @@ describe("voidUnsentInvoice (D32)", () => {
     expect(stripeMocks.createHostedInvoice).not.toHaveBeenCalled();
   });
 
+  it("void then re-bill of the same work order keeps the Stripe idempotency key", async () => {
+    const keyOf = () =>
+      (
+        stripeMocks.createHostedInvoice.mock.calls.at(-1) as unknown as [
+          { idempotencyKey?: string },
+        ]
+      )[0].idempotencyKey;
+    const { createInvoice, voidUnsentInvoice } = await import("@/lib/actions/invoices");
+    const input = { user_id: VALID_USER, amount_cents: 10000, work_order_id: VALID_WO };
+
+    stripeMocks.createHostedInvoice.mockRejectedValueOnce(new Error("stripe down"));
+    admin = arrange({ workOrder: ACCEPTED_WO });
+    const first = await createInvoice(input);
+    expect(first.ok).toBe(false);
+    const firstKey = keyOf();
+    expect(firstKey).toBe(`work-order-invoice:${VALID_WO}:v1`);
+
+    admin = arrange({ invoiceStatus: "open" });
+    expect((await voidUnsentInvoice({ id: VALID_INV })).ok).toBe(true);
+
+    admin = arrange({
+      workOrder: ACCEPTED_WO,
+      auditHits: [{ target_id: "inv_prior", action: "invoice.create_stripe_failed" }],
+      priorInvoices: [{ id: "inv_prior", status: "void", stripe_invoice_id: null }],
+    });
+    expect((await createInvoice(input)).ok).toBe(true);
+    expect(keyOf()).toBe(firstKey);
+  });
+
   it("refuses an invoice that has a Stripe invoice", async () => {
     admin = arrange({ invoiceStatus: "open", invoiceStripeId: "in_real" });
     const result = await run();
@@ -1765,6 +1794,7 @@ describe("voidUnsentInvoice (D32)", () => {
     const result = await run();
     expect(result.ok).toBe(false);
     expect(result.ok === false && result.error).toContain("only an open unsent invoice");
+    expect(result.ok === false && result.error).toContain("Check the Stripe dashboard");
     expect(invoiceUpdates()).toEqual([]);
     expectNoAudit();
   });
@@ -1794,10 +1824,10 @@ describe("voidUnsentInvoice (D32)", () => {
       }
       return query;
     });
-    expect(await run()).toEqual({
-      ok: false,
-      error: "invoice is no longer an open unsent invoice",
-    });
+    const result = await run();
+    expect(result.ok === false && result.error).toContain(
+      "invoice is no longer an open unsent invoice",
+    );
     expectNoAudit();
   });
 

@@ -58,6 +58,9 @@ function linkFailedMessage(invoiceId: string): string {
   return `Invoice ${invoiceId} exists for this work order, but its link to the ticket failed. To keep it, link it by setting work_orders.invoice_id = ${invoiceId} in Supabase. To bill again instead, ${STRIPE_VOID_STEP}, and wait for the webhook to mark it void.`;
 }
 
+const STRIPE_FAILED_CHECK =
+  "The Stripe call failed. Check the Stripe dashboard for this customer before re-billing; a re-bill within 24 hours reuses the same request safely.";
+
 const UNKNOWN_INVOICE_MESSAGE =
   "An earlier billing record for this work order has no invoice id, so it is treated as invoiced (unknown invoice). Review the admin_audit_log rows for this work order in Supabase before billing again.";
 
@@ -219,6 +222,7 @@ async function backLinkInvoice(
 }
 
 const markPaidInput = z.object({ id: uuid });
+const voidUnsentInput = z.object({ id: uuid });
 
 /**
  * `linkFailed` is set when the invoice exists but could not be back-linked onto
@@ -547,8 +551,9 @@ export async function markInvoicePaidManually(
 
 /**
  * Admin remedy for an unsent invoice: the Stripe call failed after the local
- * row was inserted, so the row is `open` with no stripe_invoice_id and no
- * Stripe invoice exists to void. Refuses anything with a Stripe invoice (that
+ * row was inserted, so the row is `open` with no stripe_invoice_id. A Stripe
+ * error does not prove no Stripe invoice exists, so the admin is told to check
+ * the Stripe dashboard first. Refuses anything with a Stripe invoice (that
  * one is voided in Stripe and the webhook flips it) or anything not `open`.
  * The write is conditional on the state that was read. To retry billing, void
  * first and then create again through the existing create path.
@@ -556,7 +561,7 @@ export async function markInvoicePaidManually(
 export async function voidUnsentInvoice(
   raw: unknown
 ): Promise<ActionResult<{ id: string }>> {
-  const parsed = markPaidInput.safeParse(raw);
+  const parsed = voidUnsentInput.safeParse(raw);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
   }
@@ -584,7 +589,10 @@ export async function voidUnsentInvoice(
     };
   }
   if (existing.status !== "open") {
-    return { ok: false, error: `only an open unsent invoice can be voided (status="${existing.status}")` };
+    return {
+      ok: false,
+      error: `only an open unsent invoice can be voided (status="${existing.status}"). ${STRIPE_FAILED_CHECK}`
+    };
   }
 
   const { data: updated, error } = await admin
@@ -595,7 +603,9 @@ export async function voidUnsentInvoice(
     .is("stripe_invoice_id", null)
     .select("id");
   if (error) return { ok: false, error: "Unable to void the invoice" };
-  if (!updated?.length) return { ok: false, error: "invoice is no longer an open unsent invoice" };
+  if (!updated?.length) {
+    return { ok: false, error: `invoice is no longer an open unsent invoice. ${STRIPE_FAILED_CHECK}` };
+  }
 
   await writeAdminAudit(admin, {
     actorUserId: user.id,

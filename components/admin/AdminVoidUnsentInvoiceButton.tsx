@@ -16,7 +16,7 @@ export function AdminVoidUnsentInvoiceButton({ invoiceId }: { invoiceId: string 
     setError(null);
     if (
       !confirm(
-        "Void this unsent invoice? It never reached Stripe, so the client has no payment link. You can create a new invoice afterwards."
+        "Void this unsent invoice? The Stripe call failed. Check the Stripe dashboard for this customer before re-billing; a re-bill within 24 hours reuses the same request safely."
       )
     ) {
       return;
