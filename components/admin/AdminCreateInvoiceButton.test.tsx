@@ -40,7 +40,7 @@ describe("AdminCreateInvoiceButton", () => {
       expect(button()).toBeEnabled();
       expect(button()).toHaveTextContent("Create Stripe invoice ($100)");
     });
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
@@ -57,6 +57,7 @@ describe("AdminCreateInvoiceButton", () => {
       expect(notice).toHaveTextContent(
         "void it in the Stripe dashboard (find it on /admin/invoices)",
       );
+      expect(notice).toHaveTextContent("then reload this page");
       expect(button()).toBeDisabled();
       expect(button()).toHaveAttribute("aria-busy", "false");
     });
@@ -74,7 +75,7 @@ describe("AdminCreateInvoiceButton", () => {
       expect(screen.getByRole("alert")).toHaveTextContent("Stripe error: nope");
       expect(button()).toBeEnabled();
     });
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
   it("does not call the action when the admin declines the confirm", () => {

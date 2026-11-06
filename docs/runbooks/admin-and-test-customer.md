@@ -96,7 +96,29 @@ Rows land in `admin_audit_log` (service role only; clients have no grants).
 | `work_order.quote`, `work_order.status` | quote and status changes |
 | `invoice.create`, `invoice.create_for_work_order` | invoice creation |
 | `invoice.mark_paid_manual` | manual mark-paid (records previous status) |
+| `invoice.void_unsent` | Void unsent button (open invoice with no Stripe id) |
+| `invoice.create_stripe_failed` | Stripe failed after the local row was inserted (target = the unsent invoice) |
+| `invoice.link_failed` | invoice created but not back-linked onto its work order |
 | `project.create`, `project.update`, `project.delete` | project admin writes |
 | `user.invite`, `user.update` | user admin writes |
 | `script.invite_test_customer` | `scripts/invite-test-customer.mjs --apply` |
 | company actions | `lib/actions/companies.ts` |
+
+## (g) Invoice guard messages: remaining manual remedies
+
+The invoice actions refuse or warn with messages that point at a manual step.
+Each is listed here with what to do. Run SQL in the Supabase SQL editor as the
+service role; nothing here needs a secret value.
+
+| Message says | Meaning | Remedy |
+| --- | --- | --- |
+| "Invoice X was created but could not be linked to the work order" (`invoice.link_failed`) | The invoice exists (and the client was emailed) but `work_orders.invoice_id` is still null. | To keep it: `update work_orders set invoice_id = 'X' where id = '<work order id>' and invoice_id is null;` then reload the ticket page. To bill again instead: void it in the Stripe dashboard (find it on `/admin/invoices`), wait for the webhook to mark it void, then bill again. |
+| "An earlier billing record ... has no invoice id ... (unknown invoice)" | An `admin_audit_log` billing row for this work order has a null `target_id`, so the guard cannot tell what was billed and refuses. | Read the rows: `select created_at, action, target_id, data from admin_audit_log where data->>'work_order_id' = '<work order id>' order by created_at;`. Find the invoice on `/admin/invoices` and decide. If it is real, link it (as above). If nothing was billed, void any stray invoice and ask an engineer to fix the audit row; the guard fails safe until then. |
+| "Invoice X is already billed for this work order" | A non-void invoice is linked or audited for it. | Void it in the Stripe dashboard and wait for the webhook, or leave it as the bill. |
+| "... failed at Stripe and left unsent invoice X" / "An unsent invoice for this client and amount already exists" | The Stripe call failed after the local row was inserted, so the row is `open` with no Stripe id. | First check the Stripe dashboard for this customer: a Stripe error does not prove no Stripe invoice exists, and a re-bill within 24 hours reuses the same request safely. Then use the **Void unsent** button on that row in `/admin/invoices` (admin with AAL2; writes `invoice.void_unsent`), then create the invoice again. Stripe may refuse a different amount for up to 24 hours after the failed attempt. The button refuses rows that have a Stripe id or are not open. |
+
+`invoices.stripe_invoice_id` is unique when set (partial unique index
+`invoices_stripe_invoice_id_key`). If its migration ever fails with "duplicated
+value(s)", find them with
+`select stripe_invoice_id, array_agg(id) from invoices where stripe_invoice_id is not null group by 1 having count(*) > 1;`,
+resolve the extra rows by hand, and re-run the migration.

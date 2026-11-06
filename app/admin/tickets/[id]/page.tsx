@@ -56,13 +56,15 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
     hosted_invoice_url: string | null;
     stripe_invoice_id: string | null;
   } | null = null;
+  let invoiceReadFailed = false;
   if (ticket.invoice_id) {
-    const { data: inv } = await admin
+    const { data: inv, error: invErr } = await admin
       .from("invoices")
       .select("id,amount_cents,status,hosted_invoice_url,stripe_invoice_id")
       .eq("id", ticket.invoice_id)
       .single();
     invoice = inv ?? null;
+    invoiceReadFailed = Boolean(invErr || !inv);
   }
 
   // A voided invoice stays linked (voiding never clears work_orders.invoice_id),
@@ -182,7 +184,7 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
         </section>
       )}
 
-      {canBill && ticket.quoted_amount_cents && (
+      {canBill && ticket.quoted_amount_cents != null && ticket.quoted_amount_cents > 0 && (
         <section className="rounded-lg border border-accent/30 bg-accent/5 p-5 space-y-3">
           <h2 className="font-semibold">Bill this work order</h2>
           <p className="text-sm text-muted-foreground">
@@ -204,6 +206,16 @@ export default async function AdminTicketDetailPage({ params }: PageProps) {
           <h2 className="font-semibold">Transition status</h2>
           <AdminStatusButtons ticketId={ticket.id} currentStatus={ticket.status} />
         </section>
+      )}
+
+      {invoiceReadFailed && (
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground"
+        >
+          The linked invoice could not be loaded, so billing actions are hidden.
+          Reload this page to try again.
+        </p>
       )}
 
       {invoice && (

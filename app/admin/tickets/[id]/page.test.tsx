@@ -156,6 +156,26 @@ describe("admin ticket detail billing gates", () => {
     stubPage({ ...ticket, invoice_id: "inv-1" });
     await renderPage();
     expect(screen.queryByText("Bill this work order")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "The linked invoice could not be loaded",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Reload this page");
+  });
+
+  it("shows no load notice when the linked invoice reads fine", async () => {
+    stubPage(
+      { ...ticket, invoice_id: "inv-1" },
+      { data: linkedInvoice("open"), error: null },
+    );
+    await renderPage();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it.each([0, -500])("hides the Bill section for a quote of %i", async (cents) => {
+    stubPage({ ...ticket, quoted_amount_cents: cents });
+    await renderPage();
+    expect(screen.queryByText("Bill this work order")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("create-invoice")).not.toBeInTheDocument();
   });
 
   it("hides the Bill section for a void-linked work order that is not accepted", async () => {

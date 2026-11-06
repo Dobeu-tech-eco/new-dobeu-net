@@ -175,6 +175,32 @@ describe("CompanyMembersPage guard", () => {
     expect(h.createAdminClient).toHaveBeenCalledTimes(1);
   });
 
+  it("pages through all users via listAllUsers (more than 200 users)", async () => {
+    const mk = (n: number, off: number) =>
+      Array.from({ length: n }, (_, i) => ({ id: `x${off + i}`, email: `x${off + i}@b.co` }));
+    const listUsers = vi.fn(async ({ page }: { page: number }) => ({
+      data: { users: page === 1 ? mk(200, 0) : [{ id: "u1", email: "late@b.co" }] },
+      error: null
+    }));
+    h.createAdminClient.mockReturnValue({ auth: { admin: { listUsers } } });
+    h.requireCompanyAdmin.mockResolvedValue({});
+    render(await CompanyMembersPage(props));
+    expect(listUsers).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("late@b.co")).toBeInTheDocument();
+  });
+
+  it("renders user ids and logs a fixed warning when listUsers errors", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const listUsers = vi.fn(async () => ({ data: null, error: { message: "boom victim@x.co" } }));
+    h.createAdminClient.mockReturnValue({ auth: { admin: { listUsers } } });
+    h.requireCompanyAdmin.mockResolvedValue({});
+    render(await CompanyMembersPage(props));
+    expect(screen.queryByText("a@b.co")).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith("[company members] user list failed; showing ids");
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("victim@x.co");
+    warn.mockRestore();
+  });
+
   describe("invite notices", () => {
     it.each([
       ["member_added", "status"],

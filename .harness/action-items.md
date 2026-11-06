@@ -100,6 +100,7 @@ Things only the user can do or decide. `run` appends rows; `session-lessons.sh` 
 | D81: billing re-bill idempotency candidate window is the last 10 billed-audit rows (lib/invoice-creation.ts:170-176); raise or drop the limit and state the bound (PR #335 r3 MEDIUM, all four reviewers) |  | open |  | 2026-11-05 |
 | D82: billing re-bill idempotency: audited invoice ids missing from the .in() read are dropped silently (deleteProject cascades invoices); refuse with a remedy, or make deleteProject refuse while a non-void invoice references the project; add a test (PR #335 r3 MEDIUM) |  | open |  | 2026-11-05 |
 | D83: export STRIPE_FAILED_ACTION from lib/invoice-creation.ts next to BILLED_AUDIT_ACTIONS (PR #335 r3 LOW) |  | open |  | 2026-11-05 |
+| Lane invites parked: its diff changes protected files (.github/workflows/ci.yml, .harness/action-items.md, .harness/autopilot/latest.md, .harness/state.md). Review the diff, then publish it by hand or re-plan the lane. |  | open |  | 2026-11-05 |
 
 ## Handoff
 
