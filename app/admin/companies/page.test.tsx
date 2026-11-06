@@ -283,6 +283,7 @@ describe("company action feedback", () => {
   it.each([
     ["invitee_needs_link_signin", "admin_invitee_needs_link_signin"],
     ["already_member", "admin_already_member"],
+    ["member_disabled", "admin_member_disabled"],
   ])("redirects provisioning error %s to %s", async (error, code) => {
     h.provisionCompanyAdmin.mockResolvedValue({ ok: false, error });
     const tree = await AdminCompaniesPage({

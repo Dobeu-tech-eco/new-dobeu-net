@@ -6,6 +6,8 @@ export const ADMIN_ERROR_MESSAGES = {
   admin_provision_failed: "Unable to provision the company admin. Try again.",
   admin_invitee_needs_link_signin:
     "That account has not signed in with an emailed link yet. Ask them to sign in with an emailed link, then try again.",
+  admin_member_disabled:
+    "This person was disabled by the company; re-enable them from the company's members page first.",
   admin_already_member: "That user is already a member of this company.",
   project_save_failed: "Unable to save the project. Try again.",
   load_failed: "Unable to load admin data. Try again.",
@@ -30,6 +32,8 @@ export function provisionErrorCode(error: string): AdminErrorCode {
       return "admin_invitee_needs_link_signin";
     case "already_member":
       return "admin_already_member";
+    case "member_disabled":
+      return "admin_member_disabled";
     default:
       return "admin_provision_failed";
   }

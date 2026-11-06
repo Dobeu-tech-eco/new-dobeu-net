@@ -49,7 +49,6 @@ vi.mock("@/lib/supabase/server", () => ({
   createAdminClient: vi.fn(() => h.state.adminClient),
 }));
 
-
 /**
  * Build a service-role stub: buildStubClient for the table surface, plus the
  * auth.admin methods buildStubClient does not provide (per task guidance —
@@ -72,8 +71,23 @@ function buildAdmin(opts: {
     data: { user: { id: "new_user" } },
     error: null,
   };
+  // buildStubClient only models .single(); alias maybeSingle onto it.
+  const baseFrom = base.supabase.from;
+  const from = ((table: string) => {
+    const chain = baseFrom(table);
+    const origSelect = chain.select;
+    chain.select = ((...a: unknown[]) => {
+      const q = (origSelect as (...x: unknown[]) => Record<string, unknown>)(
+        ...a,
+      );
+      q.maybeSingle = q.single;
+      return q;
+    }) as typeof chain.select;
+    return chain;
+  }) as typeof baseFrom;
   const client = {
     ...base.supabase,
+    from,
     rpc: vi.fn(async () => ({ data: opts.rpcId ?? null, error: null })),
     auth: {
       ...base.supabase.auth,
@@ -243,7 +257,7 @@ describe("suspendCompany / reactivateCompany", () => {
 describe("provisionCompanyAdmin", () => {
   const baseTables = (
     member: Record<string, unknown> = {
-      selectSingle: { data: null, error: { message: "0 rows" } },
+      selectSingle: { data: null, error: null },
       insert: { data: { id: MEMBER_ROW_ID } },
     },
   ) => ({
@@ -378,10 +392,10 @@ describe("provisionCompanyAdmin", () => {
     expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
-  it("promotes a non-active existing row back to 'invited'", async () => {
+  it("promotes an existing 'invited' row to company_admin, still invited", async () => {
     h.state.adminClient = buildAdmin({
       tables: baseTables({
-        selectSingle: { data: { id: MEMBER_ROW_ID, status: "disabled" } },
+        selectSingle: { data: { id: MEMBER_ROW_ID, status: "invited" } },
         update: { error: null },
       }),
     }).client;
@@ -391,10 +405,84 @@ describe("provisionCompanyAdmin", () => {
     });
   });
 
+  const auditData = (
+    recorded: { table: string; method: string; args: unknown[] }[],
+  ) =>
+    (
+      recorded.find(
+        (r) => r.table === "admin_audit_log" && r.method === "insert",
+      )?.args[0] as { data: Record<string, unknown> } | undefined
+    )?.data;
+
+  it("refuses a disabled membership: no write, no email, no audit", async () => {
+    const admin = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: { id: MEMBER_ROW_ID, status: "disabled" } },
+        update: { error: null },
+      }),
+    });
+    h.state.adminClient = admin.client;
+
+    expect(await run()).toEqual({ ok: false, error: "member_disabled" });
+    expect(
+      admin.recorded.some(
+        (r) =>
+          r.table === "company_members" &&
+          r.method !== "select" &&
+          r.method !== "eq" &&
+          r.method !== "single",
+      ),
+    ).toBe(false);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(auditWritten(admin.recorded)).toBe(false);
+  });
+
+  it("records previous_status in the audit data for an existing-row update", async () => {
+    const admin = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: { id: MEMBER_ROW_ID, status: "invited" } },
+        update: { error: null },
+      }),
+    });
+    h.state.adminClient = admin.client;
+
+    await run();
+    expect(auditData(admin.recorded)).toMatchObject({
+      status: "invited",
+      previous_status: "invited",
+    });
+  });
+
+  it("omits previous_status for a fresh insert", async () => {
+    const admin = buildAdmin({ tables: baseTables() });
+    h.state.adminClient = admin.client;
+    await run();
+    expect(auditData(admin.recorded)).not.toHaveProperty("previous_status");
+  });
+
+  it("a real membership read error fails with invite failed: no insert, no email", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const admin = buildAdmin({
+      tables: baseTables({
+        selectSingle: { data: null, error: { message: "db down" } },
+        insert: { data: { id: MEMBER_ROW_ID } },
+      }),
+    });
+    h.state.adminClient = admin.client;
+    try {
+      expect(await run()).toEqual({ ok: false, error: "invite failed" });
+      expect(admin.recorded.some((r) => r.method === "insert")).toBe(false);
+      expect(sendEmailMock).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it("23505 on insert: already_member, never deletes the user", async () => {
     const admin = buildAdmin({
       tables: baseTables({
-        selectSingle: { data: null, error: { message: "0 rows" } },
+        selectSingle: { data: null, error: null },
         insert: {
           data: null,
           error: { message: "dup", code: "23505" } as { message: string },
@@ -411,7 +499,7 @@ describe("provisionCompanyAdmin", () => {
   it("other insert failure: deletes only a user it created with no memberships, no email", async () => {
     const admin = buildAdmin({
       tables: baseTables({
-        selectSingle: { data: null, error: { message: "0 rows" } },
+        selectSingle: { data: null, error: null },
         insert: {
           data: null,
           error: { message: "boom", code: "XX000" } as { message: string },
@@ -434,9 +522,7 @@ describe("provisionCompanyAdmin", () => {
     }) as typeof admin.client.from;
 
     expect(await run()).toEqual({ ok: false, error: "invite failed" });
-    expect(admin.client.auth.admin.deleteUser).toHaveBeenCalledWith(
-      "new_user",
-    );
+    expect(admin.client.auth.admin.deleteUser).toHaveBeenCalledWith("new_user");
     expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
@@ -453,7 +539,7 @@ describe("provisionCompanyAdmin", () => {
     h.state.adminClient = buildAdmin({
       tables: {
         companies: {
-          selectSingle: { data: null, error: { message: "0 rows" } },
+          selectSingle: { data: null, error: null },
         },
       },
     }).client;

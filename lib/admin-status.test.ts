@@ -24,6 +24,7 @@ describe("provisionErrorCode", () => {
   it.each([
     ["invitee_needs_link_signin", "admin_invitee_needs_link_signin"],
     ["already_member", "admin_already_member"],
+    ["member_disabled", "admin_member_disabled"],
     ["invite failed", "admin_provision_failed"],
     ["Suspended & inactive?", "admin_provision_failed"],
   ])("maps %s to %s", (error, code) => {

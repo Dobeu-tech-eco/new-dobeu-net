@@ -18,6 +18,8 @@ as $fn$
   select u.id
   from auth.users u
   where lower(u.email) = lower(p_email)
+  -- auth.users email is unique in practice; if legacy data ever held two
+  -- case-variant rows, pick the oldest deterministically.
   order by u.created_at
   limit 1
 $fn$;

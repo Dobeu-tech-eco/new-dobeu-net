@@ -232,7 +232,8 @@ async function sendProvisionEmail(to: string): Promise<boolean> {
  * insert and no email.
  *
  * An existing membership row is promoted to `company_admin` (an active row stays
- * active; any other status returns to 'invited'). A 23505 on insert means a
+ * active, an invited row stays invited, a disabled row is refused with
+ * `member_disabled`). A 23505 on insert means a
  * concurrent request added the row: never delete the user then (the FK cascades).
  */
 export async function provisionCompanyAdmin(raw: unknown): Promise<
@@ -284,16 +285,26 @@ export async function provisionCompanyAdmin(raw: unknown): Promise<
   }
 
   // Promote an existing membership, or insert a fresh company_admin row.
-  const { data: existingMember } = await admin
+  const { data: existingMember, error: readErr } = await admin
     .from("company_members")
     .select("id, status")
     .eq("company_id", companyId)
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
+  if (readErr) {
+    console.warn("[companies] membership read failed:", safeErrorFields(readErr));
+    return { ok: false, error: "invite failed" };
+  }
 
   let memberStatus: "invited" | "active" = "invited";
+  const previousStatus: string | null = existingMember?.status ?? null;
 
   if (existingMember) {
+    // A company that disabled this person must re-enable them itself; a super
+    // admin provisioning must not silently undo that. No write, no email.
+    if (existingMember.status === "disabled") {
+      return { ok: false, error: "member_disabled" };
+    }
     if (existingMember.status === "active") memberStatus = "active";
     const { error } = await admin
       .from("company_members")
@@ -336,7 +347,11 @@ export async function provisionCompanyAdmin(raw: unknown): Promise<
     action: "company.provision_admin",
     targetType: "company",
     targetId: companyId,
-    data: { user_id: userId, status: memberStatus },
+    data: {
+      user_id: userId,
+      status: memberStatus,
+      ...(existingMember ? { previous_status: previousStatus } : {}),
+    },
     logScope: "companies",
   });
 
