@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(10);
 
 insert into auth.users (id, email, aud, role) values
   ('d5200000-0000-4000-8000-000000000001', 'd52-ma@example.test', 'authenticated', 'authenticated'),
@@ -61,6 +61,13 @@ select throws_ok($$ select private.assert_wo_insert_policy_set() $$, null, null,
 drop policy "d52_stray_insert" on public.work_orders;
 
 select lives_ok($$ select private.assert_wo_insert_policy_set() $$, 'guard passes again after the stray policy is dropped');
+
+create policy "d52_stray_all" on public.work_orders for all to authenticated using (true) with check (true);
+select throws_ok($$ select private.assert_wo_insert_policy_set() $$, null, null,
+  'guard raises when a stray permissive FOR ALL policy exists');
+drop policy "d52_stray_all" on public.work_orders;
+
+select lives_ok($$ select private.assert_wo_insert_policy_set() $$, 'guard passes after the FOR ALL policy is dropped');
 
 select * from finish();
 rollback;

@@ -95,7 +95,6 @@ const submitInput = z.object({
   service_type: z.enum(["logo", "website_update", "data_export", "consulting", "other"]),
   title: z.string().trim().min(2, "title too short").max(160, "title too long"),
   description: z.string().trim().max(8000).optional().nullable(),
-  company_id: z.guid("invalid id").optional().nullable(),
   attachments: z
     .array(
       z.object({
@@ -150,19 +149,6 @@ export async function submitWorkOrder(
     throw e;
   }
 
-  // D52 app-layer mirror of the wo_insert_own RLS check: a suspended company
-  // cannot receive new work orders. Fails closed when the company row is not
-  // readable (non-member). Fixed codes only.
-  if (input.company_id) {
-    const { data: company, error: companyErr } = await supabase
-      .from("companies")
-      .select("id,status")
-      .eq("id", input.company_id)
-      .single();
-    if (companyErr || !company) return { ok: false, error: "forbidden" };
-    if (company.status !== "active") return { ok: false, error: "company_suspended" };
-  }
-
   const { data: inserted, error: insertErr } = await supabase
     .from("work_orders")
     .insert({
@@ -170,14 +156,14 @@ export async function submitWorkOrder(
       service_type: input.service_type,
       title: input.title,
       description: input.description ?? null,
-      ...(input.company_id ? { company_id: input.company_id } : {}),
       status: "open"
     })
     .select("id")
     .single();
 
   if (insertErr || !inserted) {
-    return { ok: false, error: insertErr?.message ?? "insert failed" };
+    if (insertErr) console.error("[submitWorkOrder] insert failed", safeErrorFields(insertErr));
+    return { ok: false, error: "submit failed" };
   }
 
   const workOrderId = inserted.id;
