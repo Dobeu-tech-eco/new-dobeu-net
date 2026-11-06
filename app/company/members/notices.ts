@@ -40,6 +40,41 @@ const MEMBER_NOTICES = {
     role: "status",
     text: "This company has reached its invite limit for the last 24 hours. Try again later."
   },
+  role_changed: {
+    tone: "success",
+    role: "status",
+    text: "Member role updated."
+  },
+  role_change_failed: {
+    tone: "error",
+    role: "alert",
+    text: "Couldn't change that member's role. Try again."
+  },
+  member_deactivated: {
+    tone: "success",
+    role: "status",
+    text: "Member deactivated."
+  },
+  deactivate_failed: {
+    tone: "error",
+    role: "alert",
+    text: "Couldn't deactivate that member. Try again."
+  },
+  cannot_disable_self: {
+    tone: "error",
+    role: "alert",
+    text: "You can't deactivate your own membership."
+  },
+  not_found: {
+    tone: "error",
+    role: "alert",
+    text: "That member could not be found. Refresh the page and try again."
+  },
+  unknown_role: {
+    tone: "error",
+    role: "alert",
+    text: "That role isn't available. Choose a listed role and try again."
+  },
   rate_limited: {
     tone: "warning",
     role: "status",

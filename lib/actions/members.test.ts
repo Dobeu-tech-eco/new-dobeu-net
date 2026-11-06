@@ -135,6 +135,8 @@ vi.mock("@/lib/supabase/server", () => ({
 import {
   inviteMember,
   inviteMemberForm,
+  changeMemberRoleForm,
+  deactivateMemberForm,
   changeMemberRole,
   deactivateMember,
 } from "@/lib/actions/members";
@@ -988,5 +990,76 @@ describe("D28 guard in the action path (AAL2 + active company)", () => {
     h.state.client = makeClient({ companyStatus: "suspended" });
     expect(await run()).toEqual({ ok: false, error: "forbidden" });
     expectNoWritesOrAdminCalls();
+  });
+});
+
+describe("changeMemberRoleForm / deactivateMemberForm notices", () => {
+  const base = `/company/members?company=${COMPANY_ID}`;
+  const lastRedirect = () =>
+    h.redirect.mock.calls[h.redirect.mock.calls.length - 1][0] as string;
+  const role = async (roleKey = "employee") => {
+    const fd = new FormData();
+    fd.set("roleKey", roleKey);
+    await expect(changeMemberRoleForm(COMPANY_ID, MEMBER_ID, fd)).rejects.toThrow(
+      /NEXT_REDIRECT/,
+    );
+    return lastRedirect();
+  };
+  const deactivate = async () => {
+    await expect(
+      deactivateMemberForm(COMPANY_ID, MEMBER_ID, new FormData()),
+    ).rejects.toThrow(/NEXT_REDIRECT/);
+    return lastRedirect();
+  };
+
+  it("role change success redirects role_changed", async () => {
+    expect(await role()).toBe(`${base}&notice=role_changed`);
+  });
+  it("role change unknown role redirects unknown_role", async () => {
+    h.state.client = makeClient({ roleMissing: true });
+    expect(await role()).toBe(`${base}&notice=unknown_role`);
+  });
+  it("role change empty update redirects not_found", async () => {
+    h.state.client = makeClient({ updateRows: [] });
+    expect(await role()).toBe(`${base}&notice=not_found`);
+  });
+  it("role change DB error redirects role_change_failed without raw text", async () => {
+    h.state.client = makeClient({ update: { error: { message: "secret detail" } } });
+    const url = await role();
+    expect(url).toBe(`${base}&notice=role_change_failed`);
+    expect(url).not.toContain("secret");
+  });
+  it("role change validation failure redirects role_change_failed", async () => {
+    expect(await role("")).toBe(`${base}&notice=role_change_failed`);
+  });
+  it("role change AAL1 redirects with no notice", async () => {
+    h.state.client = makeClient({ aal: AAL1 });
+    expect(await role()).toBe(base);
+  });
+
+  it("deactivate success redirects member_deactivated", async () => {
+    h.state.client = makeClient({ targetRead: { data: ADMIN_MEMBER } });
+    expect(await deactivate()).toBe(`${base}&notice=member_deactivated`);
+  });
+  it("deactivate missing target redirects not_found", async () => {
+    h.state.client = makeClient({ targetRead: { data: null } });
+    expect(await deactivate()).toBe(`${base}&notice=not_found`);
+  });
+  it("deactivate self redirects cannot_disable_self", async () => {
+    h.state.client = makeClient({
+      targetRead: { data: { id: MEMBER_ID, user_id: "admin_1" } },
+    });
+    expect(await deactivate()).toBe(`${base}&notice=cannot_disable_self`);
+  });
+  it("deactivate DB error redirects deactivate_failed", async () => {
+    h.state.client = makeClient({
+      targetRead: { data: ADMIN_MEMBER },
+      update: { error: { message: "secret detail" } },
+    });
+    expect(await deactivate()).toBe(`${base}&notice=deactivate_failed`);
+  });
+  it("deactivate AAL1 redirects with no notice", async () => {
+    h.state.client = makeClient({ aal: AAL1 });
+    expect(await deactivate()).toBe(base);
   });
 });

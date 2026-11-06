@@ -9,6 +9,13 @@ describe("memberNoticeMessage", () => {
     ["invite_failed", "error", "alert", "Couldn't add that member. Check the email address and role, then try again."],
     ["invitee_needs_link_signin", "error", "alert", "This address already has an account whose current email has not been confirmed by an emailed sign-in link since it last changed. Ask them to sign in once at the login page using the emailed link, then invite them again."],
     ["daily_limit", "warning", "status", "This company has reached its invite limit for the last 24 hours. Try again later."],
+    ["role_changed", "success", "status", "Member role updated."],
+    ["role_change_failed", "error", "alert", "Couldn't change that member's role. Try again."],
+    ["member_deactivated", "success", "status", "Member deactivated."],
+    ["deactivate_failed", "error", "alert", "Couldn't deactivate that member. Try again."],
+    ["cannot_disable_self", "error", "alert", "You can't deactivate your own membership."],
+    ["not_found", "error", "alert", "That member could not be found. Refresh the page and try again."],
+    ["unknown_role", "error", "alert", "That role isn't available. Choose a listed role and try again."],
     ["rate_limited", "warning", "status", "Too many invites in a minute. Wait a moment, then try again."]
   ] as const)("maps %s to exact tone, role and copy", (code, tone, role, text) => {
     expect(memberNoticeMessage(code)).toEqual({ tone, role, text });

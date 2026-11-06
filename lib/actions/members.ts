@@ -427,8 +427,8 @@ export async function deactivateMember(
 // ---------------------------------------------------------------------------
 // FormData adapters for progressive-enhancement <form action> usage. The page
 // binds the leading ids; React appends the FormData as the final argument.
-// They return void (the form ignores the result) so the typed core actions
-// stay the tested, value-returning API.
+// They return void and redirect with a fixed notice code so the typed core
+// actions stay the tested, value-returning API.
 // ---------------------------------------------------------------------------
 // Guard failures (mfa_required, forbidden, not_authenticated) return null: the
 // page guard already routes the user (step-up / guard notice), so a carried
@@ -454,6 +454,15 @@ function inviteNotice(
   }
 }
 
+function redirectToMembers(companyId: string, notice: string | null): never {
+  const companyParam = uuid.safeParse(companyId).success
+    ? `company=${encodeURIComponent(companyId)}&`
+    : "";
+  const noticeParam = notice ? `notice=${notice}` : "";
+  // redirect() throws; keep it outside any try/catch.
+  redirect(`/company/members?${companyParam}${noticeParam}`.replace(/[?&]$/, ""));
+}
+
 export async function inviteMemberForm(
   companyId: string,
   formData: FormData,
@@ -463,13 +472,38 @@ export async function inviteMemberForm(
     String(formData.get("email") ?? ""),
     String(formData.get("roleKey") ?? ""),
   );
-  const notice = inviteNotice(result);
-  const companyParam = uuid.safeParse(companyId).success
-    ? `company=${encodeURIComponent(companyId)}&`
-    : "";
-  // redirect() throws; keep it outside any try/catch.
-  const noticeParam = notice ? `notice=${notice}` : "";
-  redirect(`/company/members?${companyParam}${noticeParam}`.replace(/[?&]$/, ""));
+  redirectToMembers(companyId, inviteNotice(result));
+}
+
+/** Fixed notice codes emitted by changeMemberRoleForm / deactivateMemberForm. */
+export type MemberActionNoticeCode =
+  | "role_changed"
+  | "role_change_failed"
+  | "member_deactivated"
+  | "deactivate_failed"
+  | "cannot_disable_self"
+  | "not_found"
+  | "unknown_role";
+
+function memberActionNotice(
+  result: ActionResult<unknown>,
+  success: MemberActionNoticeCode,
+  failure: MemberActionNoticeCode,
+): MemberActionNoticeCode | null {
+  if (result.ok) return success;
+  switch (result.error) {
+    case "not_found":
+    case "unknown_role":
+      return result.error;
+    case "cannot disable yourself":
+      return "cannot_disable_self";
+    case "forbidden":
+    case "not_authenticated":
+    case "mfa_required":
+      return null;
+    default:
+      return failure;
+  }
 }
 
 export async function changeMemberRoleForm(
@@ -477,10 +511,14 @@ export async function changeMemberRoleForm(
   memberId: string,
   formData: FormData,
 ): Promise<void> {
-  await changeMemberRole(
+  const result = await changeMemberRole(
     companyId,
     memberId,
     String(formData.get("roleKey") ?? ""),
+  );
+  redirectToMembers(
+    companyId,
+    memberActionNotice(result, "role_changed", "role_change_failed"),
   );
 }
 
@@ -490,5 +528,9 @@ export async function deactivateMemberForm(
   _formData: FormData,
 ): Promise<void> {
   void _formData;
-  await deactivateMember(companyId, memberId);
+  const result = await deactivateMember(companyId, memberId);
+  redirectToMembers(
+    companyId,
+    memberActionNotice(result, "member_deactivated", "deactivate_failed"),
+  );
 }
