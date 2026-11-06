@@ -7,7 +7,7 @@
  */
 import { COMPANY_ADMIN_RANK } from "@/lib/actions/company-auth";
 import type { DBClient } from "@/lib/actions/auth";
-import { writeAdminAudit } from "@/lib/admin-audit";
+import { writeAdminAuditStrict } from "@/lib/admin-audit";
 import { safeErrorFields } from "@/lib/log-safe";
 import {
   emailChangeQuiet,
@@ -36,6 +36,8 @@ export type InviteResponseResult =
       isAdminRole: boolean;
       /** Accepted, but the company was suspended meanwhile and the undo failed. */
       companyInactive?: boolean;
+      /** The state change committed but its audit row could not be written. */
+      auditFailed?: boolean;
     }
   | { ok: false; error: InviteFailure };
 
@@ -517,7 +519,7 @@ export async function respondToInvite(
 
     if (outcome.audit) {
       const { action, row, extra } = outcome.audit;
-      await writeAdminAudit(admin, {
+      const audited = await writeAdminAuditStrict(admin, {
         actorUserId: userId,
         action: `company_member.${action}`,
         targetType: "company",
@@ -525,6 +527,10 @@ export async function respondToInvite(
         data: { member_id: memberId, user_id: userId, role: row.role, ...extra },
         logScope: scope,
       });
+      if (!audited) {
+        console.warn(`[${scope}] audit row missing for committed ${action}`);
+        if (outcome.result.ok) return { ...outcome.result, auditFailed: true };
+      }
     }
     return outcome.result;
   } catch (e) {

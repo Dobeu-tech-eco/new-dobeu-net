@@ -17,6 +17,11 @@ const INVITE_NOTICES = {
     role: "status",
     text: "You've joined the company.",
   },
+  invite_accepted_password_reset: {
+    tone: "success",
+    role: "status",
+    text: "Invite accepted. Sign in with an emailed link from now on.",
+  },
   invite_declined: {
     tone: "success",
     role: "status",

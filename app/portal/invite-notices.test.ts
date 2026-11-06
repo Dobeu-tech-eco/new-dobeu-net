@@ -4,6 +4,7 @@ import { inviteNoticeMessage } from "./invite-notices";
 describe("inviteNoticeMessage", () => {
   it.each([
     ["invite_accepted", "success", "status", "You've joined the company."],
+    ["invite_accepted_password_reset", "success", "status", "Invite accepted. Sign in with an emailed link from now on."],
     ["invite_declined", "success", "status", "Invite declined and removed."],
     ["invite_accepted_company_inactive", "warning", "status", "You're now a member, but this company is suspended right now, so its pages are unavailable until it is active again."],
     ["invite_unavailable", "warning", "status", "This invite is no longer available. It may have been withdrawn or already answered. Ask a company admin if you still need access."],
