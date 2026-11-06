@@ -4,6 +4,17 @@ import { buildStubClient } from "./__test-helpers";
 // Mutable holder: each test swaps in a differently-configured cookie client and
 // tunes the service-role auth-admin responses.
 const h = vi.hoisted(() => {
+  // Existing account whose current email was proven by an email-link sign-in,
+  // so the attach-time guard (D64) lets unrelated tests attach it.
+  const markedUser = {
+    id: "existing",
+    email: "client@example.com",
+    last_sign_in_at: null,
+    identities: [
+      { provider: "email", created_at: "2026-10-31T00:00:00.000Z", updated_at: "2026-10-31T00:00:00.000Z" },
+    ],
+    app_metadata: { email_link_signin: { at: "2026-11-01T10:00:00.000Z", email: "client@example.com" } },
+  };
   const state: {
     client: unknown;
     createResult: {
@@ -22,6 +33,9 @@ const h = vi.hoisted(() => {
     counts: Map<string, number>;
     membershipCount: number;
     membershipError: { message: string } | null;
+    // Result of admin.auth.admin.getUserById for the attach-time guard.
+    existingUser: Record<string, unknown> | null;
+    getUserError: { message: string } | null;
   } = {
     client: null,
     createResult: { data: { user: { id: "new_user_1" } }, error: null },
@@ -36,9 +50,12 @@ const h = vi.hoisted(() => {
     counts: new Map(),
     membershipCount: 0,
     membershipError: null,
+    existingUser: markedUser,
+    getUserError: null,
   };
   return {
     state,
+    markedUser,
     createUser: vi.fn(),
     deleteUser: vi.fn(),
     sendEmail: vi.fn(),
@@ -89,6 +106,12 @@ vi.mock("@/lib/supabase/server", () => ({
       admin: {
         createUser: h.createUser,
         deleteUser: h.deleteUser,
+        getUserById: vi.fn(async (id: string) => {
+          h.state.events.push(`getUserById:${id}`);
+          return h.state.getUserError
+            ? { data: { user: null }, error: h.state.getUserError }
+            : { data: { user: h.state.existingUser }, error: null };
+        }),
         listUsers: vi.fn(async () => {
           h.state.events.push("listUsers");
           if (h.state.listError) {
@@ -221,6 +244,8 @@ beforeEach(() => {
   h.state.counts = new Map();
   h.state.membershipCount = 0;
   h.state.membershipError = null;
+  h.state.existingUser = h.markedUser;
+  h.state.getUserError = null;
   h.createUser.mockImplementation(async () => {
     h.state.events.push("createUser");
     return h.state.createResult;
@@ -242,7 +267,7 @@ describe("inviteMember", () => {
   const invite = (emailAddr = "client@example.com") =>
     inviteMember(COMPANY_ID, emailAddr, "employee");
 
-  it("creates an unconfirmed user, inserts the member, then sends the invite", async () => {
+  it("creates a confirmed user, inserts the member, then sends the invite", async () => {
     h.state.client = makeClient({ user: { id: "inv_new", email: "a@d.net" } });
     const result = await invite();
     expect(result).toEqual({
@@ -256,12 +281,12 @@ describe("inviteMember", () => {
     });
     expect(h.createUser).toHaveBeenCalledWith({
       email: "client@example.com",
-      email_confirm: false,
+      email_confirm: true,
     });
     expect(h.state.events).toEqual(["createUser", "insert", "sendEmail"]);
   });
 
-  it("sends fixed copy linking to /login?next=/company with no token", async () => {
+  it("sends fixed copy linking to /login?next=/portal with no token", async () => {
     h.state.client = makeClient({ user: { id: "inv_copy", email: "a@d.net" } });
     await invite();
     const arg = h.sendEmail.mock.calls[0][0] as {
@@ -270,7 +295,7 @@ describe("inviteMember", () => {
       text: string;
     };
     expect(arg.to).toBe("client@example.com");
-    expect(arg.text).toContain("https://admin-test.example/login?next=/company");
+    expect(arg.text).toContain("https://admin-test.example/login?next=/portal");
     expect(arg.html + arg.text).not.toMatch(/token|code=|auth\/callback/i);
   });
 
@@ -296,6 +321,7 @@ describe("inviteMember", () => {
     expect(h.state.events).toEqual([
       "createUser",
       "listUsers",
+      "getUserById:existing_9",
       "insert",
       "sendEmail",
     ]);
@@ -317,10 +343,99 @@ describe("inviteMember", () => {
     expect(h.state.events).toEqual([
       "createUser",
       "listUsers",
+      "getUserById:raced_7",
       "insert",
       "sendEmail",
     ]);
     expect(h.deleteUser).not.toHaveBeenCalled();
+  });
+
+  describe("attach-time squatter guard (existing accounts)", () => {
+    const existingErr = { data: { user: null }, error: { code: "email_exists", status: 422 } };
+    const SIGNED = "2026-11-01T10:00:00.000Z";
+    const emailUser = (over: Record<string, unknown>) => ({
+      id: "existing_9",
+      email: "client@example.com",
+      last_sign_in_at: SIGNED,
+      identities: [{ provider: "email", created_at: "2026-10-31T00:00:00.000Z", updated_at: "2026-10-31T00:00:00.000Z" }],
+      app_metadata: {},
+      ...over,
+    });
+    const setup = (user: Record<string, unknown> | null) => {
+      h.state.client = makeClient({ user: { id: "guard_admin", email: "a@d.net" } });
+      h.state.createResult = existingErr;
+      h.state.users = [{ id: "existing_9", email: "client@example.com" }];
+      h.state.existingUser = user;
+    };
+    const refused = () => {
+      expect(h.state.events).not.toContain("insert");
+      expect(h.sendEmail).not.toHaveBeenCalled();
+    };
+
+    it("refuses a signed-in existing user with no email-link marker (password only)", async () => {
+      setup(emailUser({}));
+      expect(await invite()).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+      refused();
+    });
+
+    it("refuses a never-signed-in existing user with no marker (D64)", async () => {
+      setup(emailUser({ last_sign_in_at: null }));
+      expect(await invite()).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+      refused();
+    });
+
+    it("refuses an unconfirmed, never-signed-in sign-up squatter (D64)", async () => {
+      setup(emailUser({ last_sign_in_at: null, email_confirmed_at: null }));
+      expect(await invite()).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+      expect(h.state.events).toContain("getUserById:existing_9");
+      refused();
+    });
+
+    it("attaches a never-signed-in existing user that has a current marker", async () => {
+      setup(
+        emailUser({
+          last_sign_in_at: null,
+          app_metadata: { email_link_signin: { at: SIGNED, email: "client@example.com" } },
+        }),
+      );
+      expect(await invite()).toMatchObject({ ok: true, data: { user_id: "existing_9" } });
+      expect(h.state.events).toContain("insert");
+    });
+
+    it("attaches an existing user with a current marker", async () => {
+      setup(
+        emailUser({
+          app_metadata: {
+            email_link_signin: { at: SIGNED, email: "Client@Example.com" },
+          },
+        }),
+      );
+      expect(await invite()).toMatchObject({ ok: true, data: { emailSent: true } });
+    });
+
+    it("refuses when the email identity changed after the marker", async () => {
+      setup(
+        emailUser({
+          identities: [{ provider: "email", created_at: "2026-11-02T00:00:00.000Z", updated_at: "2026-11-02T00:00:00.000Z" }],
+          app_metadata: { email_link_signin: { at: SIGNED, email: "client@example.com" } },
+        }),
+      );
+      expect(await invite()).toEqual({ ok: false, error: "invitee_needs_link_signin" });
+      refused();
+    });
+
+    it("lookup error fails as invite failed with no insert or email", async () => {
+      setup(null);
+      h.state.getUserError = { message: "boom" };
+      expect(await invite()).toEqual({ ok: false, error: "invite failed" });
+      refused();
+    });
+
+    it("a user created by this call skips the guard", async () => {
+      h.state.client = makeClient({ user: { id: "guard_new", email: "a@d.net" } });
+      h.state.existingUser = emailUser({});
+      expect(await invite()).toMatchObject({ ok: true });
+    });
   });
 
   it("new email: no listUsers paging at all (createUser first)", async () => {
@@ -617,6 +732,23 @@ describe("inviteMemberForm", () => {
       insert: { error: { message: "dup", code: "23505" } },
     });
     expect(await submit(COMPANY_ID)).toBe(`${base}already_member`);
+  });
+
+  it("redirects invitee_needs_link_signin to its notice", async () => {
+    h.state.client = makeClient({ user: { id: "f_guard", email: "a@d.net" } });
+    h.state.createResult = {
+      data: { user: null },
+      error: { code: "email_exists", status: 422 },
+    };
+    h.state.users = [{ id: "existing_9", email: "client@example.com" }];
+    h.state.existingUser = {
+      id: "existing_9",
+      email: "client@example.com",
+      last_sign_in_at: "2026-11-01T10:00:00.000Z",
+      app_metadata: {},
+      identities: [],
+    };
+    expect(await submit(COMPANY_ID)).toBe(`${base}invitee_needs_link_signin`);
   });
 
   it("redirects with no notice for an AAL1 admin (no stale mfa message)", async () => {

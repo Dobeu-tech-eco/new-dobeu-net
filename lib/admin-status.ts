@@ -5,6 +5,7 @@ export const ADMIN_ERROR_MESSAGES = {
   company_reactivate_failed: "Unable to reactivate the company. Try again.",
   admin_provision_failed: "Unable to provision the company admin. Try again.",
   project_save_failed: "Unable to save the project. Try again.",
+  project_has_invoices: "This project has invoices; it can't be deleted.",
   load_failed: "Unable to load admin data. Try again.",
   overview_load_failed: "Unable to load some overview data. Try again.",
   activity_partial: "Some recent activity could not be loaded.",

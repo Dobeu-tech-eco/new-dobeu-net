@@ -29,9 +29,13 @@ function makeThenable(key: string) {
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser: async () => ({ data: { user: { user_metadata: {} } } }) },
+    auth: { getUser: async () => ({ data: { user: { id: "user-1", user_metadata: {} } } }) },
     from: (table: string) => chain(table),
   }),
+}));
+
+vi.mock("@/components/portal/PendingInvites", () => ({
+  PendingInvites: ({ userId }: { userId: string }) => <div data-testid="pending-invites">{userId}</div>,
 }));
 
 import PortalDashboard from "@/app/portal/page";
@@ -63,5 +67,20 @@ describe("PortalDashboard", () => {
     render(await PortalDashboard());
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(screen.queryByText("No projects yet")).toBeNull();
+  });
+
+  it("renders the fixed notice for a known code and passes the session user id to PendingInvites", async () => {
+    render(await PortalDashboard({ searchParams: Promise.resolve({ notice: "invite_accepted" }) }));
+    expect(screen.getByRole("status").textContent).toBe("You've joined the company.");
+    expect(screen.getByTestId("pending-invites").textContent).toBe("user-1");
+  });
+
+  it("renders an alert notice for failure codes and ignores unknown codes", async () => {
+    render(await PortalDashboard({ searchParams: Promise.resolve({ notice: "invite_response_failed" }) }));
+    expect(screen.getByRole("alert").textContent).toBe("Couldn't save your answer. Try again.");
+    cleanup();
+    render(await PortalDashboard({ searchParams: Promise.resolve({ notice: "<b>x</b>" }) }));
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

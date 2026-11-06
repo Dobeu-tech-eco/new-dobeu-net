@@ -66,7 +66,18 @@ Behavior:
 
 Signed in as an admin with AAL2, use `/admin/users` to invite the address. Add the
 customer to a company from the company admin screens if a company-scoped test is
-wanted.
+wanted. Company-member invites (`inviteMember`) create an `invited` row and send a
+fixed-copy email: the invitee signs in with the invited email address using an
+emailed sign-in link (made after the invite was sent) and clicks Accept under
+"Pending company invites" on `/portal` (Decline removes the row; an admin can
+re-invite). Until they accept, they are not an active member. An existing account
+that has signed in before must have signed in with an emailed link at its current
+email address (after any email change) before an admin can invite it; otherwise the invite is refused and they should sign in once
+at the login page using the emailed link first. A password set earlier keeps working
+after accept.
+`provisionCompanyAdmin` is unchanged (a new address gets a Supabase invite link, an
+existing address is inserted active); its invited rows can also be accepted from
+`/portal`, and aligning it with this flow is D49.
 
 ## (e) Stripe stays in test mode
 

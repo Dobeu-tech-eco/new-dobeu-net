@@ -7,3 +7,4 @@
 {"stamp":"20261104-125154","rounds":2,"failures":{"review_findings":2},"duration_s":5400,"agents":["claude"],"verdict":"VERIFIED"}
 {"stamp":"20261105-011156","rounds":20,"failures":{},"duration_s":11739,"agents":[],"verdict":"merged","lanes":5,"tokens":0,"wall_clock_s":11739,"size_class":"standard"}
 {"stamp":"20261105-045300","rounds":23,"failures":{},"duration_s":10743,"agents":[],"verdict":"merged","lanes":4,"tokens":0,"wall_clock_s":10743,"size_class":"standard"}
+{"stamp":"20261104-124711","rounds":2,"failures":{"review_findings":3,"agent_quota":1},"duration_s":6300,"agents":["claude","grok"],"verdict":"VERIFIED"}
