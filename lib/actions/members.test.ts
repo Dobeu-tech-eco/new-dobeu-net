@@ -819,7 +819,8 @@ describe("changeMemberRole", () => {
       update: { error: { message: "rls violation" } },
     });
     const result = await changeMemberRole(COMPANY_ID, MEMBER_ID, "employee");
-    expect(result).toEqual({ ok: false, error: "rls violation" });
+    expect(result).toEqual({ ok: false, error: "role change failed" });
+    expect(JSON.stringify(result)).not.toContain("rls violation");
   });
 });
 
@@ -857,7 +858,8 @@ describe("deactivateMember", () => {
       update: { error: { message: "rls violation" } },
     });
     const result = await deactivateMember(COMPANY_ID, MEMBER_ID);
-    expect(result).toEqual({ ok: false, error: "rls violation" });
+    expect(result).toEqual({ ok: false, error: "deactivate failed" });
+    expect(JSON.stringify(result)).not.toContain("rls violation");
   });
 });
 

@@ -358,7 +358,10 @@ export async function changeMemberRole(
     .eq("id", input.memberId)
     .eq("company_id", input.companyId);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.warn("[changeMemberRole] update failed:", safeErrorFields(error));
+    return { ok: false, error: "role change failed" };
+  }
 
   revalidatePath("/company/members");
   return { ok: true, data: { id: input.memberId } };
@@ -393,8 +396,13 @@ export async function deactivateMember(
     .eq("company_id", input.companyId)
     .single();
 
-  if (readErr || !target)
-    return { ok: false, error: readErr?.message ?? "member not found" };
+  if (readErr || !target) {
+    if (readErr && readErr.code !== "PGRST116") {
+      console.warn("[deactivateMember] read failed:", safeErrorFields(readErr));
+      return { ok: false, error: "deactivate failed" };
+    }
+    return { ok: false, error: "not_found" };
+  }
   if (target.user_id === user.id) {
     return { ok: false, error: "cannot disable yourself" };
   }
@@ -405,7 +413,10 @@ export async function deactivateMember(
     .eq("id", input.memberId)
     .eq("company_id", input.companyId);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.warn("[deactivateMember] update failed:", safeErrorFields(error));
+    return { ok: false, error: "deactivate failed" };
+  }
 
   revalidatePath("/company/members");
   return { ok: true, data: { id: input.memberId } };

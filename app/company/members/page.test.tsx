@@ -175,6 +175,20 @@ describe("CompanyMembersPage guard", () => {
     expect(h.createAdminClient).toHaveBeenCalledTimes(1);
   });
 
+  it("pages through all users via listAllUsers (more than 200 users)", async () => {
+    const mk = (n: number, off: number) =>
+      Array.from({ length: n }, (_, i) => ({ id: `x${off + i}`, email: `x${off + i}@b.co` }));
+    const listUsers = vi.fn(async ({ page }: { page: number }) => ({
+      data: { users: page === 1 ? mk(200, 0) : [{ id: "u1", email: "late@b.co" }] },
+      error: null
+    }));
+    h.createAdminClient.mockReturnValue({ auth: { admin: { listUsers } } });
+    h.requireCompanyAdmin.mockResolvedValue({});
+    render(await CompanyMembersPage(props));
+    expect(listUsers).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("late@b.co")).toBeInTheDocument();
+  });
+
   describe("invite notices", () => {
     it.each([
       ["member_added", "status"],
