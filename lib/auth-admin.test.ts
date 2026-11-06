@@ -21,35 +21,38 @@ describe("isAlreadyRegistered", () => {
 });
 
 describe("findUserIdByEmail", () => {
-  const adminWith = (pages: { id: string; email: string }[][], error = false) => {
-    const listUsers = vi.fn(async ({ page }: { page: number }) =>
-      error
-        ? { data: null, error: { message: "x" } }
-        : { data: { users: pages[page - 1] ?? [] }, error: null },
-    );
-    return {
-      listUsers,
-      admin: { auth: { admin: { listUsers } } } as never,
-    };
+  const adminWith = (result: unknown) => {
+    const rpc = vi.fn(async () => result);
+    return { rpc, admin: { rpc } as never };
   };
 
-  it("matches case-insensitively", async () => {
-    const { admin } = adminWith([[{ id: "u1", email: "A@B.com" }]]);
-    expect(await findUserIdByEmail(admin, "a@b.com")).toBe("u1");
+  it("calls the lookup rpc with the lowercased, trimmed email", async () => {
+    const { admin, rpc } = adminWith({ data: "u1", error: null });
+    expect(await findUserIdByEmail(admin, " A@B.com ")).toBe("u1");
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("find_auth_user_id_by_email", {
+      p_email: "a@b.com",
+    });
   });
 
-  it("returns null on a list error", async () => {
-    const { admin } = adminWith([], true);
+  it("returns null when no user matches", async () => {
+    const { admin } = adminWith({ data: null, error: null });
     expect(await findUserIdByEmail(admin, "a@b.com")).toBeNull();
   });
 
-  it("scans up to 20 full pages then stops", async () => {
-    const full = Array.from({ length: 200 }, (_, i) => ({
-      id: `u${i}`,
-      email: `u${i}@x.com`,
-    }));
-    const { admin, listUsers } = adminWith(Array.from({ length: 30 }, () => full));
-    expect(await findUserIdByEmail(admin, "nobody@x.com")).toBeNull();
-    expect(listUsers).toHaveBeenCalledTimes(20);
+  it("fails closed on an rpc error (including a missing function)", async () => {
+    const { admin } = adminWith({
+      data: null,
+      error: { code: "PGRST202", message: "not found" },
+    });
+    expect(await findUserIdByEmail(admin, "a@b.com")).toBeNull();
+  });
+
+  it("fails closed when the rpc throws", async () => {
+    const admin = {
+      rpc: vi.fn(async () => {
+        throw new Error("boom");
+      }),
+    } as never;
+    expect(await findUserIdByEmail(admin, "a@b.com")).toBeNull();
   });
 });

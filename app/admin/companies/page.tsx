@@ -5,6 +5,7 @@ import {
   type AdminStatusParams,
 } from "@/components/admin/AdminStatusBanner";
 import { createAdminClient } from "@/lib/supabase/server";
+import { provisionErrorCode } from "@/lib/admin-status";
 import {
   createCompany,
   suspendCompany,
@@ -52,7 +53,7 @@ async function provisionAdminAction(formData: FormData): Promise<void> {
     email: String(formData.get("email") ?? ""),
   });
   redirect(
-    `/admin/companies?${result.ok ? "ok=1" : "error=admin_provision_failed"}`,
+    `/admin/companies?${result.ok ? "ok=1" : `error=${provisionErrorCode(result.error)}`}`,
   );
 }
 

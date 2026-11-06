@@ -7,6 +7,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { provisionCompanyAdmin } from "@/lib/actions/companies";
+import { provisionErrorCode } from "@/lib/admin-status";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ async function provisionAdminAction(
     email: String(formData.get("email") ?? ""),
   });
   redirect(
-    `/admin/companies/${encodeURIComponent(companyId)}?${result.ok ? "ok=1" : "error=admin_provision_failed"}`,
+    `/admin/companies/${encodeURIComponent(companyId)}?${result.ok ? "ok=1" : `error=${provisionErrorCode(result.error)}`}`,
   );
 }
 
