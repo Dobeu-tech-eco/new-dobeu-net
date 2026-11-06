@@ -748,15 +748,17 @@ describe("respondToInvite accept", () => {
     expect(JSON.stringify(r)).not.toContain("secret");
   });
 
-  it("an audit failure does not undo the accept", async () => {
-    const { admin } = fakeAdmin(
+  it("an audit failure does not undo the accept and is flagged auditFailed", async () => {
+    const { admin, calls } = fakeAdmin(
       acceptScript({ "admin_audit_log.insert": [{ error: { message: "audit down" } }] }),
     );
     expect(await respondToInvite(admin, U, M, "accept", proof())).toEqual({
       ok: true,
       companyId: C,
       isAdminRole: false,
+      auditFailed: true,
     });
+    expect(calls.some((c) => c.op === "update")).toBe(true);
   });
 });
 
@@ -785,6 +787,19 @@ describe("respondToInvite decline", () => {
       target_id: C,
       data: { member_id: M, user_id: U, role: "employee" },
     });
+  });
+
+  it("an audit failure does not undo the decline and is flagged auditFailed", async () => {
+    const { admin, calls } = fakeAdmin(
+      declineScript({ "admin_audit_log.insert": [{ error: { message: "audit down" } }] }),
+    );
+    expect(await respondToInvite(admin, U, M, "decline", proof())).toEqual({
+      ok: true,
+      companyId: C,
+      isAdminRole: false,
+      auditFailed: true,
+    });
+    expect(calls.some((c) => c.op === "delete")).toBe(true);
   });
 
   it("does not look at the company status (a suspended company can be declined)", async () => {

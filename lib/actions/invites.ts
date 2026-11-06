@@ -21,7 +21,9 @@
  */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
+import { writeAdminAuditStrict } from "@/lib/admin-audit";
 import { AuthError, requireUser } from "@/lib/actions/auth";
 import {
   loadSessionMethods,
@@ -38,6 +40,10 @@ type RespondData = {
   isAdminRole: boolean;
   /** Accepted, but the company is suspended and the activation was not undone. */
   companyInactive?: boolean;
+  /** Committed, but the audit row could not be written (D58). */
+  auditFailed?: boolean;
+  /** Accepted, but the earlier password could not be cleared (D55). */
+  passwordRotationFailed?: boolean;
 };
 
 export type ActionResult<T> =
@@ -82,8 +88,9 @@ async function respond(
     const methods = await loadSessionMethods(supabase);
     if (!methods) return { ok: false, error: "invite_response_failed" };
 
+    const admin = createAdminClient();
     const result = await respondToInvite(
-      createAdminClient(),
+      admin,
       user.id,
       id.data,
       response,
@@ -95,6 +102,8 @@ async function respond(
     );
     if (!result.ok) return result;
 
+    let auditFailed = result.auditFailed === true;
+    let passwordRotationFailed = false;
     if (response === "accept") {
       // The accepted address now carries membership: end any session an earlier
       // squatter may hold. Non-fatal; the accept already committed.
@@ -106,6 +115,31 @@ async function respond(
       } catch (e) {
         console.warn("[acceptCompanyInvite] revoke others failed:", safeErrorFields(e));
       }
+      // Clear any password set before mailbox proof (D55): replace it with a
+      // random one that is never logged or returned. Sign-in stays by email
+      // link. Non-fatal: the accept already committed.
+      let rotated = false;
+      try {
+        const { error } = await admin.auth.admin.updateUserById(user.id, {
+          password: randomBytes(32).toString("base64url"),
+        });
+        if (error) throw error;
+        rotated = true;
+      } catch (e) {
+        passwordRotationFailed = true;
+        console.warn("[acceptCompanyInvite] password rotation failed:", safeErrorFields(e));
+      }
+      const audited = await writeAdminAuditStrict(admin, {
+        actorUserId: user.id,
+        action: rotated
+          ? "company_member.password_rotated"
+          : "company_member.password_rotation_failed",
+        targetType: "company",
+        targetId: result.companyId,
+        data: { member_id: id.data, user_id: user.id },
+        logScope: "company-invite-accept",
+      });
+      if (!audited) auditFailed = true;
     }
 
     revalidatePath("/portal");
@@ -116,6 +150,8 @@ async function respond(
         companyId: result.companyId,
         isAdminRole: result.isAdminRole,
         ...(result.companyInactive ? { companyInactive: true } : {}),
+        ...(auditFailed ? { auditFailed: true } : {}),
+        ...(passwordRotationFailed ? { passwordRotationFailed: true } : {}),
       },
     };
   } catch (e) {

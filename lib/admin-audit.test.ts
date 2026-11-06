@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DBClient } from "@/lib/actions/auth";
 import { buildStubClient } from "@/lib/actions/__test-helpers";
-import { writeAdminAudit } from "@/lib/admin-audit";
+import { writeAdminAudit, writeAdminAuditStrict } from "@/lib/admin-audit";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -132,4 +132,38 @@ describe("writeAdminAudit", () => {
       );
     },
   );
+});
+
+describe("writeAdminAuditStrict", () => {
+  it("returns true on success", async () => {
+    const admin = buildStubClient({});
+    await expect(
+      writeAdminAuditStrict(admin.supabase as unknown as DBClient, entry),
+    ).resolves.toBe(true);
+  });
+
+  it("returns false and logs only the code on a returned failure", async () => {
+    const admin = buildStubClient({
+      tables: { admin_audit_log: { insert: { error: { code: "42501", message: "private" } as never } } },
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(
+      writeAdminAuditStrict(admin.supabase as unknown as DBClient, entry),
+    ).resolves.toBe(false);
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      "[invoices] audit log insert failed (non-fatal):",
+      "42501",
+    );
+  });
+
+  it("returns false on a synchronous throw", async () => {
+    const admin = buildStubClient({});
+    admin.supabase.from.mockImplementationOnce(() => {
+      throw new Error("boom");
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(
+      writeAdminAuditStrict(admin.supabase as unknown as DBClient, entry),
+    ).resolves.toBe(false);
+  });
 });

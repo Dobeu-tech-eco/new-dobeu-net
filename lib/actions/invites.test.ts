@@ -4,6 +4,8 @@ import { buildStubClient } from "./__test-helpers";
 const h = vi.hoisted(() => ({
   client: null as unknown,
   redirect: vi.fn(),
+  update: vi.fn(),
+  audit: vi.fn(),
   respond: vi.fn(),
   revalidate: vi.fn(),
 }));
@@ -21,8 +23,9 @@ vi.mock("@/lib/company-invites", async (orig) => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => h.client),
-  createAdminClient: vi.fn(() => ({ admin: true })),
+  createAdminClient: vi.fn(() => ({ admin: true, auth: { admin: { updateUserById: h.update } } })),
 }));
+vi.mock("@/lib/admin-audit", () => ({ writeAdminAuditStrict: h.audit }));
 
 import { createAdminClient } from "@/lib/supabase/server";
 import {
@@ -81,6 +84,61 @@ beforeEach(() => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   signIn(confirmed);
   h.respond.mockResolvedValue({ ok: true, companyId: C, isAdminRole: false });
+  h.update.mockResolvedValue({ error: null });
+  h.audit.mockResolvedValue(true);
+});
+
+describe("D55 password rotation and D58 audit result", () => {
+  it("rotates the password on accept with a random value that is not returned", async () => {
+    const r = await acceptCompanyInvite(M);
+    expect(h.update).toHaveBeenCalledTimes(1);
+    const [id, attrs] = h.update.mock.calls[0];
+    expect(id).toBe(U);
+    expect(attrs.password).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(JSON.stringify(r)).not.toContain(attrs.password);
+    expect(r).toEqual({ ok: true, data: { companyId: C, isAdminRole: false } });
+    expect(h.audit.mock.calls[0][1].action).toBe("company_member.password_rotated");
+  });
+
+  it("uses a fresh password each time", async () => {
+    await acceptCompanyInvite(M);
+    await acceptCompanyInvite(M);
+    expect(h.update.mock.calls[0][1].password).not.toBe(h.update.mock.calls[1][1].password);
+  });
+
+  it("does not rotate on decline", async () => {
+    await declineCompanyInvite(M);
+    expect(h.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["returned error", () => h.update.mockResolvedValue({ error: { message: "secret" } })],
+    ["throw", () => h.update.mockRejectedValue(new Error("secret"))],
+  ])("a rotation %s is flagged, audited and does not undo the accept", async (_n, arrange) => {
+    arrange();
+    const r = await acceptCompanyInvite(M);
+    expect(r).toEqual({
+      ok: true,
+      data: { companyId: C, isAdminRole: false, passwordRotationFailed: true },
+    });
+    expect(h.audit.mock.calls[0][1].action).toBe("company_member.password_rotation_failed");
+  });
+
+  it("surfaces auditFailed from the core without failing", async () => {
+    h.respond.mockResolvedValue({ ok: true, companyId: C, isAdminRole: false, auditFailed: true });
+    expect(await declineCompanyInvite(M)).toEqual({
+      ok: true,
+      data: { companyId: C, isAdminRole: false, auditFailed: true },
+    });
+  });
+
+  it("flags auditFailed when the rotation audit cannot be written", async () => {
+    h.audit.mockResolvedValue(false);
+    expect(await acceptCompanyInvite(M)).toEqual({
+      ok: true,
+      data: { companyId: C, isAdminRole: false, auditFailed: true },
+    });
+  });
 });
 
 describe("acceptCompanyInvite / declineCompanyInvite", () => {
@@ -90,9 +148,9 @@ describe("acceptCompanyInvite / declineCompanyInvite", () => {
       data: { companyId: C, isAdminRole: false },
     });
     const proofArg = { methods: [{ method: "otp", timestamp: 1 }], identities, emailChangeSentAt: null };
-    expect(h.respond).toHaveBeenCalledWith({ admin: true }, U, M, "accept", proofArg);
+    expect(h.respond).toHaveBeenCalledWith(expect.objectContaining({ admin: true }), U, M, "accept", proofArg);
     await declineCompanyInvite(M);
-    expect(h.respond).toHaveBeenLastCalledWith({ admin: true }, U, M, "decline", proofArg);
+    expect(h.respond).toHaveBeenLastCalledWith(expect.objectContaining({ admin: true }), U, M, "decline", proofArg);
     expect(h.revalidate).toHaveBeenCalledWith("/portal");
     expect(h.revalidate).toHaveBeenCalledWith("/company");
   });
