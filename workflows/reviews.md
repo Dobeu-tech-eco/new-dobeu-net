@@ -26,10 +26,10 @@ Each step names the command that does it. A step that fails goes to "Failure pat
 
 1. **Reconcile.** `lanes.py reconcile <stamp>`. Follow its answer; never open a second PR for one branch.
 2. **Ship.** `/dt:ship main` on the lane branch: `pnpm verify`, secret scan, `do_not_touch` check, verifier and reviewer, receipt, PR body, push, open the PR. Link the PR to the thread.
-3. **Wait for CI.** `gh pr checks <n> --watch`, capped at 20 minutes. Required green: `Verify`, `E2E`, `gitleaks`, `pnpm audit`, `claude-review`. `Lighthouse` is reported, not required.
+3. **Wait for CI.** `gh pr checks <n> --watch`, capped at 20 minutes. Required green: `Verify`, `E2E`, `Lighthouse`, `gitleaks`, `pnpm audit`, `claude-review`, plus `Build & smoke test` when the PR changes `containers/function/**` (AGENTS.md lists these as merge gates).
 4. **Sweep.** `/dt:pr-sweep --run <stamp>`. It merges green PRs of this run, rebases behind ones and reports the rest. It never closes a PR another session owns.
-5. **Merge.** Head only: `lanes.py base-health`, `merge-mutex acquire`, rebase on `origin/main`, verifier sign-off on HEAD, `lanes.py merge-go`, wait for the required checks of step 3 to go green on the rebased HEAD, then merge the PR with a merge commit. Never `--admin`; a required check that is red or missing blocks the merge.
-6. **Wait for live.** Poll the Vercel production deployment until it serves the merge commit.
+5. **Merge.** Head only: `lanes.py base-health`, `merge-mutex acquire`, rebase on `origin/main`, verifier sign-off on HEAD, `lanes.py merge-go`, wait for the required checks of step 3 to go green on the rebased HEAD, then squash-merge the PR so `main` stays linear (AGENTS.md, Protected history). Never `--admin`; a required check that is red or missing blocks the merge.
+6. **Wait for live.** Poll the Vercel production deployment until it serves the squashed commit.
 7. **Headless check.** Run the lane's Playwright spec against https://dobeu.net signed out, plus the read-only rows of `scripts/post-merge-smoke.md` that touch the changed routes. Never a row that writes: no form submission, no email, no payment.
 8. **Browser check.** Drive the changed screens in browser automation at desktop and phone width, light and dark. Save screenshots to `.harness/runs/<stamp>/<lane>/walkthrough/`.
 9. **Close the item.** Set the end-state section to `done`, tick its acceptance boxes, set the action-item row to `done`, and append the evidence to `.harness/evidence-log.md`. Release the mutex and the lease.
@@ -61,7 +61,7 @@ Five lines at most: what was produced, why, what is asked, the default if there 
 
 ## Done
 
-The item's ledger row is closed with evidence from steps 7 and 8, production serves the merge commit, and no PR of the lane is open.
+The item's ledger row is closed with evidence from steps 7 and 8, production serves the squashed commit, and no PR of the lane is open.
 
 ## Open questions
 
