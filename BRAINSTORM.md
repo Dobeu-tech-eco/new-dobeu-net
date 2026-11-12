@@ -283,3 +283,7 @@ Lead books call →
 ## 15. Next step
 
 If approved, proceed to `PLAN.md` (phased execution) — already drafted in the same folder.
+
+## Subdomains and prospect preview proposal, 2026-11-07
+
+Explore separate staffing-demo and tutor subdomains plus an agent-generated preview of a prospect URL. Keep the existing monthly budget. Lovable MCP or Build with URL is a candidate operator handoff pending capability, spending and sharing evidence; automatic app access is unverified. Manual editor duplication, URL extraction and a request database are deferred. See end-state P7/P8 proposed sections 67–72.
