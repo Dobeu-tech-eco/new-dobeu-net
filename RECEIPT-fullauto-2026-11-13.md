@@ -37,7 +37,7 @@ The 19 shipped-but-still-open rows on this branch were not re-closed here either
 
 ## Tests
 
-None run. No source, test or config file changed, and this worktree has no installed dependencies.
+No source, test or config file changed, so no test was run on purpose. The pre-commit hook ran on commit `bf30e55` after `pnpm install --frozen-lockfile`: `pnpm type-check` passed and the unit tests passed 1853 of 1853 (129 files). Lint, the strict build and the browser tests were not run.
 
 ## BLOCKED-NEEDS-JEREMY
 
