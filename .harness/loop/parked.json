@@ -326,15 +326,6 @@
   {
     "blocker": {
       "kind": "item",
-      "ref": "D63"
-    },
-    "id": "D63",
-    "parked_at": 1794549190.731093,
-    "reason": "BLOCKED-NEEDS-JEREMY: fix is a dts2 plugin change through evolve, outside this worktree (global tool state)"
-  },
-  {
-    "blocker": {
-      "kind": "item",
       "ref": "H3"
     },
     "id": "H3",
