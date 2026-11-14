@@ -105,5 +105,5 @@
 2. Once GA4 is live, **mark `generate_lead` as a conversion** in GA4 (Admin → Events → Mark as conversion). Same for `cta_click` if Jeremy treats it as a KPI.
 3. Add the `lead_capture_failed` path to GTM if you want failed-submission visibility (not configured yet; only `lead_submitted` is wired).
 4. **Local smoke test on Windows**: `pnpm dev` and click each CTA / submit the form / open the Calendly lightbox; open DevTools console and watch `window.dataLayer` populate. The sandbox here could not run `pnpm dev` (SWC binary platform mismatch), so the browser-side wiring needs a real Windows boot before merge.
-5. `public/gtm-test.html` is a self-contained harness for ad-hoc container testing — keep it (it's `noindex`) or move under `.agent/` if you'd rather it not ship.
+5. `gtm-test.html` (GTM container test harness, `noindex`) moved from `public/` to `.agent/tools/` on 2026-11-12 so it no longer ships to production. Open it locally to test the container.
 
