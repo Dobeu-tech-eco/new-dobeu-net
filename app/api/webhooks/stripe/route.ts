@@ -6,10 +6,10 @@
  * Stripe POST. The only escape hatch is `markInvoicePaidManually` for cash/wire.
  *
  * Events handled:
- *   invoice.paid                 → status='paid', paid_at=now()  (+ client receipt email)
- *   invoice.payment_failed       → status='overdue'              (+ admin notification email)
- *   invoice.finalized            → mirror hosted_invoice_url     (re-finalization can change it)
- *   invoice.voided               → status='void'
+ *   invoice.paid                 → status='paid' from open or overdue (+ client receipt)
+ *   invoice.payment_failed       → status='overdue' from open only    (+ admin notification)
+ *   invoice.finalized            → mirror hosted_invoice_url          (re-finalization can change it)
+ *   invoice.voided               → status='void' from open or overdue
  *   checkout.session.completed   → grant a digital-asset entitlement (Phase 5),
  *                                  keyed on session.id for idempotent retries
  *
@@ -17,15 +17,21 @@
  * stops retrying — Stripe expects 2xx for "received and acknowledged", not
  * "acted on".
  *
+ * Status only moves forward (`lib/invoice-status.ts`). `paid` and `void` are
+ * terminal and do not replace each other, so a later or out-of-order
+ * `invoice.payment_failed` cannot downgrade a paid invoice to overdue.
+ *
  * Idempotency: webhook delivery is at-least-once. We dedupe per `event.id`
- * with a small in-memory LRU (good enough for serverless single-region) AND
- * the underlying UPDATE is naturally idempotent (mirror-of-target-state).
+ * with a small in-memory LRU (one instance). The conditional UPDATE is the
+ * cross-instance guard: a duplicate or stale event matches 0 rows and does
+ * not resend mail.
  *
  * Runtime constraint: nodejs (Stripe SDK does not run on edge).
  */
 import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { verifyWebhookSignature } from "@/lib/stripe";
+import { invoiceStatusesBefore } from "@/lib/invoice-status";
 import { forgetStripeEvent, rememberStripeEvent } from "@/lib/stripe-event-dedupe";
 import { sendEmail } from "@/lib/resend";
 import { logToDatadog } from "@/lib/datadog-server";
@@ -131,19 +137,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     const admin = createAdminClient();
     switch (event.type) {
       case "invoice.paid": {
-        // The .neq("status","paid") guard makes this idempotent across
-        // instances: the in-memory event dedupe (lib/stripe-event-dedupe.ts)
-        // only protects a single instance, and Stripe delivers at-least-once.
-        // A repeat delivery of an already-paid invoice now matches 0 rows ->
-        // row is null -> notifyInvoicePaid no-ops, instead of re-sending the
-        // "paid" receipt email on every redelivery.
+        // Open or overdue may become paid. Already-paid and void rows match
+        // nothing, so a redelivery does not resend the receipt and a void
+        // invoice is not rewritten as paid. The in-memory event dedupe only
+        // covers one instance; this filter is the cross-instance guard.
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id) {
           const { data: row, error } = await admin
             .from("invoices")
             .update({ status: "paid", paid_at: new Date().toISOString() })
             .eq("stripe_invoice_id", inv.id)
-            .neq("status", "paid")
+            .in("status", invoiceStatusesBefore("paid"))
             .select("id,project_id,amount_cents,currency,status")
             .maybeSingle();
           if (error) throw new Error("invoice paid update failed", { cause: error });
@@ -154,19 +158,18 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
 
       case "invoice.payment_failed": {
-        // Schema enum (invoice_status) doesn't have 'failed'/'uncollectible'
-        // -- 'overdue' is the closest semantic match (invoice didn't get
-        // paid). The admin email is the operational signal; the local row's
-        // status just keeps the dashboard honest. Same idempotency guard as
-        // invoice.paid above -- a repeat delivery of an already-overdue
-        // invoice no-ops instead of re-sending the admin alert.
+        // invoice_status has no 'failed'/'uncollectible'. 'overdue' is the
+        // closest match, and only an open invoice may move there. paid and
+        // void are terminal, so a later or out-of-order payment_failed cannot
+        // downgrade them. A repeat delivery against an already-overdue row
+        // matches nothing and does not send another admin alert.
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id) {
           const { data: row, error } = await admin
             .from("invoices")
             .update({ status: "overdue" })
             .eq("stripe_invoice_id", inv.id)
-            .neq("status", "overdue")
+            .in("status", invoiceStatusesBefore("overdue"))
             .select("id,project_id,amount_cents,currency,status")
             .maybeSingle();
           if (error) throw new Error("invoice failed update failed", { cause: error });
@@ -189,12 +192,15 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
 
       case "invoice.voided": {
+        // Same rank as paid: open or overdue may become void, and a paid
+        // invoice stays paid. A second void event matches nothing.
         const inv = event.data.object as Stripe.Invoice;
         if (inv.id) {
           const { error } = await admin
             .from("invoices")
             .update({ status: "void" })
-            .eq("stripe_invoice_id", inv.id);
+            .eq("stripe_invoice_id", inv.id)
+            .in("status", invoiceStatusesBefore("void"));
           if (error) throw new Error("invoice voided update failed", { cause: error });
         }
         break;

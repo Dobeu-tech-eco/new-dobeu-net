@@ -95,7 +95,7 @@ The Typeform budget route is intentionally separate: **`app/api/typeform/webhook
 
 ### Stripe invoicing (Phase 3 — live)
 - `lib/invoice-creation.ts` — service-role invoice creation core. Deliberately **not** a `"use server"` file so its exports can't be invoked from the client; callers do their own authz (`createInvoice` after `requireAdmin()`, `acceptWorkOrderQuote` after owner check). Locked decisions: Stripe-hosted invoices; lazy-create the Stripe customer on first invoice and stash on `profiles.stripe_customer_id`; mirror Stripe state onto a local `invoices` row; a Stripe failure still inserts a local row (NULL `stripe_invoice_id`) so the admin sees the attempt.
-- `app/api/webhooks/stripe/route.ts` — signed webhook (`STRIPE_WEBHOOK_SECRET`) drives all local invoice status flips (`invoice.paid/payment_failed/finalized/voided`); the UI never optimistically marks paid. Dedupes per `event.id` via `lib/stripe-event-dedupe.ts` (in-memory LRU) and idempotent UPDATEs. Must stay `runtime = "nodejs"` (Stripe SDK doesn't run on edge). Unhandled events are acked 200 so Stripe stops retrying.
+- `app/api/webhooks/stripe/route.ts` — signed webhook (`STRIPE_WEBHOOK_SECRET`) drives local invoice status forward only (`lib/invoice-status.ts`: `invoice.paid` from open/overdue, `invoice.payment_failed` from open to overdue, `invoice.voided` from open/overdue; `paid` and `void` are terminal and a late `payment_failed` never rewrites `paid` to overdue). `invoice.finalized` mirrors the hosted URL. The UI never optimistically marks paid. Dedupes per `event.id` via `lib/stripe-event-dedupe.ts` (in-memory LRU) plus that conditional UPDATE. Must stay `runtime = "nodejs"` (Stripe SDK doesn't run on edge). Unhandled events are acked 200 so Stripe stops retrying.
 - `markInvoicePaidManually` (in `lib/actions/invoices.ts`) is the only escape hatch, for cash/wire/check.
 
 ### Embedded agent surface (`lib/agent/`)
@@ -118,7 +118,7 @@ Datadog is the single pane: RUM + Session Replay + browser Logs client-side (`li
 - `lib/lead-spam.ts` — pure `assessLead()` bot heuristics (honeypot, fill time, origin, gibberish) for `/api/lead`.
 - `lib/lead-verification.ts` — encrypted, expiring double opt-in tokens (`signLeadToken` / `verifyLeadToken`); server-only.
 - `lib/apollo.ts`, `lib/customerio.ts`, `lib/calendly.ts`, `lib/typeform.ts` — third-party integrations called from the lead pipeline / webhooks; `lib/typeform-budget-intake.ts` is the isolated review-first Typeform persistence path.
-- `lib/stripe.ts`, `lib/stripe-event-dedupe.ts`, `lib/invoice-creation.ts` — Stripe surfaces (see above).
+- `lib/stripe.ts`, `lib/stripe-event-dedupe.ts`, `lib/invoice-status.ts`, `lib/invoice-creation.ts` — Stripe surfaces (see above). `invoice-status.ts` is the forward-only rank the webhook UPDATE filters use.
 - `lib/resend.ts` + `lib/resend-templates.ts` — email send wrapper + HTML templates; every send is wrapped so a Resend failure can't break the underlying action.
 - `lib/rate-limit.ts` — generic fixed-window limiter (Upstash REST pipeline with in-memory fallback) + `hashIp()`; note `app/api/lead` uses `@upstash/ratelimit` directly instead.
 - `lib/analytics.ts`, `lib/datadog.ts` (browser RUM/Logs), `lib/datadog-server.ts` (server log intake) — analytics and observability.

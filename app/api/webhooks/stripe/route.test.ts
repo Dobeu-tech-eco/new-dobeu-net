@@ -6,9 +6,11 @@
  *   - invalid signature → 400
  *   - duplicate event.id → 200 deduped (no DB writes)
  *   - invoice.paid       → updates row to paid + sends client receipt
- *   - invoice.payment_failed → updates row to uncollectible + sends admin alert
+ *   - invoice.payment_failed → updates row to overdue + sends admin alert
+ *   - paid then a later payment_failed stays paid (no downgrade, no second email)
+ *   - duplicate paid / payment_failed with distinct event ids do not resend
  *   - invoice.finalized  → mirrors hosted_invoice_url
- *   - invoice.voided     → status='void'
+ *   - invoice.voided     → status='void', and does not replace paid
  *   - unknown event type → 200 ignored (no DB writes)
  *   - handler error      → 500 + event removed from dedupe so retry works
  *   - Datadog failure logging (bad signature, handler/DB error) with no
@@ -27,6 +29,10 @@ const h = vi.hoisted(() => {
     op: string;
     payload?: unknown;
     where?: { col: string; val: string };
+    filters?: Array<
+      | { op: "eq" | "neq"; col: string; val: string }
+      | { op: "in"; col: string; val: readonly string[] }
+    >;
   }> = [];
   const adminBehavior = {
     updatedRow: null as null | {
@@ -36,6 +42,16 @@ const h = vi.hoisted(() => {
       currency: string | null;
       status: string;
     },
+    // When set, update filters are applied to these rows. Null keeps the
+    // legacy stub: maybeSingle returns updatedRow and ignores filters.
+    invoiceRows: null as null | Array<{
+      id: string;
+      project_id: string;
+      amount_cents: number;
+      currency: string | null;
+      status: string;
+      stripe_invoice_id: string;
+    }>,
     updateError: null as null | { message: string; code?: string },
     throwOnUpdate: false,
     insertError: null as null | { message: string; code?: string }
@@ -75,30 +91,74 @@ vi.mock("@/lib/supabase/server", () => ({
     from: (table: string) => ({
       update: (payload: unknown) => ({
         eq: (col: string, val: string) => {
-          h.adminInvocations.push({ table, op: "update", payload, where: { col, val } });
-          const rejectIfNeeded = <T,>(value: T): Promise<T> =>
-            h.adminBehavior.throwOnUpdate
-              ? Promise.reject(new Error("db down"))
-              : Promise.resolve(value);
+          const filters: Array<
+            | { op: "eq" | "neq"; col: string; val: string }
+            | { op: "in"; col: string; val: readonly string[] }
+          > = [{ op: "eq", col, val }];
+          h.adminInvocations.push({ table, op: "update", payload, where: { col, val }, filters });
+          const apply = () => {
+            if (h.adminBehavior.throwOnUpdate) return Promise.reject(new Error("db down"));
+            if (h.adminBehavior.updateError) {
+              return Promise.resolve({ data: null, error: h.adminBehavior.updateError });
+            }
+            const rows = table === "invoices" ? h.adminBehavior.invoiceRows : null;
+            if (rows) {
+              const matched = rows.filter((row) =>
+                filters.every((f) => {
+                  const value =
+                    f.col === "stripe_invoice_id"
+                      ? row.stripe_invoice_id
+                      : f.col === "status"
+                        ? row.status
+                        : f.col === "id"
+                          ? row.id
+                          : undefined;
+                  if (f.op === "eq") return value === f.val;
+                  if (f.op === "neq") return value !== f.val;
+                  return typeof value === "string" && f.val.includes(value);
+                })
+              );
+              if (payload && typeof payload === "object") {
+                for (const row of matched) Object.assign(row, payload);
+              }
+              const source = matched[0];
+              return Promise.resolve({
+                data: source
+                  ? {
+                      id: source.id,
+                      project_id: source.project_id,
+                      amount_cents: source.amount_cents,
+                      currency: source.currency,
+                      status: source.status
+                    }
+                  : null,
+                error: null
+              });
+            }
+            return Promise.resolve({ data: h.adminBehavior.updatedRow, error: null });
+          };
           const terminal = {
             select: () => ({
-              maybeSingle: () =>
-                rejectIfNeeded({
-                  data: h.adminBehavior.updatedRow,
-                  error: h.adminBehavior.updateError
-                })
+              maybeSingle: () => apply()
             }),
             then: (
-              onF: (v: { data: null; error: { message: string } | null }) => unknown,
+              onF: (v: { data: null; error: { message: string; code?: string } | null }) => unknown,
               onR?: (e: unknown) => unknown
-            ) =>
-              rejectIfNeeded({ data: null, error: h.adminBehavior.updateError }).then(onF, onR)
+            ) => apply().then((result) => onF({ data: null, error: result.error }), onR)
           };
           return {
             ...terminal,
-            // The route chains .neq("status", ...) as an idempotency guard after
-            // .eq(); the filter doesn't change mock behavior, just pass through.
-            neq: () => terminal
+            // One status guard after .eq(). With invoiceRows set, it decides
+            // whether the simulated row changes; otherwise filters are recorded
+            // and maybeSingle still returns updatedRow.
+            neq: (filterCol: string, filterVal: string) => {
+              filters.push({ op: "neq", col: filterCol, val: filterVal });
+              return terminal;
+            },
+            in: (filterCol: string, filterVal: readonly string[]) => {
+              filters.push({ op: "in", col: filterCol, val: [...filterVal] });
+              return terminal;
+            }
           };
         }
       }),
@@ -133,12 +193,30 @@ beforeEach(() => {
   vi.clearAllMocks();
   h.adminInvocations.length = 0;
   h.adminBehavior.updatedRow = null;
+  h.adminBehavior.invoiceRows = null;
   h.adminBehavior.updateError = null;
   h.adminBehavior.throwOnUpdate = false;
   h.adminBehavior.insertError = null;
   process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
   process.env.STRIPE_WEBHOOK_SECRET = "whsec_dummy";
 });
+
+function seedInvoice(status: string) {
+  h.adminBehavior.invoiceRows = [
+    {
+      id: "inv_seq",
+      project_id: "p_1",
+      amount_cents: 5000,
+      currency: "USD",
+      status,
+      stripe_invoice_id: "in_seq"
+    }
+  ];
+}
+
+function currentStatus(): string | undefined {
+  return h.adminBehavior.invoiceRows?.[0]?.status;
+}
 
 function makeRequest(body: string, sig: string | null = "t=1,v1=ok"): Request {
   const headers = new Headers();
@@ -405,6 +483,148 @@ describe("POST /api/webhooks/stripe", () => {
     const { POST } = await importRouteFresh();
     expect((await POST(makeRequest("{}"))).status).toBe(200);
     expect(h.sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  describe("monotonic status", () => {
+    // Distinct event ids: the in-memory LRU would drop a same-id redelivery
+    // before the UPDATE. These cover the cross-instance / out-of-order case.
+    it("keeps a paid invoice paid when payment_failed arrives later", async () => {
+      seedInvoice("open");
+      h.verifyMock
+        .mockReturnValueOnce({
+          id: "evt_paid_first",
+          type: "invoice.paid",
+          data: {
+            object: {
+              id: "in_seq",
+              customer_email: "client@example.com",
+              description: "Retainer"
+            }
+          }
+        })
+        .mockReturnValueOnce({
+          id: "evt_failed_late",
+          type: "invoice.payment_failed",
+          data: { object: { id: "in_seq", amount_due: 5000, currency: "usd" } }
+        });
+      const { POST } = await importRouteFresh();
+
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("paid");
+      expect(h.sendEmailMock).toHaveBeenCalledTimes(1);
+      expect(h.sendEmailMock).toHaveBeenCalledWith(
+        expect.objectContaining({ to: "client@example.com" })
+      );
+
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("paid");
+      expect(h.sendEmailMock).toHaveBeenCalledTimes(1);
+      expect(h.sendEmailMock).not.toHaveBeenCalledWith(
+        expect.objectContaining({ subject: expect.stringMatching(/Payment failed/i) })
+      );
+
+      const overdueUpdate = h.adminInvocations.find(
+        (call) =>
+          call.op === "update" &&
+          (call.payload as { status?: string } | undefined)?.status === "overdue"
+      );
+      expect(overdueUpdate?.filters).toEqual([
+        { op: "eq", col: "stripe_invoice_id", val: "in_seq" },
+        { op: "in", col: "status", val: ["open"] }
+      ]);
+    });
+
+    it("does not resend when payment_failed is delivered twice under different event ids", async () => {
+      seedInvoice("open");
+      h.verifyMock
+        .mockReturnValueOnce({
+          id: "evt_fail_1",
+          type: "invoice.payment_failed",
+          data: { object: { id: "in_seq", amount_due: 5000, currency: "usd" } }
+        })
+        .mockReturnValueOnce({
+          id: "evt_fail_2",
+          type: "invoice.payment_failed",
+          data: { object: { id: "in_seq", amount_due: 5000, currency: "usd" } }
+        });
+      const { POST } = await importRouteFresh();
+
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("overdue");
+      expect(h.sendEmailMock).toHaveBeenCalledTimes(1);
+      expect(h.sendEmailMock).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: expect.stringMatching(/Payment failed/i) })
+      );
+
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("overdue");
+      expect(h.sendEmailMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not resend when invoice.paid is delivered twice under different event ids", async () => {
+      seedInvoice("open");
+      const paid = {
+        type: "invoice.paid" as const,
+        data: { object: { id: "in_seq", customer_email: "client@example.com" } }
+      };
+      h.verifyMock
+        .mockReturnValueOnce({ id: "evt_paid_1", ...paid })
+        .mockReturnValueOnce({ id: "evt_paid_2", ...paid });
+      const { POST } = await importRouteFresh();
+
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("paid");
+      expect(h.sendEmailMock).toHaveBeenCalledTimes(1);
+
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("paid");
+      expect(h.sendEmailMock).toHaveBeenCalledTimes(1);
+      const paidUpdates = h.adminInvocations.filter(
+        (call) =>
+          call.op === "update" &&
+          (call.payload as { status?: string } | undefined)?.status === "paid"
+      );
+      expect(paidUpdates).toHaveLength(2);
+      expect(paidUpdates[0]?.filters).toEqual([
+        { op: "eq", col: "stripe_invoice_id", val: "in_seq" },
+        { op: "in", col: "status", val: ["open", "overdue"] }
+      ]);
+    });
+
+    it("still advances an overdue invoice when payment succeeds afterwards", async () => {
+      seedInvoice("open");
+      h.verifyMock
+        .mockReturnValueOnce({
+          id: "evt_fail_then",
+          type: "invoice.payment_failed",
+          data: { object: { id: "in_seq", amount_due: 5000, currency: "usd" } }
+        })
+        .mockReturnValueOnce({
+          id: "evt_paid_after",
+          type: "invoice.paid",
+          data: { object: { id: "in_seq", customer_email: "client@example.com" } }
+        });
+      const { POST } = await importRouteFresh();
+
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("overdue");
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("paid");
+      expect(h.sendEmailMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not replace a paid invoice when a void event arrives later", async () => {
+      seedInvoice("paid");
+      h.verifyMock.mockReturnValue({
+        id: "evt_void_late",
+        type: "invoice.voided",
+        data: { object: { id: "in_seq" } }
+      });
+      const { POST } = await importRouteFresh();
+      expect((await POST(makeRequest("{}"))).status).toBe(200);
+      expect(currentStatus()).toBe("paid");
+      expect(h.sendEmailMock).not.toHaveBeenCalled();
+    });
   });
 
   it.each([

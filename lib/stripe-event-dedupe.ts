@@ -7,9 +7,11 @@
  * giving the test suite a way to clear state between cases.
  *
  * Backing store is a process-local `Set` with a bounded size — good enough for
- * a single-region serverless deployment. The real safety net is that every
- * downstream UPDATE is naturally idempotent (mirror-of-target-state), so a
- * missed dedupe just costs an extra database write, not correctness.
+ * a single-region serverless deployment. A missed dedupe retries the write.
+ * Invoice status updates are conditional and forward-only
+ * (`lib/invoice-status.ts`), so a retry or out-of-order event cannot downgrade
+ * a paid invoice to overdue. The hosted-url update mirrors Stripe, and
+ * entitlement inserts collapse on the unique checkout-session id.
  */
 
 const SEEN_EVENT_IDS = new Set<string>();
