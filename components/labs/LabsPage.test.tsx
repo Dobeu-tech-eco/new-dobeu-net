@@ -57,9 +57,12 @@ describe("Labs satellite discovery links", () => {
   it.each([
     ["http scheme", "http://tutor.dobeu.net"],
     ["wrong host", "https://tutor.example.com"],
+    ["lookalike host", "https://tutor.dobeu.net.example.com"],
     ["path", "https://tutor.dobeu.net/learn"],
     ["explicit :443", "https://tutor.dobeu.net:443"],
     ["credentials", "https://user:pass@tutor.dobeu.net"],
+    ["query string", "https://tutor.dobeu.net/?next=/x"],
+    ["empty string", ""],
   ])("renders no Tutor link for an invalid value (%s)", (_name, value) => {
     vi.stubEnv(TUTOR, value);
     render(<LabsPage />);
