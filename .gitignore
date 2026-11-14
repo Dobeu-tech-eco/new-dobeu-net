@@ -73,6 +73,11 @@ Thumbs.db
 # dts2-harness runtime (config + checklist + lessons are committed)
 .harness/runs/
 .harness/lessons-inbox.md
+.harness/*.log
+.harness/intake.jsonl
+.harness/intake.md
+.harness/agents.jsonl
+.harness/cache/
 .harness.bak-*/
 .claude/*.local.md
 .env*

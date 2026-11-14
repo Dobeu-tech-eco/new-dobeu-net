@@ -1,0 +1,389 @@
+[
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S2"
+    },
+    "id": "S2",
+    "parked_at": 1794549188.611864,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S3"
+    },
+    "id": "S3",
+    "parked_at": 1794549188.664153,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S4"
+    },
+    "id": "S4",
+    "parked_at": 1794549188.713723,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S5"
+    },
+    "id": "S5",
+    "parked_at": 1794549188.762254,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S6"
+    },
+    "id": "S6",
+    "parked_at": 1794549188.818181,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S7"
+    },
+    "id": "S7",
+    "parked_at": 1794549188.895085,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S8"
+    },
+    "id": "S8",
+    "parked_at": 1794549188.956599,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S9"
+    },
+    "id": "S9",
+    "parked_at": 1794549189.012612,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S10"
+    },
+    "id": "S10",
+    "parked_at": 1794549189.0638778,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S11"
+    },
+    "id": "S11",
+    "parked_at": 1794549189.115531,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S12"
+    },
+    "id": "S12",
+    "parked_at": 1794549189.169517,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S13"
+    },
+    "id": "S13",
+    "parked_at": 1794549189.2203069,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S14"
+    },
+    "id": "S14",
+    "parked_at": 1794549189.273141,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S15"
+    },
+    "id": "S15",
+    "parked_at": 1794549189.327969,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S16"
+    },
+    "id": "S16",
+    "parked_at": 1794549189.3821251,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "S17"
+    },
+    "id": "S17",
+    "parked_at": 1794549189.436218,
+    "reason": "BLOCKED-NEEDS-JEREMY: secret value is the owner's to supply; this run reads no credentials"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D32",
+    "parked_at": 1794549189.492227,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D39",
+    "parked_at": 1794549189.543301,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D40",
+    "parked_at": 1794549189.6038988,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D47",
+    "parked_at": 1794549189.658891,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D48",
+    "parked_at": 1794549189.723396,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D49",
+    "parked_at": 1794549189.786965,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D50",
+    "parked_at": 1794549189.8486211,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D52",
+    "parked_at": 1794549189.913234,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D53",
+    "parked_at": 1794549189.973671,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D59",
+    "parked_at": 1794549190.038335,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D68",
+    "parked_at": 1794549190.115551,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D69",
+    "parked_at": 1794549190.17967,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D70",
+    "parked_at": 1794549190.25294,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D71",
+    "parked_at": 1794549190.314583,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D72",
+    "parked_at": 1794549190.374549,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "D73",
+    "parked_at": 1794549190.440407,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "P5",
+    "parked_at": 1794549190.497877,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "P6",
+    "parked_at": 1794549190.554606,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "pr",
+      "ref": "357"
+    },
+    "id": "P9",
+    "parked_at": 1794549190.6114838,
+    "reason": "BLOCKED-NEEDS-JEREMY: work is already on main; the row is closed in the action-items file of PR 357, which the owner lands. Not re-closed here, to avoid a second diverging copy"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "D62"
+    },
+    "id": "D62",
+    "parked_at": 1794549190.670294,
+    "reason": "BLOCKED-NEEDS-JEREMY: fix is a dts2 plugin change through evolve, outside this worktree (global tool state)"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "H3"
+    },
+    "id": "H3",
+    "parked_at": 1794549190.7905369,
+    "reason": "BLOCKED-NEEDS-JEREMY: signed-in production walk needs a person and a real device"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "H4"
+    },
+    "id": "H4",
+    "parked_at": 1794549190.851192,
+    "reason": "BLOCKED-NEEDS-JEREMY: signed-in production walk needs a person and a real device"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "H5"
+    },
+    "id": "H5",
+    "parked_at": 1794549190.906976,
+    "reason": "BLOCKED-NEEDS-JEREMY: signed-in production walk needs a person and a real device"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "H6"
+    },
+    "id": "H6",
+    "parked_at": 1794549190.959605,
+    "reason": "BLOCKED-NEEDS-JEREMY: signed-in production walk needs a person and a real device"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "Y4"
+    },
+    "id": "Y4",
+    "parked_at": 1794549191.018789,
+    "reason": "BLOCKED-NEEDS-JEREMY: production migration; deploys are a hard stop"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "H3"
+    },
+    "id": "section 46",
+    "parked_at": 1794549191.0767,
+    "reason": "BLOCKED-NEEDS-JEREMY: live TOTP check H3"
+  },
+  {
+    "blocker": {
+      "kind": "item",
+      "ref": "H3"
+    },
+    "id": "acceptance: route access-boundary evidence",
+    "parked_at": 1794549191.1344929,
+    "reason": "BLOCKED-NEEDS-JEREMY: waits on section 46 / H3"
+  }
+]
