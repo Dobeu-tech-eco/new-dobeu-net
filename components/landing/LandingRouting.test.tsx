@@ -49,7 +49,10 @@ beforeEach(() => {
   state.reduced = false;
   state.pathname = "/";
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 describe("adopted landing routing", () => {
   it("leads with usable business technology and links to the real products", () => {
@@ -226,5 +229,69 @@ describe("adopted landing routing", () => {
       "href",
       "/privacy",
     );
+  });
+
+  describe("satellite discovery links in the footer", () => {
+    const TUTOR = "NEXT_PUBLIC_SATELLITE_TUTOR_URL";
+    const STAFFING = "NEXT_PUBLIC_SATELLITE_STAFFING_URL";
+    const externalHrefs = () =>
+      screen
+        .getAllByRole("link")
+        .map((link) => link.getAttribute("href") ?? "")
+        .filter((href) => /tutor|staffing/i.test(href));
+
+    beforeEach(() => {
+      vi.stubEnv(TUTOR, "");
+      vi.stubEnv(STAFFING, "");
+    });
+
+    it("renders no Tutor link when the env var is unset", () => {
+      vi.stubEnv(TUTOR, undefined);
+      vi.stubEnv(STAFFING, undefined);
+      render(<SiteFooter />);
+      expect(screen.queryByRole("link", { name: "Tutor" })).toBeNull();
+      expect(externalHrefs()).toEqual([]);
+    });
+
+    it.each([
+      ["http scheme", "http://tutor.dobeu.net"],
+      ["wrong host", "https://tutor.example.com"],
+      ["lookalike host", "https://tutor.dobeu.net.example.com"],
+      ["path", "https://tutor.dobeu.net/learn"],
+      ["explicit :443", "https://tutor.dobeu.net:443"],
+      ["credentials", "https://user:pass@tutor.dobeu.net"],
+      ["query string", "https://tutor.dobeu.net/?next=/x"],
+      ["empty string", ""],
+    ])("renders no Tutor link for an invalid value (%s)", (_name, value) => {
+      vi.stubEnv(TUTOR, value);
+      render(<SiteFooter />);
+      expect(screen.queryByRole("link", { name: "Tutor" })).toBeNull();
+      expect(externalHrefs()).toEqual([]);
+    });
+
+    it.each([["https://tutor.dobeu.net"], ["https://tutor.dobeu.net/"]])(
+      "links Tutor to the exact validated origin for %s",
+      (value) => {
+        vi.stubEnv(TUTOR, value);
+        render(<SiteFooter />);
+        const link = screen.getByRole("link", { name: "Tutor" });
+        expect(link).toHaveAttribute("href", "https://tutor.dobeu.net");
+        expect(link).toHaveAttribute("target", "_blank");
+        expect(link).toHaveAttribute("rel", "noopener noreferrer");
+        expect(
+          within(
+            screen.getByRole("navigation", { name: "Footer navigation" }),
+          ).getAllByRole("link", { name: "Tutor" }),
+        ).toHaveLength(1);
+      },
+    );
+
+    it("never renders a staffing link, whatever the staffing env var holds", () => {
+      vi.stubEnv(TUTOR, "https://tutor.dobeu.net");
+      vi.stubEnv(STAFFING, "https://staffing.dobeu.net");
+      render(<SiteFooter />);
+      expect(screen.queryByRole("link", { name: /staffing/i })).toBeNull();
+      expect(externalHrefs()).toEqual(["https://tutor.dobeu.net"]);
+    });
   });
 });

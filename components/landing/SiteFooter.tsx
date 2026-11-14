@@ -8,6 +8,7 @@ import {
   SITE_IDENTITY,
   hasPublishablePhone,
 } from "@/lib/jeremy-data";
+import { resolveSatelliteSite } from "@/lib/satellite-sites";
 
 const FOOTER_LINKS = {
   Site: [
@@ -39,6 +40,22 @@ const FOOTER_LINKS = {
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
+  // Literal reads only: Next.js does not inline dynamic process.env lookups.
+  const tutor = resolveSatelliteSite("tutor", {
+    NEXT_PUBLIC_SATELLITE_TUTOR_URL:
+      process.env.NEXT_PUBLIC_SATELLITE_TUTOR_URL,
+    NEXT_PUBLIC_SATELLITE_STAFFING_URL:
+      process.env.NEXT_PUBLIC_SATELLITE_STAFFING_URL,
+  });
+  const footerLinks = {
+    ...FOOTER_LINKS,
+    Site: [
+      ...FOOTER_LINKS.Site,
+      ...(tutor
+        ? [{ label: "Tutor", href: tutor.origin, external: true }]
+        : []),
+    ],
+  };
 
   return (
     <footer className="border-t border-border/30 bg-background">
@@ -68,7 +85,7 @@ export function SiteFooter() {
             className="grid grid-cols-2 sm:grid-cols-4 gap-8"
             aria-label="Footer navigation"
           >
-            {Object.entries(FOOTER_LINKS).map(([group, links]) => (
+            {Object.entries(footerLinks).map(([group, links]) => (
               <div key={group}>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                   {group}

@@ -1,3 +1,5 @@
+import { resolveSatelliteSite, type SatelliteEnv } from "@/lib/satellite-sites";
+
 export type LabDemoId = "work-order" | "shader" | "lead-pipeline";
 
 export interface LabDemoEntry {
@@ -42,3 +44,20 @@ export const FEATURED_EXPERIMENT: LabExperimentEntry = {
   summary: "Full-viewport atmosphere with floating capability cards — now live on the landing.",
   status: "live",
 };
+
+export interface LabSatelliteLink {
+  id: "tutor";
+  label: string;
+  href: string;
+}
+
+/**
+ * Discovery links to separately deployed satellite sites, listed on /labs.
+ * Tutor only: an entry exists only when the registry in lib/satellite-sites.ts
+ * validates the configured origin. Callers pass literal process.env reads (see
+ * resolveSatelliteSites) so Next.js can inline them.
+ */
+export function resolveLabSatelliteLinks(env: SatelliteEnv): LabSatelliteLink[] {
+  const tutor = resolveSatelliteSite("tutor", env);
+  return tutor ? [{ id: "tutor", label: "Tutor", href: tutor.origin }] : [];
+}
