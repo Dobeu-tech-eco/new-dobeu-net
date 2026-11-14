@@ -163,6 +163,7 @@ Datadog is the single pane: RUM + Session Replay + browser Logs client-side (`li
 | `GITHUB_TOKEN` | `/api/github-activity` + `/api/github-repo` (the `/repos` showcase page). |
 | `CRON_SECRET` | Shared secret for `/api/cron/*` (cleanup, invoice-aging); verified timing-safe in `lib/cron/auth.ts`. Vercel Cron sends it as a bearer token (`Authorization: Bearer <secret>`). Unset → cron calls are rejected (401). |
 | `NEXT_PUBLIC_SITE_URL` | Canonical origin for metadata/emails. |
+| `NEXT_PUBLIC_SATELLITE_TUTOR_URL` | Public, optional. When it is exactly `https://tutor.dobeu.net` (a trailing `/` is allowed), the footer and `/labs` show a "Tutor" link to that origin (`lib/satellite-sites.ts` validates it; `SiteFooter` and `resolveLabSatelliteLinks()` in `lib/labs-data.ts` render it). Unset or any other value (http, another host, a path, `:443`, credentials) → no link. Inlined at build time, so a change needs a new build. `NEXT_PUBLIC_SATELLITE_STAFFING_URL` is read but has no approved host, so it never renders a link. |
 | `NEXT_PUBLIC_AMPLITUDE_API_KEY` | Amplitude browser key (public). Absent → Amplitude skipped. `NEXT_PUBLIC_AMPLITUDE_REPLAY_SAMPLE_RATE` (0–1, default 1) throttles Session Replay. |
 | `NEXT_PUBLIC_*` (PostHog, Mixpanel, Datadog) | Per-provider client-side analytics — feature-flagged by presence. GA4/GTM load via `<Script>` in `app/layout.tsx`. |
 
