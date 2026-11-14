@@ -46,6 +46,7 @@ like any other; nothing in it lands without a merge.
 - Citation validation in `.github/scripts/review-learning.mjs` must check every number in a `PR #x, #y` evidence phrase and must not treat unrelated `#` values (such as `#333`) as citations. (PR #278)
 - When a landing-page redesign changes how many items a section renders (for example FAQ entries), check the Playwright assertions in `e2e/smoke.spec.ts` that count them. CI runs that suite as a merge gate. (PR #280)
 - When a PR removes or renames a published slug (case studies in `SHIPPED_WORK`, service pillars such as `/services/ai-agents`), check that the old URL gets a permanent redirect to the new page or to the parent index. Otherwise indexed and external links turn into 404s. (PR #296)
+- In admin pages, `auth.admin.listUsers()` calls that feed pickers or dialogs must paginate past the first page. A failure in these auxiliary reads (users, profiles, projects) must not hide the primary table or list that loaded successfully. (PR #320, #311)
 
 ### Stop flagging
 
