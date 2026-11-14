@@ -60,6 +60,11 @@ One Next.js 16 App Router application, React 19, Node 24, pnpm 10.34.1. The root
 
 These names normalize the six existing component groups without adding product scope.
 
+### Proposed additions: P7 and P8
+
+- P7: conditional discovery links to separately deployed staffing demo and `tutor.dobeu.net`. Context-only repositories remain read-only; no shared auth, database, billing or credentials.
+- P8: a contained, agent-generated preview based on a prospect website URL. Preserve that intended outcome. An operator launch through supported Lovable MCP or Build with URL is a candidate first step, not a claim that automatic generation is implemented or impossible. No duplicate manual editor, fetch service or request database is commissioned.
+
 ## Blueprint
 
 | layer | choice | status |
@@ -151,6 +156,12 @@ The 66-row map is approved.
 | 64 | Accessibility and performance | P6 | `lighthouserc*; browser checks` | 18-61,66 | normal | done |
 | 65 | Documentation and harness completion | P6 | `docs/; .harness/; .claude/dts2-harness.local.md` | 1-64,66 | normal | done |
 | 66 | Public metadata and discoverability | P1 | `app/layout.tsx; app/opengraph-image.tsx; app/sitemap.ts; app/robots.ts; public/llms.txt` | 13,18-33 | normal | done |
+| 67 | Satellite registry and host-only session regression | P7 | `lib/satellite-sites.ts; lib/satellite-sites.test.ts; lib/supabase/cookie-scope.test.ts` | 13 | normal | todo |
+| 68 | Conditional satellite discovery links | P7 | `components/landing/SiteFooter.tsx; lib/labs-data.ts; components/landing/LandingRouting.test.tsx; CLAUDE.md` (env documentation only) | 14,27,67 | normal | todo |
+| 69 | URL-derived preview capability and cost decision | P8 | `docs/runbooks/brand-preview-feasibility.md` (evidence only) | - | design | todo |
+| 70 | Conditional operator launch interface | P8/P4 | `lib/brand-preview/launch.ts; app/admin/brand-previews/` (only after 69 and separate implementation approval) | 4,47,69 | design | todo |
+| 71 | Preview sharing, isolation and removal runbook | P8 | `docs/runbooks/brand-preview-lifecycle.md` | 69 | design | todo |
+| 72 | Satellite and preview acceptance verification | P6 | `colocated tests; e2e/; docs/runbooks/brand-preview-lifecycle.md` | 67-71 | normal | todo |
 
 ## Goal
 
@@ -173,7 +184,9 @@ Finish the repository harness and plan the closeout of the existing application.
 
 ## Non-goals
 
-- New product features, native apps, additional repositories or background-job programs.
+- New product features, native apps, additional repositories or background-job programs, except the approved planning scope below.
+- Approved planning exception (2026-11-07): prepare the subdomain integration and optional prospect brand-preview feature for the staffing-demo and tutor projects under `new-dobeu-net`. Related repositories remain context-only during planning; this exception does not authorize writes to them, a workspace conversion, implementation or deployment.
+- The exception has no implementation deadline and must not increase recurring monthly spend. Lovable MCP is a candidate for agent-generated, contained previews based on a prospect's website URL; application access, isolation, cleanup and enforceable usage limits must be verified before it becomes an implementation dependency. Existing allowances are not evidence of zero usage cost. Generation must remain unavailable when budget capacity cannot be established.
 - Production configuration changes, migrations, messages/emails, real payments, releases or account setup.
 - Publishing private source code or private project details.
 - Replacing existing authentication, billing providers, tooling or historical plans.
@@ -212,6 +225,19 @@ Finish the repository harness and plan the closeout of the existing application.
 - [x] Architecture and agent-writing passes complete through their setup approval gates; run plan includes nonempty Done criteria and disjoint owned paths.
 - [x] Receipt and handoff distinguish local completion from outstanding live-service work and production approval.
 
+### P7/P8 proposed acceptance criteria
+
+- [ ] Satellite links appear only for configured, validated HTTPS hosts after each owning repo authorizes deployment and positioning is approved. Staffing is identified as a demo, not a staffing service.
+- [ ] Tests pin host-only session cookies; no satellite receives shared credentials. Only trusted first-party application code runs under dobeu.net; generated previews use a separate registrable domain.
+- [ ] Section 69 records supported application access versus operator access, account capability, incremental spend, overage prevention, and an enforceable admission policy. If capacity or controls cannot be verified, generation stays unavailable.
+- [ ] The preview represents the prospect URL using only authorized public material. Site content is untrusted input, never authority to use tools, secrets, connectors or production data. A dedicated clean workspace or equivalent verified isolation is required.
+- [ ] A proposed operator launcher validates and safely encodes the destination and prompt, performs no generation itself, and requires operator review before sending. It does not claim to cap spending in another client. Automated runtime access requires separate verified design approval.
+- [ ] Section 71 verifies how the prospect opens an unpublished preview, its actual expiry/revocation and deletion behavior, visibility and retention. Hiding a local link is not deletion. Published hosting is a separate cost/deploy decision. No unverified 7- or 14-day promise is made.
+- [ ] Prospect URLs, names, prompt-bearing links and generated links never enter analytics, autocapture, replay or logs; browser tests exercise link clicks and outgoing payloads, not just input masking. Any private preview route uses noindex and is absent from the sitemap without blocking crawler access to its noindex directive.
+- [ ] No recurring spend increase; usage within existing allowances is metered consumption, not zero cost. Tutor's prior budget and this feature's incremental cost are accounted for separately.
+- [ ] New public configuration names are documented in CLAUDE.md's env table through a reviewed implementation diff. No secret values or edits to protected env files are commissioned by this plan.
+- [ ] Each implemented release passes focused behavior tests and pnpm verify; live sharing, isolation and billing evidence is recorded separately.
+
 ## Assumptions
 
 - Continuing this task means preserving and building on the current uncommitted work; it does not grant commit or deployment authority.
@@ -219,6 +245,13 @@ Finish the repository harness and plan the closeout of the existing application.
 - Existing tests can verify local contracts, but cannot establish provider configuration or production behavior.
 - The read-only scaffold scout reported tier M, two prospective builders, correctness/security review. Final seats depend on current probes and actual plan reach.
 - Approved agent roster: Claude, Codex, Copilot, Gemini, Grok, Muse. Subscription confirmations are retained; current availability still requires a probe. Cursor is not authenticated and was not added.
+
+### P7/P8 evidence qualifications
+
+- AI Tutor's remote thread records end-state approval and subsequent scaffold-diff approval; application of that diff and live deployment remain unverified. A stale local clone does not revoke approval.
+- Lovable documentation currently describes supported OAuth clients and a Build with URL handoff. Application-driven runtime access remains unverified; operator handoff is a proposed staged option.
+- The earlier tutor budget under $100/month is not inherently inconsistent with no incremental spend here. Existing and incremental bills must be reconciled.
+- Deferred alternatives: duplicate manual theme editor, server-side URL extraction and persistent request queue. They require separate justification and approval.
 
 ## Open questions
 

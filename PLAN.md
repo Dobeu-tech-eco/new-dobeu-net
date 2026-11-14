@@ -85,3 +85,7 @@ Production-ready means all ten criteria in the readiness doc, headline items: CS
 - [ ] GitHub security features enabled; no open HIGH security PRs
 - [ ] `STATUS.md` updated with hardening-sprint record
 - [ ] Deferred-track decisions (above) captured, even if the answer is "later"
+
+## Proposed feature: subdomains and URL-derived brand previews (2026-11-07)
+
+Planning exception and detailed proposal approved 2026-11-07; nothing is implemented. End-state P7/P8, proposed sections 67–72: conditional satellite discovery, capability/cost evidence, a possible operator launch interface, and verified preview lifecycle. Preserve the URL-derived generated-preview goal. No duplicate manual editor, fetch service or request database. No deadline or recurring spend increase. Related repos stay context-only; implementation, hosting and production changes have separate gates. The proposal records stay in the local `.harness/proposals/` folder and are not published.

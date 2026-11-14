@@ -88,3 +88,7 @@ Thumbs.db
 .claude/worktrees/
 .harness/.skills-checked
 .harness/upgrade-from.txt
+.harness/settings.cache.json
+.harness/skill-updates.json
+.harness/cache/
+.harness/.locks/

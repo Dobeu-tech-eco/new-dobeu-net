@@ -127,3 +127,7 @@ pnpm lint           # ✅ no warnings
 pnpm test:ci        # ✅ 178 tests across 18 files (51 new in lib/actions/)
 pnpm build          # ✅ + strict-build (no blocked warnings)
 ```
+
+## Proposed scope, 2026-11-07
+
+Subdomains and URL-derived brand previews: planning only, sections 67–72 proposed; no implementation or live-service change. Jeremy approved the architecture amendments on 2026-11-07; every section is still `todo`. The proposal records stay in the local `.harness/proposals/` folder and are not published.
